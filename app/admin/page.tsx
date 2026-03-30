@@ -5,7 +5,6 @@ import {
   isAdminAuthenticated,
   isUsingDefaultAdminCredentials,
   loginAdmin,
-  logoutAdmin,
   requireAdmin,
 } from "@/lib/admin-auth";
 import { getCurrentGrow, updateCurrentGrow } from "@/lib/db";
@@ -82,14 +81,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     clearAdminLoginFailures(limitKey);
     redirect("/admin");
   }
-
-  async function logoutAction() {
-    "use server";
-
-    await logoutAdmin();
-    redirect("/admin");
-  }
-
   async function saveGrowAction(formData: FormData) {
     "use server";
 
@@ -176,34 +167,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 p-4 md:p-8">
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Admin Panel</h1>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Edit the live stream and grow information.</p>
-          </div>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            >
-              Sign Out
-            </button>
-          </form>
-          <form action="/" method="get">
-            <button
-                type="submit"
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-            >
-              Back to Dashboard
-            </button>
-          </form>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Admin Panel</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Edit the live stream and grow information.</p>
         </div>
 
-        {params.saved ? (
+{/*        {params.saved ? (
             <p className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
               Saved successfully.
             </p>
-        ) : null}
+        ) : null}*/}
 
         <form action={saveGrowAction} className="space-y-4">
           <label className="block">
@@ -284,12 +257,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             />
           </label>
 
-          <button
-            type="submit"
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-          >
-            Save Changes
-          </button>
+          <div className="mt-4">
+            <div className="relative inline-block">
+              <button
+                  type="submit"
+                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+              >
+                Save Changes
+              </button>
+
+              {params.saved ? (
+                  <p className="absolute left-full top-1/2 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    Saved successfully.
+                  </p>
+              ) : null}
+            </div>
+          </div>
         </form>
       </div>
     </main>
