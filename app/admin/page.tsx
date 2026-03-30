@@ -97,6 +97,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     await updateCurrentGrow({
       name: String(formData.get("name") ?? ""),
       plant: String(formData.get("plant") ?? ""),
+      plantAmount: toNumber(formData.get("plantAmount"), 0),
       streamUrl: String(formData.get("streamUrl") ?? ""),
       strain: String(formData.get("strain") ?? ""),
       stage: String(formData.get("stage") ?? ""),
@@ -114,7 +115,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         potSizeLiters: toNumber(formData.get("potSizeLiters"), 0),
       },
       status: {
-        health: String(formData.get("health") ?? ""),
+        health: String(formData.get("health") ?? "healthy"),
         estimatedHarvestDate: String(formData.get("estimatedHarvestDate") ?? ""),
         notes: String(formData.get("statusNotes") ?? ""),
       },
@@ -209,6 +210,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <input
               name="plant"
               defaultValue={grow.plant}
+              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Plant Amount</span>
+            <input
+              name="plantAmount"
+              type="number"
+              min={0}
+              defaultValue={grow.plantAmount}
               className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             />
           </label>
@@ -342,11 +353,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health</span>
-                <input
+                <select
                   name="health"
                   defaultValue={grow.status.health}
                   className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
+                >
+                  <option value="healthy">Healthy</option>
+                  <option value="warning">Warning</option>
+                  <option value="critical">Critical</option>
+                </select>
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Estimated Harvest Date</span>

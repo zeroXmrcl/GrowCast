@@ -40,6 +40,7 @@ export type GrowRecord = {
   id: string;
   name: string;
   plant: string;
+  plantAmount: number;
   streamUrl: string;
   details: GrowDetails;
   growSetup: GrowSetup;
@@ -58,6 +59,7 @@ export type GrowRecord = {
 export type GrowUpdateInput = {
   name: string;
   plant: string;
+  plantAmount?: number;
   streamUrl: string;
   strain?: string;
   stage?: string;
@@ -109,6 +111,7 @@ const DEFAULT_GROW: GrowRecord = {
   id: "grow-001",
   name: "First Grow!",
   plant: "Cannabis",
+  plantAmount: 1,
   streamUrl: "https://www.youtube.com/embed/Q6xRHQswS38",
 
   details: {
@@ -209,6 +212,7 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     id: asString(parsed.id, DEFAULT_GROW.id),
     name: asString(parsed.name, DEFAULT_GROW.name),
     plant: asString(parsed.plant, DEFAULT_GROW.plant),
+    plantAmount: asNumber(parsed.plantAmount, DEFAULT_GROW.plantAmount),
     streamUrl: asString(parsed.streamUrl, DEFAULT_GROW.streamUrl),
     details,
     growSetup,
@@ -265,6 +269,7 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
     ...current,
     name: input.name,
     plant: input.plant,
+    plantAmount: Number.isFinite(input.plantAmount) ? Number(input.plantAmount) : current.plantAmount,
     streamUrl: input.streamUrl,
     growSetup: {
       ...current.growSetup,
