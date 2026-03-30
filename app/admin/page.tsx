@@ -50,6 +50,11 @@ function getRateLimitedRedirect(retryAfterSeconds: number): string {
   return `/admin?error=rate_limited&retry=${retryAfterSeconds}`;
 }
 
+function toNumber(value: FormDataEntryValue | null, fallback = 0): number {
+  const parsed = Number(value ?? fallback);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const params = await searchParams;
   const isLoggedIn = await isAdminAuthenticated();
@@ -81,6 +86,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     clearAdminLoginFailures(limitKey);
     redirect("/admin");
   }
+
   async function saveGrowAction(formData: FormData) {
     "use server";
 
@@ -97,6 +103,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       seededAt,
       lightSchedule: String(formData.get("lightSchedule") ?? ""),
       notes: String(formData.get("notes") ?? ""),
+      growSetup: {
+        growTentSize: String(formData.get("growTentSize") ?? ""),
+        lightingType: String(formData.get("lightingType") ?? ""),
+        lightWattage: toNumber(formData.get("lightWattage"), 0),
+        lightBrand: String(formData.get("lightBrand") ?? ""),
+        ventilation: String(formData.get("ventilation") ?? ""),
+        carbonFilter: formData.get("carbonFilter") === "on",
+        growingMedium: String(formData.get("growingMedium") ?? ""),
+        potSizeLiters: toNumber(formData.get("potSizeLiters"), 0),
+      },
+      status: {
+        health: String(formData.get("health") ?? ""),
+        estimatedHarvestDate: String(formData.get("estimatedHarvestDate") ?? ""),
+        notes: String(formData.get("statusNotes") ?? ""),
+      },
     });
 
     revalidatePath("/");
@@ -172,12 +193,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Edit the live stream and grow information.</p>
         </div>
 
-{/*        {params.saved ? (
-            <p className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 p-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-              Saved successfully.
-            </p>
-        ) : null}*/}
-
         <form action={saveGrowAction} className="space-y-4">
           <label className="block">
             <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Name</span>
@@ -247,6 +262,113 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </label>
           </div>
 
+          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+            <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Setup</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Tent Size</span>
+                <input
+                  name="growTentSize"
+                  defaultValue={grow.growSetup.growTentSize}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Lighting Type</span>
+                <input
+                  name="lightingType"
+                  defaultValue={grow.growSetup.lightingType}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Light Wattage</span>
+                <input
+                  name="lightWattage"
+                  type="number"
+                  min={0}
+                  defaultValue={grow.growSetup.lightWattage}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Light Brand</span>
+                <input
+                  name="lightBrand"
+                  defaultValue={grow.growSetup.lightBrand}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Ventilation</span>
+                <input
+                  name="ventilation"
+                  defaultValue={grow.growSetup.ventilation}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Growing Medium</span>
+                <input
+                  name="growingMedium"
+                  defaultValue={grow.growSetup.growingMedium}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Pot Size (L)</span>
+                <input
+                  name="potSizeLiters"
+                  type="number"
+                  min={0}
+                  defaultValue={grow.growSetup.potSizeLiters}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="flex items-center gap-2 pt-7 text-sm text-zinc-700 dark:text-zinc-300">
+                <input
+                  name="carbonFilter"
+                  type="checkbox"
+                  defaultChecked={grow.growSetup.carbonFilter}
+                  className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                Carbon Filter Enabled
+              </label>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+            <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Status</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health</span>
+                <input
+                  name="health"
+                  defaultValue={grow.status.health}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Estimated Harvest Date</span>
+                <input
+                  name="estimatedHarvestDate"
+                  type="date"
+                  defaultValue={grow.status.estimatedHarvestDate}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+            </div>
+            <label className="mt-4 block">
+              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Status Notes</span>
+              <textarea
+                name="statusNotes"
+                defaultValue={grow.status.notes}
+                rows={3}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              />
+            </label>
+          </div>
+
           <label className="block">
             <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Notes</span>
             <textarea
@@ -260,16 +382,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           <div className="mt-4">
             <div className="relative inline-block">
               <button
-                  type="submit"
-                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                type="submit"
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
               >
                 Save Changes
               </button>
 
               {params.saved ? (
-                  <p className="absolute left-full top-1/2 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-                    Saved successfully.
-                  </p>
+                <p className="absolute left-full top-1/2 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  Saved successfully.
+                </p>
               ) : null}
             </div>
           </div>

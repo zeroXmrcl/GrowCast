@@ -1,4 +1,5 @@
 import { getCurrentGrow } from "@/lib/db";
+import { getDaysSince } from "@/utils/daysSinceSeeding";
 
 export default async function Home() {
   const grow = await getCurrentGrow();
@@ -41,8 +42,8 @@ export default async function Home() {
               <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.stage}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-zinc-500 dark:text-zinc-400">Seeded</dt>
-              <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.seededAt}</dd>
+              <dt className="text-zinc-500 dark:text-zinc-400">Days since seeding</dt>
+              <dd className="text-right text-zinc-900 dark:text-zinc-100">{getDaysSince(grow.seededAt)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-zinc-500 dark:text-zinc-400">Light</dt>
