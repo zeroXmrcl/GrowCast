@@ -132,7 +132,7 @@ function validateUsernameInput(input: string): boolean {
 }
 
 function normalizePasswordInput(input: string): string {
-  return stripInvisibleControls(input).normalize("NFKC");
+  return input;
 }
 
 function validatePasswordInput(input: string): boolean {
