@@ -195,79 +195,125 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         </div>
 
         <form action={saveGrowAction} className="space-y-4">
-          <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Name</span>
-            <input
-              name="name"
-              defaultValue={grow.name}
-              required
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Plant</span>
-            <input
-              name="plant"
-              defaultValue={grow.plant}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Plant Amount</span>
-            <input
-              name="plantAmount"
-              type="number"
-              min={0}
-              defaultValue={grow.plantAmount}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stream URL</span>
-            <input
-              name="streamUrl"
-              defaultValue={grow.streamUrl}
-              placeholder="https://..."
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            />
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Strain</span>
-              <input
-                name="strain"
-                defaultValue={grow.strain}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stage</span>
-              <input
-                name="stage"
-                defaultValue={grow.stage}
+          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+            <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Plant</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Name</span>
+                <input
+                  name="name"
+                  defaultValue={grow.name}
+                  required
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Plant</span>
+                <input
+                  name="plant"
+                  defaultValue={grow.plant}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Plant Amount</span>
+                <input
+                  name="plantAmount"
+                  type="number"
+                  min={0}
+                  defaultValue={grow.plantAmount}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Strain</span>
+                <input
+                  name="strain"
+                  defaultValue={grow.strain}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stage</span>
+                <input
+                  name="stage"
+                  defaultValue={grow.stage}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Date of Seeding</span>
+                <input
+                  name="seededAt"
+                  type="date"
+                  defaultValue={grow.seededAt}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Light Schedule</span>
+                <input
+                  name="lightSchedule"
+                  defaultValue={grow.lightSchedule}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+            </div>
+            <label className="mt-4 block">
+              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">General Notes</span>
+              <textarea
+                name="notes"
+                defaultValue={grow.notes}
+                rows={5}
                 className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
               />
             </label>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+            <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Stream</h2>
             <label className="block">
-              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Date of seeding</span>
+              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stream URL</span>
               <input
-                name="seededAt"
-                type="date"
-                defaultValue={grow.seededAt}
+                name="streamUrl"
+                defaultValue={grow.streamUrl}
+                placeholder="https://..."
                 className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
               />
             </label>
-            <label className="block">
-              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Light Schedule</span>
-              <input
-                name="lightSchedule"
-                defaultValue={grow.lightSchedule}
+          </div>
+
+          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+            <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Status</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health</span>
+                <select
+                  name="health"
+                  defaultValue={grow.status.health}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                >
+                  <option value="healthy">Healthy</option>
+                  <option value="warning">Warning</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Estimated Harvest Date</span>
+                <input
+                  name="estimatedHarvestDate"
+                  type="date"
+                  defaultValue={grow.status.estimatedHarvestDate}
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </label>
+            </div>
+            <label className="mt-4 block">
+              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health Notes</span>
+              <textarea
+                name="statusNotes"
+                defaultValue={grow.status.notes}
+                rows={3}
                 className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
               />
             </label>
@@ -347,52 +393,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </label>
             </div>
           </div>
-
-          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-            <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Status</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health</span>
-                <select
-                  name="health"
-                  defaultValue={grow.status.health}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                >
-                  <option value="healthy">Healthy</option>
-                  <option value="warning">Warning</option>
-                  <option value="critical">Critical</option>
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Estimated Harvest Date</span>
-                <input
-                  name="estimatedHarvestDate"
-                  type="date"
-                  defaultValue={grow.status.estimatedHarvestDate}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </label>
-            </div>
-            <label className="mt-4 block">
-              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Status Notes</span>
-              <textarea
-                name="statusNotes"
-                defaultValue={grow.status.notes}
-                rows={3}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-              />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Notes</span>
-            <textarea
-              name="notes"
-              defaultValue={grow.notes}
-              rows={5}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            />
-          </label>
 
           <div className="mt-4">
             <div className="relative inline-block">
