@@ -14,26 +14,21 @@ function formatGermanDate(value: string): string {
   }).format(parsed);
 }
 
+function getHealthClasses(health: string): string {
+  switch (health.toLowerCase()) {
+    case "healthy":
+      return "text-emerald-600 dark:text-emerald-400";
+    case "warning":
+      return "text-amber-600 dark:text-amber-400";
+    case "critical":
+      return "text-red-600 dark:text-red-400";
+    default:
+      return "text-zinc-900 dark:text-zinc-100";
+  }
+}
+
 export default async function Home() {
   const grow = await getCurrentGrow();
-
-  const dynamicMetrics = [
-    { label: "Plant amount", value: grow.plantAmount },
-    { label: "Age (Days)", value: getDaysSince(grow.seededAt) },
-    { label: "Current Stage", value: grow.stage },
-    { label: "Plant Health", value: grow.status.health },
-    { label: "Pot Size (Liters)", value: grow.growSetup.potSizeLiters },
-    { label: "Expected Harvest Date", value: grow.status.estimatedHarvestDate },
-  ];
-
-  const setupMetrics = [
-    { label: "Grow Tent Size", value: grow.growSetup.growTentSize },
-    { label: "Lighting Type", value: grow.growSetup.lightingType },
-    { label: "Light Wattage", value: grow.growSetup.lightWattage },
-    { label: "Light Brand", value: grow.growSetup.lightBrand },
-    { label: "Ventilation", value: grow.growSetup.ventilation },
-    { label: "Growing Medium", value: grow.growSetup.growingMedium },
-  ];
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-8">
@@ -75,20 +70,20 @@ export default async function Home() {
                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.strain}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-zinc-500 dark:text-zinc-400">Stage</dt>
-                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.stage}</dd>
+                <dt className="text-zinc-500 dark:text-zinc-400">Plant Count</dt>
+                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plantAmount}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-zinc-500 dark:text-zinc-400">Seeded</dt>
-                <dd className="text-right text-zinc-900 dark:text-zinc-100">{getDaysSince(grow.seededAt)}</dd>
+                <dt className="text-zinc-500 dark:text-zinc-400">Growing Medium</dt>
+                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.growingMedium || "-"}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-zinc-500 dark:text-zinc-400">Light</dt>
-                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.lightSchedule}</dd>
+                <dt className="text-zinc-500 dark:text-zinc-400">Pot Size</dt>
+                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.potSizeLiters || "-"}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-zinc-500 dark:text-zinc-400">Updated</dt>
-                <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatGermanDate(grow.updatedAt)}</dd>
+                <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
+                <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatGermanDate(grow.seededAt)}</dd>
               </div>
             </dl>
             <p className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
@@ -98,28 +93,43 @@ export default async function Home() {
         </aside>
       </div>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Live Metrics</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {dynamicMetrics.map((item) => (
-            <article key={item.label} className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.label}</p>
-              <p className="mt-2 min-h-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100">{item.value}</p>
-            </article>
-          ))}
-        </div>
+      <section className="grid gap-6 lg:grid-cols-2">
+        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Current Status</h2>
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-3">
+              <dt className="text-zinc-500 dark:text-zinc-400">Stage</dt>
+              <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.stage}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-zinc-500 dark:text-zinc-400">Age</dt>
+              <dd className="text-right text-zinc-900 dark:text-zinc-100">{getDaysSince(grow.seededAt)} days</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-zinc-500 dark:text-zinc-400">Light Schedule</dt>
+              <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.lightSchedule}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Plant Health</h2>
+          <div className="space-y-3 text-sm">
+            <div>
+              <p className="text-zinc-500 dark:text-zinc-400">Health Status</p>
+              <p className={`mt-1 text-lg font-semibold ${getHealthClasses(grow.status.health)}`}>{grow.status.health}</p>
+            </div>
+            <div>
+              <p className="text-zinc-500 dark:text-zinc-400">Status Notes</p>
+              <p className="mt-1 whitespace-pre-wrap text-zinc-900 dark:text-zinc-100">{grow.status.notes || "-"}</p>
+            </div>
+          </div>
+        </article>
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Setup</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {setupMetrics.map((item) => (
-            <article key={item.label} className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">{item.label}</p>
-              <p className="mt-2 min-h-6 text-lg font-semibold text-zinc-900 dark:text-zinc-100">{item.value}</p>
-            </article>
-          ))}
-        </div>
+        <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Setup</h2>
+        <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">{grow.growSetup.setupText || "-"}</p>
       </section>
     </main>
   );

@@ -99,20 +99,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       plant: String(formData.get("plant") ?? ""),
       plantAmount: toNumber(formData.get("plantAmount"), 0),
       streamUrl: String(formData.get("streamUrl") ?? ""),
-      strain: String(formData.get("strain") ?? ""),
-      stage: String(formData.get("stage") ?? ""),
-      seededAt,
-      lightSchedule: String(formData.get("lightSchedule") ?? ""),
-      notes: String(formData.get("notes") ?? ""),
+      details: {
+        strain: String(formData.get("strain") ?? ""),
+        stage: String(formData.get("stage") ?? ""),
+        seededAt,
+        lightSchedule: String(formData.get("lightSchedule") ?? ""),
+        notes: String(formData.get("notes") ?? ""),
+      },
       growSetup: {
-        growTentSize: String(formData.get("growTentSize") ?? ""),
-        lightingType: String(formData.get("lightingType") ?? ""),
-        lightWattage: toNumber(formData.get("lightWattage"), 0),
-        lightBrand: String(formData.get("lightBrand") ?? ""),
-        ventilation: String(formData.get("ventilation") ?? ""),
-        carbonFilter: formData.get("carbonFilter") === "on",
-        growingMedium: String(formData.get("growingMedium") ?? ""),
-        potSizeLiters: toNumber(formData.get("potSizeLiters"), 0),
+        setupText: String(formData.get("setupText") ?? ""),
       },
       status: {
         health: String(formData.get("health") ?? "healthy"),
@@ -229,7 +224,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Strain</span>
                 <input
                   name="strain"
-                  defaultValue={grow.strain}
+                  defaultValue={grow.details.strain}
                   className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
@@ -237,7 +232,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stage</span>
                 <select
                   name="stage"
-                  defaultValue={grow.stage}
+                  defaultValue={grow.details.stage}
                   className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 >
                   <option value="seed">Seed</option>
@@ -253,7 +248,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <input
                   name="seededAt"
                   type="date"
-                  defaultValue={grow.seededAt}
+                  defaultValue={grow.details.seededAt}
                   className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
@@ -261,7 +256,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Light Schedule</span>
                 <input
                   name="lightSchedule"
-                  defaultValue={grow.lightSchedule}
+                  defaultValue={grow.details.lightSchedule}
                   className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
@@ -270,7 +265,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">General Notes</span>
               <textarea
                 name="notes"
-                defaultValue={grow.notes}
+                defaultValue={grow.details.notes}
                 rows={5}
                 className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
               />
@@ -328,77 +323,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
             <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Setup</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Tent Size</span>
-                <input
-                  name="growTentSize"
-                  defaultValue={grow.growSetup.growTentSize}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Lighting Type</span>
-                <input
-                  name="lightingType"
-                  defaultValue={grow.growSetup.lightingType}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Light Wattage</span>
-                <input
-                  name="lightWattage"
-                  type="number"
-                  min={0}
-                  defaultValue={grow.growSetup.lightWattage}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Light Brand</span>
-                <input
-                  name="lightBrand"
-                  defaultValue={grow.growSetup.lightBrand}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Ventilation</span>
-                <input
-                  name="ventilation"
-                  defaultValue={grow.growSetup.ventilation}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Growing Medium</span>
-                <input
-                  name="growingMedium"
-                  defaultValue={grow.growSetup.growingMedium}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Pot Size (L)</span>
-                <input
-                  name="potSizeLiters"
-                  type="number"
-                  min={0}
-                  defaultValue={grow.growSetup.potSizeLiters}
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
-              </label>
-              <label className="flex items-center gap-2 pt-7 text-sm text-zinc-700 dark:text-zinc-300">
-                <input
-                  name="carbonFilter"
-                  type="checkbox"
-                  defaultChecked={grow.growSetup.carbonFilter}
-                  className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                Carbon Filter Enabled
-              </label>
-            </div>
+            <label className="block">
+              <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Setup List</span>
+              <textarea
+                name="setupText"
+                defaultValue={grow.growSetup.setupText}
+                rows={7}
+                placeholder={"Tent: ...\nLight: ...\nFan: ..."}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              />
+            </label>
           </div>
 
           <div className="mt-4">
