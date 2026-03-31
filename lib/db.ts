@@ -149,7 +149,7 @@ const DEFAULT_GROW: GrowRecord = {
   },
 
   status: {
-    health: "healthy",
+    health: "Healthy",
     estimatedHarvestDate: "2026-06-15",
     notes: "Growing steadily so far",
   },
