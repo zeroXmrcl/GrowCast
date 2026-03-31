@@ -1,6 +1,19 @@
 import { getCurrentGrow } from "@/lib/db";
 import { getDaysSince } from "@/utils/daysSinceSeeding";
 
+function formatGermanDate(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(parsed);
+}
+
 export default async function Home() {
   const grow = await getCurrentGrow();
 
@@ -75,7 +88,7 @@ export default async function Home() {
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-zinc-500 dark:text-zinc-400">Updated</dt>
-                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.updatedAt}</dd>
+                <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatGermanDate(grow.updatedAt)}</dd>
               </div>
             </dl>
             <p className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">

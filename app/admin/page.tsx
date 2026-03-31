@@ -235,11 +235,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stage</span>
-                <input
+                <select
                   name="stage"
                   defaultValue={grow.stage}
                   className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                />
+                >
+                  <option value="seed">Seed</option>
+                  <option value="seedling">Seedling</option>
+                  <option value="vegetative">Vegetative</option>
+                  <option value="flowering">Flowering</option>
+                  <option value="harvest">Harvest</option>
+                  <option value="drying">Drying</option>
+                </select>
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Date of Seeding</span>
