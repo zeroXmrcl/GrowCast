@@ -36,9 +36,11 @@ export default async function Home() {
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <section className="w-full lg:w-2/3">
           <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-              <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{grow.name}</h1>
-            </div>
+            {grow.showGrowName ? (
+              <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
+                <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{grow.name}</h1>
+              </div>
+            ) : null}
             <div className="aspect-video w-full">
               {grow.streamUrl ? (
                 <iframe

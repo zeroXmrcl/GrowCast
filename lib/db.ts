@@ -34,6 +34,7 @@ export type GrowUpdate = {
 export type GrowRecord = {
   id: string;
   name: string;
+  showGrowName: boolean;
   plant: string;
   plantAmount: number;
   streamUrl: string;
@@ -54,6 +55,7 @@ export type GrowRecord = {
 type StoredGrowRecord = {
   id: string;
   name: string;
+  showGrowName: boolean;
   plant: string;
   plantAmount: number;
   streamUrl: string;
@@ -65,6 +67,7 @@ type StoredGrowRecord = {
 
 export type GrowUpdateInput = {
   name: string;
+  showGrowName?: boolean;
   plant: string;
   plantAmount?: number;
   streamUrl: string;
@@ -112,10 +115,15 @@ function asNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+function asBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
 function toStoredGrowRecord(record: GrowRecord): StoredGrowRecord {
   return {
     id: record.id,
     name: record.name,
+    showGrowName: record.showGrowName,
     plant: record.plant,
     plantAmount: record.plantAmount,
     streamUrl: record.streamUrl,
@@ -129,6 +137,7 @@ function toStoredGrowRecord(record: GrowRecord): StoredGrowRecord {
 const DEFAULT_GROW: GrowRecord = {
   id: "grow-001",
   name: "My First Tomato Grow",
+  showGrowName: true,
   plant: "Tomatoes",
   plantAmount: 3,
   streamUrl: "",
@@ -220,6 +229,7 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
   return {
     id: asString(parsed.id, DEFAULT_GROW.id),
     name: asString(parsed.name, DEFAULT_GROW.name),
+    showGrowName: asBoolean(parsed.showGrowName, DEFAULT_GROW.showGrowName),
     plant: asString(parsed.plant, DEFAULT_GROW.plant),
     plantAmount: asNumber(parsed.plantAmount, DEFAULT_GROW.plantAmount),
     streamUrl: asString(parsed.streamUrl, DEFAULT_GROW.streamUrl),
@@ -280,6 +290,7 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
   const nextGrow: GrowRecord = {
     ...current,
     name: input.name,
+    showGrowName: typeof input.showGrowName === "boolean" ? input.showGrowName : current.showGrowName,
     plant: input.plant,
     plantAmount: Number.isFinite(input.plantAmount) ? Number(input.plantAmount) : current.plantAmount,
     streamUrl: input.streamUrl,
