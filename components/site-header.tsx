@@ -11,7 +11,7 @@ export default function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-8">
         <Link href="/" className="flex items-center gap-3">
-          <span className="inline-block h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600" />
+          <img src="/growCastLogo_green.svg" alt="Logo" className="h-8 w-8"/>
           <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">GrowCast</span>
         </Link>
 
