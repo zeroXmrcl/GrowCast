@@ -2,9 +2,9 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
 const ADMIN_SESSION_COOKIE = "growcast_admin_session";
-const DEFAULT_ADMIN_USERNAME = "admin";
+const DEFAULT_ADMIN_USERNAME = "change-me";
 const DEFAULT_ADMIN_PASSWORD = "change-me";
-const DEFAULT_ADMIN_SESSION_SECRET = "change-me-too";
+const DEFAULT_ADMIN_SESSION_SECRET = "generate-me";
 
 function getAdminConfig() {
   return {

@@ -11,12 +11,7 @@ export type GrowDetails = {
 };
 
 export type GrowSetup = {
-  growTentSize: string;
-  lightingType: string;
-  lightWattage: number;
-  lightBrand: string;
-  ventilation: string;
-  carbonFilter: boolean;
+  setupText: string;
   growingMedium: string;
   potSizeLiters: number;
 };
@@ -47,7 +42,7 @@ export type GrowRecord = {
   status: GrowStatus;
   updates: GrowUpdate[];
 
-  // Backward-compatible flattened fields used by current dashboard/admin bindings.
+  // Flattened convenience fields derived from details.
   strain: string;
   stage: string;
   seededAt: string;
@@ -56,11 +51,25 @@ export type GrowRecord = {
   notes: string;
 };
 
+type StoredGrowRecord = {
+  id: string;
+  name: string;
+  plant: string;
+  plantAmount: number;
+  streamUrl: string;
+  details: GrowDetails;
+  growSetup: GrowSetup;
+  status: GrowStatus;
+  updates: GrowUpdate[];
+};
+
 export type GrowUpdateInput = {
   name: string;
   plant: string;
   plantAmount?: number;
   streamUrl: string;
+  details?: Partial<GrowDetails>;
+  // Legacy flat fields kept for compatibility during transition.
   strain?: string;
   stage?: string;
   seededAt?: string;
@@ -103,60 +112,65 @@ function asNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-function asBoolean(value: unknown, fallback = false): boolean {
-  return typeof value === "boolean" ? value : fallback;
+function toStoredGrowRecord(record: GrowRecord): StoredGrowRecord {
+  return {
+    id: record.id,
+    name: record.name,
+    plant: record.plant,
+    plantAmount: record.plantAmount,
+    streamUrl: record.streamUrl,
+    details: record.details,
+    growSetup: record.growSetup,
+    status: record.status,
+    updates: record.updates,
+  };
 }
 
 const DEFAULT_GROW: GrowRecord = {
   id: "grow-001",
-  name: "First Grow!",
-  plant: "Cannabis",
-  plantAmount: 1,
-  streamUrl: "https://www.youtube.com/embed/Q6xRHQswS38",
+  name: "My First Tomato Grow",
+  plant: "Tomatoes",
+  plantAmount: 3,
+  streamUrl: "",
 
   details: {
-    strain: "CBD Cure",
-    stage: "flowering",
+    strain: "Cherry Tomato",
+    stage: "vegetative",
     seededAt: "2026-03-01",
-    lightSchedule: "12/12",
+    lightSchedule: "16/8",
     updatedAt: "2026-03-30T21:58:00Z",
-    notes: "This is my first grow, I'm excited to see how it turns out!",
+    notes: "First attempt growing tomatoes – hoping for a good harvest!",
   },
 
   growSetup: {
-    growTentSize: "",
-    lightingType: "",
-    lightWattage: 0,
-    lightBrand: "",
-    ventilation: "",
-    carbonFilter: false,
-    growingMedium: "",
-    potSizeLiters: 0,
+    setupText: "Indoor on a windowsill",
+    growingMedium: "Soil",
+    potSizeLiters: 10,
   },
 
   status: {
-    health: "healthy",
-    estimatedHarvestDate: "",
-    notes: "",
+    health: "Healthy",
+    estimatedHarvestDate: "2026-06-15",
+    notes: "Growing steadily so far",
   },
 
   updates: [
     {
       id: "update-001",
       date: "2026-03-15",
-      title: "Switched to flowering",
-      description: "Changed light cycle to 12/12",
+      title: "Repotting",
+      description: "Moved plants into larger pots",
       imageUrl: "",
       likes: 0,
     },
   ],
 
-  strain: "CBD Cure",
-  stage: "flowering",
+  strain: "Cherry Tomato",
+  stage: "vegetative",
   seededAt: "2026-03-01",
-  lightSchedule: "12/12",
+  lightSchedule: "16/8",
   updatedAt: "2026-03-30T21:58:00Z",
-  notes: "This is my first grow, I'm excited to see how it turns out!",
+  notes: "First attempt growing tomatoes – hoping for a good harvest!",
 };
 
 function normalizeGrowRecord(raw: unknown): GrowRecord {
@@ -178,12 +192,7 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
   };
 
   const growSetup: GrowSetup = {
-    growTentSize: asString(rawSetup.growTentSize, DEFAULT_GROW.growSetup.growTentSize),
-    lightingType: asString(rawSetup.lightingType, DEFAULT_GROW.growSetup.lightingType),
-    lightWattage: asNumber(rawSetup.lightWattage, DEFAULT_GROW.growSetup.lightWattage),
-    lightBrand: asString(rawSetup.lightBrand, DEFAULT_GROW.growSetup.lightBrand),
-    ventilation: asString(rawSetup.ventilation, DEFAULT_GROW.growSetup.ventilation),
-    carbonFilter: asBoolean(rawSetup.carbonFilter, DEFAULT_GROW.growSetup.carbonFilter),
+    setupText: asString(rawSetup.setupText, DEFAULT_GROW.growSetup.setupText),
     growingMedium: asString(rawSetup.growingMedium, DEFAULT_GROW.growSetup.growingMedium),
     potSizeLiters: asNumber(rawSetup.potSizeLiters, DEFAULT_GROW.growSetup.potSizeLiters),
   };
@@ -232,7 +241,7 @@ async function ensureDataFile(): Promise<void> {
     await readFile(DATA_FILE, "utf8");
   } catch {
     await mkdir(DATA_DIR, { recursive: true });
-    await writeFile(DATA_FILE, JSON.stringify(DEFAULT_GROW, null, 2), "utf8");
+    await writeFile(DATA_FILE, JSON.stringify(toStoredGrowRecord(DEFAULT_GROW), null, 2), "utf8");
   }
 }
 
@@ -250,18 +259,21 @@ export async function getCurrentGrow(): Promise<GrowRecord> {
 export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRecord> {
   const current = await getCurrentGrow();
 
+  const incomingDetails = input.details ?? {};
   const seededAt =
-    typeof input.seededAt === "string" && parseDateOnly(input.seededAt)
-      ? input.seededAt
-      : current.details.seededAt;
+    typeof incomingDetails.seededAt === "string" && parseDateOnly(incomingDetails.seededAt)
+      ? incomingDetails.seededAt
+      : typeof input.seededAt === "string" && parseDateOnly(input.seededAt)
+        ? input.seededAt
+        : current.details.seededAt;
 
   const details: GrowDetails = {
     ...current.details,
-    strain: input.strain ?? current.details.strain,
-    stage: input.stage ?? current.details.stage,
+    strain: incomingDetails.strain ?? input.strain ?? current.details.strain,
+    stage: incomingDetails.stage ?? input.stage ?? current.details.stage,
     seededAt,
-    lightSchedule: input.lightSchedule ?? current.details.lightSchedule,
-    notes: input.notes ?? current.details.notes,
+    lightSchedule: incomingDetails.lightSchedule ?? input.lightSchedule ?? current.details.lightSchedule,
+    notes: incomingDetails.notes ?? input.notes ?? current.details.notes,
     updatedAt: new Date().toISOString(),
   };
 
@@ -289,7 +301,7 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
   };
 
   await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(DATA_FILE, JSON.stringify(nextGrow, null, 2), "utf8");
+  await writeFile(DATA_FILE, JSON.stringify(toStoredGrowRecord(nextGrow), null, 2), "utf8");
 
   return nextGrow;
 }
