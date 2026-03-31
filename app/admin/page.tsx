@@ -295,9 +295,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   defaultValue={grow.status.health}
                   className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 >
-                  <option value="healthy">Healthy</option>
-                  <option value="warning">Warning</option>
-                  <option value="critical">Critical</option>
+                  <option value="Healthy">Healthy</option>
+                  <option value="Warning">Warning</option>
+                  <option value="Critical">Critical</option>
                 </select>
               </label>
               <label className="block">

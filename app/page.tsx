@@ -1,5 +1,6 @@
 import { getCurrentGrow } from "@/lib/db";
 import { getDaysSince } from "@/utils/daysSinceSeeding";
+import SiteFooter from "@/components/site-footer";
 
 function formatGermanDate(value: string): string {
   const parsed = new Date(value);
@@ -131,6 +132,7 @@ export default async function Home() {
         <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Setup</h2>
         <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">{grow.growSetup.setupText || "-"}</p>
       </section>
+      <SiteFooter />
     </main>
   );
 }
