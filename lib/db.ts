@@ -128,49 +128,49 @@ function toStoredGrowRecord(record: GrowRecord): StoredGrowRecord {
 
 const DEFAULT_GROW: GrowRecord = {
   id: "grow-001",
-  name: "First Grow!",
-  plant: "Cannabis",
-  plantAmount: 1,
-  streamUrl: "https://www.youtube.com/embed/Q6xRHQswS38",
+  name: "My First Tomato Grow",
+  plant: "Tomatoes",
+  plantAmount: 3,
+  streamUrl: "",
 
   details: {
-    strain: "CBD Cure",
-    stage: "flowering",
+    strain: "Cherry Tomato",
+    stage: "vegetative",
     seededAt: "2026-03-01",
-    lightSchedule: "12/12",
+    lightSchedule: "16/8",
     updatedAt: "2026-03-30T21:58:00Z",
-    notes: "This is my first grow, I'm excited to see how it turns out!",
+    notes: "First attempt growing tomatoes – hoping for a good harvest!",
   },
 
   growSetup: {
-    setupText: "",
-    growingMedium: "",
-    potSizeLiters: 0,
+    setupText: "Indoor on a windowsill",
+    growingMedium: "Soil",
+    potSizeLiters: 10,
   },
 
   status: {
     health: "healthy",
-    estimatedHarvestDate: "",
-    notes: "",
+    estimatedHarvestDate: "2026-06-15",
+    notes: "Growing steadily so far",
   },
 
   updates: [
     {
       id: "update-001",
       date: "2026-03-15",
-      title: "Switched to flowering",
-      description: "Changed light cycle to 12/12",
+      title: "Repotting",
+      description: "Moved plants into larger pots",
       imageUrl: "",
       likes: 0,
     },
   ],
 
-  strain: "CBD Cure",
-  stage: "flowering",
+  strain: "Cherry Tomato",
+  stage: "vegetative",
   seededAt: "2026-03-01",
-  lightSchedule: "12/12",
+  lightSchedule: "16/8",
   updatedAt: "2026-03-30T21:58:00Z",
-  notes: "This is my first grow, I'm excited to see how it turns out!",
+  notes: "First attempt growing tomatoes – hoping for a good harvest!",
 };
 
 function normalizeGrowRecord(raw: unknown): GrowRecord {
