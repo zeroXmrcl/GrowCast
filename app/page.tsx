@@ -1,6 +1,7 @@
 import { getCurrentGrow } from "@/lib/db";
 import { getDaysSince } from "@/utils/daysSinceSeeding";
 import SiteFooter from "@/components/site-footer";
+import ReactMarkdown from "react-markdown";
 
 function formatGermanDate(value: string): string {
   const parsed = new Date(value);
@@ -90,9 +91,11 @@ export default async function Home() {
               </div>)}
             </dl>
             {grow.notes && (
-              <p className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
-                {grow.notes}
-              </p>)}
+              <div className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
+                <ReactMarkdown>
+                    {grow.notes}
+                </ReactMarkdown>
+              </div>)}
           </div>
         </aside>
       </div>
@@ -133,10 +136,15 @@ export default async function Home() {
 
       {grow.growSetup.setupText?.trim() && (
           <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Setup</h2>
-            <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
-              {grow.growSetup.setupText}
-            </p>
+            <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              Setup
+            </h2>
+
+            <div className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
+              <ReactMarkdown>
+                {grow.growSetup.setupText}
+              </ReactMarkdown>
+            </div>
           </section>
       )}
       <SiteFooter />
