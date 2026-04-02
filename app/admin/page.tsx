@@ -167,7 +167,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     required
                     disabled={!adminStatus.canLogin}
                     autoComplete="username"
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
               <label className="block">
@@ -178,7 +178,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     required
                     disabled={!adminStatus.canLogin}
                     autoComplete="current-password"
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
               <button
@@ -198,10 +198,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   return (
       <main className="mx-auto w-full max-w-3xl flex-1 p-4 md:p-8">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-6">
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Admin Panel</h1>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Edit the live stream and grow information.</p>
+            <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100">Admin Dashboard</h1>
           </div>
 
           <form action={saveGrowAction} className="space-y-4">
@@ -209,12 +208,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Plant</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Name</span>
+                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Title</span>
                   <input
                       name="name"
                       defaultValue={grow.name}
                       required
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
                 <label className="block">
@@ -222,7 +221,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <input
                       name="plant"
                       defaultValue={grow.plant}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
                 <label className="block">
@@ -232,7 +231,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       type="number"
                       min={0}
                       defaultValue={grow.plantAmount}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
                 <label className="block">
@@ -240,7 +239,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <input
                       name="strain"
                       defaultValue={grow.details.strain}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
                 <label className="block">
@@ -248,7 +247,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <select
                       name="stage"
                       defaultValue={grow.details.stage}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   >
                     <option value="seed">Seed</option>
                     <option value="seedling">Seedling</option>
@@ -264,7 +263,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       name="seededAt"
                       type="date"
                       defaultValue={grow.details.seededAt}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
                 <label className="block">
@@ -272,7 +271,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <input
                       name="lightSchedule"
                       defaultValue={grow.details.lightSchedule}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
               </div>
@@ -282,21 +281,23 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     name="notes"
                     defaultValue={grow.details.notes}
                     rows={5}
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
             </div>
 
             <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
               <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Stream</h2>
-              <label className="mb-4 flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+              <label className="mb-4 flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-zinc-100 dark:hover:bg-zinc-900">
                 <input
                     name="showGrowName"
                     type="checkbox"
                     defaultChecked={grow.showGrowName}
                     className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:border-zinc-700"
                 />
-                Show grow name above stream
+                <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+    Show grow title above stream
+  </span>
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stream URL</span>
@@ -304,7 +305,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     name="streamUrl"
                     defaultValue={grow.streamUrl}
                     placeholder="https://..."
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
             </div>
@@ -317,7 +318,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <select
                       name="health"
                       defaultValue={grow.status.health}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   >
                     <option value="Healthy">Healthy</option>
                     <option value="Warning">Warning</option>
@@ -330,7 +331,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       name="estimatedHarvestDate"
                       type="date"
                       defaultValue={grow.status.estimatedHarvestDate}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
               </div>
@@ -340,7 +341,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     name="statusNotes"
                     defaultValue={grow.status.notes}
                     rows={3}
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
             </div>
@@ -354,7 +355,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       name="growingMedium"
                       defaultValue={grow.growSetup.growingMedium}
                       placeholder="Soil, Coco, Hydro..."
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
                 <label className="block">
@@ -364,7 +365,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       type="number"
                       min={0}
                       defaultValue={grow.growSetup.potSizeLiters}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                   />
                 </label>
               </div>
@@ -375,7 +376,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     defaultValue={grow.growSetup.setupText}
                     rows={7}
                     placeholder={"Tent: ...\nLight: ...\nFan: ..."}
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-emerald-500 focus:ring dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
               </label>
             </div>
@@ -384,8 +385,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <div className="relative inline-block">
                 <button
                     type="submit"
-                    className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-                >
+                    className="rounded-md bg-[#068200] px-4 py-2 text-sm font-medium text-white hover:bg-[#057000]"                >
                   Save Changes
                 </button>
 

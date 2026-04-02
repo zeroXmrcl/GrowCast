@@ -1,6 +1,7 @@
 import { getCurrentGrow } from "@/lib/db";
 import { getDaysSince } from "@/utils/daysSinceSeeding";
 import SiteFooter from "@/components/site-footer";
+import ReactMarkdown from "react-markdown";
 
 function formatGermanDate(value: string): string {
   const parsed = new Date(value);
@@ -64,34 +65,37 @@ export default async function Home() {
           <div className="h-full rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
             <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Grow Info</h2>
             <dl className="space-y-3 text-sm">
-              <div className="flex justify-between gap-3">
+              {grow.plant && (<div className="flex justify-between gap-3">
                 <dt className="text-zinc-500 dark:text-zinc-400">Plant</dt>
                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plant}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
+              </div>)}
+              {grow.strain && (<div className="flex justify-between gap-3">
                 <dt className="text-zinc-500 dark:text-zinc-400">Strain</dt>
                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.strain}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
+              </div>)}
+              {(grow.plantAmount != 0) && (<div className="flex justify-between gap-3">
                 <dt className="text-zinc-500 dark:text-zinc-400">Plant Count</dt>
                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plantAmount}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
+              </div>)}
+              {grow.growSetup.growingMedium && (<div className="flex justify-between gap-3">
                 <dt className="text-zinc-500 dark:text-zinc-400">Growing Medium</dt>
                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.growingMedium || "-"}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
+              </div>)}
+              {(grow.growSetup.potSizeLiters != 0) && (<div className="flex justify-between gap-3">
                 <dt className="text-zinc-500 dark:text-zinc-400">Pot Size</dt>
                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.potSizeLiters || "-"}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
+              </div>)}
+              {(formatGermanDate(grow.seededAt) != '01.01.2001') && (<div className="flex justify-between gap-3">
                 <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatGermanDate(grow.seededAt)}</dd>
-              </div>
+              </div>)}
             </dl>
-            <p className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
-              {grow.notes}
-            </p>
+            {grow.notes && (
+              <div className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
+                <ReactMarkdown>
+                    {grow.notes}
+                </ReactMarkdown>
+              </div>)}
           </div>
         </aside>
       </div>
@@ -108,10 +112,10 @@ export default async function Home() {
               <dt className="text-zinc-500 dark:text-zinc-400">Age</dt>
               <dd className="text-right text-zinc-900 dark:text-zinc-100">{getDaysSince(grow.seededAt)} days</dd>
             </div>
-            <div className="flex justify-between gap-3">
+            {grow.lightSchedule && (<div className="flex justify-between gap-3">
               <dt className="text-zinc-500 dark:text-zinc-400">Light Schedule</dt>
               <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.lightSchedule}</dd>
-            </div>
+            </div>)}
           </dl>
         </article>
 
@@ -130,10 +134,19 @@ export default async function Home() {
         </article>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Setup</h2>
-        <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">{grow.growSetup.setupText || "-"}</p>
-      </section>
+      {grow.growSetup.setupText?.trim() && (
+          <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+            <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              Setup
+            </h2>
+
+            <div className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
+              <ReactMarkdown>
+                {grow.growSetup.setupText}
+              </ReactMarkdown>
+            </div>
+          </section>
+      )}
       <SiteFooter />
     </main>
   );
