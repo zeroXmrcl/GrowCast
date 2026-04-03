@@ -91,6 +91,13 @@ export default function SiteHeader() {
                                             className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                                             Settings
                                         </div>*/}
+                                        <Link
+                                            href="/gallery"
+                                            className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                                            onClick={() => setMenuOpen(false)}
+                                        >
+                                            Gallery
+                                        </Link>
 
                                         <Link
                                             href="/admin"
