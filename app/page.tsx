@@ -36,7 +36,7 @@ export default async function Home() {
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-8">
       <div className="flex w-full flex-col gap-6 lg:flex-row">
         <section className="w-full lg:w-2/3">
-          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100  dark:border-zinc-800 dark:bg-zinc-900">
             {grow.showGrowName ? (
               <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
                 <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{grow.name}</h1>
@@ -62,7 +62,7 @@ export default async function Home() {
         </section>
 
         <aside className="w-full lg:w-1/3">
-          <div className="h-full rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="h-full rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
             <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Grow Info</h2>
             <dl className="space-y-3 text-sm">
               {grow.plant && (<div className="flex justify-between gap-3">
@@ -101,7 +101,7 @@ export default async function Home() {
       </div>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <article className="rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
           <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Current Status</h2>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-3">
@@ -119,7 +119,7 @@ export default async function Home() {
           </dl>
         </article>
 
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <article className="rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
           <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Plant Health</h2>
           <div className="space-y-3 text-sm">
             <div>
@@ -135,7 +135,7 @@ export default async function Home() {
       </section>
 
       {grow.growSetup.setupText?.trim() && (
-          <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <section className="rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
             <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               Setup
             </h2>
