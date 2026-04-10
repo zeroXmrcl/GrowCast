@@ -1,7 +1,9 @@
 import { getCurrentGrow } from "@/lib/db";
 import { getDaysSince } from "@/utils/daysSinceSeeding";
+import getSetupImages from "@/lib/getSetupImages";
 import SiteFooter from "@/components/site-footer";
 import ReactMarkdown from "react-markdown";
+import Image from "next/image";
 
 function formatGermanDate(value: string): string {
   const parsed = new Date(value);
@@ -31,6 +33,7 @@ function getHealthClasses(health: string): string {
 
 export default async function Home() {
   const grow = await getCurrentGrow();
+  const setupImages = getSetupImages();
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-8">
@@ -145,6 +148,21 @@ export default async function Home() {
                 {grow.growSetup.setupText}
               </ReactMarkdown>
             </div>
+
+            {setupImages.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+                  {setupImages.map((src, i) => (
+                      <Image
+                          key={i}
+                          src={src}
+                          alt={`${i + 1}`}
+                          width={500}
+                          height={500}
+                          className="rounded-xl border border-zinc-200 dark:border-zinc-800"
+                      />
+                  ))}
+                </div>
+            )}
           </section>
       )}
       <SiteFooter />
