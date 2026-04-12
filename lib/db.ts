@@ -137,14 +137,14 @@ function toStoredGrowRecord(record: GrowRecord): StoredGrowRecord {
 const DEFAULT_GROW: GrowRecord = {
   id: "grow-001",
   name: "My First Tomato Grow",
-  showGrowName: true,
+  showGrowName: false,
   plant: "Tomatoes",
   plantAmount: 3,
   streamUrl: "",
 
   details: {
     strain: "Cherry Tomato",
-    stage: "vegetative",
+    stage: "Vegetative",
     seededAt: "2026-03-01",
     lightSchedule: "16/8",
     updatedAt: "2026-03-30T21:58:00Z",
