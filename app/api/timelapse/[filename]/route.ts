@@ -17,7 +17,7 @@ export async function GET() {
             status: 200,
             headers: {
                 "Content-Type": "video/mp4",
-                "Cache-Control": "public, max-age=3600",
+                "Cache-Control": "no-store, must-revalidate",
             },
         });
     } catch {

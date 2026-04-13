@@ -34,7 +34,7 @@ export async function getSnapshotFiles(): Promise<string[]> {
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)
         .filter((name) => /\.(webp|jpg|jpeg|png)$/i.test(name))
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+        .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 }
 
 export async function getTimelapseFiles(): Promise<string[]> {
