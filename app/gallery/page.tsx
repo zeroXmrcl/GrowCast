@@ -2,6 +2,8 @@ import SnapshotGallery from "@/components/snapshot-gallery";
 import TimelapsePlayer from "@/components/timelapse-player";
 import { isTimelapsePluginInstalled } from "@/lib/extension-status";
 
+export const dynamic = "force-dynamic";
+
 export default async function GalleryPage() {
     const pluginInstalled = await isTimelapsePluginInstalled();
 
