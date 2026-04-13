@@ -19,12 +19,12 @@ export default async function SnapshotGallery() {
 
     if (snapshots.length === 0) {
         return (
-            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            <section className="border-t border-zinc-200 p-4 pt-15 dark:border-zinc-800">
+                <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
                     Snapshots
                 </h2>
-                <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                    No snapshots available yet.
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    No snapshots taken yet.
                 </p>
             </section>
         );

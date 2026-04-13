@@ -6,10 +6,12 @@ export default async function TimelapsePlayer() {
 
     if (!latestFile) {
         return (
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-900/70 p-6 shadow-xl">
-                <h2 className="text-xl font-semibold text-white">Timelapse</h2>
-                <p className="mt-2 text-sm text-zinc-400">
-                    No timelapse available yet.
+            <section className="p-4">
+                <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
+                    Timelapse
+                </h2>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    No timelapse created yet.
                 </p>
             </section>
         );
