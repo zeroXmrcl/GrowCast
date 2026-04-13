@@ -1,6 +1,9 @@
 import { promises as fs } from "fs";
 import path from "path";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const TIMELAPSE_FILE = path.resolve(
     process.cwd(),
     "extensions",
@@ -17,7 +20,7 @@ export async function GET() {
             status: 200,
             headers: {
                 "Content-Type": "video/mp4",
-                "Cache-Control": "public, max-age=3600",
+                "Cache-Control": "no-store, must-revalidate",
             },
         });
     } catch {

@@ -3,6 +3,9 @@ import { promises as fs } from "fs";
 import path from "path";
 import { SNAPSHOT_DIR } from "@/lib/extension-status";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function getContentType(filename: string): string {
     const lower = filename.toLowerCase();
 
@@ -35,7 +38,7 @@ export async function GET(
             status: 200,
             headers: {
                 "Content-Type": getContentType(filename),
-                "Cache-Control": "public, max-age=3600",
+                "Cache-Control": "no-store, must-revalidate",
             },
         });
     } catch {
