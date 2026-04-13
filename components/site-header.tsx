@@ -12,6 +12,9 @@ export default function SiteHeader() {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement | null>(null);
 
+    const [logoText, setLogoText] = useState("GrowCast");
+    const [logoFading, setLogoFading] = useState(false);
+
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (
@@ -28,6 +31,40 @@ export default function SiteHeader() {
         };
     }, []);
 
+    useEffect(() => {
+        const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+        timeouts.push(
+            setTimeout(() => {
+                setLogoFading(true);
+
+                timeouts.push(
+                    setTimeout(() => {
+                        setLogoText("Welcome.");
+                        setLogoFading(false);
+
+                        timeouts.push(
+                            setTimeout(() => {
+                                setLogoFading(true);
+
+                                timeouts.push(
+                                    setTimeout(() => {
+                                        setLogoText("GrowCast");
+                                        setLogoFading(false);
+                                    }, 600)
+                                );
+                            }, 1200)
+                        );
+                    }, 600)
+                );
+            }, 600)
+        );
+
+        return () => {
+            timeouts.forEach(clearTimeout);
+        };
+    }, []);
+
     return (
         <header
             className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
@@ -39,10 +76,14 @@ export default function SiteHeader() {
                         width={32}
                         height={32}
                         priority={true}
-                    /> <span
-                    className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            GrowCast
-          </span>
+                    />
+                    <span
+                        className={`text-lg font-semibold text-zinc-900 transition-opacity duration-600 ease-in-out dark:text-zinc-100 ${
+                            logoFading ? "opacity-0" : "opacity-100"
+                        }`}
+                    >
+                        {logoText}
+                    </span>
                 </Link>
 
                 <div className="relative" ref={menuRef}>
