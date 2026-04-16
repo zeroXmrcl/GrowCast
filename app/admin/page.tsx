@@ -117,11 +117,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   if (!isLoggedIn) {
     return (
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-4">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6  dark:border-zinc-800 dark:bg-zinc-950">
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Admin Login</h1>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Only authenticated users can access settings.
-            </p>
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Sign in</h1>
 
             {params.error === "invalid_credentials" ? (
                 <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
@@ -131,7 +128,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             {params.error === "rate_limited" ? (
                 <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                  Too many failed logins. Try again in {params.retry ?? "a few minutes"} seconds.
+                  Too many failed logins. Try again later.
                 </p>
             ) : null}
 
@@ -163,6 +160,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Username</span>
                 <input
                     name="username"
+                    placeholder="Username"
                     type="text"
                     required
                     disabled={!adminStatus.canLogin}
@@ -175,6 +173,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <input
                     name="password"
                     type="password"
+                    placeholder="Password"
                     required
                     disabled={!adminStatus.canLogin}
                     autoComplete="current-password"
