@@ -199,15 +199,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <main className="mx-auto w-full max-w-3xl flex-1 p-4 md:p-8">
         <div className="bg-white p-6  dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100">Admin Dashboard</h1>
+            <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100">Settings</h1>
           </div>
 
           <form action={saveGrowAction} className="space-y-4">
             <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Plant</h2>
+              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">General</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Title</span>
+                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Name</span>
                   <input
                       name="name"
                       defaultValue={grow.name}
@@ -252,7 +252,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <option value="Seedling">Seedling</option>
                     <option value="Vegetative">Vegetative</option>
                     <option value="Flowering">Flowering</option>
-{/*                    <option value="Harvest">Harvest</option>*/}
                     <option value="Drying">Drying</option>
                   </select>
                 </label>
@@ -295,8 +294,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:border-zinc-700"
                 />
                 <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-    Show grow title above stream
-  </span>
+                  Show grow name above stream
+                </span>
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stream URL</span>
@@ -310,7 +309,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
 
             <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Status</h2>
+              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Vital Status</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health</span>
@@ -346,10 +345,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
 
             <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Setup</h2>
+              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Hardware setup</h2>
               <div className="mb-4 grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Growing Medium</span>
+                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Medium</span>
                   <input
                       name="growingMedium"
                       defaultValue={grow.growSetup.growingMedium}
@@ -369,7 +368,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </label>
               </div>
               <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Setup List</span>
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Setup description</span>
                 <textarea
                     name="setupText"
                     defaultValue={grow.growSetup.setupText}
