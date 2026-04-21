@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import SiteHeader from "@/components/site-header";
+import { getCurrentGrow } from "@/lib/db";
 import "./globals.css";
 import React from "react";
 
@@ -14,10 +15,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "GrowCast",
-  description: "Watch my plants grow!",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const grow = await getCurrentGrow();
+
+  return {
+    title: "GrowCast",
+    description: `Watch my ${grow.plant} grow!`,
+  };
+}
 
 export default function RootLayout({
   children,
