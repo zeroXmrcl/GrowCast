@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "GrowCast",
-    description: `Watch my ${grow.plant} grow!`,
+    description: `Watch my ${grow.plant || "Plants"} grow!`,
   };
 }
 
