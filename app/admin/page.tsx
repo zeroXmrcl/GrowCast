@@ -324,12 +324,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   </select>
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Estimated Harvest Date</span>
+                  <span className="mb-1 block text-sm text-zinc-400 cursor-not-allowed">
+                    Estimated Harvest Date
+                  </span>
+
                   <input
                       name="estimatedHarvestDate"
                       type="date"
                       defaultValue={grow.status.estimatedHarvestDate}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      disabled
+                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm bg-zinc-100 text-zinc-400 cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
                   />
                 </label>
               </div>
