@@ -5,6 +5,8 @@ import SiteFooter from "@/components/site-footer";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
+
 function formatGermanDate(value: string): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
