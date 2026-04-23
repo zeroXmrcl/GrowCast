@@ -117,11 +117,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   if (!isLoggedIn) {
     return (
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-4">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-6  dark:border-zinc-800 dark:bg-zinc-950">
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Admin Login</h1>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Only authenticated users can access settings.
-            </p>
+          <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Sign in</h1>
 
             {params.error === "invalid_credentials" ? (
                 <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
@@ -131,7 +128,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             {params.error === "rate_limited" ? (
                 <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                  Too many failed logins. Try again in {params.retry ?? "a few minutes"} seconds.
+                  Too many failed logins. Try again later.
                 </p>
             ) : null}
 
@@ -163,6 +160,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Username</span>
                 <input
                     name="username"
+                    placeholder="Username"
                     type="text"
                     required
                     disabled={!adminStatus.canLogin}
@@ -175,6 +173,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <input
                     name="password"
                     type="password"
+                    placeholder="Password"
                     required
                     disabled={!adminStatus.canLogin}
                     autoComplete="current-password"
@@ -200,15 +199,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       <main className="mx-auto w-full max-w-3xl flex-1 p-4 md:p-8">
         <div className="bg-white p-6  dark:border-zinc-800 dark:bg-zinc-950">
           <div className="mb-6">
-            <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100">Admin Dashboard</h1>
+            <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100">Settings</h1>
           </div>
 
           <form action={saveGrowAction} className="space-y-4">
             <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Plant</h2>
+              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">General</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Title</span>
+                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Name</span>
                   <input
                       name="name"
                       defaultValue={grow.name}
@@ -253,7 +252,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <option value="Seedling">Seedling</option>
                     <option value="Vegetative">Vegetative</option>
                     <option value="Flowering">Flowering</option>
-{/*                    <option value="Harvest">Harvest</option>*/}
                     <option value="Drying">Drying</option>
                   </select>
                 </label>
@@ -296,8 +294,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:border-zinc-700"
                 />
                 <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-    Show grow title above stream
-  </span>
+                  Show grow name above stream
+                </span>
               </label>
               <label className="block">
                 <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stream URL</span>
@@ -311,7 +309,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
 
             <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Status</h2>
+              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Vital Status</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health</span>
@@ -326,12 +324,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   </select>
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Estimated Harvest Date</span>
+                  <span className="mb-1 block text-sm text-zinc-400 cursor-not-allowed">
+                    Estimated Harvest Date
+                  </span>
+
                   <input
                       name="estimatedHarvestDate"
                       type="date"
                       defaultValue={grow.status.estimatedHarvestDate}
-                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                      disabled
+                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm bg-zinc-100 text-zinc-400 cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
                   />
                 </label>
               </div>
@@ -347,10 +349,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </div>
 
             <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Grow Setup</h2>
+              <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Hardware setup</h2>
               <div className="mb-4 grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Growing Medium</span>
+                  <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Medium</span>
                   <input
                       name="growingMedium"
                       defaultValue={grow.growSetup.growingMedium}
@@ -370,7 +372,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </label>
               </div>
               <label className="block">
-                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Setup List</span>
+                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Setup description</span>
                 <textarea
                     name="setupText"
                     defaultValue={grow.growSetup.setupText}

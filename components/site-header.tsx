@@ -91,14 +91,14 @@ export default function SiteHeader() {
                         <nav className="flex items-center gap-3">
                             <Link
                                 href="/"
-                                className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                                className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
                             >
                                 Dashboard
                             </Link>
                             <form action="/admin/logout" method="post">
                                 <button
                                     type="submit"
-                                    className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                                    className="cursor-pointer px-3 py-2 text-sm text-red-700 hover:text-red-800 dark:text-red-300 dark:hover:text-red-400"
                                 >
                                     Sign Out
                                 </button>
