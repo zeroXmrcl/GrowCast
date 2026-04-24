@@ -9,27 +9,11 @@ export default function SiteHeader() {
     const pathname = usePathname();
     const isAdminRoute = pathname.startsWith("/admin");
 
-    const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement | null>(null);
 
     const [logoText, setLogoText] = useState("GrowCast");
     const [logoFading, setLogoFading] = useState(false);
 
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (
-                menuRef.current &&
-                !menuRef.current.contains(event.target as Node)
-            ) {
-                setMenuOpen(false);
-            }
-        }
-
-        document.addEventListener("click", handleClickOutside);
-        return () => {
-            document.removeEventListener("click", handleClickOutside);
-        };
-    }, []);
 
     useEffect(() => {
         const timeouts: ReturnType<typeof setTimeout>[] = [];
@@ -106,50 +90,21 @@ export default function SiteHeader() {
                         </nav>
                     ) : (
                         <>
-                            <button
-                                type="button"
-                                onClick={() => setMenuOpen((prev) => !prev)}
-                                className="flex h-10 w-10 items-center justify-center rounded-md text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                                aria-label="Open menu"
-                            >
-                <span className="flex flex-col gap-1">
-                  <span className="block h-0.5 w-5 bg-current"></span>
-                  <span className="block h-0.5 w-5 bg-current"></span>
-                  <span className="block h-0.5 w-5 bg-current"></span>
-                </span>
-                            </button>
+                            <nav className="flex items-center gap-3">
+                                <Link
+                                    href="/gallery"
+                                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
+                                >
+                                    Gallery
+                                </Link>
 
-                            {menuOpen && (
-                                <div
-                                    className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
-
-                                    <div className="py-2">
-{/*
-                                        <div className="my-2 border-t border-zinc-200 dark:border-zinc-800"></div>
-*/}
-
-{/*                                        <div
-                                            className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                                            Settings
-                                        </div>*/}
-                                        <Link
-                                            href="/gallery"
-                                            className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                                            onClick={() => setMenuOpen(false)}
-                                        >
-                                            Gallery
-                                        </Link>
-
-                                        <Link
-                                            href="/admin"
-                                            className="block px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                                            onClick={() => setMenuOpen(false)}
-                                        >
-                                            Settings
-                                        </Link>
-                                    </div>
-                                </div>
-                            )}
+                                <Link
+                                    href="/admin"
+                                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
+                                >
+                                    Settings
+                                </Link>
+                            </nav>
                         </>
                     )}
                 </div>

@@ -59,7 +59,7 @@ export default async function Home() {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-zinc-800 text-zinc-100">
-                  <p>Currently under maintenance</p>
+                  <p>No Stream configured</p>
                 </div>
               )}
             </div>
