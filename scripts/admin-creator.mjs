@@ -1,6 +1,6 @@
-import { randomBytes, scryptSync } from "node:crypto";
-import { createInterface } from "node:readline";
-import { stdin as input, stdout as output } from "node:process";
+import {randomBytes, scryptSync} from "node:crypto";
+import {createInterface} from "node:readline";
+import {stdin as input, stdout as output} from "node:process";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -78,7 +78,7 @@ function hashAdminPasswordForEnv(plainPassword) {
 }
 
 async function main() {
-    const rl = createInterface({ input, output });
+    const rl = createInterface({input, output});
 
     try {
         const rawUsername = await question(rl, "Admin username: ");
@@ -123,7 +123,7 @@ async function main() {
             console.log(`Existing .env.local backed up to: ${path.basename(backupPath)}`);
         }
 
-        fs.writeFileSync(envPath, envContent, { encoding: "utf8", mode: 0o600 });
+        fs.writeFileSync(envPath, envContent, {encoding: "utf8", mode: 0o600});
 
         console.log("\nDone.");
         console.log(".env.local has been created.");

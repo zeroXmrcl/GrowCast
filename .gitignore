@@ -40,6 +40,11 @@ yarn-error.log*
 
 # IDE
 .idea
+.fleet
+
+workspace.xml
+
+/data
 
 # typescript
 *.tsbuildinfo
