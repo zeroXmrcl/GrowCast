@@ -1,4 +1,4 @@
-import { getTimelapseFiles } from "@/lib/extension-status";
+import {getTimelapseFiles} from "@/lib/extension-status";
 
 export default async function TimelapsePlayer() {
     const files = await getTimelapseFiles();
@@ -24,9 +24,6 @@ export default async function TimelapsePlayer() {
             <div className="flex items-end justify-between gap-4">
                 <div>
                     <h2 className="text-xl font-semibold text-white">Timelapse</h2>
-                    <p className="mt-1 text-sm text-zinc-400">
-                        Latest generated video
-                    </p>
                 </div>
             </div>
 
@@ -36,8 +33,8 @@ export default async function TimelapsePlayer() {
                     preload="metadata"
                     className="block h-auto w-full"
                 >
-                    <source src={videoUrl} type="video/mp4" />
-                    Your browser does not support the video tag.
+                    <source src={videoUrl} type="video/mp4"/>
+                    Your browser does not support video.
                 </video>
             </div>
         </section>
