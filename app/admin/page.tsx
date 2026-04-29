@@ -134,7 +134,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
 
                     {params.error === "login_disabled" ? (
                         <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                            Admin login is disabled because the admin configuration is incomplete.
+                            Admin login is disabled as the admin configuration is incomplete.
                         </p>
                     ) : null}
 

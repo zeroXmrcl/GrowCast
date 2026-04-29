@@ -24,7 +24,7 @@ export default function SiteHeader() {
 
                 timeouts.push(
                     setTimeout(() => {
-                        setLogoText("Welcome.");
+                        setLogoText("Welcome");
                         setLogoFading(false);
 
                         timeouts.push(
