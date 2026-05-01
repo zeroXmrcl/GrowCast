@@ -3,13 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import {usePathname} from "next/navigation";
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 
 export default function SiteHeader() {
     const pathname = usePathname();
     const isAdminRoute = pathname.startsWith("/admin");
-
-    const menuRef = useRef<HTMLDivElement | null>(null);
 
     const [logoText, setLogoText] = useState("GrowCast");
     const [logoFading, setLogoFading] = useState(false);
@@ -24,7 +22,7 @@ export default function SiteHeader() {
 
                 timeouts.push(
                     setTimeout(() => {
-                        setLogoText("Welcome.");
+                        setLogoText("Welcome");
                         setLogoFading(false);
 
                         timeouts.push(
@@ -70,7 +68,7 @@ export default function SiteHeader() {
                     </span>
                 </Link>
 
-                <div className="relative" ref={menuRef}>
+                <div className="relative">
                     {isAdminRoute ? (
                         <nav className="flex items-center gap-3">
                             <Link

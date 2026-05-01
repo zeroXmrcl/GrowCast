@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
+import { randomUUID, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -13,9 +13,7 @@ const loginAttemptStore = new Map<string, LoginAttemptState>();
 
 type StoredAdminSession = {
   sid: string;
-  username: string;
   expiresAt: number;
-  createdAt: number;
 };
 
 type LoginAttemptState = {
@@ -158,18 +156,6 @@ function safeEqualBuffer(a: Buffer, b: Buffer): boolean {
   return timingSafeEqual(a, b);
 }
 
-export function hashAdminPasswordForEnv(plainPassword: string): string {
-  const normalized = normalizePasswordInput(plainPassword);
-
-  if (!validatePasswordInput(normalized)) {
-    throw new Error("Invalid password format.");
-  }
-
-  const salt = randomBytes(16);
-  const derivedKey = scryptSync(normalized, salt, 64);
-
-  return `scrypt$${salt.toString("base64url")}$${derivedKey.toString("base64url")}`;
-}
 
 function verifyPassword(passwordInput: string, storedHash: string): boolean {
   try {
@@ -317,9 +303,6 @@ export function getAdminAuthStatus(): AdminSetupStatus {
   return getAdminSetupStatus();
 }
 
-export function isAdminLoginEnabled(): boolean {
-  return getAdminSetupStatus().canLogin;
-}
 
 export async function isAdminAuthenticated(): Promise<boolean> {
   clearExpiredSessions();
@@ -418,8 +401,6 @@ export async function loginAdmin(
 
   sessionStore.set(sid, {
     sid,
-    username: config.username,
-    createdAt: now,
     expiresAt,
   });
 

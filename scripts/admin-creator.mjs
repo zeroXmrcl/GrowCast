@@ -19,6 +19,7 @@ function askHidden(query) {
             input,
             output,
             terminal: true,
+            historySize: 0,
         });
 
         const onDataHandler = (char) => {
@@ -40,7 +41,6 @@ function askHidden(query) {
         input.on("data", onDataHandler);
 
         rl.question(query, (value) => {
-            rl.history = rl.history.slice(1);
             rl.close();
             output.write("\n");
             resolve(value);
