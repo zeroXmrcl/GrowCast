@@ -8,6 +8,7 @@ import {useEffect, useState} from "react";
 export default function SiteHeader() {
     const pathname = usePathname();
     const isAdminRoute = pathname.startsWith("/admin");
+    const isGalleryRoute = pathname.startsWith("/gallery");
 
     const [logoText, setLogoText] = useState("GrowCast");
     const [logoFading, setLogoFading] = useState(false);
@@ -47,6 +48,66 @@ export default function SiteHeader() {
         };
     }, []);
 
+
+    let navContent;
+
+    if (isAdminRoute) {
+        navContent = (
+            <nav className="flex items-center gap-3">
+                <Link
+                    href="/"
+                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
+                >
+                    Dashboard
+                </Link>
+                <form action="/admin/logout" method="post">
+                    <button
+                        type="submit"
+                        className="cursor-pointer px-3 py-2 text-sm text-red-700 hover:text-red-800 dark:text-red-300 dark:hover:text-red-400"
+                    >
+                        Sign Out
+                    </button>
+                </form>
+            </nav>
+        );
+    } else if (isGalleryRoute) {
+        navContent = (
+            <nav className="flex items-center gap-3">
+                <Link
+                    href="/"
+                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
+                >
+                    Dashboard
+                </Link>
+
+                <Link
+                    href="/admin"
+                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
+                >
+                    Settings
+                </Link>
+            </nav>
+        );
+    } else {
+        navContent = (
+            <nav className="flex items-center gap-3">
+                <Link
+                    href="/gallery"
+                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
+                >
+                    Gallery
+                </Link>
+
+                <Link
+                    href="/admin"
+                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
+                >
+                    Settings
+                </Link>
+            </nav>
+        );
+    }
+
     return (
         <header
             className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
@@ -69,42 +130,7 @@ export default function SiteHeader() {
                 </Link>
 
                 <div className="relative">
-                    {isAdminRoute ? (
-                        <nav className="flex items-center gap-3">
-                            <Link
-                                href="/"
-                                className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
-                            >
-                                Dashboard
-                            </Link>
-                            <form action="/admin/logout" method="post">
-                                <button
-                                    type="submit"
-                                    className="cursor-pointer px-3 py-2 text-sm text-red-700 hover:text-red-800 dark:text-red-300 dark:hover:text-red-400"
-                                >
-                                    Sign Out
-                                </button>
-                            </form>
-                        </nav>
-                    ) : (
-                        <>
-                            <nav className="flex items-center gap-3">
-                                <Link
-                                    href="/gallery"
-                                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
-                                >
-                                    Gallery
-                                </Link>
-
-                                <Link
-                                    href="/admin"
-                                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
-                                >
-                                    Settings
-                                </Link>
-                            </nav>
-                        </>
-                    )}
+                    {navContent}
                 </div>
             </div>
         </header>
