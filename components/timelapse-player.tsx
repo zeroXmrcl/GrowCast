@@ -15,7 +15,7 @@ export default async function TimelapsePlayer() {
         );
     }
 
-    const videoUrl = `/api/timelapse/${encodeURIComponent(latestFile)}`;
+    const videoUrl = "/api/timelapse";
 
     return (
         <section className="space-y-5">
