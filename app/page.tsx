@@ -1,4 +1,5 @@
 import {getCurrentGrow} from "@/lib/db";
+import DashPictures from "@/components/dash-pictures";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
 import getSetupImages from "@/lib/getSetupImages";
 import SiteFooter from "@/components/site-footer";
@@ -144,6 +145,8 @@ export default async function Home() {
                     </div>
                 </article>
             </section>
+
+            <DashPictures />
 
             {grow.growSetup.setupText?.trim() && (
                 <section
