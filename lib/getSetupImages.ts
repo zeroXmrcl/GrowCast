@@ -14,5 +14,8 @@ export default function getSetupImages() {
                 path.extname(file).toLowerCase()
             )
         )
+        .sort((a, b) =>
+            a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" })
+        )
         .map((file) => `/setup/${file}`);
 }

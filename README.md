@@ -100,6 +100,7 @@ data/
   current-grow.json            # Persisted grow data
 public/
   setup/                       # Optional setup photos shown on homepage
+  yourPictures/                # Optional user uploaded pictures shown on dashboard
 extensions/
   GrowCast-Timelapse/          # Optional plugin folder (not included)
 ```
