@@ -15,6 +15,8 @@ GrowCast lets you share your grow in real time. Visitors can view the live strea
 
 ## 2. Demo 
 
+![Mockup_v1.1.0](assets/mockup.webp)
+
 To see a live demo, visit [my instance](https://grow.0xmarcel.com).
 
 ## 3. Getting Started
