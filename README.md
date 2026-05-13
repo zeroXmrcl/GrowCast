@@ -9,8 +9,8 @@ GrowCast lets you share your grow in real time. Visitors can view the live strea
 
 ### Key features
 - Live stream embed on the homepage (RTSP camera via MediaMTX (RTSP -> HLS))
-- Public grow dashboard (plant data, stage, age, health, setup notes)
-- Markdown support for notes/setup text (`react-markdown`)
+- Public grow dashboard
+- Markdown support for notes/setup text
 - Optional gallery page for snapshots + timelapse video (GrowCast Timelapse plugin)
 
 ## 2. Demo 
@@ -22,11 +22,11 @@ To see a live demo, visit [my instance](https://grow.0xmarcel.com).
 ## 3. Getting Started
 
 ### Prerequisites
+- npm
+- Node.js 20 LTS or newer
 - An IP camera with RTSP support
-- npm (project includes `package-lock.json`)
 - MediaMTX server (to convert RTSP input into HLS output)
-- Node.js 20 LTS or newer (assumption based on Next.js 16 setup)
-- Cloudflare account + `cloudflared` (for public tunnel access)
+- Cloudflare account + `cloudflared` (for encrypted public access)
 
 ### Installation
 1. Clone the repository.
@@ -36,7 +36,7 @@ To see a live demo, visit [my instance](https://grow.0xmarcel.com).
 npm install
 ```
 
-3. Create admin credentials (recommended helper script):
+3. Create admin credentials:
 
 ```bash
 npm run setup:admin
@@ -126,25 +126,14 @@ extensions/
 ## 7. Usage Guide
 
 ### Stream setup (RTSP camera + MediaMTX)
-GrowCast expects a browser-playable stream URL in the admin dashboard. Since some cameras expose RTSP, use MediaMTX to convert RTSP to HLS:
+GrowCast expects a browser-playable stream URL in the admin dashboard. 
+Since some cameras expose RTSP, use MediaMTX to convert RTSP to HLS:
 
-1. Configure your RTSP camera (example: `rtsp://<camera-ip>:554/<path>`).
+1. Configure your RTSP camera (RTSP source looks somewhat like this: `rtsp://<camera-ip>:554/<path>`).
 2. Run MediaMTX and create a path that ingests RTSP.
 3. Use MediaMTX HLS output URL as the stream URL in GrowCast admin (`/admin`), for example:
-   - `http://<mediamtx-host>:8888/<path>/index.m3u8` (assumption: default MediaMTX HLS port/path)
-4. Save in GrowCast admin and verify playback on `/`.
-
-### For visitors
-1. Go to `/` to view the current grow status.
-2. Watch the embedded stream (if configured).
-3. Read grow info, health status, and setup details.
-4. Open `/gallery` to view timelapse + snapshots (if plugin/media exists).
-
-### For admins
-1. Open `/admin` and sign in.
-2. Update grow fields (title, plant info, stage, dates, stream URL, notes, setup, health).
-3. Save changes; homepage and admin pages are revalidated automatically.
-4. Use **Sign Out** from admin routes.
+   - `http://<mediamtx-host>:8888/<path>/index.m3u8`
+4. Save in GrowCast settings.
 
 ## 8. API / Backend Overview
 
@@ -153,30 +142,25 @@ This app uses Next.js route handlers and local filesystem storage.
 ### Data storage
 - Primary source: `data/current-grow.json`
 - Read/write logic: `lib/db.ts`
-- If file is missing, default data is generated automatically.
+- If file is missing, default data is generated.
 
 ### Route handlers
 - `GET /api/snapshots/[filename]`
   - Serves image files from `extensions/GrowCast-Timelapse/snapshots`
-  - Rejects unsafe filename patterns
 - `GET /api/timelapse/[filename]`
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
-  - Returns 404 if missing
 - `POST /admin/logout`
   - Clears admin session and redirects to `/admin`
 
 ### Auth model
 - Username + scrypt password hash from env vars
 - Signed cookie-based sessions
-- In-memory session store and login attempt limiter
-
-Important limitation:
-- Sessions and rate-limit buckets are in-memory, so they reset on server restart and are not shared across multiple instances.
+- In-memory session store
 
 ## 9. Deployment
 
 ### Cloudflare Tunnel (recommended for public access)
-To make the grow stream and app publicly accessible without exposing your home network, publish both services through Cloudflare Tunnel:
+To make the HLS source and app publicly accessible without exposing your home network, publish both services through Cloudflare Tunnel:
 
 1. Run GrowCast (example: `http://localhost:3000`).
 2. Run MediaMTX (example: HLS endpoint on `http://localhost:8888`).
@@ -189,13 +173,7 @@ To make the grow stream and app publicly accessible without exposing your home n
 
 Important:
 - Keep admin credentials strong (`ADMIN_*` env vars).
-- Restrict access where possible (Cloudflare Access / WAF / auth rules), especially for stream endpoints.
-
-### Option B: Node server
-1. Build with `npm run build`
-2. Start with `npm run start`
-3. Provide `.env.local` or runtime env vars
-4. Persist the `data/` directory between deployments
+- Restrict access where possible, bot protection is recommended.
 
 ## 10. Troubleshooting
 
@@ -220,21 +198,12 @@ Cause:
 Fix:
 - Install/run the timelapse plugin and ensure snapshots/timelapse files exist.
 
-### Timelapse or snapshot API returns 404
-Cause:
-- Requested files are not present in extension directories.
-
-Fix:
-- Verify paths:
-  - `extensions/GrowCast-Timelapse/snapshots`
-  - `extensions/GrowCast-Timelapse/timelapse`
-
 ### Changes are not visible immediately
 Cause:
 - Stale page cache after edits.
 
 Fix:
-- Save via admin form (triggers revalidation), or restart dev server.
+- Restart dev server.
 
 ## 11. Contributing (Optional)
 
