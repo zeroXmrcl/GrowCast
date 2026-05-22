@@ -1,23 +1,24 @@
 # GrowCast
 
-GrowCast is a Next.js web app for publishing a live plant grow dashboard with an optional timelapse gallery and a protected panel.
+GrowCast is a Next.js web app for publishing a live garden dashboard with an optional gallery and a protected panel.
 
 ## 1. Project Overview
 
 ### What the app does
-GrowCast lets you share your grow in real time. Visitors can view the live stream, plant details, current health, setup notes, and media (setup/snapshots/timelapse). Admin users can update all grow metadata from a web dashboard.
+GrowCast lets you share your grow in real time. Visitors can view the live stream, some details and media (setup/snapshots/timelapse). Admin users can update all metadata from a web dashboard.
 
 ### Key features
 - Live stream embed on the homepage (RTSP camera via MediaMTX (RTSP -> HLS))
 - Public grow dashboard
 - Markdown support for notes/setup text
-- Optional gallery page for snapshots + timelapse video (GrowCast Timelapse plugin)
+- Optional gallery page for snapshots + timelapse video ([GrowCast Timelapse plugin](https://github.com/zeroXmrcl/GrowCast-Timelapse))
 
 ## 2. Demo 
 
 ![Mockup_v1.1.0](assets/mockup.webp)
 
 To see a live demo, visit [my instance](https://grow.0xmarcel.com).
+The official project site is [growcast.0xmarcel.com](https://growcast.0xmarcel.com).
 
 ## 3. Getting Started
 
@@ -45,8 +46,6 @@ npm run setup:admin
 This script creates `.env.local` with required admin variables.
 
 ### Environment variables
-Create `.env.local` in the project root.
-
 Required for admin login:
 
 ```env
@@ -54,10 +53,6 @@ ADMIN_USERNAME=your_admin_username
 ADMIN_PASSWORD_HASH=scrypt$...$...
 ADMIN_SESSION_SECRET=at_least_32_chars_random_secret
 ```
-
-Notes:
-- `ADMIN_PASSWORD_HASH` must use the `scrypt$...` format.
-- `ADMIN_SESSION_SECRET` must be at least 32 characters.
 
 ## 4. Running the Application
 
@@ -104,24 +99,33 @@ public/
   setup/                       # Optional setup photos shown on homepage
   yourPictures/                # Optional user uploaded pictures shown on dashboard
 extensions/
-  GrowCast-Timelapse/          # Optional plugin folder (not included)
+  GrowCast-Timelapse/          # Optional plugin folder
 ```
 
 ## 6. Configuration
 
-### `next.config.ts`
-- Currently default/empty Next.js config.
-- Extend this for image domains, redirects, experimental flags, etc.
+My App doesnt need much configuration to get started, but i have tested some optimizations for MediaMTX.
+The default MediaMTX configuration caused issues on iOS devices and significant stuttering on some Windows systems.
+Below i have included how i configured my MediaMTX server.
 
-### `tsconfig.json`
-- Strict TypeScript mode enabled.
-- Uses `@/*` path alias to project root.
+```
+hlsAlwaysRemux: true
+hlsVariant: fmp4
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 50M
+hlsDirectory: ''
+hlsMuxerCloseAfter: 60s
 
-### `eslint.config.mjs`
-- Uses Next.js Core Web Vitals + TypeScript ESLint presets.
+paths:
+   growcam:
+    source: rtsp://USER:PASSWORD@IP.OF.YOUR.CAM/stream1
+    sourceProtocol: tcp
+    sourceOnDemand: no
+```
 
-### `postcss.config.mjs`
-- Tailwind CSS v4 PostCSS plugin configured.
+If you still have issues, make sure your camera is not set to a high frame rate, (i set mine to 15fps, but feel free to try other values).
 
 ## 7. Usage Guide
 
@@ -184,13 +188,6 @@ Cause:
 Fix:
 - Run `npm run setup:admin` and restart the app.
 
-### "Invalid username or password"
-Cause:
-- Wrong credentials or malformed password hash.
-
-Fix:
-- Regenerate `.env.local` using `npm run setup:admin`.
-
 ### Gallery shows "unavailable"
 Cause:
 - `extensions/GrowCast-Timelapse` folder missing or no media generated.
@@ -204,16 +201,3 @@ Cause:
 
 Fix:
 - Restart dev server.
-
-## 11. Contributing (Optional)
-
-1. Fork and create a feature branch.
-2. Make focused changes.
-3. Run checks before PR:
-
-```bash
-npm run lint
-npm run build
-```
-
-4. Open a pull request with clear scope and testing notes.
