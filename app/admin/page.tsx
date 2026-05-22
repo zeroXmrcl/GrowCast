@@ -1,6 +1,9 @@
 import {revalidatePath} from "next/cache";
 import {headers} from "next/headers";
+import Image from "next/image";
+import Link from "next/link";
 import {redirect} from "next/navigation";
+import type {ButtonHTMLAttributes, ComponentPropsWithoutRef, ReactNode} from "react";
 import {
     getAdminAuthStatus,
     isAdminAuthenticated,
@@ -16,6 +19,190 @@ type AdminPageProps = {
         retry?: string;
     }>;
 };
+
+type Tone = "neutral" | "success" | "warning" | "danger";
+type ButtonTone = "primary" | "secondary" | "danger";
+
+type AdminPanelProps = {
+    id?: string;
+    title: string;
+    description?: string;
+    actions?: ReactNode;
+    children: ReactNode;
+    className?: string;
+};
+
+type AdminFieldProps = {
+    label: string;
+    hint?: string;
+    children: ReactNode;
+};
+
+type AdminNoticeProps = {
+    tone?: Tone;
+    title?: string;
+    children: ReactNode;
+};
+
+type AdminCheckboxRowProps = ComponentPropsWithoutRef<"input"> & {
+    label: string;
+    description?: string;
+};
+
+const sectionLinks = [
+    {href: "#general", label: "General"},
+    {href: "#lifecycle", label: "Lifecycle"},
+    {href: "#stream", label: "Stream"},
+    {href: "#status", label: "Status"},
+    {href: "#hardware", label: "Hardware"},
+    {href: "#notes", label: "Notes"},
+];
+
+const controlClassName =
+    "h-10 w-full rounded-md border border-[var(--admin-border-strong)] bg-[var(--admin-surface)] px-3 text-sm text-[var(--admin-text)] outline-none placeholder:text-[var(--admin-subtle)] focus:border-zinc-500 focus:bg-[var(--admin-surface-muted)] disabled:cursor-not-allowed disabled:border-[var(--admin-border)] disabled:bg-[#1d1d1d] disabled:text-[var(--admin-subtle)]";
+
+function joinClasses(...classes: Array<string | undefined>): string {
+    return classes.filter(Boolean).join(" ");
+}
+
+function getToneClasses(tone: Tone): string {
+    switch (tone) {
+        case "success":
+            return "border-emerald-900/70 bg-emerald-950/20 text-emerald-300";
+        case "warning":
+            return "border-amber-900/70 bg-amber-950/20 text-amber-300";
+        case "danger":
+            return "border-red-900/70 bg-red-950/20 text-red-300";
+        default:
+            return "border-[var(--admin-border)] bg-[var(--admin-surface)] text-[var(--admin-text)]";
+    }
+}
+
+function getButtonToneClasses(tone: ButtonTone): string {
+    switch (tone) {
+        case "primary":
+            return "border-zinc-500 bg-zinc-200 text-zinc-950 hover:bg-white";
+        case "danger":
+            return "border-red-800 bg-red-900/50 text-red-100 hover:bg-red-900/70";
+        default:
+            return "border-[var(--admin-border-strong)] bg-[var(--admin-surface)] text-[var(--admin-text)] hover:border-zinc-500 hover:bg-[var(--admin-surface-muted)]";
+    }
+}
+
+function NavLink({href, label}: {href: string; label: string}) {
+    return (
+        <Link
+            href={href}
+            className="block rounded-md border border-transparent px-3 py-2 text-sm text-[var(--admin-muted)] hover:border-[var(--admin-border)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-text)]"
+        >
+            {label}
+        </Link>
+    );
+}
+
+function AdminPanel({id, title, description, actions, children, className}: AdminPanelProps) {
+    return (
+        <section
+            id={id}
+            className={joinClasses(
+                "scroll-mt-20 overflow-hidden rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]",
+                className,
+            )}
+        >
+            <div className="flex flex-col gap-3 border-b border-[var(--admin-border)] px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    <h2 className="text-sm font-semibold text-[var(--admin-text)]">{title}</h2>
+                    {description ? (
+                        <p className="mt-1 text-sm text-[var(--admin-muted)]">{description}</p>
+                    ) : null}
+                </div>
+                {actions ? <div className="shrink-0">{actions}</div> : null}
+            </div>
+            <div className="px-4 py-4">{children}</div>
+        </section>
+    );
+}
+
+function AdminField({label, hint, children}: AdminFieldProps) {
+    return (
+        <label className="block">
+            <span className="mb-2 block text-xs font-medium text-[var(--admin-muted)]">{label}</span>
+            {children}
+            {hint ? <span className="mt-2 block text-xs text-[var(--admin-subtle)]">{hint}</span> : null}
+        </label>
+    );
+}
+
+function AdminInput({className, ...props}: ComponentPropsWithoutRef<"input">) {
+    return <input {...props} className={joinClasses(controlClassName, className)}/>;
+}
+
+function AdminTextarea({className, ...props}: ComponentPropsWithoutRef<"textarea">) {
+    return (
+        <textarea
+            {...props}
+            className={joinClasses(
+                "min-h-[120px] w-full rounded-md border border-[var(--admin-border-strong)] bg-[var(--admin-surface)] px-3 py-2 text-sm text-[var(--admin-text)] outline-none placeholder:text-[var(--admin-subtle)] focus:border-zinc-500 focus:bg-[var(--admin-surface-muted)] disabled:cursor-not-allowed disabled:border-[var(--admin-border)] disabled:bg-[#1d1d1d] disabled:text-[var(--admin-subtle)]",
+                className,
+            )}
+        />
+    );
+}
+
+function AdminSelect({className, children, ...props}: ComponentPropsWithoutRef<"select">) {
+    return (
+        <select
+            {...props}
+            className={joinClasses(controlClassName, "appearance-none", className)}
+        >
+            {children}
+        </select>
+    );
+}
+
+function AdminCheckboxRow({label, description, className, ...props}: AdminCheckboxRowProps) {
+    return (
+        <label className="flex items-start gap-3 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-3">
+            <input
+                {...props}
+                type="checkbox"
+                className={joinClasses(
+                    "mt-0.5 h-4 w-4 rounded border-[var(--admin-border-strong)] bg-[var(--admin-surface)] accent-zinc-300",
+                    className,
+                )}
+            />
+            <span className="min-w-0">
+                <span className="block text-sm font-medium text-[var(--admin-text)]">{label}</span>
+                {description ? <span className="mt-1 block text-xs text-[var(--admin-muted)]">{description}</span> : null}
+            </span>
+        </label>
+    );
+}
+
+function AdminButton({className, tone = "secondary", type = "button", ...props}: ButtonHTMLAttributes<HTMLButtonElement> & {
+    tone?: ButtonTone;
+}) {
+    return (
+        <button
+            {...props}
+            type={type}
+            className={joinClasses(
+                "inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium disabled:cursor-not-allowed disabled:border-[var(--admin-border)] disabled:bg-[#1d1d1d] disabled:text-[var(--admin-subtle)]",
+                getButtonToneClasses(tone),
+                className,
+            )}
+        />
+    );
+}
+
+function AdminNotice({tone = "neutral", title, children}: AdminNoticeProps) {
+    return (
+        <div className={joinClasses("rounded-md border px-4 py-3", getToneClasses(tone))}>
+            {title ? <p className="text-sm font-semibold">{title}</p> : null}
+            <div className={joinClasses("text-sm", title ? "mt-1" : undefined)}>{children}</div>
+        </div>
+    );
+}
 
 async function getRequestIp(): Promise<string> {
     const h = await headers();
@@ -116,298 +303,353 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
 
     if (!isLoggedIn) {
         return (
-            <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center p-4">
-                <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-                    <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Sign in</h1>
+            <div className="admin-theme min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)]">
+                <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
+                    <div className="w-full space-y-4">
+                        <AdminPanel title="Sign In">
+                            <div className="space-y-4">
+                                {params.error === "invalid_credentials" ? (
+                                    <AdminNotice tone="danger" title="Authentication failed">
+                                        Invalid username or password.
+                                    </AdminNotice>
+                                ) : null}
 
-                    {params.error === "invalid_credentials" ? (
-                        <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                            Invalid username or password.
-                        </p>
-                    ) : null}
+                                {params.error === "rate_limited" ? (
+                                    <AdminNotice tone="danger" title="Sign in temporarily blocked">
+                                        Too many failed attempts. Try again later.
+                                    </AdminNotice>
+                                ) : null}
 
-                    {params.error === "rate_limited" ? (
-                        <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                            Too many failed logins. Try again later.
-                        </p>
-                    ) : null}
+                                {params.error === "login_disabled" ? (
+                                    <AdminNotice tone="warning" title="Login unavailable">
+                                        Admin login is disabled because the required configuration is incomplete.
+                                    </AdminNotice>
+                                ) : null}
 
-                    {params.error === "login_disabled" ? (
-                        <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                            Admin login is disabled as the admin configuration is incomplete.
-                        </p>
-                    ) : null}
+                                {params.error === "unauthorized" ? (
+                                    <AdminNotice tone="danger" title="Authentication required">
+                                        You must sign in before accessing the control panel.
+                                    </AdminNotice>
+                                ) : null}
 
-                    {params.error === "unauthorized" ? (
-                        <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-                            You must be signed in to do that.
-                        </p>
-                    ) : null}
+                                {!adminStatus.canLogin ? (
+                                    <AdminNotice tone="warning" title="Configuration issues">
+                                        <ul className="space-y-1">
+                                            {adminStatus.warnings.map((warning) => (
+                                                <li key={warning}>{warning}</li>
+                                            ))}
+                                        </ul>
+                                    </AdminNotice>
+                                ) : null}
 
-                    {!adminStatus.canLogin ? (
-                        <div
-                            className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                            <p className="font-medium">Admin login is disabled.</p>
-                            <div className="mt-2 space-y-1">
-                                {adminStatus.warnings.map((warning) => (
-                                    <div key={warning}>{warning}</div>
-                                ))}
+                                <form action={loginAction} className="space-y-4">
+                                    <AdminField label="Username">
+                                        <AdminInput
+                                            name="username"
+                                            placeholder="Username"
+                                            type="text"
+                                            required
+                                            disabled={!adminStatus.canLogin}
+                                            autoComplete="username"
+                                        />
+                                    </AdminField>
+
+                                    <AdminField label="Password">
+                                        <AdminInput
+                                            name="password"
+                                            type="password"
+                                            placeholder="Password"
+                                            required
+                                            disabled={!adminStatus.canLogin}
+                                            autoComplete="current-password"
+                                        />
+                                    </AdminField>
+
+                                    <AdminButton
+                                        type="submit"
+                                        tone="primary"
+                                        disabled={!adminStatus.canLogin}
+                                        className="w-full"
+                                    >
+                                        Sign In
+                                    </AdminButton>
+                                </form>
                             </div>
-                        </div>
-                    ) : null}
-
-                    <form action={loginAction} className="mt-5 space-y-3">
-                        <label className="block">
-                            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Username</span>
-                            <input
-                                name="username"
-                                placeholder="Username"
-                                type="text"
-                                required
-                                disabled={!adminStatus.canLogin}
-                                autoComplete="username"
-                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
-                        </label>
-                        <label className="block">
-                            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Password</span>
-                            <input
-                                name="password"
-                                type="password"
-                                placeholder="Password"
-                                required
-                                disabled={!adminStatus.canLogin}
-                                autoComplete="current-password"
-                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
-                        </label>
-                        <button
-                            type="submit"
-                            disabled={!adminStatus.canLogin}
-                            className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            Sign In
-                        </button>
-                    </form>
-                </div>
-            </main>
+                        </AdminPanel>
+                    </div>
+                </main>
+            </div>
         );
     }
 
     const grow = await getCurrentGrow();
 
     return (
-        <main className="mx-auto w-full max-w-3xl flex-1 p-4 md:p-8">
-            <div className="bg-white p-6  dark:border-zinc-800 dark:bg-zinc-950">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-100">Settings</h1>
+        <div className="admin-theme min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)] lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
+            <aside className="border-b border-[var(--admin-border)] bg-[var(--admin-surface)] lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+                <div className="border-b border-[var(--admin-border)] px-4 py-4">
+                    <Link href="/" className="flex items-center gap-3">
+                        <Image
+                            src="/growCastLogo_white.svg"
+                            alt="GrowCast"
+                            width={28}
+                            height={28}
+                            priority
+                        />
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-[var(--admin-text)]">GrowCast</p>
+                        </div>
+                    </Link>
                 </div>
 
-                <form action={saveGrowAction} className="space-y-4">
-                    <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-                        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">General</h2>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <label className="block">
-                                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Grow Name</span>
-                                <input
-                                    name="name"
-                                    defaultValue={grow.name}
-                                    required
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                />
-                            </label>
-                            <label className="block">
-                                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Plant</span>
-                                <input
-                                    name="plant"
-                                    defaultValue={grow.plant}
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                />
-                            </label>
-                            <label className="block">
-                                <span
-                                    className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Plant Amount</span>
-                                <input
-                                    name="plantAmount"
-                                    type="number"
-                                    min={0}
-                                    defaultValue={grow.plantAmount}
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                />
-                            </label>
-                            <label className="block">
-                                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Strain</span>
-                                <input
-                                    name="strain"
-                                    defaultValue={grow.details.strain}
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                />
-                            </label>
-                            <label className="block">
-                                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stage</span>
-                                <select
-                                    name="stage"
-                                    defaultValue={grow.details.stage}
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                <div className="space-y-6 px-3 py-4">
+                    <div>
+                        <p className="px-3 text-xs font-medium text-[var(--admin-subtle)]">Sections</p>
+                        <nav className="mt-2 space-y-1">
+                            {sectionLinks.map((item) => (
+                                <NavLink key={item.href} href={item.href} label={item.label}/>
+                            ))}
+                        </nav>
+                    </div>
+                </div>
+            </aside>
+
+            <div className="min-w-0">
+                <header className="sticky top-0 z-20 flex h-[61px] items-center justify-between border-b border-[var(--admin-border)] bg-[var(--admin-bg)] px-4 sm:px-6">
+                    <div className="min-w-0">
+                        <p className="text-xs text-[var(--admin-muted)]">Control Panel</p>
+                        <p className="truncate text-sm font-semibold text-[var(--admin-text)]">Settings</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <form action="/admin/logout" method="post">
+                            <AdminButton type="submit" tone="secondary">Sign Out</AdminButton>
+                        </form>
+                    </div>
+                </header>
+
+                <main className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                    <div className="space-y-6">
+                        {params.saved ? (
+                            <AdminNotice tone="success" title="Configuration saved">
+                                Done.
+                            </AdminNotice>
+                        ) : null}
+
+                        <form
+                            id="admin-settings-form"
+                            action={saveGrowAction}
+                            className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
+                        >
+                            <div className="space-y-6">
+                                <AdminPanel id="general" title="General">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="Grow Name">
+                                            <AdminInput
+                                                name="name"
+                                                defaultValue={grow.name}
+                                                required
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Plant">
+                                            <AdminInput
+                                                name="plant"
+                                                defaultValue={grow.plant}
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Plant Amount">
+                                            <AdminInput
+                                                name="plantAmount"
+                                                type="number"
+                                                min={0}
+                                                defaultValue={grow.plantAmount}
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Strain">
+                                            <AdminInput
+                                                name="strain"
+                                                defaultValue={grow.details.strain}
+                                            />
+                                        </AdminField>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel id="lifecycle" title="Lifecycle">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="Stage">
+                                            <AdminSelect
+                                                name="stage"
+                                                defaultValue={grow.details.stage}
+                                            >
+                                                <option value="Seed">Seed</option>
+                                                <option value="Seedling">Seedling</option>
+                                                <option value="Vegetative">Vegetative</option>
+                                                <option value="Flowering">Flowering</option>
+                                                <option value="Drying">Drying</option>
+                                            </AdminSelect>
+                                        </AdminField>
+
+                                        <AdminField label="Date of Seeding">
+                                            <AdminInput
+                                                name="seededAt"
+                                                type="date"
+                                                defaultValue={grow.details.seededAt}
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Light Schedule">
+                                            <AdminInput
+                                                name="lightSchedule"
+                                                defaultValue={grow.details.lightSchedule}
+                                            />
+                                        </AdminField>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel id="stream" title="Stream">
+                                    <div className="space-y-4">
+                                        <AdminCheckboxRow
+                                            name="showGrowName"
+                                            defaultChecked={grow.showGrowName}
+                                            label="Show grow name above stream"
+                                            description="Displays the grow-name as header above the stream."
+                                        />
+
+                                        <AdminField label="Stream URL">
+                                            <AdminInput
+                                                name="streamUrl"
+                                                defaultValue={grow.streamUrl}
+                                                placeholder="https://..."
+                                            />
+                                        </AdminField>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel id="status" title="Status">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="Health">
+                                            <AdminSelect
+                                                name="health"
+                                                defaultValue={grow.status.health}
+                                            >
+                                                <option value="Healthy">Healthy</option>
+                                                <option value="Warning">Warning</option>
+                                                <option value="Critical">Critical</option>
+                                            </AdminSelect>
+                                        </AdminField>
+
+                                        <AdminField label="Estimated Harvest Date">
+                                            <AdminInput
+                                                name="estimatedHarvestDate"
+                                                type="date"
+                                                defaultValue={grow.status.estimatedHarvestDate}
+                                                disabled
+                                            />
+                                        </AdminField>
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <AdminField label="Health Notes">
+                                            <AdminTextarea
+                                                name="statusNotes"
+                                                defaultValue={grow.status.notes}
+                                                rows={4}
+                                            />
+                                        </AdminField>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel id="hardware" title="Hardware">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="Medium">
+                                            <AdminInput
+                                                name="growingMedium"
+                                                defaultValue={grow.growSetup.growingMedium}
+                                                placeholder="Soil, coco, hydro..."
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Pot Size (L)">
+                                            <AdminInput
+                                                name="potSizeLiters"
+                                                type="number"
+                                                min={0}
+                                                defaultValue={grow.growSetup.potSizeLiters}
+                                            />
+                                        </AdminField>
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <AdminField label="Setup Description">
+                                            <AdminTextarea
+                                                name="setupText"
+                                                defaultValue={grow.growSetup.setupText}
+                                                rows={8}
+                                                placeholder={"Tent: ...\nLight: ...\nFan: ..."}
+                                            />
+                                        </AdminField>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel id="notes" title="Notes">
+                                    <AdminField label="General Notes">
+                                        <AdminTextarea
+                                            name="notes"
+                                            defaultValue={grow.details.notes}
+                                            rows={6}
+                                        />
+                                    </AdminField>
+                                </AdminPanel>
+                            </div>
+
+                            <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
+                                <AdminPanel
+                                    title="Apply Changes"
+                                    description="Changes will be live immediately."
                                 >
-                                    <option value="Seed">Seed</option>
-                                    <option value="Seedling">Seedling</option>
-                                    <option value="Vegetative">Vegetative</option>
-                                    <option value="Flowering">Flowering</option>
-                                    <option value="Drying">Drying</option>
-                                </select>
-                            </label>
-                            <label className="block">
-                                <span
-                                    className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Date of Seeding</span>
-                                <input
-                                    name="seededAt"
-                                    type="date"
-                                    defaultValue={grow.details.seededAt}
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                />
-                            </label>
-                            <label className="block">
-                                <span
-                                    className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Light Schedule</span>
-                                <input
-                                    name="lightSchedule"
-                                    defaultValue={grow.details.lightSchedule}
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                />
-                            </label>
-                        </div>
-                        <label className="mt-4 block">
-                            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">General Notes</span>
-                            <textarea
-                                name="notes"
-                                defaultValue={grow.details.notes}
-                                rows={5}
-                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
-                        </label>
-                    </div>
+                                    <div className="space-y-4">
+                                        <AdminButton type="submit" tone="primary" className="w-full">
+                                            Save Changes
+                                        </AdminButton>
+                                    </div>
+                                </AdminPanel>
 
-                    <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-                        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Stream</h2>
-                        <label
-                            className="mb-4 flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-zinc-100 dark:hover:bg-zinc-900">
-                            <input
-                                name="showGrowName"
-                                type="checkbox"
-                                defaultChecked={grow.showGrowName}
-                                className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500 dark:border-zinc-700"
-                            />
-                            <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                  Show grow name above stream
-                </span>
-                        </label>
-                        <label className="block">
-                            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Stream URL</span>
-                            <input
-                                name="streamUrl"
-                                defaultValue={grow.streamUrl}
-                                placeholder="https://..."
-                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
-                        </label>
-                    </div>
-
-                    <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-                        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Vital Status</h2>
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <label className="block">
-                                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health</span>
-                                <select
-                                    name="health"
-                                    defaultValue={grow.status.health}
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                                <AdminPanel
+                                    title="Quick Links"
+                                    description="Jump to the most important sites."
                                 >
-                                    <option value="Healthy">Healthy</option>
-                                    <option value="Warning">Warning</option>
-                                    <option value="Critical">Critical</option>
-                                </select>
-                            </label>
-                            <label className="block">
-                  <span className="mb-1 block text-sm text-zinc-400 cursor-not-allowed">
-                    Estimated Harvest Date
-                  </span>
-
-                                <input
-                                    name="estimatedHarvestDate"
-                                    type="date"
-                                    defaultValue={grow.status.estimatedHarvestDate}
-                                    disabled
-                                    className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm bg-zinc-100 text-zinc-400 cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
-                                />
-                            </label>
-                        </div>
-                        <label className="mt-4 block">
-                            <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Health Notes</span>
-                            <textarea
-                                name="statusNotes"
-                                defaultValue={grow.status.notes}
-                                rows={3}
-                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
-                        </label>
+                                    <div className="grid gap-2">
+                                        <Link
+                                            href="/"
+                                            target="_blank"
+                                            className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] px-3 py-2 text-sm font-medium text-[var(--admin-text)] transition hover:border-zinc-500 hover:bg-[var(--admin-surface-muted)]"
+                                        >
+                                            Open Dashboard
+                                        </Link>
+                                        <Link
+                                            href="/gallery"
+                                            target="_blank"
+                                            className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] px-3 py-2 text-sm font-medium text-[var(--admin-text)] transition hover:border-zinc-500 hover:bg-[var(--admin-surface-muted)]"
+                                        >
+                                            Open Gallery
+                                        </Link>
+                                        <Link
+                                            href="https://github.com/zeroXmrcl/GrowCast"
+                                            target="_blank"
+                                            className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] px-3 py-2 text-sm font-medium text-[var(--admin-text)] transition hover:border-zinc-500 hover:bg-[var(--admin-surface-muted)]"
+                                        >
+                                            GitHub Repo
+                                        </Link>
+                                    </div>
+                                </AdminPanel>
+                            </div>
+                        </form>
                     </div>
-
-                    <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-                        <h2 className="mb-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">Hardware
-                            setup</h2>
-                        <div className="mb-4 grid gap-4 sm:grid-cols-2">
-                            <label className="block">
-                                <span className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Medium</span>
-                                <input
-                                    name="growingMedium"
-                                    defaultValue={grow.growSetup.growingMedium}
-                                    placeholder="Soil, Coco, Hydro..."
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                />
-                            </label>
-                            <label className="block">
-                                <span
-                                    className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Pot Size (L)</span>
-                                <input
-                                    name="potSizeLiters"
-                                    type="number"
-                                    min={0}
-                                    defaultValue={grow.growSetup.potSizeLiters}
-                                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                                />
-                            </label>
-                        </div>
-                        <label className="block">
-                            <span
-                                className="mb-1 block text-sm text-zinc-700 dark:text-zinc-300">Setup description</span>
-                            <textarea
-                                name="setupText"
-                                defaultValue={grow.growSetup.setupText}
-                                rows={7}
-                                placeholder={"Tent: ...\nLight: ...\nFan: ..."}
-                                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-[#068200] focus:ring-1 focus:ring-[#068200] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-                            />
-                        </label>
-                    </div>
-
-                    <div className="mt-4">
-                        <div className="relative inline-block">
-                            <button
-                                type="submit"
-                                className="rounded-md bg-[#068200] px-4 py-2 text-sm font-medium text-white hover:bg-[#057000]">
-                                Save Changes
-                            </button>
-
-                            {params.saved ? (
-                                <p className="absolute left-full top-1/2 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
-                                    Saved successfully.
-                                </p>
-                            ) : null}
-                        </div>
-                    </div>
-                </form>
+                </main>
             </div>
-        </main>
+        </div>
     );
 }

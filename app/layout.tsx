@@ -1,8 +1,8 @@
 import {Geist, Geist_Mono} from "next/font/google";
-import SiteHeader from "@/components/site-header";
 import {getCurrentGrow} from "@/lib/db";
 import type {Metadata} from "next";
 import React from "react";
+import AppShell from "@/components/app-shell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,10 +35,7 @@ export default function RootLayout({
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
         <body className="min-h-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-        <div className="flex min-h-full flex-col">
-            <SiteHeader/>
-            <div className="flex flex-1 flex-col">{children}</div>
-        </div>
+        <AppShell>{children}</AppShell>
         </body>
         </html>
     );
