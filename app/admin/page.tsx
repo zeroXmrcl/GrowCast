@@ -583,7 +583,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                     </div>
 
                                     <div className="mt-4">
-                                        <AdminField label="Setup Description">
+                                        <AdminField label="Setup Description (MD-Supported)">
                                             <AdminTextarea
                                                 name="setupText"
                                                 defaultValue={grow.growSetup.setupText}
@@ -595,7 +595,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                 </AdminPanel>
 
                                 <AdminPanel id="notes" title="Notes">
-                                    <AdminField label="General Notes">
+                                    <AdminField label="Markdown supported">
                                         <AdminTextarea
                                             name="notes"
                                             defaultValue={grow.details.notes}
@@ -630,11 +630,11 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                             Open Dashboard
                                         </Link>
                                         <Link
-                                            href="/gallery"
+                                            href="https://growcast.0xmarcel.com/"
                                             target="_blank"
                                             className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] px-3 py-2 text-sm font-medium text-[var(--admin-text)] transition hover:border-zinc-500 hover:bg-[var(--admin-surface-muted)]"
                                         >
-                                            Open Gallery
+                                            GrowCast Website
                                         </Link>
                                         <Link
                                             href="https://github.com/zeroXmrcl/GrowCast"
