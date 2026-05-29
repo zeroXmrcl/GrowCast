@@ -50,7 +50,16 @@ function getEnv(name: string): string | undefined {
   }
 
   const normalized = value.trim();
-  return normalized.length > 0 ? normalized : undefined;
+
+  if (normalized.length === 0) {
+    return undefined;
+  }
+
+  if (name === "ADMIN_PASSWORD_HASH") {
+    return normalized.replace(/\\\$/g, "$");
+  }
+
+  return normalized;
 }
 
 function getAdminSetupStatus(): AdminSetupStatus {

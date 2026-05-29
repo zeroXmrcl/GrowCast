@@ -45,6 +45,10 @@ yarn-error.log*
 workspace.xml
 
 /data
+/public/setup
+/public/yourPictures
+/extensions/GrowCast-Timelapse
+.env.local.bak.*
 
 # typescript
 *.tsbuildinfo

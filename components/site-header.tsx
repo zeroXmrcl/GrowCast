@@ -7,7 +7,6 @@ import {useEffect, useState} from "react";
 
 export default function SiteHeader() {
     const pathname = usePathname();
-    const isAdminRoute = pathname.startsWith("/admin");
     const isGalleryRoute = pathname.startsWith("/gallery");
 
     const [logoText, setLogoText] = useState("GrowCast");
@@ -51,26 +50,7 @@ export default function SiteHeader() {
 
     let navContent;
 
-    if (isAdminRoute) {
-        navContent = (
-            <nav className="flex items-center gap-3">
-                <Link
-                    href="/"
-                    className="px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400"
-                >
-                    Dashboard
-                </Link>
-                <form action="/admin/logout" method="post">
-                    <button
-                        type="submit"
-                        className="cursor-pointer px-3 py-2 text-sm text-red-700 hover:text-red-800 dark:text-red-300 dark:hover:text-red-400"
-                    >
-                        Sign Out
-                    </button>
-                </form>
-            </nav>
-        );
-    } else if (isGalleryRoute) {
+    if (isGalleryRoute) {
         navContent = (
             <nav className="flex items-center gap-3">
                 <Link

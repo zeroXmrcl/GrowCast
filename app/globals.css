@@ -26,3 +26,20 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+html,
+body {
+  min-height: 100%;
+}
+
+.admin-theme {
+  --admin-bg: #1f1f1f;
+  --admin-surface: #242424;
+  --admin-surface-muted: #2b2b2b;
+  --admin-border: #3a3a3a;
+  --admin-border-strong: #4a4a4a;
+  --admin-text: #f3f4f6;
+  --admin-muted: #b4b4b8;
+  --admin-subtle: #8a8a91;
+  color-scheme: dark;
+}

@@ -22,15 +22,6 @@ export type GrowStatus = {
   notes: string;
 };
 
-export type GrowUpdate = {
-  id: string;
-  date: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  likes: number;
-};
-
 export type GrowRecord = {
   id: string;
   name: string;
@@ -41,9 +32,6 @@ export type GrowRecord = {
   details: GrowDetails;
   growSetup: GrowSetup;
   status: GrowStatus;
-  updates: GrowUpdate[];
-
-  // Flattened convenience fields derived from details.
   strain: string;
   stage: string;
   seededAt: string;
@@ -62,7 +50,6 @@ type StoredGrowRecord = {
   details: GrowDetails;
   growSetup: GrowSetup;
   status: GrowStatus;
-  updates: GrowUpdate[];
 };
 
 export type GrowUpdateInput = {
@@ -72,7 +59,6 @@ export type GrowUpdateInput = {
   plantAmount?: number;
   streamUrl: string;
   details?: Partial<GrowDetails>;
-  // Legacy flat fields kept for compatibility during transition.
   strain?: string;
   stage?: string;
   seededAt?: string;
@@ -130,7 +116,6 @@ function toStoredGrowRecord(record: GrowRecord): StoredGrowRecord {
     details: record.details,
     growSetup: record.growSetup,
     status: record.status,
-    updates: record.updates,
   };
 }
 
@@ -162,17 +147,6 @@ const DEFAULT_GROW: GrowRecord = {
     estimatedHarvestDate: "2026-06-15",
     notes: "Growing steadily so far",
   },
-
-  updates: [
-    {
-      id: "update-001",
-      date: "2026-03-15",
-      title: "Repotting",
-      description: "Moved plants into larger pots",
-      imageUrl: "",
-      likes: 0,
-    },
-  ],
 
   strain: "Cherry Tomato",
   stage: "vegetative",
@@ -212,20 +186,6 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     notes: asString(rawStatus.notes, DEFAULT_GROW.status.notes),
   };
 
-  const updates = Array.isArray(parsed.updates)
-    ? parsed.updates.map((item, index) => {
-        const row = (item ?? {}) as Record<string, unknown>;
-        return {
-          id: asString(row.id, `update-${index + 1}`),
-          date: asString(row.date, ""),
-          title: asString(row.title, ""),
-          description: asString(row.description, ""),
-          imageUrl: asString(row.imageUrl, ""),
-          likes: asNumber(row.likes, 0),
-        } satisfies GrowUpdate;
-      })
-    : DEFAULT_GROW.updates;
-
   return {
     id: asString(parsed.id, DEFAULT_GROW.id),
     name: asString(parsed.name, DEFAULT_GROW.name),
@@ -236,7 +196,6 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     details,
     growSetup,
     status,
-    updates,
     strain: details.strain,
     stage: details.stage,
     seededAt: details.seededAt,

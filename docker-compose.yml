@@ -1,0 +1,21 @@
+services:
+  growcast:
+    image: 0xmrcl/growcast:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${GROWCAST_PORT:-3000}:3000"
+    env_file:
+      - path: .env.local
+        format: raw
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    volumes:
+      - ./data:/app/data
+      - ./extensions:/app/extensions
+      - ./public/setup:/app/public/setup
+      - ./public/yourPictures:/app/public/yourPictures

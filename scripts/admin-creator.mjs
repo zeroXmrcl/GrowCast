@@ -53,7 +53,7 @@ function normalizeUsernameInput(input) {
 }
 
 function normalizePasswordInput(input) {
-    return input.replace(/[\u0000-\u001F\u007F]/g, "").normalize("NFKC");
+    return input;
 }
 
 function validateUsernameInput(input) {
