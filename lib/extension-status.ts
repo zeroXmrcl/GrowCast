@@ -33,7 +33,7 @@ export async function getSnapshotFiles(): Promise<string[]> {
     return entries
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)
-        .filter((name) => /\.(webp|jpg|jpeg|png)$/i.test(name))
+        .filter((name) => /\.(webp)$/i.test(name))
         .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 }
 
@@ -47,6 +47,6 @@ export async function getTimelapseFiles(): Promise<string[]> {
     return entries
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)
-        .filter((name) => /\.(mp4|webm|mov)$/i.test(name))
+        .filter((name) => /\.(mp4)$/i.test(name))
         .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 }
