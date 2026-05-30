@@ -153,6 +153,8 @@ This app uses Next.js route handlers and local filesystem storage.
   - Serves image files from `extensions/GrowCast-Timelapse/snapshots`
 - `GET /api/timelapse/[filename]`
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
+- `GET /api/data/current-grow`
+  - Returns current grow data
 - `POST /admin/logout`
   - Clears admin session and redirects to `/admin`
 
