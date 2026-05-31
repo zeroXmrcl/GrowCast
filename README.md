@@ -201,9 +201,12 @@ This app uses Next.js route handlers and local filesystem storage.
 - If file is missing, default data is generated.
 
 ### Route handlers
+- `GET /api/data/current-grow`
+  - Returns the normalized grow record as JSON
+  - Uses `Cache-Control: no-store, must-revalidate`
 - `GET /api/snapshots/[filename]`
   - Serves image files from `extensions/GrowCast-Timelapse/snapshots`
-- `GET /api/timelapse/[filename]`
+- `GET /api/timelapse`
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
 - `GET /api/data/current-grow`
   - Returns current grow data
