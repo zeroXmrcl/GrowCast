@@ -37,6 +37,39 @@ function getHealthColor(health: string): string {
 export default async function Home() {
     const grow = await getCurrentGrow();
     const setupImages = getSetupImages();
+    const details = grow.details;
+    const socialLinks = [
+        {
+            label: "YouTube",
+            href: grow.otherSettings.youtube.trim(),
+            iconSrc: "https://cdn.simpleicons.org/youtube/71717a",
+        },
+        {
+            label: "X",
+            href: grow.otherSettings.twitter.trim(),
+            iconSrc: "https://cdn.simpleicons.org/x/71717a",
+        },
+        {
+            label: "Instagram",
+            href: grow.otherSettings.instagram.trim(),
+            iconSrc: "https://cdn.simpleicons.org/instagram/71717a",
+        },
+        {
+            label: "GrowDiaries",
+            href: grow.otherSettings.growDiaries.trim(),
+            iconSrc: "/growdiaries.svg",
+        },
+        {
+            label: "Discord",
+            href: grow.otherSettings.discordInvite.trim(),
+            iconSrc: "https://cdn.simpleicons.org/discord/71717a",
+        },
+        {
+            label: "Custom Website",
+            href: grow.otherSettings.customWebsite.trim(),
+            iconSrc: "/globe.svg",
+        },
+    ].filter(({href}) => href.length > 0);
 
     return (
         <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-8">
@@ -77,9 +110,9 @@ export default async function Home() {
                                 <dt className="text-zinc-500 dark:text-zinc-400">Plant</dt>
                                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plant}</dd>
                             </div>)}
-                            {grow.strain && (<div className="flex justify-between gap-3">
+                            {details.strain && (<div className="flex justify-between gap-3">
                                 <dt className="text-zinc-500 dark:text-zinc-400">Strain</dt>
-                                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.strain}</dd>
+                                <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.strain}</dd>
                             </div>)}
                             {(grow.plantAmount != 0) && (<div className="flex justify-between gap-3">
                                 <dt className="text-zinc-500 dark:text-zinc-400">Plant Count</dt>
@@ -93,17 +126,17 @@ export default async function Home() {
                                 <dt className="text-zinc-500 dark:text-zinc-400">Pot Size</dt>
                                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.potSizeLiters}</dd>
                             </div>)}
-                            {(formatDate(grow.seededAt) != '01.01.2001') && (
+                            {(formatDate(details.seededAt) != '01.01.2001') && (
                                 <div className="flex justify-between gap-3">
                                     <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
-                                    <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatDate(grow.seededAt)}</dd>
+                                    <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatDate(details.seededAt)}</dd>
                                 </div>)}
                         </dl>
-                        {grow.notes && (
+                        {details.notes && (
                             <div
                                 className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
                                 <ReactMarkdown>
-                                    {grow.notes}
+                                    {details.notes}
                                 </ReactMarkdown>
                             </div>)}
                     </div>
@@ -117,15 +150,15 @@ export default async function Home() {
                     <dl className="space-y-3 text-sm">
                         <div className="flex justify-between gap-3">
                             <dt className="text-zinc-500 dark:text-zinc-400">Stage</dt>
-                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.stage}</dd>
+                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.stage}</dd>
                         </div>
                         <div className="flex justify-between gap-3">
                             <dt className="text-zinc-500 dark:text-zinc-400">Age</dt>
-                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{getDaysSince(grow.seededAt)} days</dd>
+                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{getDaysSince(details.seededAt)} days</dd>
                         </div>
-                        {grow.lightSchedule && (<div className="flex justify-between gap-3">
+                        {details.lightSchedule && (<div className="flex justify-between gap-3">
                             <dt className="text-zinc-500 dark:text-zinc-400">Light Schedule</dt>
-                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.lightSchedule}</dd>
+                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.lightSchedule}</dd>
                         </div>)}
                     </dl>
                 </article>
@@ -175,6 +208,34 @@ export default async function Home() {
                             ))}
                         </div>
                     )}
+                </section>
+            )}
+
+            {socialLinks.length > 0 && (
+                <section
+                    className="bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+                    <div className="flex flex-wrap items-center justify-evenly gap-3">
+                        {socialLinks.map(({label, href, iconSrc}) => (
+                            <a
+                                key={label}
+                                href={href}
+                                aria-label={label}
+                                title={label}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="group inline-flex  items-center justify-center transition-colors"
+                            >
+                                <Image
+                                    src={iconSrc}
+                                    alt=""
+                                    width={20}
+                                    height={20}
+                                    unoptimized
+                                    className="h-5 w-5 grayscale opacity-80 transition-opacity group-hover:opacity-100"
+                                />
+                            </a>
+                        ))}
+                    </div>
                 </section>
             )}
             <SiteFooter/>

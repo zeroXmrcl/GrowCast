@@ -56,6 +56,7 @@ const sectionLinks = [
     {href: "#status", label: "Status"},
     {href: "#hardware", label: "Hardware"},
     {href: "#notes", label: "Notes"},
+    {href: "#otherSettings", label: "Other"},
 ];
 
 const controlClassName =
@@ -93,7 +94,7 @@ function NavLink({href, label}: {href: string; label: string}) {
     return (
         <Link
             href={href}
-            className="block rounded-md border border-transparent px-3 py-2 text-sm text-[var(--admin-muted)] hover:border-[var(--admin-border)] hover:bg-[var(--admin-surface-muted)] hover:text-[var(--admin-text)]"
+            className="block rounded-md border border-transparent px-3 py-2 text-sm text-(--admin-muted) hover:border-(--admin-border) hover:bg-(--admin-surface-muted) hover:text-(--admin-text)"
         >
             {label}
         </Link>
@@ -105,15 +106,15 @@ function AdminPanel({id, title, description, actions, children, className}: Admi
         <section
             id={id}
             className={joinClasses(
-                "scroll-mt-20 overflow-hidden rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]",
+                "scroll-mt-20 overflow-hidden rounded-md border border-(--admin-border) bg-(--admin-surface-muted)",
                 className,
             )}
         >
-            <div className="flex flex-col gap-3 border-b border-[var(--admin-border)] px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-3 border-b border-(--admin-border) px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                    <h2 className="text-sm font-semibold text-[var(--admin-text)]">{title}</h2>
+                    <h2 className="text-sm font-semibold text-(--admin-text)">{title}</h2>
                     {description ? (
-                        <p className="mt-1 text-sm text-[var(--admin-muted)]">{description}</p>
+                        <p className="mt-1 text-sm text-(--admin-muted)">{description}</p>
                     ) : null}
                 </div>
                 {actions ? <div className="shrink-0">{actions}</div> : null}
@@ -126,9 +127,9 @@ function AdminPanel({id, title, description, actions, children, className}: Admi
 function AdminField({label, hint, children}: AdminFieldProps) {
     return (
         <label className="block">
-            <span className="mb-2 block text-xs font-medium text-[var(--admin-muted)]">{label}</span>
+            <span className="mb-2 block text-xs font-medium text-(--admin-muted)">{label}</span>
             {children}
-            {hint ? <span className="mt-2 block text-xs text-[var(--admin-subtle)]">{hint}</span> : null}
+            {hint ? <span className="mt-2 block text-xs text-(--admin-subtle)">{hint}</span> : null}
         </label>
     );
 }
@@ -142,7 +143,7 @@ function AdminTextarea({className, ...props}: ComponentPropsWithoutRef<"textarea
         <textarea
             {...props}
             className={joinClasses(
-                "min-h-[120px] w-full rounded-md border border-[var(--admin-border-strong)] bg-[var(--admin-surface)] px-3 py-2 text-sm text-[var(--admin-text)] outline-none placeholder:text-[var(--admin-subtle)] focus:border-zinc-500 focus:bg-[var(--admin-surface-muted)] disabled:cursor-not-allowed disabled:border-[var(--admin-border)] disabled:bg-[#1d1d1d] disabled:text-[var(--admin-subtle)]",
+                "min-h-30 w-full rounded-md border border-(--admin-border-strong) bg-(--admin-surface) px-3 py-2 text-sm text-(--admin-text) outline-none placeholder:text-(--admin-subtle) focus:border-zinc-500 focus:bg-(--admin-surface-muted) disabled:cursor-not-allowed disabled:border-(--admin-border) disabled:bg-[#1d1d1d] disabled:text-(--admin-subtle)",
                 className,
             )}
         />
@@ -162,18 +163,18 @@ function AdminSelect({className, children, ...props}: ComponentPropsWithoutRef<"
 
 function AdminCheckboxRow({label, description, className, ...props}: AdminCheckboxRowProps) {
     return (
-        <label className="flex items-start gap-3 rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface)] px-3 py-3">
+        <label className="flex items-start gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
             <input
                 {...props}
                 type="checkbox"
                 className={joinClasses(
-                    "mt-0.5 h-4 w-4 rounded border-[var(--admin-border-strong)] bg-[var(--admin-surface)] accent-zinc-300",
+                    "mt-0.5 h-4 w-4 rounded border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300",
                     className,
                 )}
             />
             <span className="min-w-0">
-                <span className="block text-sm font-medium text-[var(--admin-text)]">{label}</span>
-                {description ? <span className="mt-1 block text-xs text-[var(--admin-muted)]">{description}</span> : null}
+                <span className="block text-sm font-medium text-(--admin-text)">{label}</span>
+                {description ? <span className="mt-1 block text-xs text-(--admin-muted)">{description}</span> : null}
             </span>
         </label>
     );
@@ -187,7 +188,7 @@ function AdminButton({className, tone = "secondary", type = "button", ...props}:
             {...props}
             type={type}
             className={joinClasses(
-                "inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium disabled:cursor-not-allowed disabled:border-[var(--admin-border)] disabled:bg-[#1d1d1d] disabled:text-[var(--admin-subtle)]",
+                "inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium disabled:cursor-not-allowed disabled:border-(--admin-border) disabled:bg-[#1d1d1d] disabled:text-(--admin-subtle)",
                 getButtonToneClasses(tone),
                 className,
             )}
@@ -250,6 +251,19 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
         const result = await loginAdmin(username, password, clientKey);
 
         if (!result.ok) {
+            console.warn("admin login fail", {
+                ip,
+                username,
+                at: new Date().toISOString(),
+            });
+        } else {
+            console.info("admin login successful", {
+                ip,
+                at: new Date().toISOString(),
+            });
+        }
+
+        if (!result.ok) {
             if (result.code === "rate_limited") {
                 redirect(`/admin?error=rate_limited&retry=${result.retryAfterSeconds ?? 900}`);
             }
@@ -294,6 +308,14 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                 estimatedHarvestDate: String(formData.get("estimatedHarvestDate") ?? ""),
                 notes: String(formData.get("statusNotes") ?? ""),
             },
+            otherSettings: {
+                youtube: String(formData.get("youtube") ?? ""),
+                twitter: String(formData.get("twitter") ?? ""),
+                instagram: String(formData.get("instagram") ?? ""),
+                discordInvite: String(formData.get("discordInvite") ?? ""),
+                growDiaries: String(formData.get("growDiaries") ?? ""),
+                customWebsite: String(formData.get("customWebsite") ?? ""),
+            }
         });
 
         revalidatePath("/");
@@ -303,7 +325,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
 
     if (!isLoggedIn) {
         return (
-            <div className="admin-theme min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)]">
+            <div className="admin-theme min-h-screen bg-(--admin-bg) text-(--admin-text)">
                 <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
                     <div className="w-full space-y-4">
                         <AdminPanel title="Sign In">
@@ -385,9 +407,9 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
     const grow = await getCurrentGrow();
 
     return (
-        <div className="admin-theme min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)] lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
-            <aside className="border-b border-[var(--admin-border)] bg-[var(--admin-surface)] lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
-                <div className="border-b border-[var(--admin-border)] px-4 py-4">
+        <div className="admin-theme min-h-screen bg-(--admin-bg) text-(--admin-text) lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
+            <aside className="border-b border-(--admin-border) bg-(--admin-surface) lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+                <div className="border-b border-(--admin-border) px-4 py-4">
                     <Link href="/" className="flex items-center gap-3">
                         <Image
                             src="/growCastLogo_white.svg"
@@ -397,14 +419,14 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                             priority
                         />
                         <div className="min-w-0">
-                            <p className="text-sm font-semibold text-[var(--admin-text)]">GrowCast</p>
+                            <p className="text-sm font-semibold text-(--admin-text)">GrowCast</p>
                         </div>
                     </Link>
                 </div>
 
                 <div className="hidden space-y-6 px-3 py-4 lg:block">
                     <div>
-                        <p className="px-3 text-xs font-medium text-[var(--admin-subtle)]">Sections</p>
+                        <p className="px-3 text-xs font-medium text-(--admin-subtle)">Sections</p>
                         <nav className="mt-2 space-y-1">
                             {sectionLinks.map((item) => (
                                 <NavLink key={item.href} href={item.href} label={item.label}/>
@@ -415,10 +437,10 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
             </aside>
 
             <div className="min-w-0">
-                <header className="sticky top-0 z-20 flex h-[61px] items-center justify-between border-b border-[var(--admin-border)] bg-[var(--admin-bg)] px-4 sm:px-6">
+                <header className="sticky top-0 z-20 flex h-15.25 items-center justify-between border-b border-(--admin-border) bg-(--admin-bg) px-4 sm:px-6">
                     <div className="min-w-0">
-                        <p className="text-xs text-[var(--admin-muted)]">Control Panel</p>
-                        <p className="truncate text-sm font-semibold text-[var(--admin-text)]">Settings</p>
+                        <p className="text-xs text-(--admin-muted)">Control Panel</p>
+                        <p className="truncate text-sm font-semibold text-(--admin-text)">Settings</p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -603,6 +625,52 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                         />
                                     </AdminField>
                                 </AdminPanel>
+
+                                <AdminPanel id="otherSettings" title="Other Settings">
+                                    <AdminField label="YouTube">
+                                        <AdminInput
+                                            name="youtube"
+                                            defaultValue={grow.otherSettings.youtube}
+                                            placeholder="https://www.youtube.com/..."
+                                        />
+                                    </AdminField>
+
+                                    <AdminField label="X (Formerly Twitter)">
+                                        <AdminInput
+                                            name="twitter"
+                                            defaultValue={grow.otherSettings.twitter}
+                                            placeholder="https://www.x.com/..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="Instagram">
+                                        <AdminInput
+                                            name="instagram"
+                                            defaultValue={grow.otherSettings.instagram}
+                                            placeholder="https://www.instagram.com/..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="GrowDiaries">
+                                        <AdminInput
+                                            name="growDiaries"
+                                            defaultValue={grow.otherSettings.growDiaries}
+                                            placeholder="https://growdiaries.com/..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="Discord Invite">
+                                        <AdminInput
+                                            name="discordInvite"
+                                            defaultValue={grow.otherSettings.discordInvite}
+                                            placeholder="https://www.youtube.com/..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="Custom URL">
+                                        <AdminInput
+                                            name="customWebsite"
+                                            defaultValue={grow.otherSettings.customWebsite}
+                                            placeholder="https://growcast.0xmarcel.com/"
+                                        />
+                                    </AdminField>
+                                </AdminPanel>
                             </div>
 
                             <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
@@ -625,21 +693,21 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                         <Link
                                             href="/"
                                             target="_blank"
-                                            className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] px-3 py-2 text-sm font-medium text-[var(--admin-text)] transition hover:border-zinc-500 hover:bg-[var(--admin-surface-muted)]"
+                                            className="rounded-xl border border-(--admin-border) bg-(--admin-bg) px-3 py-2 text-sm font-medium text-(--admin-text) transition hover:border-zinc-500 hover:bg-(--admin-surface-muted)"
                                         >
                                             Open Dashboard
                                         </Link>
                                         <Link
                                             href="https://growcast.0xmarcel.com/"
                                             target="_blank"
-                                            className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] px-3 py-2 text-sm font-medium text-[var(--admin-text)] transition hover:border-zinc-500 hover:bg-[var(--admin-surface-muted)]"
+                                            className="rounded-xl border border-(--admin-border) bg-(--admin-bg) px-3 py-2 text-sm font-medium text-(--admin-text) transition hover:border-zinc-500 hover:bg-(--admin-surface-muted)"
                                         >
                                             GrowCast Website
                                         </Link>
                                         <Link
                                             href="https://github.com/zeroXmrcl/GrowCast"
                                             target="_blank"
-                                            className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-bg)] px-3 py-2 text-sm font-medium text-[var(--admin-text)] transition hover:border-zinc-500 hover:bg-[var(--admin-surface-muted)]"
+                                            className="rounded-xl border border-(--admin-border) bg-(--admin-bg) px-3 py-2 text-sm font-medium text-(--admin-text) transition hover:border-zinc-500 hover:bg-(--admin-surface-muted)"
                                         >
                                             GitHub Repo
                                         </Link>

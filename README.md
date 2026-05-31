@@ -26,8 +26,11 @@ The official project site is [growcast.0xmarcel.com](https://growcast.0xmarcel.c
 - npm
 - Node.js 20 LTS or newer
 - An IP camera with RTSP support
+- npm (project includes `package-lock.json`)
 - MediaMTX server (to convert RTSP input into HLS output)
-- Cloudflare account + `cloudflared` (for encrypted public access)
+- Node.js 20 LTS or newer (assumption based on Next.js 16 setup)
+- Docker Engine + Docker Compose plugin (for containerized setup)
+- Cloudflare account + `cloudflared` (for public tunnel access)
 
 ### Installation
 1. Clone the repository.
@@ -54,7 +57,52 @@ ADMIN_PASSWORD_HASH=scrypt$...$...
 ADMIN_SESSION_SECRET=at_least_32_chars_random_secret
 ```
 
+Notes:
+- `ADMIN_PASSWORD_HASH` must use the `scrypt$...` format.
+- `ADMIN_SESSION_SECRET` must be at least 32 characters.
+- The same `.env.local` file is used by `docker compose` through `env_file`.
 ## 4. Running the Application
+
+### Docker Compose
+
+The repository already includes a production-ready `Dockerfile` and `docker-compose.yml`. This is the supported way to run GrowCast in a container.
+
+1. Create admin credentials first:
+
+```bash
+npm run setup:admin
+```
+
+2. Start the container:
+
+```bash
+docker compose up --build -d
+```
+
+3. Open `http://localhost:3000`.
+
+Useful commands:
+
+```bash
+docker compose logs -f growcast
+docker compose down
+```
+
+What gets persisted on the host:
+- `./data` -> `/app/data`
+- `./extensions` -> `/app/extensions`
+- `./public/setup` -> `/app/public/setup`
+- `./public/yourPictures` -> `/app/public/yourPictures`
+
+This means grow data, timelapse assets, and uploaded media survive container restarts and image rebuilds.
+
+Optional port override:
+- The compose file publishes `${GROWCAST_PORT:-3000}:3000`.
+- If you want a different host port, set `GROWCAST_PORT` before starting Compose.
+
+Important:
+- The container only runs GrowCast. MediaMTX is still a separate service and must be run outside this compose file.
+- `.env.local`, media folders, and `data/` are intentionally not baked into the image. They are provided at runtime.
 
 ### Development
 
@@ -71,6 +119,8 @@ npm run build
 npm run start
 ```
 
+This starts the standard Next.js production server. The Docker image builds a standalone bundle automatically during `docker compose build`.
+
 ## 5. Project Structure
 
 ```text
@@ -79,9 +129,11 @@ app/
   gallery/page.tsx             # Gallery page
   admin/page.tsx               # Admin login + dashboard
   admin/logout/route.ts        # Logout endpoint
+  api/data/current-grow/       # Current grow JSON endpoint
   api/snapshots/[filename]/    # Serves snapshot images
-  api/timelapse/[filename]/    # Serves timelapse video
+  api/timelapse/               # Serves latest timelapse video
 components/
+  dash-pictures.tsx
   site-header.tsx
   site-footer.tsx
   snapshot-gallery.tsx
@@ -99,7 +151,7 @@ public/
   setup/                       # Optional setup photos shown on homepage
   yourPictures/                # Optional user uploaded pictures shown on dashboard
 extensions/
-  GrowCast-Timelapse/          # Optional plugin folder
+  GrowCast-Timelapse/          # Optional plugin folder (not included)
 ```
 
 ## 6. Configuration
@@ -136,7 +188,7 @@ Since some cameras expose RTSP, use MediaMTX to convert RTSP to HLS:
 1. Configure your RTSP camera (RTSP source looks somewhat like this: `rtsp://<camera-ip>:554/<path>`).
 2. Run MediaMTX and create a path that ingests RTSP.
 3. Use MediaMTX HLS output URL as the stream URL in GrowCast admin (`/admin`), for example:
-   - `http://<mediamtx-host>:8888/<path>/index.m3u8`
+   - `http://<mediamtx-host>:8888/<path>/`
 4. Save in GrowCast settings.
 
 ## 8. API / Backend Overview
@@ -149,14 +201,15 @@ This app uses Next.js route handlers and local filesystem storage.
 - If file is missing, default data is generated.
 
 ### Route handlers
+- `GET /api/data/current-grow`
+  - Returns the normalized grow record as JSON
+  - Uses `Cache-Control: no-store, must-revalidate`
 - `GET /api/snapshots/[filename]`
   - Serves image files from `extensions/GrowCast-Timelapse/snapshots`
-- `GET /api/timelapse/[filename]`
+- `GET /api/timelapse`
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
 - `GET /api/data/current-grow`
   - Returns current grow data
-- `POST /admin/logout`
-  - Clears admin session and redirects to `/admin`
 
 ### Auth model
 - Username + scrypt password hash from env vars
@@ -179,7 +232,6 @@ To make the HLS source and app publicly accessible without exposing your home ne
 
 Important:
 - Keep admin credentials strong (`ADMIN_*` env vars).
-- Restrict access where possible, bot protection is recommended.
 
 ## 10. Troubleshooting
 
