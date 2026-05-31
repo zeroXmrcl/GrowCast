@@ -82,9 +82,11 @@ app/
   gallery/page.tsx             # Gallery page
   admin/page.tsx               # Admin login + dashboard
   admin/logout/route.ts        # Logout endpoint
+  api/data/current-grow/       # Current grow JSON endpoint
   api/snapshots/[filename]/    # Serves snapshot images
-  api/timelapse/[filename]/    # Serves timelapse video
+  api/timelapse/               # Serves latest timelapse video
 components/
+  dash-pictures.tsx
   site-header.tsx
   site-footer.tsx
   snapshot-gallery.tsx
@@ -154,10 +156,13 @@ This app uses Next.js route handlers and local filesystem storage.
 - If file is missing, default data is generated automatically.
 
 ### Route handlers
+- `GET /api/data/current-grow`
+  - Returns the normalized grow record as JSON
+  - Uses `Cache-Control: no-store, must-revalidate`
 - `GET /api/snapshots/[filename]`
   - Serves image files from `extensions/GrowCast-Timelapse/snapshots`
   - Rejects unsafe filename patterns
-- `GET /api/timelapse/[filename]`
+- `GET /api/timelapse`
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
   - Returns 404 if missing
 - `POST /admin/logout`
