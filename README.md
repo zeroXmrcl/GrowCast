@@ -26,6 +26,7 @@ The official project site is [growcast.0xmarcel.com](https://growcast.0xmarcel.c
 - npm
 - Node.js 20 LTS or newer
 - An IP camera with RTSP support
+- npm (project includes `package-lock.json`)
 - MediaMTX server (to convert RTSP input into HLS output)
 - Cloudflare account + `cloudflared` (for encrypted public access)
 
@@ -79,9 +80,11 @@ app/
   gallery/page.tsx             # Gallery page
   admin/page.tsx               # Admin login + dashboard
   admin/logout/route.ts        # Logout endpoint
+  api/data/current-grow/       # Current grow JSON endpoint
   api/snapshots/[filename]/    # Serves snapshot images
-  api/timelapse/[filename]/    # Serves timelapse video
+  api/timelapse/               # Serves latest timelapse video
 components/
+  dash-pictures.tsx
   site-header.tsx
   site-footer.tsx
   snapshot-gallery.tsx
@@ -99,7 +102,7 @@ public/
   setup/                       # Optional setup photos shown on homepage
   yourPictures/                # Optional user uploaded pictures shown on dashboard
 extensions/
-  GrowCast-Timelapse/          # Optional plugin folder
+  GrowCast-Timelapse/          # Optional plugin folder (not included)
 ```
 
 ## 6. Configuration
@@ -136,7 +139,7 @@ Since some cameras expose RTSP, use MediaMTX to convert RTSP to HLS:
 1. Configure your RTSP camera (RTSP source looks somewhat like this: `rtsp://<camera-ip>:554/<path>`).
 2. Run MediaMTX and create a path that ingests RTSP.
 3. Use MediaMTX HLS output URL as the stream URL in GrowCast admin (`/admin`), for example:
-   - `http://<mediamtx-host>:8888/<path>/index.m3u8`
+   - `http://<mediamtx-host>:8888/<path>/`
 4. Save in GrowCast settings.
 
 ## 8. API / Backend Overview
@@ -155,8 +158,6 @@ This app uses Next.js route handlers and local filesystem storage.
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
 - `GET /api/data/current-grow`
   - Returns current grow data
-- `POST /admin/logout`
-  - Clears admin session and redirects to `/admin`
 
 ### Auth model
 - Username + scrypt password hash from env vars
@@ -179,7 +180,6 @@ To make the HLS source and app publicly accessible without exposing your home ne
 
 Important:
 - Keep admin credentials strong (`ADMIN_*` env vars).
-- Restrict access where possible, bot protection is recommended.
 
 ## 10. Troubleshooting
 
