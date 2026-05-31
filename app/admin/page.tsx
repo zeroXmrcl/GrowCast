@@ -253,6 +253,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
         if (!result.ok) {
             console.warn("admin login fail", {
                 ip,
+                username,
                 at: new Date().toISOString(),
             });
         } else {
