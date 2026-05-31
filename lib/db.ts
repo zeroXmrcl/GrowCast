@@ -22,6 +22,15 @@ export type GrowStatus = {
   notes: string;
 };
 
+export type OtherSettings = {
+  youtube: string;
+  twitter: string;
+  instagram: string;
+  growDiaries: string;
+  discordUser: string;
+  discordInvite: string;
+};
+
 export type GrowRecord = {
   id: string;
   name: string;
@@ -32,24 +41,7 @@ export type GrowRecord = {
   details: GrowDetails;
   growSetup: GrowSetup;
   status: GrowStatus;
-  strain: string;
-  stage: string;
-  seededAt: string;
-  lightSchedule: string;
-  updatedAt: string;
-  notes: string;
-};
-
-type StoredGrowRecord = {
-  id: string;
-  name: string;
-  showGrowName: boolean;
-  plant: string;
-  plantAmount: number;
-  streamUrl: string;
-  details: GrowDetails;
-  growSetup: GrowSetup;
-  status: GrowStatus;
+  otherSettings: OtherSettings;
 };
 
 export type GrowUpdateInput = {
@@ -58,14 +50,10 @@ export type GrowUpdateInput = {
   plant: string;
   plantAmount?: number;
   streamUrl: string;
-  details?: Partial<GrowDetails>;
-  strain?: string;
-  stage?: string;
-  seededAt?: string;
-  lightSchedule?: string;
-  notes?: string;
+  details?: Partial<Omit<GrowDetails, "updatedAt">>;
   growSetup?: Partial<GrowSetup>;
   status?: Partial<GrowStatus>;
+  otherSettings?: Partial<OtherSettings>;
 };
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -105,18 +93,50 @@ function asBoolean(value: unknown, fallback = false): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
-function toStoredGrowRecord(record: GrowRecord): StoredGrowRecord {
+function normalizeSeededAt(value: string, fallback: string): string {
+  return parseDateOnly(value) ? value : fallback;
+}
+
+function readNestedString<T extends string>(
+  root: Record<string, unknown>,
+  nested: Record<string, unknown>,
+  key: T,
+  fallback: string,
+): string {
+  return asString(nested[key], asString(root[key], fallback));
+}
+
+function mergeDefined<T extends Record<string, unknown>>(current: T, updates?: Partial<T>): T {
+  if (!updates) {
+    return current;
+  }
+
+  const next = { ...current } as T;
+  for (const [key, value] of Object.entries(updates) as Array<[keyof T, T[keyof T] | undefined]>) {
+    if (value !== undefined) {
+      next[key] = value;
+    }
+  }
+
+  return next;
+}
+
+function mergeGrowDetails(
+  current: GrowDetails,
+  updates?: GrowUpdateInput["details"],
+): GrowDetails {
+  const next = mergeDefined(current, updates);
+
   return {
-    id: record.id,
-    name: record.name,
-    showGrowName: record.showGrowName,
-    plant: record.plant,
-    plantAmount: record.plantAmount,
-    streamUrl: record.streamUrl,
-    details: record.details,
-    growSetup: record.growSetup,
-    status: record.status,
+    ...next,
+    seededAt: normalizeSeededAt(next.seededAt, current.seededAt),
+    updatedAt: new Date().toISOString(),
   };
+}
+
+async function saveCurrentGrow(record: GrowRecord): Promise<void> {
+  await mkdir(DATA_DIR, { recursive: true });
+  await writeFile(DATA_FILE, JSON.stringify(record, null, 2), "utf8");
 }
 
 const DEFAULT_GROW: GrowRecord = {
@@ -148,12 +168,14 @@ const DEFAULT_GROW: GrowRecord = {
     notes: "Growing steadily so far",
   },
 
-  strain: "Cherry Tomato",
-  stage: "vegetative",
-  seededAt: "2026-03-01",
-  lightSchedule: "16/8",
-  updatedAt: "2026-03-30T21:58:00Z",
-  notes: "First attempt growing tomatoes – hoping for a good harvest!",
+  otherSettings: {
+    youtube: "",
+    twitter: "",
+    instagram: "",
+    growDiaries: "",
+    discordUser: "",
+    discordInvite: "",
+  },
 };
 
 function normalizeGrowRecord(raw: unknown): GrowRecord {
@@ -161,17 +183,18 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
   const rawDetails = (parsed.details ?? {}) as Record<string, unknown>;
   const rawSetup = (parsed.growSetup ?? {}) as Record<string, unknown>;
   const rawStatus = (parsed.status ?? {}) as Record<string, unknown>;
-
-  const seededAtCandidate = asString(rawDetails.seededAt, asString(parsed.seededAt, DEFAULT_GROW.details.seededAt));
-  const seededAt = parseDateOnly(seededAtCandidate) ? seededAtCandidate : DEFAULT_GROW.details.seededAt;
+  const rawSettings = (parsed.otherSettings ?? {}) as Record<string, unknown>;
 
   const details: GrowDetails = {
-    strain: asString(rawDetails.strain, asString(parsed.strain, DEFAULT_GROW.details.strain)),
-    stage: asString(rawDetails.stage, asString(parsed.stage, DEFAULT_GROW.details.stage)),
-    seededAt,
-    lightSchedule: asString(rawDetails.lightSchedule, asString(parsed.lightSchedule, DEFAULT_GROW.details.lightSchedule)),
-    updatedAt: asString(rawDetails.updatedAt, asString(parsed.updatedAt, DEFAULT_GROW.details.updatedAt)),
-    notes: asString(rawDetails.notes, asString(parsed.notes, DEFAULT_GROW.details.notes)),
+    strain: readNestedString(parsed, rawDetails, "strain", DEFAULT_GROW.details.strain),
+    stage: readNestedString(parsed, rawDetails, "stage", DEFAULT_GROW.details.stage),
+    seededAt: normalizeSeededAt(
+      readNestedString(parsed, rawDetails, "seededAt", DEFAULT_GROW.details.seededAt),
+      DEFAULT_GROW.details.seededAt,
+    ),
+    lightSchedule: readNestedString(parsed, rawDetails, "lightSchedule", DEFAULT_GROW.details.lightSchedule),
+    updatedAt: readNestedString(parsed, rawDetails, "updatedAt", DEFAULT_GROW.details.updatedAt),
+    notes: readNestedString(parsed, rawDetails, "notes", DEFAULT_GROW.details.notes),
   };
 
   const growSetup: GrowSetup = {
@@ -186,6 +209,15 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     notes: asString(rawStatus.notes, DEFAULT_GROW.status.notes),
   };
 
+  const otherSettings: OtherSettings = {
+    youtube: asString(rawSettings.youtube, DEFAULT_GROW.otherSettings.youtube),
+    twitter: asString(rawSettings.twitter, DEFAULT_GROW.otherSettings.twitter),
+    instagram: asString(rawSettings.instagram, DEFAULT_GROW.otherSettings.instagram),
+    growDiaries: asString(rawSettings.growDiaries, DEFAULT_GROW.otherSettings.growDiaries),
+    discordUser: asString(rawSettings.discordUser, DEFAULT_GROW.otherSettings.discordUser),
+    discordInvite: asString(rawSettings.discordInvite, DEFAULT_GROW.otherSettings.discordInvite),
+  };
+
   return {
     id: asString(parsed.id, DEFAULT_GROW.id),
     name: asString(parsed.name, DEFAULT_GROW.name),
@@ -194,14 +226,9 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     plantAmount: asNumber(parsed.plantAmount, DEFAULT_GROW.plantAmount),
     streamUrl: asString(parsed.streamUrl, DEFAULT_GROW.streamUrl),
     details,
+    otherSettings,
     growSetup,
     status,
-    strain: details.strain,
-    stage: details.stage,
-    seededAt: details.seededAt,
-    lightSchedule: details.lightSchedule,
-    updatedAt: details.updatedAt,
-    notes: details.notes,
   };
 }
 
@@ -209,8 +236,7 @@ async function ensureDataFile(): Promise<void> {
   try {
     await readFile(DATA_FILE, "utf8");
   } catch {
-    await mkdir(DATA_DIR, { recursive: true });
-    await writeFile(DATA_FILE, JSON.stringify(toStoredGrowRecord(DEFAULT_GROW), null, 2), "utf8");
+    await saveCurrentGrow(DEFAULT_GROW);
   }
 }
 
@@ -228,24 +254,6 @@ export async function getCurrentGrow(): Promise<GrowRecord> {
 export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRecord> {
   const current = await getCurrentGrow();
 
-  const incomingDetails = input.details ?? {};
-  const seededAt =
-    typeof incomingDetails.seededAt === "string" && parseDateOnly(incomingDetails.seededAt)
-      ? incomingDetails.seededAt
-      : typeof input.seededAt === "string" && parseDateOnly(input.seededAt)
-        ? input.seededAt
-        : current.details.seededAt;
-
-  const details: GrowDetails = {
-    ...current.details,
-    strain: incomingDetails.strain ?? input.strain ?? current.details.strain,
-    stage: incomingDetails.stage ?? input.stage ?? current.details.stage,
-    seededAt,
-    lightSchedule: incomingDetails.lightSchedule ?? input.lightSchedule ?? current.details.lightSchedule,
-    notes: incomingDetails.notes ?? input.notes ?? current.details.notes,
-    updatedAt: new Date().toISOString(),
-  };
-
   const nextGrow: GrowRecord = {
     ...current,
     name: input.name,
@@ -253,25 +261,13 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
     plant: input.plant,
     plantAmount: Number.isFinite(input.plantAmount) ? Number(input.plantAmount) : current.plantAmount,
     streamUrl: input.streamUrl,
-    growSetup: {
-      ...current.growSetup,
-      ...(input.growSetup ?? {}),
-    },
-    status: {
-      ...current.status,
-      ...(input.status ?? {}),
-    },
-    details,
-    strain: details.strain,
-    stage: details.stage,
-    seededAt: details.seededAt,
-    lightSchedule: details.lightSchedule,
-    updatedAt: details.updatedAt,
-    notes: details.notes,
+    growSetup: mergeDefined(current.growSetup, input.growSetup),
+    status: mergeDefined(current.status, input.status),
+    otherSettings: mergeDefined(current.otherSettings, input.otherSettings),
+    details: mergeGrowDetails(current.details, input.details),
   };
 
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(DATA_FILE, JSON.stringify(toStoredGrowRecord(nextGrow), null, 2), "utf8");
+  await saveCurrentGrow(nextGrow);
 
   return nextGrow;
 }
