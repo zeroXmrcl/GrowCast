@@ -74,6 +74,8 @@ npm run build
 npm run start
 ```
 
+This starts the standard Next.js production server. The Docker image builds a standalone bundle automatically during `docker compose build`.
+
 ## 5. Project Structure
 
 ```text
