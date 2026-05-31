@@ -251,6 +251,18 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
         const result = await loginAdmin(username, password, clientKey);
 
         if (!result.ok) {
+            console.warn("admin login fail", {
+                ip,
+                at: new Date().toISOString(),
+            });
+        } else {
+            console.info("admin login successful", {
+                ip,
+                at: new Date().toISOString(),
+            });
+        }
+
+        if (!result.ok) {
             if (result.code === "rate_limited") {
                 redirect(`/admin?error=rate_limited&retry=${result.retryAfterSeconds ?? 900}`);
             }
