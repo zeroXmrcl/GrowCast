@@ -27,8 +27,8 @@ export type OtherSettings = {
   twitter: string;
   instagram: string;
   growDiaries: string;
-  discordUser: string;
   discordInvite: string;
+  customWebsite: string;
 };
 
 export type GrowRecord = {
@@ -173,8 +173,8 @@ const DEFAULT_GROW: GrowRecord = {
     twitter: "",
     instagram: "",
     growDiaries: "",
-    discordUser: "",
     discordInvite: "",
+    customWebsite: "",
   },
 };
 
@@ -214,8 +214,8 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     twitter: asString(rawSettings.twitter, DEFAULT_GROW.otherSettings.twitter),
     instagram: asString(rawSettings.instagram, DEFAULT_GROW.otherSettings.instagram),
     growDiaries: asString(rawSettings.growDiaries, DEFAULT_GROW.otherSettings.growDiaries),
-    discordUser: asString(rawSettings.discordUser, DEFAULT_GROW.otherSettings.discordUser),
     discordInvite: asString(rawSettings.discordInvite, DEFAULT_GROW.otherSettings.discordInvite),
+    customWebsite: asString(rawSettings.customWebsite, DEFAULT_GROW.otherSettings.customWebsite),
   };
 
   return {

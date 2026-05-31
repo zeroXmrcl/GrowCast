@@ -56,6 +56,7 @@ const sectionLinks = [
     {href: "#status", label: "Status"},
     {href: "#hardware", label: "Hardware"},
     {href: "#notes", label: "Notes"},
+    {href: "#otherSettings", label: "Other"},
 ];
 
 const controlClassName =
@@ -298,9 +299,9 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                 youtube: String(formData.get("youtube") ?? ""),
                 twitter: String(formData.get("twitter") ?? ""),
                 instagram: String(formData.get("instagram") ?? ""),
-                discordUser: String(formData.get("discordUser") ?? ""),
                 discordInvite: String(formData.get("discordInvite") ?? ""),
                 growDiaries: String(formData.get("growDiaries") ?? ""),
+                customWebsite: String(formData.get("customWebsite") ?? ""),
             }
         });
 
@@ -642,18 +643,18 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                             placeholder="https://growdiaries.com/..."
                                         />
                                     </AdminField>
-                                    <AdminField label="Discord Username">
-                                        <AdminInput
-                                            name="discordUsername"
-                                            defaultValue={grow.otherSettings.discordUser}
-                                            placeholder="0xmrcl..."
-                                        />
-                                    </AdminField>
                                     <AdminField label="Discord Invite">
                                         <AdminInput
                                             name="discordInvite"
                                             defaultValue={grow.otherSettings.discordInvite}
                                             placeholder="https://www.youtube.com/..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="Custom URL">
+                                        <AdminInput
+                                            name="customWebsite"
+                                            defaultValue={grow.otherSettings.customWebsite}
+                                            placeholder="https://growcast.0xmarcel.com/"
                                         />
                                     </AdminField>
                                 </AdminPanel>
