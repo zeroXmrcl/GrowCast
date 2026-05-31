@@ -28,7 +28,9 @@ The official project site is [growcast.0xmarcel.com](https://growcast.0xmarcel.c
 - An IP camera with RTSP support
 - npm (project includes `package-lock.json`)
 - MediaMTX server (to convert RTSP input into HLS output)
-- Cloudflare account + `cloudflared` (for encrypted public access)
+- Node.js 20 LTS or newer (assumption based on Next.js 16 setup)
+- Docker Engine + Docker Compose plugin (for containerized setup)
+- Cloudflare account + `cloudflared` (for public tunnel access)
 
 ### Installation
 1. Clone the repository.
@@ -55,7 +57,52 @@ ADMIN_PASSWORD_HASH=scrypt$...$...
 ADMIN_SESSION_SECRET=at_least_32_chars_random_secret
 ```
 
+Notes:
+- `ADMIN_PASSWORD_HASH` must use the `scrypt$...` format.
+- `ADMIN_SESSION_SECRET` must be at least 32 characters.
+- The same `.env.local` file is used by `docker compose` through `env_file`.
 ## 4. Running the Application
+
+### Docker Compose
+
+The repository already includes a production-ready `Dockerfile` and `docker-compose.yml`. This is the supported way to run GrowCast in a container.
+
+1. Create admin credentials first:
+
+```bash
+npm run setup:admin
+```
+
+2. Start the container:
+
+```bash
+docker compose up --build -d
+```
+
+3. Open `http://localhost:3000`.
+
+Useful commands:
+
+```bash
+docker compose logs -f growcast
+docker compose down
+```
+
+What gets persisted on the host:
+- `./data` -> `/app/data`
+- `./extensions` -> `/app/extensions`
+- `./public/setup` -> `/app/public/setup`
+- `./public/yourPictures` -> `/app/public/yourPictures`
+
+This means grow data, timelapse assets, and uploaded media survive container restarts and image rebuilds.
+
+Optional port override:
+- The compose file publishes `${GROWCAST_PORT:-3000}:3000`.
+- If you want a different host port, set `GROWCAST_PORT` before starting Compose.
+
+Important:
+- The container only runs GrowCast. MediaMTX is still a separate service and must be run outside this compose file.
+- `.env.local`, media folders, and `data/` are intentionally not baked into the image. They are provided at runtime.
 
 ### Development
 
