@@ -294,6 +294,14 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                 estimatedHarvestDate: String(formData.get("estimatedHarvestDate") ?? ""),
                 notes: String(formData.get("statusNotes") ?? ""),
             },
+            otherSettings: {
+                youtube: String(formData.get("youtube") ?? ""),
+                twitter: String(formData.get("twitter") ?? ""),
+                instagram: String(formData.get("instagram") ?? ""),
+                discordUser: String(formData.get("discord") ?? ""),
+                discordInvite: String(formData.get("github") ?? ""),
+                growDiaries: String(formData.get("linkedin") ?? ""),
+            }
         });
 
         revalidatePath("/");
@@ -600,6 +608,52 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                             name="notes"
                                             defaultValue={grow.details.notes}
                                             rows={6}
+                                        />
+                                    </AdminField>
+                                </AdminPanel>
+
+                                <AdminPanel id="otherSettings" title="Other Settings">
+                                    <AdminField label="YouTube">
+                                        <AdminInput
+                                            name="youtube"
+                                            defaultValue={grow.otherSettings.youtube}
+                                            placeholder="https://www.youtube.com/..."
+                                        />
+                                    </AdminField>
+
+                                    <AdminField label="X (Formerly Twitter)">
+                                        <AdminInput
+                                            name="twitter"
+                                            defaultValue={grow.otherSettings.twitter}
+                                            placeholder="https://www.x.com/..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="Instagram">
+                                        <AdminInput
+                                            name="instagram"
+                                            defaultValue={grow.otherSettings.instagram}
+                                            placeholder="https://www.instagram.com/..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="GrowDiaries">
+                                        <AdminInput
+                                            name="growDiaries"
+                                            defaultValue={grow.otherSettings.growDiaries}
+                                            placeholder="https://growdiaries.com/..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="Discord Username">
+                                        <AdminInput
+                                            name="discordUsername"
+                                            defaultValue={grow.otherSettings.discordUser}
+                                            placeholder="0xmrcl..."
+                                        />
+                                    </AdminField>
+                                    <AdminField label="Discord Invite">
+                                        <AdminInput
+                                            name="discordInvite"
+                                            defaultValue={grow.otherSettings.discordInvite}
+                                            placeholder="https://www.youtube.com/..."
                                         />
                                     </AdminField>
                                 </AdminPanel>
