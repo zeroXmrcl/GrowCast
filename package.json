@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
+    "start": "next start",
+    "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
     "setup:admin": "node scripts/admin-creator.mjs"
   },
