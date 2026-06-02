@@ -632,59 +632,77 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                 </AdminPanel>
 
                                 <AdminPanel id="climate" title="Climate">
-                                    <AdminField label="Temperature">
-                                        <AdminInput name="temperature" type="number" min={0}
-                                                   defaultValue={grow.climate.temperature}/>
-                                    </AdminField>
-                                    <AdminField label="Humidity">
-                                        <AdminInput name="humidity" type="number" min={0} defaultValue={grow.climate.humidity} />
-                                    </AdminField>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="Temperature">
+                                            <AdminInput
+                                                name="temperature"
+                                                type="number"
+                                                min={0}
+                                                defaultValue={grow.climate.temperature}
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Humidity">
+                                            <AdminInput
+                                                name="humidity"
+                                                type="number"
+                                                min={0}
+                                                defaultValue={grow.climate.humidity}
+                                            />
+                                        </AdminField>
+                                    </div>
                                 </AdminPanel>
 
                                 <AdminPanel id="otherSettings" title="Other Settings">
-                                    <AdminField label="YouTube">
-                                        <AdminInput
-                                            name="youtube"
-                                            defaultValue={grow.otherSettings.youtube}
-                                            placeholder="https://www.youtube.com/..."
-                                        />
-                                    </AdminField>
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="YouTube">
+                                            <AdminInput
+                                                name="youtube"
+                                                defaultValue={grow.otherSettings.youtube}
+                                                placeholder="https://www.youtube.com/..."
+                                            />
+                                        </AdminField>
 
-                                    <AdminField label="X (Formerly Twitter)">
-                                        <AdminInput
-                                            name="twitter"
-                                            defaultValue={grow.otherSettings.twitter}
-                                            placeholder="https://www.x.com/..."
-                                        />
-                                    </AdminField>
-                                    <AdminField label="Instagram">
-                                        <AdminInput
-                                            name="instagram"
-                                            defaultValue={grow.otherSettings.instagram}
-                                            placeholder="https://www.instagram.com/..."
-                                        />
-                                    </AdminField>
-                                    <AdminField label="GrowDiaries">
-                                        <AdminInput
-                                            name="growDiaries"
-                                            defaultValue={grow.otherSettings.growDiaries}
-                                            placeholder="https://growdiaries.com/..."
-                                        />
-                                    </AdminField>
-                                    <AdminField label="Discord Invite">
-                                        <AdminInput
-                                            name="discordInvite"
-                                            defaultValue={grow.otherSettings.discordInvite}
-                                            placeholder="https://www.youtube.com/..."
-                                        />
-                                    </AdminField>
-                                    <AdminField label="Custom URL">
-                                        <AdminInput
-                                            name="customWebsite"
-                                            defaultValue={grow.otherSettings.customWebsite}
-                                            placeholder="https://growcast.0xmarcel.com/"
-                                        />
-                                    </AdminField>
+                                        <AdminField label="X (Formerly Twitter)">
+                                            <AdminInput
+                                                name="twitter"
+                                                defaultValue={grow.otherSettings.twitter}
+                                                placeholder="https://www.x.com/..."
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Instagram">
+                                            <AdminInput
+                                                name="instagram"
+                                                defaultValue={grow.otherSettings.instagram}
+                                                placeholder="https://www.instagram.com/..."
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="GrowDiaries">
+                                            <AdminInput
+                                                name="growDiaries"
+                                                defaultValue={grow.otherSettings.growDiaries}
+                                                placeholder="https://growdiaries.com/..."
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Discord Invite">
+                                            <AdminInput
+                                                name="discordInvite"
+                                                defaultValue={grow.otherSettings.discordInvite}
+                                                placeholder="https://www.youtube.com/..."
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Custom URL">
+                                            <AdminInput
+                                                name="customWebsite"
+                                                defaultValue={grow.otherSettings.customWebsite}
+                                                placeholder="https://growcast.0xmarcel.com/"
+                                            />
+                                        </AdminField>
+                                    </div>
                                 </AdminPanel>
                             </div>
 
