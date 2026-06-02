@@ -8,6 +8,9 @@ import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
+/* TODO Climate widget*/
+/* TODO Light widget (schedule/PPFD)*/
+
 function formatDate(value: string): string {
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {

@@ -52,10 +52,11 @@ type AdminCheckboxRowProps = ComponentPropsWithoutRef<"input"> & {
 const sectionLinks = [
     {href: "#general", label: "General"},
     {href: "#lifecycle", label: "Lifecycle"},
-    {href: "#stream", label: "Stream"},
+    {href: "#climate", label: "Climate"},
     {href: "#status", label: "Status"},
-    {href: "#hardware", label: "Hardware"},
     {href: "#notes", label: "Notes"},
+    {href: "#hardware", label: "Hardware"},
+    {href: "#stream", label: "Stream"},
     {href: "#otherSettings", label: "Other"},
 ];
 
@@ -307,6 +308,10 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                 health: String(formData.get("health") ?? "Healthy"),
                 estimatedHarvestDate: String(formData.get("estimatedHarvestDate") ?? ""),
                 notes: String(formData.get("statusNotes") ?? ""),
+            },
+            climate: {
+              temperature: toNumber(formData.get("temperature")),
+              humidity: toNumber(formData.get("humidity")),
             },
             otherSettings: {
                 youtube: String(formData.get("youtube") ?? ""),
@@ -623,6 +628,16 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                             defaultValue={grow.details.notes}
                                             rows={6}
                                         />
+                                    </AdminField>
+                                </AdminPanel>
+
+                                <AdminPanel id="climate" title="Climate">
+                                    <AdminField label="Temperature">
+                                        <AdminInput name="temperature" type="number" min={0}
+                                                   defaultValue={grow.climate.temperature}/>
+                                    </AdminField>
+                                    <AdminField label="Humidity">
+                                        <AdminInput name="humidity" type="number" min={0} defaultValue={grow.climate.humidity} />
                                     </AdminField>
                                 </AdminPanel>
 

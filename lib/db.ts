@@ -22,6 +22,11 @@ export type GrowStatus = {
   notes: string;
 };
 
+export type Climate = {
+  temperature: number;
+  humidity: number;
+}
+
 export type OtherSettings = {
   youtube: string;
   twitter: string;
@@ -42,6 +47,7 @@ export type GrowRecord = {
   growSetup: GrowSetup;
   status: GrowStatus;
   otherSettings: OtherSettings;
+  climate: Climate;
 };
 
 export type GrowUpdateInput = {
@@ -54,6 +60,7 @@ export type GrowUpdateInput = {
   growSetup?: Partial<GrowSetup>;
   status?: Partial<GrowStatus>;
   otherSettings?: Partial<OtherSettings>;
+  climate?: Partial<Climate>;
 };
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -168,6 +175,11 @@ const DEFAULT_GROW: GrowRecord = {
     notes: "Growing steadily so far",
   },
 
+  climate: {
+    temperature: 25,
+    humidity: 60,
+  },
+
   otherSettings: {
     youtube: "",
     twitter: "",
@@ -183,6 +195,7 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
   const rawDetails = (parsed.details ?? {}) as Record<string, unknown>;
   const rawSetup = (parsed.growSetup ?? {}) as Record<string, unknown>;
   const rawStatus = (parsed.status ?? {}) as Record<string, unknown>;
+  const rawClimate = (parsed.climate ?? {}) as Record<string, unknown>;
   const rawSettings = (parsed.otherSettings ?? {}) as Record<string, unknown>;
 
   const details: GrowDetails = {
@@ -209,6 +222,11 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     notes: asString(rawStatus.notes, DEFAULT_GROW.status.notes),
   };
 
+  const climate: Climate = {
+    temperature: asNumber(rawClimate.temperature, DEFAULT_GROW.climate.temperature),
+    humidity: asNumber(rawClimate.humidity, DEFAULT_GROW.climate.humidity),
+  }
+
   const otherSettings: OtherSettings = {
     youtube: asString(rawSettings.youtube, DEFAULT_GROW.otherSettings.youtube),
     twitter: asString(rawSettings.twitter, DEFAULT_GROW.otherSettings.twitter),
@@ -226,6 +244,7 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     plantAmount: asNumber(parsed.plantAmount, DEFAULT_GROW.plantAmount),
     streamUrl: asString(parsed.streamUrl, DEFAULT_GROW.streamUrl),
     details,
+    climate,
     otherSettings,
     growSetup,
     status,
@@ -265,6 +284,7 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
     status: mergeDefined(current.status, input.status),
     otherSettings: mergeDefined(current.otherSettings, input.otherSettings),
     details: mergeGrowDetails(current.details, input.details),
+    climate: mergeDefined(current.climate, input.climate),
   };
 
   await saveCurrentGrow(nextGrow);
