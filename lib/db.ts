@@ -27,7 +27,7 @@ export type Climate = {
   humidity: number;
 }
 
-export type OtherSettings = {
+export type Socials = {
   youtube: string;
   twitter: string;
   instagram: string;
@@ -46,7 +46,7 @@ export type GrowRecord = {
   details: GrowDetails;
   growSetup: GrowSetup;
   status: GrowStatus;
-  otherSettings: OtherSettings;
+  socials: Socials;
   climate: Climate;
 };
 
@@ -59,7 +59,7 @@ export type GrowUpdateInput = {
   details?: Partial<Omit<GrowDetails, "updatedAt">>;
   growSetup?: Partial<GrowSetup>;
   status?: Partial<GrowStatus>;
-  otherSettings?: Partial<OtherSettings>;
+  socials?: Partial<Socials>;
   climate?: Partial<Climate>;
 };
 
@@ -180,7 +180,7 @@ const DEFAULT_GROW: GrowRecord = {
     humidity: 60,
   },
 
-  otherSettings: {
+  socials: {
     youtube: "",
     twitter: "",
     instagram: "",
@@ -196,7 +196,7 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
   const rawSetup = (parsed.growSetup ?? {}) as Record<string, unknown>;
   const rawStatus = (parsed.status ?? {}) as Record<string, unknown>;
   const rawClimate = (parsed.climate ?? {}) as Record<string, unknown>;
-  const rawSettings = (parsed.otherSettings ?? {}) as Record<string, unknown>;
+  const rawSettings = (parsed.socials ?? parsed.otherSettings ?? {}) as Record<string, unknown>;
 
   const details: GrowDetails = {
     strain: readNestedString(parsed, rawDetails, "strain", DEFAULT_GROW.details.strain),
@@ -227,13 +227,13 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     humidity: asNumber(rawClimate.humidity, DEFAULT_GROW.climate.humidity),
   }
 
-  const otherSettings: OtherSettings = {
-    youtube: asString(rawSettings.youtube, DEFAULT_GROW.otherSettings.youtube),
-    twitter: asString(rawSettings.twitter, DEFAULT_GROW.otherSettings.twitter),
-    instagram: asString(rawSettings.instagram, DEFAULT_GROW.otherSettings.instagram),
-    growDiaries: asString(rawSettings.growDiaries, DEFAULT_GROW.otherSettings.growDiaries),
-    discordInvite: asString(rawSettings.discordInvite, DEFAULT_GROW.otherSettings.discordInvite),
-    customWebsite: asString(rawSettings.customWebsite, DEFAULT_GROW.otherSettings.customWebsite),
+  const socials: Socials = {
+    youtube: asString(rawSettings.youtube, DEFAULT_GROW.socials.youtube),
+    twitter: asString(rawSettings.twitter, DEFAULT_GROW.socials.twitter),
+    instagram: asString(rawSettings.instagram, DEFAULT_GROW.socials.instagram),
+    growDiaries: asString(rawSettings.growDiaries, DEFAULT_GROW.socials.growDiaries),
+    discordInvite: asString(rawSettings.discordInvite, DEFAULT_GROW.socials.discordInvite),
+    customWebsite: asString(rawSettings.customWebsite, DEFAULT_GROW.socials.customWebsite),
   };
 
   return {
@@ -245,7 +245,7 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     streamUrl: asString(parsed.streamUrl, DEFAULT_GROW.streamUrl),
     details,
     climate,
-    otherSettings,
+    socials: socials,
     growSetup,
     status,
   };
@@ -282,7 +282,7 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
     streamUrl: input.streamUrl,
     growSetup: mergeDefined(current.growSetup, input.growSetup),
     status: mergeDefined(current.status, input.status),
-    otherSettings: mergeDefined(current.otherSettings, input.otherSettings),
+    socials: mergeDefined(current.socials, input.socials),
     details: mergeGrowDetails(current.details, input.details),
     climate: mergeDefined(current.climate, input.climate),
   };

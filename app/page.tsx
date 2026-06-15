@@ -44,32 +44,32 @@ export default async function Home() {
     const socialLinks = [
         {
             label: "YouTube",
-            href: grow.otherSettings.youtube.trim(),
+            href: grow.socials.youtube.trim(),
             iconSrc: "https://cdn.simpleicons.org/youtube/71717a",
         },
         {
             label: "X",
-            href: grow.otherSettings.twitter.trim(),
+            href: grow.socials.twitter.trim(),
             iconSrc: "https://cdn.simpleicons.org/x/71717a",
         },
         {
             label: "Instagram",
-            href: grow.otherSettings.instagram.trim(),
+            href: grow.socials.instagram.trim(),
             iconSrc: "https://cdn.simpleicons.org/instagram/71717a",
         },
         {
             label: "GrowDiaries",
-            href: grow.otherSettings.growDiaries.trim(),
+            href: grow.socials.growDiaries.trim(),
             iconSrc: "/growdiaries.svg",
         },
         {
             label: "Discord",
-            href: grow.otherSettings.discordInvite.trim(),
+            href: grow.socials.discordInvite.trim(),
             iconSrc: "https://cdn.simpleicons.org/discord/71717a",
         },
         {
             label: "Custom Website",
-            href: grow.otherSettings.customWebsite.trim(),
+            href: grow.socials.customWebsite.trim(),
             iconSrc: "/globe.svg",
         },
     ].filter(({href}) => href.length > 0);

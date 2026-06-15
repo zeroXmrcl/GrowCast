@@ -57,7 +57,7 @@ const sectionLinks = [
     {href: "#notes", label: "Notes"},
     {href: "#hardware", label: "Hardware"},
     {href: "#stream", label: "Stream"},
-    {href: "#otherSettings", label: "Other"},
+    {href: "#socials", label: "Socials"},
 ];
 
 const controlClassName =
@@ -313,7 +313,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
               temperature: toNumber(formData.get("temperature")),
               humidity: toNumber(formData.get("humidity")),
             },
-            otherSettings: {
+            socials: {
                 youtube: String(formData.get("youtube") ?? ""),
                 twitter: String(formData.get("twitter") ?? ""),
                 instagram: String(formData.get("instagram") ?? ""),
@@ -555,110 +555,12 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                     </div>
                                 </AdminPanel>
 
-                                <AdminPanel id="status" title="Status">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <AdminField label="Health">
-                                            <AdminSelect
-                                                name="health"
-                                                defaultValue={grow.status.health}
-                                            >
-                                                <option value="Healthy">Healthy</option>
-                                                <option value="Warning">Warning</option>
-                                                <option value="Critical">Critical</option>
-                                            </AdminSelect>
-                                        </AdminField>
-
-                                        <AdminField label="Estimated Harvest Date">
-                                            <AdminInput
-                                                name="estimatedHarvestDate"
-                                                type="date"
-                                                defaultValue={grow.status.estimatedHarvestDate}
-                                                disabled
-                                            />
-                                        </AdminField>
-                                    </div>
-
-                                    <div className="mt-4">
-                                        <AdminField label="Health Notes">
-                                            <AdminTextarea
-                                                name="statusNotes"
-                                                defaultValue={grow.status.notes}
-                                                rows={4}
-                                            />
-                                        </AdminField>
-                                    </div>
-                                </AdminPanel>
-
-                                <AdminPanel id="hardware" title="Hardware">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <AdminField label="Medium">
-                                            <AdminInput
-                                                name="growingMedium"
-                                                defaultValue={grow.growSetup.growingMedium}
-                                                placeholder="Soil, coco, hydro..."
-                                            />
-                                        </AdminField>
-
-                                        <AdminField label="Pot Size (L)">
-                                            <AdminInput
-                                                name="potSizeLiters"
-                                                type="number"
-                                                min={0}
-                                                defaultValue={grow.growSetup.potSizeLiters}
-                                            />
-                                        </AdminField>
-                                    </div>
-
-                                    <div className="mt-4">
-                                        <AdminField label="Setup Description (MD-Supported)">
-                                            <AdminTextarea
-                                                name="setupText"
-                                                defaultValue={grow.growSetup.setupText}
-                                                rows={8}
-                                                placeholder={"Tent: ...\nLight: ...\nFan: ..."}
-                                            />
-                                        </AdminField>
-                                    </div>
-                                </AdminPanel>
-
-                                <AdminPanel id="notes" title="Notes">
-                                    <AdminField label="Markdown supported">
-                                        <AdminTextarea
-                                            name="notes"
-                                            defaultValue={grow.details.notes}
-                                            rows={6}
-                                        />
-                                    </AdminField>
-                                </AdminPanel>
-
-                                <AdminPanel id="climate" title="Climate">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <AdminField label="Temperature">
-                                            <AdminInput
-                                                name="temperature"
-                                                type="number"
-                                                min={0}
-                                                defaultValue={grow.climate.temperature}
-                                            />
-                                        </AdminField>
-
-                                        <AdminField label="Humidity">
-                                            <AdminInput
-                                                name="humidity"
-                                                type="number"
-                                                min={0}
-                                                defaultValue={grow.climate.humidity}
-                                            />
-                                        </AdminField>
-                                    </div>
-                                </AdminPanel>
-
-                                <AdminPanel id="otherSettings" title="Other Settings">
+                                <AdminPanel id="socials" title="Socials">
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <AdminField label="YouTube">
                                             <AdminInput
                                                 name="youtube"
-                                                defaultValue={grow.otherSettings.youtube}
+                                                defaultValue={grow.socials.youtube}
                                                 placeholder="https://www.youtube.com/..."
                                             />
                                         </AdminField>
@@ -666,7 +568,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                         <AdminField label="X (Formerly Twitter)">
                                             <AdminInput
                                                 name="twitter"
-                                                defaultValue={grow.otherSettings.twitter}
+                                                defaultValue={grow.socials.twitter}
                                                 placeholder="https://www.x.com/..."
                                             />
                                         </AdminField>
@@ -674,7 +576,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                         <AdminField label="Instagram">
                                             <AdminInput
                                                 name="instagram"
-                                                defaultValue={grow.otherSettings.instagram}
+                                                defaultValue={grow.socials.instagram}
                                                 placeholder="https://www.instagram.com/..."
                                             />
                                         </AdminField>
@@ -682,7 +584,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                         <AdminField label="GrowDiaries">
                                             <AdminInput
                                                 name="growDiaries"
-                                                defaultValue={grow.otherSettings.growDiaries}
+                                                defaultValue={grow.socials.growDiaries}
                                                 placeholder="https://growdiaries.com/..."
                                             />
                                         </AdminField>
@@ -690,7 +592,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                         <AdminField label="Discord Invite">
                                             <AdminInput
                                                 name="discordInvite"
-                                                defaultValue={grow.otherSettings.discordInvite}
+                                                defaultValue={grow.socials.discordInvite}
                                                 placeholder="https://www.youtube.com/..."
                                             />
                                         </AdminField>
@@ -698,7 +600,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                         <AdminField label="Custom URL">
                                             <AdminInput
                                                 name="customWebsite"
-                                                defaultValue={grow.otherSettings.customWebsite}
+                                                defaultValue={grow.socials.customWebsite}
                                                 placeholder="https://growcast.0xmarcel.com/"
                                             />
                                         </AdminField>
