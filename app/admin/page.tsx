@@ -11,6 +11,12 @@ import {
     requireAdmin,
 } from "@/lib/admin-auth";
 import {getCurrentGrow, updateCurrentGrow} from "@/lib/db";
+import {
+    DEFAULT_TIMELAPSE_SETTINGS,
+    getTimelapseSettings,
+    updateTimelapseSettings,
+    type TimelapseQuality,
+} from "@/lib/plugin-settings";
 
 type AdminPageProps = {
     searchParams: Promise<{
@@ -57,6 +63,7 @@ const sectionLinks = [
     {href: "#notes", label: "Notes"},
     {href: "#hardware", label: "Hardware"},
     {href: "#stream", label: "Stream"},
+    {href: "#timelapse", label: "Timelapse"},
     {href: "#socials", label: "Socials"},
 ];
 
@@ -235,6 +242,15 @@ function toNumber(value: FormDataEntryValue | null, fallback = 0): number {
     return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toOptionalNumber(value: FormDataEntryValue | null): number | null {
+    const text = String(value ?? "").trim();
+    if (text.length === 0) {
+        return null;
+    }
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
 export default async function AdminPage({searchParams}: AdminPageProps) {
     const params = await searchParams;
     const isLoggedIn = await isAdminAuthenticated();
@@ -325,6 +341,22 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
             }
         });
 
+        await updateTimelapseSettings({
+            paused: formData.get("timelapsePaused") === "on",
+            timezone: String(formData.get("timelapseTimezone") ?? DEFAULT_TIMELAPSE_SETTINGS.timezone),
+            time1: String(formData.get("timelapseTime1") ?? ""),
+            time2: String(formData.get("timelapseTime2") ?? ""),
+            time3: String(formData.get("timelapseTime3") ?? ""),
+            intervalMinutes: toOptionalNumber(formData.get("timelapseInterval")),
+            timelapseLengthSeconds: toNumber(
+                formData.get("timelapseLength"),
+                DEFAULT_TIMELAPSE_SETTINGS.timelapseLengthSeconds,
+            ),
+            timelapseQuality: String(
+                formData.get("timelapseQuality") ?? DEFAULT_TIMELAPSE_SETTINGS.timelapseQuality,
+            ) as TimelapseQuality,
+        });
+
         revalidatePath("/");
         revalidatePath("/admin");
         redirect("/admin?saved=1");
@@ -412,6 +444,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
     }
 
     const grow = await getCurrentGrow();
+    const timelapseSettings = await getTimelapseSettings();
 
     return (
         <div className="admin-theme min-h-screen bg-(--admin-bg) text-(--admin-text) lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
@@ -689,6 +722,106 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                                 placeholder="https://..."
                                             />
                                         </AdminField>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel
+                                    id="timelapse"
+                                    title="Timelapse"
+                                >
+                                    <div className="space-y-4">
+                                        <AdminCheckboxRow
+                                            name="timelapsePaused"
+                                            defaultChecked={timelapseSettings.paused}
+                                            label="Pause timelapse"
+                                            description="Stops the plugin from taking new snapshots until it is resumed."
+                                        />
+
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <AdminField
+                                                label="Timezone"
+                                                hint="Use an IANA timezone such as UTC or Europe/Berlin."
+                                            >
+                                                <AdminInput
+                                                    name="timelapseTimezone"
+                                                    defaultValue={timelapseSettings.timezone}
+                                                    placeholder="UTC"
+                                                />
+                                            </AdminField>
+
+                                            <AdminField
+                                                label="Interval (minutes)"
+                                                hint="Leave empty to use trigger times only."
+                                            >
+                                                <AdminInput
+                                                    name="timelapseInterval"
+                                                    type="number"
+                                                    min={1}
+                                                    step={1}
+                                                    defaultValue={timelapseSettings.intervalMinutes ?? ""}
+                                                />
+                                            </AdminField>
+                                        </div>
+
+                                        <div>
+                                            <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
+                                                Trigger Times
+                                            </p>
+                                            <div className="grid gap-4 md:grid-cols-3">
+                                                <AdminField label="Time 1">
+                                                    <AdminInput
+                                                        name="timelapseTime1"
+                                                        type="time"
+                                                        lang="en-GB"
+                                                        step={60}
+                                                        defaultValue={timelapseSettings.time1}
+                                                    />
+                                                </AdminField>
+
+                                                <AdminField label="Time 2">
+                                                    <AdminInput
+                                                        name="timelapseTime2"
+                                                        type="time"
+                                                        lang="en-GB"
+                                                        step={60}
+                                                        defaultValue={timelapseSettings.time2}
+                                                    />
+                                                </AdminField>
+
+                                                <AdminField label="Time 3">
+                                                    <AdminInput
+                                                        name="timelapseTime3"
+                                                        type="time"
+                                                        lang="en-GB"
+                                                        step={60}
+                                                        defaultValue={timelapseSettings.time3}
+                                                    />
+                                                </AdminField>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <AdminField label="Timelapse Length (seconds)">
+                                                <AdminInput
+                                                    name="timelapseLength"
+                                                    type="number"
+                                                    min={1}
+                                                    step={1}
+                                                    defaultValue={timelapseSettings.timelapseLengthSeconds}
+                                                />
+                                            </AdminField>
+
+                                            <AdminField label="Timelapse Quality">
+                                                <AdminSelect
+                                                    name="timelapseQuality"
+                                                    defaultValue={timelapseSettings.timelapseQuality}
+                                                >
+                                                    <option value="low">Low</option>
+                                                    <option value="medium">Medium</option>
+                                                    <option value="high">High</option>
+                                                </AdminSelect>
+                                            </AdminField>
+                                        </div>
                                     </div>
                                 </AdminPanel>
 
