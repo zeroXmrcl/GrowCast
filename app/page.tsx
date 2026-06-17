@@ -37,6 +37,37 @@ function getHealthColor(health: string): string {
     }
 }
 
+type DayOrNightProps = {
+    label: string;
+    day: number;
+    night: number;
+    unit: string;
+};
+
+function DayOrNight({label, day, night, unit}: DayOrNightProps) {
+    const hasDay = day !== 0;
+    const hasNight = night !== 0;
+
+    if (!hasDay && !hasNight) {
+        return null;
+    }
+
+    const metricLabel = hasDay && hasNight
+        ? `${label} (D/N)`
+        : `${label} ${hasDay ? "Day" : "Night"}`;
+
+    const value = hasDay && hasNight
+        ? `${day} / ${night}${unit}`
+        : `${hasDay ? day : night}${unit}`;
+
+    return (
+        <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500 dark:text-zinc-400">{metricLabel}</dt>
+            <dd className="text-right text-zinc-900 dark:text-zinc-100">{value}</dd>
+        </div>
+    );
+}
+
 export default async function Home() {
     const grow = await getCurrentGrow();
     const setupImages = getSetupImages();
@@ -129,6 +160,18 @@ export default async function Home() {
                                 <dt className="text-zinc-500 dark:text-zinc-400">Pot Size</dt>
                                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.potSizeLiters}</dd>
                             </div>)}
+                            <DayOrNight
+                                label="Temperature"
+                                day={grow.climate.temperatureDay}
+                                night={grow.climate.temperatureNight}
+                                unit=" C"
+                            />
+                            <DayOrNight
+                                label="Humidity"
+                                day={grow.climate.humidityDay}
+                                night={grow.climate.humidityNight}
+                                unit="%"
+                            />
                             {(formatDate(details.seededAt) != '01.01.2001') && (
                                 <div className="flex justify-between gap-3">
                                     <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>

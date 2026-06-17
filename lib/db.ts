@@ -23,9 +23,11 @@ export type GrowStatus = {
 };
 
 export type Climate = {
-  temperature: number;
-  humidity: number;
-}
+  temperatureDay: number;
+  temperatureNight: number;
+  humidityDay: number;
+  humidityNight: number;
+};
 
 export type Socials = {
   youtube: string;
@@ -176,8 +178,10 @@ const DEFAULT_GROW: GrowRecord = {
   },
 
   climate: {
-    temperature: 25,
-    humidity: 60,
+    temperatureDay: 25,
+    temperatureNight: 20,
+    humidityDay: 60,
+    humidityNight: 65,
   },
 
   socials: {
@@ -223,9 +227,11 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
   };
 
   const climate: Climate = {
-    temperature: asNumber(rawClimate.temperature, DEFAULT_GROW.climate.temperature),
-    humidity: asNumber(rawClimate.humidity, DEFAULT_GROW.climate.humidity),
-  }
+    temperatureDay: asNumber(rawClimate.temperatureDay, DEFAULT_GROW.climate.temperatureDay),
+    temperatureNight: asNumber(rawClimate.temperatureNight, DEFAULT_GROW.climate.temperatureNight),
+    humidityDay: asNumber(rawClimate.humidityDay, DEFAULT_GROW.climate.humidityDay),
+    humidityNight: asNumber(rawClimate.humidityNight, DEFAULT_GROW.climate.humidityNight),
+  };
 
   const socials: Socials = {
     youtube: asString(rawSettings.youtube, DEFAULT_GROW.socials.youtube),

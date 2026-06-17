@@ -310,8 +310,10 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                 notes: String(formData.get("statusNotes") ?? ""),
             },
             climate: {
-              temperature: toNumber(formData.get("temperature")),
-              humidity: toNumber(formData.get("humidity")),
+              temperatureDay: toNumber(formData.get("temperatureDay")),
+              temperatureNight: toNumber(formData.get("temperatureNight")),
+              humidityDay: toNumber(formData.get("humidityDay")),
+              humidityNight: toNumber(formData.get("humidityNight")),
             },
             socials: {
                 youtube: String(formData.get("youtube") ?? ""),
@@ -531,6 +533,141 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                                             <AdminInput
                                                 name="lightSchedule"
                                                 defaultValue={grow.details.lightSchedule}
+                                            />
+                                        </AdminField>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel
+                                    id="climate"
+                                    title="Climate"
+                                >
+                                    <div className="grid gap-6 md:grid-cols-2">
+                                        <div className="space-y-4">
+                                            <p className="text-xs font-semibold uppercase text-(--admin-subtle)">
+                                                Day
+                                            </p>
+                                            <AdminField label="Temperature (C)">
+                                                <AdminInput
+                                                    name="temperatureDay"
+                                                    type="number"
+                                                    min={0}
+                                                    step="0.1"
+                                                    defaultValue={grow.climate.temperatureDay}
+                                                />
+                                            </AdminField>
+
+                                            <AdminField label="Humidity (%)">
+                                                <AdminInput
+                                                    name="humidityDay"
+                                                    type="number"
+                                                    min={0}
+                                                    max={100}
+                                                    step="1"
+                                                    defaultValue={grow.climate.humidityDay}
+                                                />
+                                            </AdminField>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <p className="text-xs font-semibold uppercase text-(--admin-subtle)">
+                                                Night
+                                            </p>
+                                            <AdminField label="Temperature (C)">
+                                                <AdminInput
+                                                    name="temperatureNight"
+                                                    type="number"
+                                                    min={0}
+                                                    step="0.1"
+                                                    defaultValue={grow.climate.temperatureNight}
+                                                />
+                                            </AdminField>
+
+                                            <AdminField label="Humidity (%)">
+                                                <AdminInput
+                                                    name="humidityNight"
+                                                    type="number"
+                                                    min={0}
+                                                    max={100}
+                                                    step="1"
+                                                    defaultValue={grow.climate.humidityNight}
+                                                />
+                                            </AdminField>
+                                        </div>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel id="status" title="Status">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="Health">
+                                            <AdminSelect
+                                                name="health"
+                                                defaultValue={grow.status.health}
+                                            >
+                                                <option value="Healthy">Healthy</option>
+                                                <option value="Warning">Warning</option>
+                                                <option value="Critical">Critical</option>
+                                            </AdminSelect>
+                                        </AdminField>
+
+                                        <AdminField label="Estimated Harvest Date">
+                                            <AdminInput
+                                                name="estimatedHarvestDate"
+                                                type="date"
+                                                defaultValue={grow.status.estimatedHarvestDate}
+                                                disabled
+                                            />
+                                        </AdminField>
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <AdminField label="Health Notes">
+                                            <AdminTextarea
+                                                name="statusNotes"
+                                                defaultValue={grow.status.notes}
+                                                rows={4}
+                                            />
+                                        </AdminField>
+                                    </div>
+                                </AdminPanel>
+
+                                <AdminPanel id="notes" title="Notes">
+                                    <AdminField label="Markdown supported">
+                                        <AdminTextarea
+                                            name="notes"
+                                            defaultValue={grow.details.notes}
+                                            rows={6}
+                                        />
+                                    </AdminField>
+                                </AdminPanel>
+
+                                <AdminPanel id="hardware" title="Hardware">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="Medium">
+                                            <AdminInput
+                                                name="growingMedium"
+                                                defaultValue={grow.growSetup.growingMedium}
+                                                placeholder="Soil, coco, hydro..."
+                                            />
+                                        </AdminField>
+
+                                        <AdminField label="Pot Size (L)">
+                                            <AdminInput
+                                                name="potSizeLiters"
+                                                type="number"
+                                                min={0}
+                                                defaultValue={grow.growSetup.potSizeLiters}
+                                            />
+                                        </AdminField>
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <AdminField label="Setup Description (MD-Supported)">
+                                            <AdminTextarea
+                                                name="setupText"
+                                                defaultValue={grow.growSetup.setupText}
+                                                rows={8}
+                                                placeholder={"Tent: ...\nLight: ...\nFan: ..."}
                                             />
                                         </AdminField>
                                     </div>
