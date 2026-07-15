@@ -61,6 +61,7 @@ Notes:
 - `ADMIN_PASSWORD_HASH` must use the `scrypt$...` format.
 - `ADMIN_SESSION_SECRET` must be at least 32 characters.
 - The same `.env.local` file is used by `docker compose` through `env_file`.
+- Optional: set `GROWCAST_MESH_TOKEN` to protect mesh/plugin endpoints. Official plugins should send it as `Authorization: Bearer <token>`.
 ## 4. Running the Application
 
 ### Docker Compose
@@ -130,6 +131,7 @@ app/
   admin/page.tsx               # Admin login + dashboard
   admin/logout/route.ts        # Logout endpoint
   api/data/current-grow/       # Current grow JSON endpoint
+  api/mesh/[pluginId]/          # Plugin settings endpoint
   api/snapshots/[filename]/    # Serves snapshot images
   api/timelapse/               # Serves latest timelapse video
 components/
@@ -141,12 +143,17 @@ components/
 lib/
   db.ts                        # JSON data store + types
   admin-auth.ts                # Auth/session/rate-limit logic
+  mesh-auth.ts                 # Optional token auth for plugin endpoints
+  plugin-registry.ts           # Registered plugin settings definitions
+  plugin-settings-store.ts     # Generic plugin settings store
+  plugin-settings.ts           # Timelapse settings compatibility helpers
   extension-status.ts          # Timelapse plugin file discovery
   getSetupImages.ts            # Reads public/setup images
 scripts/
   admin-creator.mjs            # Interactive .env.local generator
 data/
   current-grow.json            # Persisted grow data
+  mesh/                        # Persisted plugin settings
 public/
   setup/                       # Optional setup photos shown on homepage
   yourPictures/                # Optional user uploaded pictures shown on dashboard
@@ -210,6 +217,9 @@ This app uses Next.js route handlers and local filesystem storage.
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
 - `GET /api/data/current-grow`
   - Returns current grow data
+- `GET /api/mesh/[pluginId]`
+  - Returns registered plugin settings, for example `/api/mesh/growcast.timelapse`
+  - If `GROWCAST_MESH_TOKEN` is set, requires `Authorization: Bearer <token>`
 
 ### Auth model
 - Username + scrypt password hash from env vars

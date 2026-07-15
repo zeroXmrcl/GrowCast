@@ -8,6 +8,9 @@ import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
+/* TODO Climate widget*/
+/* TODO Light widget (schedule/PPFD)*/
+
 function formatDate(value: string): string {
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
@@ -34,6 +37,37 @@ function getHealthColor(health: string): string {
     }
 }
 
+type DayOrNightProps = {
+    label: string;
+    day: number;
+    night: number;
+    unit: string;
+};
+
+function DayOrNight({label, day, night, unit}: DayOrNightProps) {
+    const hasDay = day !== 0;
+    const hasNight = night !== 0;
+
+    if (!hasDay && !hasNight) {
+        return null;
+    }
+
+    const metricLabel = hasDay && hasNight
+        ? `${label} (D/N)`
+        : `${label} ${hasDay ? "Day" : "Night"}`;
+
+    const value = hasDay && hasNight
+        ? `${day} / ${night}${unit}`
+        : `${hasDay ? day : night}${unit}`;
+
+    return (
+        <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500 dark:text-zinc-400">{metricLabel}</dt>
+            <dd className="text-right text-zinc-900 dark:text-zinc-100">{value}</dd>
+        </div>
+    );
+}
+
 export default async function Home() {
     const grow = await getCurrentGrow();
     const setupImages = getSetupImages();
@@ -41,32 +75,32 @@ export default async function Home() {
     const socialLinks = [
         {
             label: "YouTube",
-            href: grow.otherSettings.youtube.trim(),
+            href: grow.socials.youtube.trim(),
             iconSrc: "https://cdn.simpleicons.org/youtube/71717a",
         },
         {
             label: "X",
-            href: grow.otherSettings.twitter.trim(),
+            href: grow.socials.twitter.trim(),
             iconSrc: "https://cdn.simpleicons.org/x/71717a",
         },
         {
             label: "Instagram",
-            href: grow.otherSettings.instagram.trim(),
+            href: grow.socials.instagram.trim(),
             iconSrc: "https://cdn.simpleicons.org/instagram/71717a",
         },
         {
             label: "GrowDiaries",
-            href: grow.otherSettings.growDiaries.trim(),
+            href: grow.socials.growDiaries.trim(),
             iconSrc: "/growdiaries.svg",
         },
         {
             label: "Discord",
-            href: grow.otherSettings.discordInvite.trim(),
+            href: grow.socials.discordInvite.trim(),
             iconSrc: "https://cdn.simpleicons.org/discord/71717a",
         },
         {
             label: "Custom Website",
-            href: grow.otherSettings.customWebsite.trim(),
+            href: grow.socials.customWebsite.trim(),
             iconSrc: "/globe.svg",
         },
     ].filter(({href}) => href.length > 0);
@@ -126,6 +160,18 @@ export default async function Home() {
                                 <dt className="text-zinc-500 dark:text-zinc-400">Pot Size</dt>
                                 <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.potSizeLiters}</dd>
                             </div>)}
+                            <DayOrNight
+                                label="Temperature"
+                                day={grow.climate.temperatureDay}
+                                night={grow.climate.temperatureNight}
+                                unit=" C"
+                            />
+                            <DayOrNight
+                                label="Humidity"
+                                day={grow.climate.humidityDay}
+                                night={grow.climate.humidityNight}
+                                unit="%"
+                            />
                             {(formatDate(details.seededAt) != '01.01.2001') && (
                                 <div className="flex justify-between gap-3">
                                     <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
