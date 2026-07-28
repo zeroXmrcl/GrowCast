@@ -1,10 +1,8 @@
-import { randomUUID, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
+import { randomUUID, scryptSync, createHmac } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  MAX_PASSWORD_LENGTH,
-  validatePasswordStrength,
-} from "@/lib/password-policy";
+import {safeEqualBuffer, safeEqualText} from "@/lib/crypto-equal";
+import {validatePasswordStrength} from "@/lib/password-policy";
 import {SESSION_TTL_SECONDS} from "@/lib/admin-session-policy";
 
 export {SESSION_TTL_SECONDS};
@@ -34,7 +32,6 @@ type AdminConfig = {
 };
 
 type AdminSetupStatus = {
-  isConfigured: boolean;
   canLogin: boolean;
   warnings: string[];
 };
@@ -107,7 +104,6 @@ function getAdminSetupStatus(): AdminSetupStatus {
   }
 
   return {
-    isConfigured: warnings.length === 0,
     canLogin: warnings.length === 0,
     warnings,
   };
@@ -143,33 +139,9 @@ function validateUsernameInput(input: string): boolean {
   return /^[a-zA-Z0-9._@-]+$/.test(input);
 }
 
-function normalizePasswordInput(input: string): string {
-  return input;
-}
-
 function validatePasswordInput(input: string): boolean {
   return validatePasswordStrength(input);
 }
-
-function safeEqualText(a: string, b: string): boolean {
-  const aBuffer = Buffer.from(a, "utf8");
-  const bBuffer = Buffer.from(b, "utf8");
-
-  if (aBuffer.length !== bBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(aBuffer, bBuffer);
-}
-
-function safeEqualBuffer(a: Buffer, b: Buffer): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  return timingSafeEqual(a, b);
-}
-
 
 function verifyPassword(passwordInput: string, storedHash: string): boolean {
   try {
@@ -384,9 +356,8 @@ export async function loginAdmin(
   }
 
   const normalizedUsername = normalizeUsernameInput(usernameInput);
-  const normalizedPassword = normalizePasswordInput(passwordInput);
 
-  if (!validateUsernameInput(normalizedUsername) || !validatePasswordInput(normalizedPassword)) {
+  if (!validateUsernameInput(normalizedUsername) || !validatePasswordInput(passwordInput)) {
     return {
       ok: false,
       code: "invalid_credentials",
@@ -397,7 +368,7 @@ export async function loginAdmin(
   const config = getRequiredAdminConfig();
 
   const usernameMatches = safeEqualText(normalizedUsername, config.username);
-  const passwordMatches = verifyPassword(normalizedPassword, config.passwordHash);
+  const passwordMatches = verifyPassword(passwordInput, config.passwordHash);
 
   if (!usernameMatches || !passwordMatches) {
     return {

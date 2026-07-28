@@ -1,3 +1,5 @@
+import {APP_TIMEZONE} from "@/lib/app-timezone";
+
 function getDatePartsInTimeZone(value: Date, timeZone: string): { year: number; month: number; day: number } {
     const formatter = new Intl.DateTimeFormat("en-CA", {
         timeZone,
@@ -16,7 +18,7 @@ function getDatePartsInTimeZone(value: Date, timeZone: string): { year: number; 
 
 export function getDaysSince(date: string | Date): number {
     const MS_PER_DAY = 86400000;
-    const appTimeZone = "Europe/Berlin";
+    const timeZone = APP_TIMEZONE;
 
     let startYear: number;
     let startMonth: number;
@@ -34,7 +36,7 @@ export function getDaysSince(date: string | Date): number {
             if (Number.isNaN(parsed.getTime())) {
                 return 0;
             }
-            const parts = getDatePartsInTimeZone(parsed, appTimeZone);
+            const parts = getDatePartsInTimeZone(parsed, timeZone);
             startYear = parts.year;
             startMonth = parts.month;
             startDay = parts.day;
@@ -44,7 +46,7 @@ export function getDaysSince(date: string | Date): number {
             return 0;
         }
 
-        const parts = getDatePartsInTimeZone(date, appTimeZone);
+        const parts = getDatePartsInTimeZone(date, timeZone);
         startYear = parts.year;
         startMonth = parts.month;
         startDay = parts.day;
@@ -54,7 +56,7 @@ export function getDaysSince(date: string | Date): number {
         return 0;
     }
 
-    const todayParts = getDatePartsInTimeZone(new Date(), appTimeZone);
+    const todayParts = getDatePartsInTimeZone(new Date(), timeZone);
 
     const startUtc = Date.UTC(startYear, startMonth - 1, startDay);
     const todayUtc = Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day);

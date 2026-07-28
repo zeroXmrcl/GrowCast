@@ -2,7 +2,6 @@ import {Geist, Geist_Mono} from "next/font/google";
 import {getCurrentGrow} from "@/lib/db";
 import type {Metadata} from "next";
 import React from "react";
-import AppShell from "@/components/app-shell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,8 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
+    children,
+}: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
@@ -34,9 +33,9 @@ export default function RootLayout({
             lang="en"
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
-        <body className="min-h-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-        <AppShell>{children}</AppShell>
-        </body>
+            <body className="min-h-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+                {children}
+            </body>
         </html>
     );
 }

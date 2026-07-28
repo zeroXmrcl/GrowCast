@@ -9,7 +9,7 @@
     "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
     "setup:admin": "node scripts/admin-creator.mjs",
-    "test": "node --experimental-strip-types --test tests/**/*.test.ts"
+    "test": "node --experimental-strip-types --import ./tests/register.mjs --test tests/**/*.test.ts"
   },
   "dependencies": {
     "next": "^16.2.12",

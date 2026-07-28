@@ -1,6 +1,8 @@
 import {requireMeshAuth} from "@/lib/mesh-auth";
-import {getPluginSettingsDefinition} from "@/lib/plugin-registry";
-import {getPluginSettingsRecord} from "@/lib/plugin-settings-store";
+import {
+    getTimelapseSettingsRecord,
+    isKnownMeshPlugin,
+} from "@/lib/timelapse-settings";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,9 +21,8 @@ export async function GET(request: Request, {params}: PluginSettingsRouteContext
     }
 
     const {pluginId} = await params;
-    const definition = getPluginSettingsDefinition(pluginId);
 
-    if (!definition) {
+    if (!isKnownMeshPlugin(pluginId)) {
         return Response.json(
             {error: "Unknown plugin"},
             {
@@ -33,7 +34,7 @@ export async function GET(request: Request, {params}: PluginSettingsRouteContext
         );
     }
 
-    const data = await getPluginSettingsRecord(definition);
+    const data = await getTimelapseSettingsRecord();
 
     return Response.json(data, {
         headers: {

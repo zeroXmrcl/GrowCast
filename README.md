@@ -145,12 +145,11 @@ components/
 lib/
   db.ts                        # JSON data store + types
   admin-auth.ts                # Auth/session/rate-limit logic
-  mesh-auth.ts                 # Optional token auth for plugin endpoints
-  plugin-registry.ts           # Registered plugin settings definitions
-  plugin-settings-store.ts     # Generic plugin settings store
-  plugin-settings.ts           # Timelapse settings compatibility helpers
+  mesh-auth.ts                 # Fail-closed Bearer auth for mesh API
+  timelapse-settings.ts        # Timelapse settings normalize + I/O
   extension-status.ts          # Timelapse plugin file discovery
   getSetupImages.ts            # Reads public/setup images
+  app-timezone.ts              # Shared app timezone for day math
 scripts/
   admin-creator.mjs            # Interactive .env.local generator
 data/
@@ -217,8 +216,6 @@ This app uses Next.js route handlers and local filesystem storage.
   - Serves image files from `extensions/GrowCast-Timelapse/snapshots`
 - `GET /api/timelapse`
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
-- `GET /api/data/current-grow`
-  - Returns current grow data
 - `GET /api/mesh/[pluginId]`
   - Returns registered plugin settings, for example `/api/mesh/growcast.timelapse`
   - Always requires `GROWCAST_MESH_TOKEN` and matching `Authorization: Bearer <token>` (fail-closed if token unset)

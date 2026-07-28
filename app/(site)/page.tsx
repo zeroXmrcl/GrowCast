@@ -71,7 +71,7 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
 
 export default async function Home() {
     const grow = await getCurrentGrow();
-    const setupImages = getSetupImages();
+    const setupImages = await getSetupImages();
     const details = grow.details;
     const streamUrl = safeHttpUrlOrEmpty(grow.streamUrl);
     const socialLinks = [

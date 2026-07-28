@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 
 export type GrowDetails = {
   strain: string;
@@ -90,29 +91,23 @@ function parseDateOnly(value: string): Date | null {
   return date;
 }
 
-function asString(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value : fallback;
-}
-
-function asNumber(value: unknown, fallback = 0): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function asBoolean(value: unknown, fallback = false): boolean {
-  return typeof value === "boolean" ? value : fallback;
-}
-
 function normalizeSeededAt(value: string, fallback: string): string {
   return parseDateOnly(value) ? value : fallback;
 }
 
-function readNestedString<T extends string>(
-  root: Record<string, unknown>,
-  nested: Record<string, unknown>,
-  key: T,
-  fallback: string,
-): string {
-  return asString(nested[key], asString(root[key], fallback));
+/**
+ * One-shot shape migration: promote legacy otherSettings → socials.
+ * Current schema only: nested details/growSetup/status/climate/socials.
+ */
+function migrateGrowRaw(raw: unknown): Record<string, unknown> {
+  const parsed = isRecord(raw) ? {...raw} : {};
+
+  if (!isRecord(parsed.socials) && isRecord(parsed.otherSettings)) {
+    parsed.socials = parsed.otherSettings;
+  }
+
+  delete parsed.otherSettings;
+  return parsed;
 }
 
 function mergeDefined<T extends Record<string, unknown>>(current: T, updates?: Partial<T>): T {
@@ -195,23 +190,23 @@ const DEFAULT_GROW: GrowRecord = {
 };
 
 function normalizeGrowRecord(raw: unknown): GrowRecord {
-  const parsed = (raw ?? {}) as Record<string, unknown>;
-  const rawDetails = (parsed.details ?? {}) as Record<string, unknown>;
-  const rawSetup = (parsed.growSetup ?? {}) as Record<string, unknown>;
-  const rawStatus = (parsed.status ?? {}) as Record<string, unknown>;
-  const rawClimate = (parsed.climate ?? {}) as Record<string, unknown>;
-  const rawSettings = (parsed.socials ?? parsed.otherSettings ?? {}) as Record<string, unknown>;
+  const parsed = migrateGrowRaw(raw);
+  const rawDetails = isRecord(parsed.details) ? parsed.details : {};
+  const rawSetup = isRecord(parsed.growSetup) ? parsed.growSetup : {};
+  const rawStatus = isRecord(parsed.status) ? parsed.status : {};
+  const rawClimate = isRecord(parsed.climate) ? parsed.climate : {};
+  const rawSocials = isRecord(parsed.socials) ? parsed.socials : {};
 
   const details: GrowDetails = {
-    strain: readNestedString(parsed, rawDetails, "strain", DEFAULT_GROW.details.strain),
-    stage: readNestedString(parsed, rawDetails, "stage", DEFAULT_GROW.details.stage),
+    strain: asString(rawDetails.strain, DEFAULT_GROW.details.strain),
+    stage: asString(rawDetails.stage, DEFAULT_GROW.details.stage),
     seededAt: normalizeSeededAt(
-      readNestedString(parsed, rawDetails, "seededAt", DEFAULT_GROW.details.seededAt),
+      asString(rawDetails.seededAt, DEFAULT_GROW.details.seededAt),
       DEFAULT_GROW.details.seededAt,
     ),
-    lightSchedule: readNestedString(parsed, rawDetails, "lightSchedule", DEFAULT_GROW.details.lightSchedule),
-    updatedAt: readNestedString(parsed, rawDetails, "updatedAt", DEFAULT_GROW.details.updatedAt),
-    notes: readNestedString(parsed, rawDetails, "notes", DEFAULT_GROW.details.notes),
+    lightSchedule: asString(rawDetails.lightSchedule, DEFAULT_GROW.details.lightSchedule),
+    updatedAt: asString(rawDetails.updatedAt, DEFAULT_GROW.details.updatedAt),
+    notes: asString(rawDetails.notes, DEFAULT_GROW.details.notes),
   };
 
   const growSetup: GrowSetup = {
@@ -234,12 +229,12 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
   };
 
   const socials: Socials = {
-    youtube: asString(rawSettings.youtube, DEFAULT_GROW.socials.youtube),
-    twitter: asString(rawSettings.twitter, DEFAULT_GROW.socials.twitter),
-    instagram: asString(rawSettings.instagram, DEFAULT_GROW.socials.instagram),
-    growDiaries: asString(rawSettings.growDiaries, DEFAULT_GROW.socials.growDiaries),
-    discordInvite: asString(rawSettings.discordInvite, DEFAULT_GROW.socials.discordInvite),
-    customWebsite: asString(rawSettings.customWebsite, DEFAULT_GROW.socials.customWebsite),
+    youtube: asString(rawSocials.youtube, DEFAULT_GROW.socials.youtube),
+    twitter: asString(rawSocials.twitter, DEFAULT_GROW.socials.twitter),
+    instagram: asString(rawSocials.instagram, DEFAULT_GROW.socials.instagram),
+    growDiaries: asString(rawSocials.growDiaries, DEFAULT_GROW.socials.growDiaries),
+    discordInvite: asString(rawSocials.discordInvite, DEFAULT_GROW.socials.discordInvite),
+    customWebsite: asString(rawSocials.customWebsite, DEFAULT_GROW.socials.customWebsite),
   };
 
   return {
@@ -251,7 +246,7 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
     streamUrl: asString(parsed.streamUrl, DEFAULT_GROW.streamUrl),
     details,
     climate,
-    socials: socials,
+    socials,
     growSetup,
     status,
   };

@@ -1,4 +1,4 @@
-import {timingSafeEqual} from "node:crypto";
+import {safeEqualText} from "@/lib/crypto-equal";
 
 export const MESH_TOKEN_ENV = "GROWCAST_MESH_TOKEN";
 
@@ -25,17 +25,6 @@ export function getBearerToken(request: Request): string | undefined {
     const token = match?.[1]?.trim();
 
     return token && token.length > 0 ? token : undefined;
-}
-
-function safeEqualText(left: string, right: string): boolean {
-    const leftBuffer = Buffer.from(left);
-    const rightBuffer = Buffer.from(right);
-
-    if (leftBuffer.length !== rightBuffer.length) {
-        return false;
-    }
-
-    return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 /**

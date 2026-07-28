@@ -52,31 +52,28 @@ function normalizeUsernameInput(input) {
     return input.replace(/[\u0000-\u001F\u007F]/g, "").normalize("NFKC").trim();
 }
 
-function normalizePasswordInput(input) {
-    return input;
-}
-
 function validateUsernameInput(input) {
     return input.length >= 1 && input.length <= 64 && /^[a-zA-Z0-9._@-]+$/.test(input);
 }
 
-/** Keep in sync with lib/password-policy.ts MIN_PASSWORD_LENGTH */
-const MIN_PASSWORD_LENGTH = 12;
-const MAX_PASSWORD_LENGTH = 1024;
+/** Single source of truth shared with lib/password-policy.ts */
+const passwordPolicy = JSON.parse(
+    fs.readFileSync(path.resolve(process.cwd(), "lib/password-policy.json"), "utf8"),
+);
+const MIN_PASSWORD_LENGTH = passwordPolicy.minPasswordLength;
+const MAX_PASSWORD_LENGTH = passwordPolicy.maxPasswordLength;
 
 function validatePasswordInput(input) {
     return input.length >= MIN_PASSWORD_LENGTH && input.length <= MAX_PASSWORD_LENGTH;
 }
 
 function hashAdminPasswordForEnv(plainPassword) {
-    const normalized = normalizePasswordInput(plainPassword);
-
-    if (!validatePasswordInput(normalized)) {
+    if (!validatePasswordInput(plainPassword)) {
         throw new Error("Invalid password.");
     }
 
     const salt = randomBytes(16);
-    const derivedKey = scryptSync(normalized, salt, 64);
+    const derivedKey = scryptSync(plainPassword, salt, 64);
 
     return `scrypt$${salt.toString("base64url")}$${derivedKey.toString("base64url")}`;
 }
@@ -101,13 +98,11 @@ async function main() {
             fail("Passwords do not match.");
         }
 
-        const normalizedPassword = normalizePasswordInput(password);
-
-        if (!validatePasswordInput(normalizedPassword)) {
+        if (!validatePasswordInput(password)) {
             fail(`Invalid password. Minimum length is ${MIN_PASSWORD_LENGTH} characters.`);
         }
 
-        const passwordHash = hashAdminPasswordForEnv(normalizedPassword);
+        const passwordHash = hashAdminPasswordForEnv(password);
         const secret = randomBytes(48).toString("base64url");
 
         const escapedPasswordHash = passwordHash.replace(/\$/g, "\\$");
