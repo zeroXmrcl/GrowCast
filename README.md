@@ -61,7 +61,9 @@ Notes:
 - `ADMIN_PASSWORD_HASH` must use the `scrypt$...` format.
 - `ADMIN_SESSION_SECRET` must be at least 32 characters.
 - The same `.env.local` file is used by `docker compose` through `env_file`.
-- Optional: set `GROWCAST_MESH_TOKEN` to protect mesh/plugin endpoints. Official plugins should send it as `Authorization: Bearer <token>`.
+- **Required for mesh/plugin API:** set `GROWCAST_MESH_TOKEN` to a long random secret. Requests without a matching `Authorization: Bearer <token>` are denied (fail-closed). Official plugins must send this header.
+- Admin passwords must be at least **12 characters** (`npm run setup:admin` enforces this).
+- Admin sessions last **24 hours**.
 ## 4. Running the Application
 
 ### Docker Compose
@@ -219,12 +221,13 @@ This app uses Next.js route handlers and local filesystem storage.
   - Returns current grow data
 - `GET /api/mesh/[pluginId]`
   - Returns registered plugin settings, for example `/api/mesh/growcast.timelapse`
-  - If `GROWCAST_MESH_TOKEN` is set, requires `Authorization: Bearer <token>`
+  - Always requires `GROWCAST_MESH_TOKEN` and matching `Authorization: Bearer <token>` (fail-closed if token unset)
 
 ### Auth model
-- Username + scrypt password hash from env vars
-- Signed cookie-based sessions
-- In-memory session store
+- Username + scrypt password hash from env vars (password minimum 12 characters)
+- Signed cookie-based sessions (24-hour TTL)
+- In-memory session store (single-node deploy)
+
 
 ## 9. Deployment
 

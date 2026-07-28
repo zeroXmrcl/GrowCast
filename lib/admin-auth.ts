@@ -1,12 +1,17 @@
 import { randomUUID, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  MAX_PASSWORD_LENGTH,
+  validatePasswordStrength,
+} from "@/lib/password-policy";
+import {SESSION_TTL_SECONDS} from "@/lib/admin-session-policy";
+
+export {SESSION_TTL_SECONDS};
 
 const ADMIN_SESSION_COOKIE = "growcast_admin_session";
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 
 const MAX_USERNAME_LENGTH = 64;
-const MAX_PASSWORD_LENGTH = 1024;
 
 const sessionStore = new Map<string, StoredAdminSession>();
 const loginAttemptStore = new Map<string, LoginAttemptState>();
@@ -143,7 +148,7 @@ function normalizePasswordInput(input: string): string {
 }
 
 function validatePasswordInput(input: string): boolean {
-  return input.length >= 1 && input.length <= MAX_PASSWORD_LENGTH;
+  return validatePasswordStrength(input);
 }
 
 function safeEqualText(a: string, b: string): boolean {

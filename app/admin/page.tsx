@@ -17,6 +17,7 @@ import {
     updateTimelapseSettings,
     type TimelapseQuality,
 } from "@/lib/plugin-settings";
+import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 
 type AdminPageProps = {
     searchParams: Promise<{
@@ -302,12 +303,18 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
 
         const seededAt = String(formData.get("seededAt") ?? "");
 
+        const safeUrl = (raw: FormDataEntryValue | null): string => {
+            const normalized = normalizeOptionalHttpUrl(String(raw ?? ""));
+            // null means non-empty but unsafe scheme — drop rather than store
+            return normalized ?? "";
+        };
+
         await updateCurrentGrow({
             name: String(formData.get("name") ?? ""),
             showGrowName: formData.get("showGrowName") === "on",
             plant: String(formData.get("plant") ?? ""),
             plantAmount: toNumber(formData.get("plantAmount"), 0),
-            streamUrl: String(formData.get("streamUrl") ?? ""),
+            streamUrl: safeUrl(formData.get("streamUrl")),
             details: {
                 strain: String(formData.get("strain") ?? ""),
                 stage: String(formData.get("stage") ?? ""),
@@ -332,12 +339,12 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
               humidityNight: toNumber(formData.get("humidityNight")),
             },
             socials: {
-                youtube: String(formData.get("youtube") ?? ""),
-                twitter: String(formData.get("twitter") ?? ""),
-                instagram: String(formData.get("instagram") ?? ""),
-                discordInvite: String(formData.get("discordInvite") ?? ""),
-                growDiaries: String(formData.get("growDiaries") ?? ""),
-                customWebsite: String(formData.get("customWebsite") ?? ""),
+                youtube: safeUrl(formData.get("youtube")),
+                twitter: safeUrl(formData.get("twitter")),
+                instagram: safeUrl(formData.get("instagram")),
+                discordInvite: safeUrl(formData.get("discordInvite")),
+                growDiaries: safeUrl(formData.get("growDiaries")),
+                customWebsite: safeUrl(formData.get("customWebsite")),
             }
         });
 

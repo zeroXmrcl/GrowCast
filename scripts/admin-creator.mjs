@@ -60,8 +60,12 @@ function validateUsernameInput(input) {
     return input.length >= 1 && input.length <= 64 && /^[a-zA-Z0-9._@-]+$/.test(input);
 }
 
+/** Keep in sync with lib/password-policy.ts MIN_PASSWORD_LENGTH */
+const MIN_PASSWORD_LENGTH = 12;
+const MAX_PASSWORD_LENGTH = 1024;
+
 function validatePasswordInput(input) {
-    return input.length >= 1 && input.length <= 1024;
+    return input.length >= MIN_PASSWORD_LENGTH && input.length <= MAX_PASSWORD_LENGTH;
 }
 
 function hashAdminPasswordForEnv(plainPassword) {
@@ -100,7 +104,7 @@ async function main() {
         const normalizedPassword = normalizePasswordInput(password);
 
         if (!validatePasswordInput(normalizedPassword)) {
-            fail("Invalid password.");
+            fail(`Invalid password. Minimum length is ${MIN_PASSWORD_LENGTH} characters.`);
         }
 
         const passwordHash = hashAdminPasswordForEnv(normalizedPassword);

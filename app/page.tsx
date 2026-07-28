@@ -5,6 +5,7 @@ import getSetupImages from "@/lib/getSetupImages";
 import SiteFooter from "@/components/site-footer";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
+import {markdownUrlTransform, safeHttpUrlOrEmpty} from "@/lib/url-policy";
 
 export const dynamic = "force-dynamic";
 
@@ -72,35 +73,36 @@ export default async function Home() {
     const grow = await getCurrentGrow();
     const setupImages = getSetupImages();
     const details = grow.details;
+    const streamUrl = safeHttpUrlOrEmpty(grow.streamUrl);
     const socialLinks = [
         {
             label: "YouTube",
-            href: grow.socials.youtube.trim(),
+            href: safeHttpUrlOrEmpty(grow.socials.youtube),
             iconSrc: "https://cdn.simpleicons.org/youtube/71717a",
         },
         {
             label: "X",
-            href: grow.socials.twitter.trim(),
+            href: safeHttpUrlOrEmpty(grow.socials.twitter),
             iconSrc: "https://cdn.simpleicons.org/x/71717a",
         },
         {
             label: "Instagram",
-            href: grow.socials.instagram.trim(),
+            href: safeHttpUrlOrEmpty(grow.socials.instagram),
             iconSrc: "https://cdn.simpleicons.org/instagram/71717a",
         },
         {
             label: "GrowDiaries",
-            href: grow.socials.growDiaries.trim(),
+            href: safeHttpUrlOrEmpty(grow.socials.growDiaries),
             iconSrc: "/growdiaries.svg",
         },
         {
             label: "Discord",
-            href: grow.socials.discordInvite.trim(),
+            href: safeHttpUrlOrEmpty(grow.socials.discordInvite),
             iconSrc: "https://cdn.simpleicons.org/discord/71717a",
         },
         {
             label: "Custom Website",
-            href: grow.socials.customWebsite.trim(),
+            href: safeHttpUrlOrEmpty(grow.socials.customWebsite),
             iconSrc: "/globe.svg",
         },
     ].filter(({href}) => href.length > 0);
@@ -117,10 +119,10 @@ export default async function Home() {
                             </div>
                         ) : null}
                         <div className="aspect-video w-full">
-                            {grow.streamUrl ? (
+                            {streamUrl ? (
                                 <iframe
                                     className="h-full w-full"
-                                    src={grow.streamUrl}
+                                    src={streamUrl}
                                     allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     referrerPolicy="strict-origin-when-cross-origin"
                                     allowFullScreen
@@ -181,7 +183,7 @@ export default async function Home() {
                         {details.notes && (
                             <div
                                 className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
-                                <ReactMarkdown>
+                                <ReactMarkdown urlTransform={markdownUrlTransform}>
                                     {details.notes}
                                 </ReactMarkdown>
                             </div>)}
@@ -235,7 +237,7 @@ export default async function Home() {
                     </h2>
 
                     <div className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
-                        <ReactMarkdown>
+                        <ReactMarkdown urlTransform={markdownUrlTransform}>
                             {grow.growSetup.setupText}
                         </ReactMarkdown>
                     </div>

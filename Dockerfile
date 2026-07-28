@@ -20,11 +20,18 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
+# Non-root runtime user (CIS Docker hardening)
+RUN addgroup -g 1001 -S growcast \
+    && adduser -S -u 1001 -G growcast growcast
+
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-RUN mkdir -p /app/public/setup /app/public/yourPictures /app/extensions /app/data
+RUN mkdir -p /app/public/setup /app/public/yourPictures /app/extensions /app/data \
+    && chown -R growcast:growcast /app
+
+USER growcast
 
 EXPOSE 3000
 

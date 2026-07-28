@@ -1,14 +1,20 @@
 import {timingSafeEqual} from "node:crypto";
 
-const MESH_TOKEN_ENV = "GROWCAST_MESH_TOKEN";
+export const MESH_TOKEN_ENV = "GROWCAST_MESH_TOKEN";
 
-function getMeshToken(): string | undefined {
-    const token = process.env[MESH_TOKEN_ENV]?.trim();
+/**
+ * Read the expected mesh token from the environment.
+ * Empty / whitespace-only is treated as unset.
+ */
+export function getMeshTokenFromEnv(
+    env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+    const token = env[MESH_TOKEN_ENV]?.trim();
 
     return token && token.length > 0 ? token : undefined;
 }
 
-function getBearerToken(request: Request): string | undefined {
+export function getBearerToken(request: Request): string | undefined {
     const authorization = request.headers.get("authorization");
 
     if (!authorization) {
@@ -32,19 +38,26 @@ function safeEqualText(left: string, right: string): boolean {
     return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-export function requireMeshAuth(request: Request): Response | null {
-    const expectedToken = getMeshToken();
-
+/**
+ * Pure decision: whether a provided Bearer token is authorized for mesh.
+ * Fail-closed: missing expected token always denies.
+ */
+export function isMeshTokenAuthorized(
+    expectedToken: string | undefined,
+    providedToken: string | undefined,
+): boolean {
     if (!expectedToken) {
-        return null;
+        return false;
     }
 
-    const providedToken = getBearerToken(request);
-
-    if (providedToken && safeEqualText(providedToken, expectedToken)) {
-        return null;
+    if (!providedToken) {
+        return false;
     }
 
+    return safeEqualText(providedToken, expectedToken);
+}
+
+function unauthorizedResponse(): Response {
     return Response.json(
         {error: "Unauthorized"},
         {
@@ -55,4 +68,19 @@ export function requireMeshAuth(request: Request): Response | null {
             },
         },
     );
+}
+
+/**
+ * Mesh plugin API auth. Fail-closed when GROWCAST_MESH_TOKEN is unset/empty.
+ * Returns a 401 Response when unauthorized; null when allowed.
+ */
+export function requireMeshAuth(request: Request): Response | null {
+    const expectedToken = getMeshTokenFromEnv();
+    const providedToken = getBearerToken(request);
+
+    if (isMeshTokenAuthorized(expectedToken, providedToken)) {
+        return null;
+    }
+
+    return unauthorizedResponse();
 }
