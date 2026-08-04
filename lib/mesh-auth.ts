@@ -1,4 +1,9 @@
 import {timingSafeEqual} from "node:crypto";
+import {
+    extractClientIp,
+    extractUserAgent,
+    logMeshAuthFailed,
+} from "@/lib/logging";
 
 const MESH_TOKEN_ENV = "GROWCAST_MESH_TOKEN";
 
@@ -44,6 +49,11 @@ export function requireMeshAuth(request: Request): Response | null {
     if (providedToken && safeEqualText(providedToken, expectedToken)) {
         return null;
     }
+
+    logMeshAuthFailed({
+        client_ip: extractClientIp(request.headers),
+        user_agent: extractUserAgent(request.headers),
+    });
 
     return Response.json(
         {error: "Unauthorized"},

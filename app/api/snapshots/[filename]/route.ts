@@ -2,6 +2,10 @@ import { NextRequest } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { SNAPSHOT_DIR } from "@/lib/extension-status";
+import {
+    logHttpPathTraversalBlocked,
+    withRequestLog,
+} from "@/lib/logging";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,31 +21,34 @@ function getContentType(filename: string): string {
 }
 
 export async function GET(
-    _request: NextRequest,
+    request: NextRequest,
     context: { params: Promise<{ filename: string }> }
 ) {
-    try {
-        const { filename } = await context.params;
+    return withRequestLog(request, "/api/snapshots/:filename", async () => {
+        try {
+            const { filename } = await context.params;
 
-        if (
-            filename.includes("/") ||
-            filename.includes("\\") ||
-            filename.includes("..")
-        ) {
-            return new Response("Invalid filename", { status: 400 });
+            if (
+                filename.includes("/") ||
+                filename.includes("\\") ||
+                filename.includes("..")
+            ) {
+                logHttpPathTraversalBlocked({ reason: "invalid_filename" });
+                return new Response("Invalid filename", { status: 400 });
+            }
+
+            const filePath = path.join(SNAPSHOT_DIR, filename);
+            const fileBuffer = await fs.readFile(filePath);
+
+            return new Response(fileBuffer, {
+                status: 200,
+                headers: {
+                    "Content-Type": getContentType(filename),
+                    "Cache-Control": "no-store, must-revalidate",
+                },
+            });
+        } catch {
+            return new Response("File not found", { status: 404 });
         }
-
-        const filePath = path.join(SNAPSHOT_DIR, filename);
-        const fileBuffer = await fs.readFile(filePath);
-
-        return new Response(fileBuffer, {
-            status: 200,
-            headers: {
-                "Content-Type": getContentType(filename),
-                "Cache-Control": "no-store, must-revalidate",
-            },
-        });
-    } catch {
-        return new Response("File not found", { status: 404 });
-    }
+    });
 }

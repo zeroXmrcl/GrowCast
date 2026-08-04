@@ -12,6 +12,13 @@ import {
 } from "@/lib/admin-auth";
 import {getCurrentGrow, updateCurrentGrow} from "@/lib/db";
 import {
+    extractClientIp,
+    logAdminGrowUpdateFailed,
+    logAdminGrowUpdated,
+    sanitizeError,
+    withNextRequestLogContext,
+} from "@/lib/logging";
+import {
     DEFAULT_TIMELAPSE_SETTINGS,
     getTimelapseSettings,
     updateTimelapseSettings,
@@ -215,26 +222,7 @@ function AdminNotice({tone = "neutral", title, children}: AdminNoticeProps) {
 
 async function getRequestIp(): Promise<string> {
     const h = await headers();
-
-    const cfIp = h.get("cf-connecting-ip");
-    if (cfIp) {
-        return cfIp;
-    }
-
-    const xff = h.get("x-forwarded-for");
-    if (xff) {
-        const first = xff.split(",")[0]?.trim();
-        if (first) {
-            return first;
-        }
-    }
-
-    const realIp = h.get("x-real-ip");
-    if (realIp) {
-        return realIp;
-    }
-
-    return "unknown";
+    return extractClientIp(h) ?? "unknown";
 }
 
 function toNumber(value: FormDataEntryValue | null, fallback = 0): number {
@@ -268,19 +256,6 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
         const result = await loginAdmin(username, password, clientKey);
 
         if (!result.ok) {
-            console.warn("admin login fail", {
-                ip,
-                username,
-                at: new Date().toISOString(),
-            });
-        } else {
-            console.info("admin login successful", {
-                ip,
-                at: new Date().toISOString(),
-            });
-        }
-
-        if (!result.ok) {
             if (result.code === "rate_limited") {
                 redirect(`/admin?error=rate_limited&retry=${result.retryAfterSeconds ?? 900}`);
             }
@@ -298,68 +273,77 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
     async function saveGrowAction(formData: FormData) {
         "use server";
 
-        await requireAdmin();
+        await withNextRequestLogContext("/admin", async () => {
+            await requireAdmin();
 
-        const seededAt = String(formData.get("seededAt") ?? "");
+            try {
+                const seededAt = String(formData.get("seededAt") ?? "");
 
-        await updateCurrentGrow({
-            name: String(formData.get("name") ?? ""),
-            showGrowName: formData.get("showGrowName") === "on",
-            plant: String(formData.get("plant") ?? ""),
-            plantAmount: toNumber(formData.get("plantAmount"), 0),
-            streamUrl: String(formData.get("streamUrl") ?? ""),
-            details: {
-                strain: String(formData.get("strain") ?? ""),
-                stage: String(formData.get("stage") ?? ""),
-                seededAt,
-                lightSchedule: String(formData.get("lightSchedule") ?? ""),
-                notes: String(formData.get("notes") ?? ""),
-            },
-            growSetup: {
-                setupText: String(formData.get("setupText") ?? ""),
-                growingMedium: String(formData.get("growingMedium") ?? ""),
-                potSizeLiters: toNumber(formData.get("potSizeLiters"), 0),
-            },
-            status: {
-                health: String(formData.get("health") ?? "Healthy"),
-                estimatedHarvestDate: String(formData.get("estimatedHarvestDate") ?? ""),
-                notes: String(formData.get("statusNotes") ?? ""),
-            },
-            climate: {
-              temperatureDay: toNumber(formData.get("temperatureDay")),
-              temperatureNight: toNumber(formData.get("temperatureNight")),
-              humidityDay: toNumber(formData.get("humidityDay")),
-              humidityNight: toNumber(formData.get("humidityNight")),
-            },
-            socials: {
-                youtube: String(formData.get("youtube") ?? ""),
-                twitter: String(formData.get("twitter") ?? ""),
-                instagram: String(formData.get("instagram") ?? ""),
-                discordInvite: String(formData.get("discordInvite") ?? ""),
-                growDiaries: String(formData.get("growDiaries") ?? ""),
-                customWebsite: String(formData.get("customWebsite") ?? ""),
+                await updateCurrentGrow({
+                    name: String(formData.get("name") ?? ""),
+                    showGrowName: formData.get("showGrowName") === "on",
+                    plant: String(formData.get("plant") ?? ""),
+                    plantAmount: toNumber(formData.get("plantAmount"), 0),
+                    streamUrl: String(formData.get("streamUrl") ?? ""),
+                    details: {
+                        strain: String(formData.get("strain") ?? ""),
+                        stage: String(formData.get("stage") ?? ""),
+                        seededAt,
+                        lightSchedule: String(formData.get("lightSchedule") ?? ""),
+                        notes: String(formData.get("notes") ?? ""),
+                    },
+                    growSetup: {
+                        setupText: String(formData.get("setupText") ?? ""),
+                        growingMedium: String(formData.get("growingMedium") ?? ""),
+                        potSizeLiters: toNumber(formData.get("potSizeLiters"), 0),
+                    },
+                    status: {
+                        health: String(formData.get("health") ?? "Healthy"),
+                        estimatedHarvestDate: String(formData.get("estimatedHarvestDate") ?? ""),
+                        notes: String(formData.get("statusNotes") ?? ""),
+                    },
+                    climate: {
+                      temperatureDay: toNumber(formData.get("temperatureDay")),
+                      temperatureNight: toNumber(formData.get("temperatureNight")),
+                      humidityDay: toNumber(formData.get("humidityDay")),
+                      humidityNight: toNumber(formData.get("humidityNight")),
+                    },
+                    socials: {
+                        youtube: String(formData.get("youtube") ?? ""),
+                        twitter: String(formData.get("twitter") ?? ""),
+                        instagram: String(formData.get("instagram") ?? ""),
+                        discordInvite: String(formData.get("discordInvite") ?? ""),
+                        growDiaries: String(formData.get("growDiaries") ?? ""),
+                        customWebsite: String(formData.get("customWebsite") ?? ""),
+                    }
+                });
+
+                await updateTimelapseSettings({
+                    paused: formData.get("timelapsePaused") === "on",
+                    timezone: String(formData.get("timelapseTimezone") ?? DEFAULT_TIMELAPSE_SETTINGS.timezone),
+                    time1: String(formData.get("timelapseTime1") ?? ""),
+                    time2: String(formData.get("timelapseTime2") ?? ""),
+                    time3: String(formData.get("timelapseTime3") ?? ""),
+                    intervalMinutes: toOptionalNumber(formData.get("timelapseInterval")),
+                    timelapseLengthSeconds: toNumber(
+                        formData.get("timelapseLength"),
+                        DEFAULT_TIMELAPSE_SETTINGS.timelapseLengthSeconds,
+                    ),
+                    timelapseQuality: String(
+                        formData.get("timelapseQuality") ?? DEFAULT_TIMELAPSE_SETTINGS.timelapseQuality,
+                    ) as TimelapseQuality,
+                });
+
+                logAdminGrowUpdated();
+            } catch (error) {
+                logAdminGrowUpdateFailed({ err: sanitizeError(error) });
+                throw error;
             }
-        });
 
-        await updateTimelapseSettings({
-            paused: formData.get("timelapsePaused") === "on",
-            timezone: String(formData.get("timelapseTimezone") ?? DEFAULT_TIMELAPSE_SETTINGS.timezone),
-            time1: String(formData.get("timelapseTime1") ?? ""),
-            time2: String(formData.get("timelapseTime2") ?? ""),
-            time3: String(formData.get("timelapseTime3") ?? ""),
-            intervalMinutes: toOptionalNumber(formData.get("timelapseInterval")),
-            timelapseLengthSeconds: toNumber(
-                formData.get("timelapseLength"),
-                DEFAULT_TIMELAPSE_SETTINGS.timelapseLengthSeconds,
-            ),
-            timelapseQuality: String(
-                formData.get("timelapseQuality") ?? DEFAULT_TIMELAPSE_SETTINGS.timelapseQuality,
-            ) as TimelapseQuality,
+            revalidatePath("/");
+            revalidatePath("/admin");
+            redirect("/admin?saved=1");
         });
-
-        revalidatePath("/");
-        revalidatePath("/admin");
-        redirect("/admin?saved=1");
     }
 
     if (!isLoggedIn) {

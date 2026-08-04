@@ -1,6 +1,18 @@
 import { randomUUID, scryptSync, timingSafeEqual, createHmac } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import {
+  extractClientIp,
+  extractUserAgent,
+  logAuthLoginDisabled,
+  logAuthLoginFailed,
+  logAuthLoginRateLimited,
+  logAuthLoginSuccess,
+  logAuthLogout,
+  logAuthSessionInvalid,
+  logAuthzDenied,
+  withNextRequestLogContext,
+} from "@/lib/logging";
 
 const ADMIN_SESSION_COOKIE = "growcast_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
@@ -291,6 +303,21 @@ function resetLoginAttempts(key: string): void {
   loginAttemptStore.delete(key);
 }
 
+async function getClientLogFields(): Promise<{
+  client_ip?: string;
+  user_agent?: string;
+}> {
+  try {
+    const h = await headers();
+    return {
+      client_ip: extractClientIp(h),
+      user_agent: extractUserAgent(h),
+    };
+  } catch {
+    return {};
+  }
+}
+
 async function setSessionCookie(sessionToken: string): Promise<void> {
   const cookieStore = await cookies();
 
@@ -331,21 +358,29 @@ export async function isAdminAuthenticated(): Promise<boolean> {
 
   const payload = decodeAndVerifySessionToken(token, secret);
   if (!payload) {
+    const client = await getClientLogFields();
+    logAuthSessionInvalid({ reason: "invalid_token", ...client });
     return false;
   }
 
   const now = nowEpochSeconds();
   if (payload.exp <= now) {
+    const client = await getClientLogFields();
+    logAuthSessionInvalid({ reason: "token_expired", ...client });
     return false;
   }
 
   const session = sessionStore.get(payload.sid);
   if (!session) {
+    const client = await getClientLogFields();
+    logAuthSessionInvalid({ reason: "session_not_found", ...client });
     return false;
   }
 
   if (session.expiresAt <= now) {
     sessionStore.delete(payload.sid);
+    const client = await getClientLogFields();
+    logAuthSessionInvalid({ reason: "session_expired", ...client });
     return false;
   }
 
@@ -357,91 +392,113 @@ export async function loginAdmin(
     passwordInput: string,
     clientKey = "global",
 ): Promise<LoginResult> {
-  clearExpiredSessions();
+  return withNextRequestLogContext("/admin", async () => {
+    clearExpiredSessions();
 
-  const status = getAdminSetupStatus();
-  if (!status.canLogin) {
-    return {
-      ok: false,
-      code: "login_disabled",
-      reason: "Admin login is unavailable because the admin configuration is incomplete.",
-    };
-  }
+    const client = await getClientLogFields();
 
-  const rateLimit = consumeLoginAttempt(clientKey);
-  if (!rateLimit.allowed) {
-    return {
-      ok: false,
-      code: "rate_limited",
-      reason: "Too many failed login attempts.",
-      retryAfterSeconds: rateLimit.retryAfterSeconds,
-    };
-  }
+    const status = getAdminSetupStatus();
+    if (!status.canLogin) {
+      logAuthLoginDisabled({ reason: "login_disabled", ...client });
+      return {
+        ok: false,
+        code: "login_disabled",
+        reason: "Admin login is unavailable because the admin configuration is incomplete.",
+      };
+    }
 
-  const normalizedUsername = normalizeUsernameInput(usernameInput);
-  const normalizedPassword = normalizePasswordInput(passwordInput);
+    const rateLimit = consumeLoginAttempt(clientKey);
+    if (!rateLimit.allowed) {
+      logAuthLoginRateLimited({
+        reason: "rate_limited",
+        retry_after_seconds: rateLimit.retryAfterSeconds,
+        ...client,
+      });
+      return {
+        ok: false,
+        code: "rate_limited",
+        reason: "Too many failed login attempts.",
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      };
+    }
 
-  if (!validateUsernameInput(normalizedUsername) || !validatePasswordInput(normalizedPassword)) {
-    return {
-      ok: false,
-      code: "invalid_credentials",
-      reason: "Invalid credentials.",
-    };
-  }
+    const normalizedUsername = normalizeUsernameInput(usernameInput);
+    const normalizedPassword = normalizePasswordInput(passwordInput);
 
-  const config = getRequiredAdminConfig();
+    if (!validateUsernameInput(normalizedUsername) || !validatePasswordInput(normalizedPassword)) {
+      logAuthLoginFailed({ reason: "invalid_credentials", ...client });
+      return {
+        ok: false,
+        code: "invalid_credentials",
+        reason: "Invalid credentials.",
+      };
+    }
 
-  const usernameMatches = safeEqualText(normalizedUsername, config.username);
-  const passwordMatches = verifyPassword(normalizedPassword, config.passwordHash);
+    const config = getRequiredAdminConfig();
 
-  if (!usernameMatches || !passwordMatches) {
-    return {
-      ok: false,
-      code: "invalid_credentials",
-      reason: "Invalid credentials.",
-    };
-  }
+    const usernameMatches = safeEqualText(normalizedUsername, config.username);
+    const passwordMatches = verifyPassword(normalizedPassword, config.passwordHash);
 
-  resetLoginAttempts(clientKey);
+    if (!usernameMatches || !passwordMatches) {
+      logAuthLoginFailed({ reason: "invalid_credentials", ...client });
+      return {
+        ok: false,
+        code: "invalid_credentials",
+        reason: "Invalid credentials.",
+      };
+    }
 
-  const now = nowEpochSeconds();
-  const sid = randomUUID();
-  const expiresAt = now + SESSION_TTL_SECONDS;
+    resetLoginAttempts(clientKey);
 
-  sessionStore.set(sid, {
-    sid,
-    expiresAt,
+    const now = nowEpochSeconds();
+    const sid = randomUUID();
+    const expiresAt = now + SESSION_TTL_SECONDS;
+
+    sessionStore.set(sid, {
+      sid,
+      expiresAt,
+    });
+
+    const sessionToken = encodeSessionToken({ sid, exp: expiresAt }, config.secret);
+    await setSessionCookie(sessionToken);
+
+    logAuthLoginSuccess({ ...client });
+
+    return { ok: true };
   });
-
-  const sessionToken = encodeSessionToken({ sid, exp: expiresAt }, config.secret);
-  await setSessionCookie(sessionToken);
-
-  return { ok: true };
 }
 
 export async function logoutAdmin(): Promise<void> {
-  const status = getAdminSetupStatus();
+  await withNextRequestLogContext("/admin/logout", async () => {
+    const client = await getClientLogFields();
+    const status = getAdminSetupStatus();
 
-  if (status.canLogin) {
-    const { secret } = getRequiredAdminConfig();
-    const cookieStore = await cookies();
-    const token = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
+    if (status.canLogin) {
+      const { secret } = getRequiredAdminConfig();
+      const cookieStore = await cookies();
+      const token = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
 
-    if (token) {
-      const payload = decodeAndVerifySessionToken(token, secret);
-      if (payload) {
-        sessionStore.delete(payload.sid);
+      if (token) {
+        const payload = decodeAndVerifySessionToken(token, secret);
+        if (payload) {
+          sessionStore.delete(payload.sid);
+        }
       }
     }
-  }
 
-  await deleteSessionCookie();
+    await deleteSessionCookie();
+    logAuthLogout({ ...client });
+  });
 }
 
 export async function requireAdmin(): Promise<void> {
-  const authenticated = await isAdminAuthenticated();
+  await withNextRequestLogContext("/admin", async () => {
+    const authenticated = await isAdminAuthenticated();
 
-  if (!authenticated) {
-    redirect("/admin?error=unauthorized");
-  }
+    if (!authenticated) {
+      const client = await getClientLogFields();
+      logAuthzDenied({ reason: "unauthenticated", resource: "admin", ...client });
+      redirect("/admin?error=unauthorized");
+    }
+  });
 }

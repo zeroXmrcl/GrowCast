@@ -62,6 +62,13 @@ Notes:
 - `ADMIN_SESSION_SECRET` must be at least 32 characters.
 - The same `.env.local` file is used by `docker compose` through `env_file`.
 - Optional: set `GROWCAST_MESH_TOKEN` to protect mesh/plugin endpoints. Official plugins should send it as `Authorization: Bearer <token>`.
+
+### Logging
+
+GrowCast writes **structured JSON logs to stdout** (Pino) for production observability and security events (auth, mesh, path traversal, HTTP requests). Correlation IDs are set in middleware (`X-Request-ID` on responses). Optional env vars: `LOG_LEVEL`, `LOG_PRETTY` (dev only), `GROWCAST_ENV`.
+
+Full schema, event catalog, redaction rules, Docker log shipping, retention guidance, and alert examples: **[docs/logging.md](docs/logging.md)**.
+
 ## 4. Running the Application
 
 ### Docker Compose

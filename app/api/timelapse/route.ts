@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import { withRequestLog } from "@/lib/logging";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,18 +13,20 @@ const TIMELAPSE_FILE = path.resolve(
     "latest_timelapse.mp4"
 );
 
-export async function GET() {
-    try {
-        const fileBuffer = await fs.readFile(TIMELAPSE_FILE);
+export async function GET(request: Request) {
+    return withRequestLog(request, "/api/timelapse", async () => {
+        try {
+            const fileBuffer = await fs.readFile(TIMELAPSE_FILE);
 
-        return new Response(fileBuffer, {
-            status: 200,
-            headers: {
-                "Content-Type": "video/mp4",
-                "Cache-Control": "no-store, must-revalidate",
-            },
-        });
-    } catch {
-        return new Response("Timelapse not found", { status: 404 });
-    }
+            return new Response(fileBuffer, {
+                status: 200,
+                headers: {
+                    "Content-Type": "video/mp4",
+                    "Cache-Control": "no-store, must-revalidate",
+                },
+            });
+        } catch {
+            return new Response("Timelapse not found", { status: 404 });
+        }
+    });
 }
