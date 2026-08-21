@@ -4,7 +4,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# --include=optional installs sharp's musl prebuilds on Alpine.
+RUN npm ci --include=optional
 
 FROM base AS builder
 WORKDIR /app

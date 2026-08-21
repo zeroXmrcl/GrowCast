@@ -11,10 +11,12 @@ import {
     AdminTextarea,
     NavLink,
 } from "@/components/admin/ui";
+import {CompleteGrowPanel} from "@/app/admin/complete-grow-panel";
 import MediaManager from "@/app/admin/media-manager";
 import type {GrowRecord} from "@/lib/db";
 import type {Tone} from "@/components/admin/ui";
 import type {TimelapseSettings} from "@/lib/timelapse-settings";
+import type {ReactNode} from "react";
 
 const sectionLinks = [
     {href: "#general", label: "General"},
@@ -30,9 +32,37 @@ const sectionLinks = [
     {href: "#archive", label: "Archive"},
 ];
 
-type NoticeContent = {tone: Tone; title: string; body: string};
+type NoticeContent = {tone: Tone; title: string; body: ReactNode};
 
-const MEDIA_NOTICES: Record<string, NoticeContent> = {
+const SETTINGS_NOTICES: Record<string, NoticeContent> = {
+    saved: {tone: "success", title: "Configuration saved", body: "Done."},
+    archived: {
+        tone: "success",
+        title: "Grow archived",
+        body: (
+            <>
+                The grow was moved to the archive and the current grow was reset.{" "}
+                <Link href="/grows" className="underline" target="_blank">
+                    View past grows
+                </Link>
+            </>
+        ),
+    },
+    save_failed: {
+        tone: "danger",
+        title: "Save failed",
+        body: "Could not save all settings. Review logs and try again.",
+    },
+    archive_failed: {
+        tone: "danger",
+        title: "Archive failed",
+        body: "Could not archive the grow. Review logs and try again — the current grow was left untouched.",
+    },
+    archive_not_confirmed: {
+        tone: "warning",
+        title: "Archive not confirmed",
+        body: "Tick the confirmation checkbox to complete and archive the grow.",
+    },
     uploaded: {tone: "success", title: "Pictures uploaded", body: "Done."},
     uploaded_partial: {
         tone: "warning",
@@ -40,9 +70,6 @@ const MEDIA_NOTICES: Record<string, NoticeContent> = {
         body: "Files that are not valid JPEG/PNG/WebP images or exceed 15 MB were skipped. The rest were uploaded.",
     },
     deleted: {tone: "success", title: "Picture deleted", body: "Done."},
-};
-
-const MEDIA_ERROR_NOTICES: Record<string, NoticeContent> = {
     media_no_files: {
         tone: "warning",
         title: "No files selected",
@@ -70,6 +97,27 @@ const MEDIA_ERROR_NOTICES: Record<string, NoticeContent> = {
     },
 };
 
+function settingsNoticeFromQuery(query: {
+    saved?: string;
+    archived?: string;
+    media?: string;
+    error?: string;
+}): NoticeContent | null {
+    if (query.saved) {
+        return SETTINGS_NOTICES.saved;
+    }
+    if (query.archived) {
+        return SETTINGS_NOTICES.archived;
+    }
+    if (query.media && SETTINGS_NOTICES[query.media]) {
+        return SETTINGS_NOTICES[query.media];
+    }
+    if (query.error && SETTINGS_NOTICES[query.error]) {
+        return SETTINGS_NOTICES[query.error];
+    }
+    return null;
+}
+
 type SettingsFormProps = {
     grow: GrowRecord;
     timelapseSettings: TimelapseSettings;
@@ -95,9 +143,7 @@ export function AdminSettingsForm({
     uploadMediaAction,
     deleteMediaAction,
 }: SettingsFormProps) {
-    const mediaNotice = media ? MEDIA_NOTICES[media] : undefined;
-    const mediaErrorNotice = error ? MEDIA_ERROR_NOTICES[error] : undefined;
-    const today = new Date().toISOString().slice(0, 10);
+    const notice = settingsNoticeFromQuery({saved, archived, media, error});
 
     return (
         <div className="admin-theme min-h-screen bg-(--admin-bg) text-(--admin-text) lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
@@ -145,49 +191,9 @@ export function AdminSettingsForm({
 
                 <main className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
                     <div className="space-y-6">
-                        {saved ? (
-                            <AdminNotice tone="success" title="Configuration saved">
-                                Done.
-                            </AdminNotice>
-                        ) : null}
-
-                        {archived ? (
-                            <AdminNotice tone="success" title="Grow archived">
-                                The grow was moved to the archive and the current grow was reset.{" "}
-                                <Link href="/grows" className="underline" target="_blank">
-                                    View past grows
-                                </Link>
-                            </AdminNotice>
-                        ) : null}
-
-                        {error === "save_failed" ? (
-                            <AdminNotice tone="danger" title="Save failed">
-                                Could not save all settings. Review logs and try again.
-                            </AdminNotice>
-                        ) : null}
-
-                        {error === "archive_failed" ? (
-                            <AdminNotice tone="danger" title="Archive failed">
-                                Could not archive the grow. Review logs and try again — the current
-                                grow was left untouched.
-                            </AdminNotice>
-                        ) : null}
-
-                        {error === "archive_not_confirmed" ? (
-                            <AdminNotice tone="warning" title="Archive not confirmed">
-                                Tick the confirmation checkbox to complete and archive the grow.
-                            </AdminNotice>
-                        ) : null}
-
-                        {mediaNotice ? (
-                            <AdminNotice tone={mediaNotice.tone} title={mediaNotice.title}>
-                                {mediaNotice.body}
-                            </AdminNotice>
-                        ) : null}
-
-                        {mediaErrorNotice ? (
-                            <AdminNotice tone={mediaErrorNotice.tone} title={mediaErrorNotice.title}>
-                                {mediaErrorNotice.body}
+                        {notice ? (
+                            <AdminNotice tone={notice.tone} title={notice.title}>
+                                {notice.body}
                             </AdminNotice>
                         ) : null}
 
@@ -586,52 +592,7 @@ export function AdminSettingsForm({
                             deleteAction={deleteMediaAction}
                         />
 
-                        <form action={completeAction}>
-                            <AdminPanel
-                                id="archive"
-                                title="Complete Grow"
-                                description="Finish this grow and move it to the public archive. This cannot be undone from the UI."
-                                className="border-red-900/50"
-                            >
-                                <div className="space-y-4">
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <AdminField label="Harvest Date">
-                                            <AdminInput
-                                                name="harvestedAt"
-                                                type="date"
-                                                defaultValue={today}
-                                                required
-                                            />
-                                        </AdminField>
-                                        <AdminField label="Yield (grams)" hint="Leave empty if not measured.">
-                                            <AdminInput
-                                                name="yieldGrams"
-                                                type="number"
-                                                min={0}
-                                                step="0.1"
-                                                placeholder="e.g. 120"
-                                            />
-                                        </AdminField>
-                                    </div>
-                                    <AdminField label="Final Notes" hint="How did it go? Shown on the archived grow page.">
-                                        <AdminTextarea
-                                            name="finalNotes"
-                                            rows={4}
-                                            placeholder="Harvest impressions, lessons learned..."
-                                        />
-                                    </AdminField>
-                                    <AdminCheckboxRow
-                                        name="confirmArchive"
-                                        required
-                                        label="I understand this moves all pictures into the archive"
-                                        description="All snapshots, the timelapse and dashboard pictures move to the archive, and the grow details reset for the next run. Stream URL, socials and setup info are kept."
-                                    />
-                                    <AdminButton type="submit" tone="danger" className="w-full sm:w-auto">
-                                        Complete &amp; Archive Grow
-                                    </AdminButton>
-                                </div>
-                            </AdminPanel>
-                        </form>
+                        <CompleteGrowPanel completeAction={completeAction}/>
                     </div>
                 </main>
             </div>

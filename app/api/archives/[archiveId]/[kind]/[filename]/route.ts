@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { archiveMediaDir, isArchiveMediaKind, isValidArchiveId } from "@/lib/archives";
+import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, isSafeMediaFilename } from "@/lib/safe-media-filename";
 import {
     logHttpPathTraversalBlocked,
     withRequestLog,
@@ -34,11 +35,8 @@ export async function GET(
                 return new Response("Not found", { status: 404 });
             }
 
-            if (
-                filename.includes("/") ||
-                filename.includes("\\") ||
-                filename.includes("..")
-            ) {
+            const allowed = kind === "timelapse" ? VIDEO_EXTENSIONS : IMAGE_EXTENSIONS;
+            if (!isSafeMediaFilename(filename, allowed)) {
                 logHttpPathTraversalBlocked({ reason: "invalid_filename" });
                 return new Response("Invalid filename", { status: 400 });
             }

@@ -16,6 +16,7 @@ import {
 } from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {
+    archiveMediaUrl,
     getArchivedGrow,
     getArchivePictureFiles,
     getArchiveSnapshotFiles,
@@ -141,11 +142,11 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
 
     const snapshots = snapshotFiles.map((name) => ({
         name,
-        url: `/api/archives/${archiveId}/snapshots/${encodeURIComponent(name)}`,
+        url: archiveMediaUrl(archiveId, "snapshots", name),
     }));
     const pictures = pictureFiles.map((name) => ({
         name,
-        url: `/api/archives/${archiveId}/pictures/${encodeURIComponent(name)}`,
+        url: archiveMediaUrl(archiveId, "pictures", name),
     }));
 
     const {grow, completion} = archive;
@@ -289,7 +290,7 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                                 className="w-full rounded-md border border-(--admin-border) bg-black"
                             >
                                 <source
-                                    src={`/api/archives/${archiveId}/timelapse/${encodeURIComponent(timelapseFile)}`}
+                                    src={archiveMediaUrl(archiveId, "timelapse", timelapseFile)}
                                     type="video/mp4"
                                 />
                             </video>

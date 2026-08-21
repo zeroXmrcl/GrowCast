@@ -3,6 +3,7 @@ import {notFound} from "next/navigation";
 import SnapshotGallery from "@/components/snapshot-gallery";
 import TimelapsePlayer from "@/components/timelapse-player";
 import {
+    archiveMediaUrl,
     getArchivedGrow,
     getArchivePictureFiles,
     getArchiveSnapshotFiles,
@@ -59,14 +60,14 @@ export default async function ArchivedGrowPage({
 
     const snapshots = snapshotFiles.map((name) => ({
         name,
-        url: `/api/archives/${archiveId}/snapshots/${encodeURIComponent(name)}`,
+        url: archiveMediaUrl(archiveId, "snapshots", name),
     }));
     const pictures = pictureFiles.map((name) => ({
         name,
-        url: `/api/archives/${archiveId}/pictures/${encodeURIComponent(name)}`,
+        url: archiveMediaUrl(archiveId, "pictures", name),
     }));
     const videoUrl = timelapseFile
-        ? `/api/archives/${archiveId}/timelapse/${encodeURIComponent(timelapseFile)}`
+        ? archiveMediaUrl(archiveId, "timelapse", timelapseFile)
         : null;
 
     const {grow, completion} = archive;

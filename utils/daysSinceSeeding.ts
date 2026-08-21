@@ -1,20 +1,5 @@
 import {APP_TIMEZONE} from "@/lib/app-timezone";
-
-function getDatePartsInTimeZone(value: Date, timeZone: string): { year: number; month: number; day: number } {
-    const formatter = new Intl.DateTimeFormat("en-CA", {
-        timeZone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-
-    const parts = formatter.formatToParts(value);
-    const year = Number(parts.find((p) => p.type === "year")?.value);
-    const month = Number(parts.find((p) => p.type === "month")?.value);
-    const day = Number(parts.find((p) => p.type === "day")?.value);
-
-    return { year, month, day };
-}
+import {getDatePartsInTimeZone} from "@/lib/date-only";
 
 export function getDaysSince(date: string | Date): number {
     const MS_PER_DAY = 86400000;

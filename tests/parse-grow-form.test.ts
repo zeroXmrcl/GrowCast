@@ -59,4 +59,23 @@ describe("parseAdminSettingsForm", () => {
         assert.equal(result.timelapse.timelapseQuality, "medium");
         assert.equal(result.timelapse.timezone, "UTC");
     });
+
+    it("parses showSettingsLink from the checkbox", () => {
+        const unchecked = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+            }),
+        );
+        assert.equal(unchecked.grow.showSettingsLink, false);
+
+        const checked = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                showSettingsLink: "on",
+            }),
+        );
+        assert.equal(checked.grow.showSettingsLink, true);
+    });
 });

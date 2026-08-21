@@ -1,7 +1,6 @@
 import {readdir} from "node:fs/promises";
 import path from "node:path";
-
-const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+import {IMAGE_EXTENSIONS} from "@/lib/safe-media-filename";
 
 /**
  * List image files under a directory relative to process.cwd() and map to public URL paths.

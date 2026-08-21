@@ -8,8 +8,13 @@ import {
     replaceCurrentGrow,
     type GrowRecord,
 } from "@/lib/db";
+import {isDateOnly, todayDateOnly} from "@/lib/date-only";
 import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/lib/extension-status";
-import {isSafeMediaFilename} from "@/lib/media-library";
+import {
+    IMAGE_EXTENSIONS,
+    VIDEO_EXTENSIONS,
+    isSafeMediaFilename,
+} from "@/lib/safe-media-filename";
 
 export type ArchiveCompletion = {
     harvestedAt: string;
@@ -51,8 +56,6 @@ export type ArchiveMediaSources = {
     picturesDir: string;
 };
 
-const IMAGE_EXTENSIONS = new Set([".webp", ".jpg", ".jpeg", ".png"]);
-const VIDEO_EXTENSIONS = new Set([".mp4"]);
 const ARCHIVE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,79}$/;
 
 export function archivesDir(): string {
@@ -91,21 +94,28 @@ function slugify(value: string): string {
     return slug || "grow";
 }
 
-function todayDateOnly(): string {
-    return new Date().toISOString().slice(0, 10);
+export function archiveMediaUrl(
+    archiveId: string,
+    kind: ArchiveMediaKind,
+    filename: string,
+): string {
+    return `/api/archives/${archiveId}/${kind}/${encodeURIComponent(filename)}`;
 }
 
-function isDateOnly(value: string): boolean {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        return false;
-    }
-    const [year, month, day] = value.split("-").map(Number);
-    const date = new Date(Date.UTC(year, month - 1, day));
-    return (
-        date.getUTCFullYear() === year &&
-        date.getUTCMonth() === month - 1 &&
-        date.getUTCDate() === day
-    );
+function normalizeCompletion(
+    input: {harvestedAt: string; yieldGrams: number | null; finalNotes: string},
+    fallbackHarvestedAt: string,
+): ArchiveCompletion {
+    return {
+        harvestedAt: isDateOnly(input.harvestedAt) ? input.harvestedAt : fallbackHarvestedAt,
+        yieldGrams:
+            typeof input.yieldGrams === "number" &&
+            Number.isFinite(input.yieldGrams) &&
+            input.yieldGrams >= 0
+                ? input.yieldGrams
+                : null,
+        finalNotes: input.finalNotes.trim(),
+    };
 }
 
 async function reserveArchiveId(growName: string): Promise<string> {
@@ -237,18 +247,15 @@ export async function listArchivedGrows(): Promise<ArchivedGrow[]> {
         return [];
     }
 
-    const archives: ArchivedGrow[] = [];
-    for (const entry of entries) {
-        if (!entry.isDirectory() || !isValidArchiveId(entry.name)) {
-            continue;
-        }
-        const record = await readArchivedGrow(entry.name);
-        if (record) {
-            archives.push(record);
-        }
-    }
+    const records = await Promise.all(
+        entries
+            .filter((entry) => entry.isDirectory() && isValidArchiveId(entry.name))
+            .map((entry) => readArchivedGrow(entry.name)),
+    );
 
-    return archives.sort((a, b) => b.archivedAt.localeCompare(a.archivedAt));
+    return records
+        .filter((record): record is ArchivedGrow => record !== null)
+        .sort((a, b) => b.archivedAt.localeCompare(a.archivedAt));
 }
 
 export async function getArchiveSnapshotFiles(archiveId: string): Promise<string[]> {
@@ -289,17 +296,20 @@ export async function getArchiveTimelapseFile(archiveId: string): Promise<string
 
 /**
  * Freeze the current grow into data/archives/<archiveId>/ and reset the current grow.
- * Order: register archive (grow.json) → move media → reset current grow.
- * Any failure aborts with an error and leaves the current grow untouched.
+ * Media and grow.json are assembled under a hidden staging dir, then renamed
+ * onto the public archive id. Failed attempts stay invisible to listArchivedGrows
+ * (no readable grow.json under a valid id). Current grow is reset last.
  */
 export async function completeCurrentGrow(
     input: CompleteGrowInput,
     sources: ArchiveMediaSources = defaultMediaSources(),
 ): Promise<CompleteGrowResult> {
-    try {
-        const grow = await getCurrentGrow();
-        const archiveId = await reserveArchiveId(grow.name);
+    const grow = await getCurrentGrow();
+    const archiveId = await reserveArchiveId(grow.name);
+    const stagingRoot = path.join(archivesDir(), `.tmp-${archiveId}`);
+    const destinationRoot = path.join(archivesDir(), archiveId);
 
+    try {
         const snapshotFiles = await listFilesByExtension(sources.snapshotsDir, IMAGE_EXTENSIONS);
         const timelapseFiles = await listFilesByExtension(sources.timelapseDir, VIDEO_EXTENSIONS);
         const pictureFiles = await listFilesByExtension(sources.picturesDir, IMAGE_EXTENSIONS);
@@ -307,16 +317,7 @@ export async function completeCurrentGrow(
         const archive: ArchivedGrow = {
             archiveId,
             archivedAt: new Date().toISOString(),
-            completion: {
-                harvestedAt: isDateOnly(input.harvestedAt) ? input.harvestedAt : todayDateOnly(),
-                yieldGrams:
-                    typeof input.yieldGrams === "number" &&
-                    Number.isFinite(input.yieldGrams) &&
-                    input.yieldGrams >= 0
-                        ? input.yieldGrams
-                        : null,
-                finalNotes: input.finalNotes.trim(),
-            },
+            completion: normalizeCompletion(input, todayDateOnly()),
             media: {
                 snapshotCount: snapshotFiles.length,
                 hasTimelapse: timelapseFiles.length > 0,
@@ -326,18 +327,23 @@ export async function completeCurrentGrow(
         };
 
         for (const kind of ARCHIVE_MEDIA_KINDS) {
-            await mkdir(archiveMediaDir(archiveId, kind), {recursive: true});
+            await mkdir(path.join(stagingRoot, kind), {recursive: true});
         }
-        await writeFile(archiveGrowFile(archiveId), JSON.stringify(archive, null, 2), "utf8");
 
-        await moveFiles(sources.snapshotsDir, snapshotFiles, archiveMediaDir(archiveId, "snapshots"));
-        await moveFiles(sources.timelapseDir, timelapseFiles, archiveMediaDir(archiveId, "timelapse"));
-        await moveFiles(sources.picturesDir, pictureFiles, archiveMediaDir(archiveId, "pictures"));
-
+        await moveFiles(sources.snapshotsDir, snapshotFiles, path.join(stagingRoot, "snapshots"));
+        await moveFiles(sources.timelapseDir, timelapseFiles, path.join(stagingRoot, "timelapse"));
+        await moveFiles(sources.picturesDir, pictureFiles, path.join(stagingRoot, "pictures"));
+        await writeFile(
+            path.join(stagingRoot, "grow.json"),
+            JSON.stringify(archive, null, 2),
+            "utf8",
+        );
+        await rename(stagingRoot, destinationRoot);
         await replaceCurrentGrow(buildNextGrow(grow));
 
         return {ok: true, archive};
     } catch (error) {
+        await rm(stagingRoot, {recursive: true, force: true}).catch(() => undefined);
         return {
             ok: false,
             error: error instanceof Error ? error.message : String(error),
@@ -372,18 +378,7 @@ export async function updateArchivedGrow(
     // The archiveId (and its name-based slug) stays stable so public URLs keep working.
     const next: ArchivedGrow = {
         ...existing,
-        completion: {
-            harvestedAt: isDateOnly(edits.harvestedAt)
-                ? edits.harvestedAt
-                : existing.completion.harvestedAt,
-            yieldGrams:
-                typeof edits.yieldGrams === "number" &&
-                Number.isFinite(edits.yieldGrams) &&
-                edits.yieldGrams >= 0
-                    ? edits.yieldGrams
-                    : null,
-            finalNotes: edits.finalNotes.trim(),
-        },
+        completion: normalizeCompletion(edits, existing.completion.harvestedAt),
         grow: {
             ...existing.grow,
             name: edits.name.trim() || existing.grow.name,

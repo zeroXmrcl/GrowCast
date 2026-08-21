@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import {mkdir, unlink, readdir, writeFile} from "node:fs/promises";
 import path from "node:path";
-import sharp from "sharp";
+import {IMAGE_EXTENSIONS, isSafeMediaFilename} from "@/lib/safe-media-filename";
 
 export const MEDIA_COLLECTION_IDS = ["setup", "dashboard"] as const;
 export type MediaCollectionId = (typeof MEDIA_COLLECTION_IDS)[number];
@@ -29,7 +29,6 @@ const WEBP_QUALITY = 82;
 /** Decode guard against decompression bombs (~80MP). */
 const MAX_INPUT_PIXELS = 80_000_000;
 
-const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const ALLOWED_INPUT_FORMATS = new Set(["jpeg", "png", "webp"]);
 
 export type MediaFile = {
@@ -74,34 +73,17 @@ function generatedFileName(prefix: string): string {
     return `${prefix}-${stamp}-${rand}.webp`;
 }
 
-export function isSafeMediaFilename(
-    name: string,
-    allowedExtensions: Set<string> = IMAGE_EXTENSIONS,
-): boolean {
-    if (name.length === 0 || name.length > 255) {
-        return false;
-    }
-    if (name.startsWith(".")) {
-        return false;
-    }
-    if (
-        name.includes("/") ||
-        name.includes("\\") ||
-        name.includes("..") ||
-        name.includes("\0")
-    ) {
-        return false;
-    }
-    return allowedExtensions.has(path.extname(name).toLowerCase());
-}
-
 /**
  * Decode-validate and re-encode an upload. Returns null when the bytes are
  * not a real jpeg/png/webp image. Re-encoding strips all metadata (EXIF/GPS)
  * after `.rotate()` has applied the EXIF orientation.
+ *
+ * Sharp is loaded only here so listing/delete paths and archive pages never
+ * pull the native encoder into Next page-data collection.
  */
 async function encodeImage(input: Buffer): Promise<Buffer | null> {
     try {
+        const sharp = (await import("sharp")).default;
         const metadata = await sharp(input, {limitInputPixels: MAX_INPUT_PIXELS}).metadata();
         if (!metadata.format || !ALLOWED_INPUT_FORMATS.has(metadata.format)) {
             return null;

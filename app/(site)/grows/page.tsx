@@ -1,5 +1,5 @@
 import Link from "next/link";
-import {getArchiveSnapshotFiles, listArchivedGrows, type ArchivedGrow} from "@/lib/archives";
+import {archiveMediaUrl, getArchiveSnapshotFiles, listArchivedGrows, type ArchivedGrow} from "@/lib/archives";
 import {formatDateDisplay, growDurationDays} from "./format";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ async function loadArchiveCards(): Promise<ArchiveCard[]> {
             return {
                 archive,
                 thumbnailUrl: newest
-                    ? `/api/archives/${archive.archiveId}/snapshots/${encodeURIComponent(newest)}`
+                    ? archiveMediaUrl(archive.archiveId, "snapshots", newest)
                     : null,
             };
         }),
