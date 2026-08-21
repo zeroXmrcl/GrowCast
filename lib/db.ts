@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
+import {growcastDataDir} from "@/lib/data-paths";
 
 export type GrowDetails = {
   strain: string;
@@ -66,8 +67,13 @@ export type GrowUpdateInput = {
   climate?: Partial<Climate>;
 };
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const DATA_FILE = path.join(DATA_DIR, "current-grow.json");
+function dataDir(): string {
+  return growcastDataDir();
+}
+
+function dataFile(): string {
+  return path.join(dataDir(), "current-grow.json");
+}
 
 function parseDateOnly(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -139,8 +145,8 @@ function mergeGrowDetails(
 }
 
 async function saveCurrentGrow(record: GrowRecord): Promise<void> {
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(DATA_FILE, JSON.stringify(record, null, 2), "utf8");
+  await mkdir(dataDir(), { recursive: true });
+  await writeFile(dataFile(), JSON.stringify(record, null, 2), "utf8");
 }
 
 const DEFAULT_GROW: GrowRecord = {
@@ -254,9 +260,11 @@ function normalizeGrowRecord(raw: unknown): GrowRecord {
 
 async function ensureDataFile(): Promise<void> {
   try {
-    await readFile(DATA_FILE, "utf8");
-  } catch {
-    await saveCurrentGrow(DEFAULT_GROW);
+    await readFile(dataFile(), "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      await saveCurrentGrow(DEFAULT_GROW);
+    }
   }
 }
 
@@ -264,7 +272,7 @@ export async function getCurrentGrow(): Promise<GrowRecord> {
   await ensureDataFile();
 
   try {
-    const content = await readFile(DATA_FILE, "utf8");
+    const content = await readFile(dataFile(), "utf8");
     return normalizeGrowRecord(JSON.parse(content));
   } catch {
     return DEFAULT_GROW;

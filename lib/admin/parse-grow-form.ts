@@ -34,10 +34,6 @@ function safeUrl(raw: FormDataEntryValue | null): string {
     return normalized ?? "";
 }
 
-/**
- * Map admin settings FormData to grow update + normalized timelapse settings.
- * URL fields use http(s)-only policy; timelapse quality goes through normalizeTimelapseSettings.
- */
 export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormResult {
     const grow: GrowUpdateInput = {
         name: fieldString(formData, "name"),

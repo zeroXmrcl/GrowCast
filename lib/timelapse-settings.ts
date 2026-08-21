@@ -1,6 +1,7 @@
-import {mkdir, readFile, writeFile} from "node:fs/promises";
+import {mkdir, readFile, rename, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
+import {growcastDataDir} from "@/lib/data-paths";
 
 export const TIMELAPSE_PLUGIN_ID = "growcast.timelapse";
 
@@ -47,12 +48,9 @@ export const DEFAULT_TIMELAPSE_SETTINGS: TimelapseSettings = {
     timelapseQuality: "medium",
 };
 
-const SETTINGS_FILE = path.join(
-    process.cwd(),
-    "data",
-    "mesh",
-    `${TIMELAPSE_PLUGIN_ID}.json`,
-);
+function settingsFile(): string {
+    return path.join(growcastDataDir(), "mesh", `${TIMELAPSE_PLUGIN_ID}.json`);
+}
 
 function asOptionalNumber(value: unknown, fallback: number | null): number | null {
     if (value === null || value === undefined || value === "") {
@@ -101,11 +99,7 @@ function normalizeQuality(value: unknown, fallback: TimelapseQuality): Timelapse
     return fallback;
 }
 
-/**
- * Normalize app or on-disk fields into TimelapseSettings.
- * Accepts camelCase (app) and the stable on-disk keys (time_1, interval, …).
- * Does not accept legacy SCREAMING_SNAKE or random aliases.
- */
+/** Accepts app camelCase and on-disk keys (time_1, interval, timelapseLength). */
 export function normalizeTimelapseSettings(
     raw: unknown,
     fallback: TimelapseSettings = DEFAULT_TIMELAPSE_SETTINGS,
@@ -168,18 +162,24 @@ function createRecord(settings: TimelapseSettings): TimelapseSettingsRecord {
 }
 
 async function writeRecord(record: TimelapseSettingsRecord): Promise<void> {
-    await mkdir(path.dirname(SETTINGS_FILE), {recursive: true});
-    await writeFile(SETTINGS_FILE, JSON.stringify(toFile(record), null, 2), "utf8");
+    const file = settingsFile();
+    await mkdir(path.dirname(file), {recursive: true});
+    const tmp = `${file}.${process.pid}.tmp`;
+    await writeFile(tmp, JSON.stringify(toFile(record), null, 2), "utf8");
+    await rename(tmp, file);
 }
 
 export async function getTimelapseSettingsRecord(): Promise<TimelapseSettingsRecord> {
     try {
-        const content = await readFile(SETTINGS_FILE, "utf8");
+        const content = await readFile(settingsFile(), "utf8");
         return recordFromRaw(JSON.parse(content));
-    } catch {
-        const record = createRecord(DEFAULT_TIMELAPSE_SETTINGS);
-        await writeRecord(record);
-        return record;
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            const record = createRecord(DEFAULT_TIMELAPSE_SETTINGS);
+            await writeRecord(record);
+            return record;
+        }
+        return createRecord(DEFAULT_TIMELAPSE_SETTINGS);
     }
 }
 

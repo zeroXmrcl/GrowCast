@@ -3,10 +3,8 @@ import type { NextConfig } from "next";
 const isStandaloneBuild = process.env.BUILD_STANDALONE === "1";
 
 /**
- * Security headers for all routes.
- * CSP allows self + https frame-src for MediaMTX/HLS stream embeds;
- * scripts stay self-only (no unsafe-inline) where Next permits via nonces is
- * not used here — style-src allows unsafe-inline for Tailwind runtime classes.
+ * frame-src allows HTTP so LAN MediaMTX HLS iframes work. Do not set
+ * upgrade-insecure-requests: the documented compose path is HTTP.
  */
 const CONTENT_SECURITY_POLICY = [
     "default-src 'self'",
@@ -21,7 +19,6 @@ const CONTENT_SECURITY_POLICY = [
     "script-src 'self' 'unsafe-inline'",
     "connect-src 'self' https:",
     "frame-src 'self' https: http:",
-    "upgrade-insecure-requests",
 ].join("; ");
 
 const nextConfig: NextConfig = {

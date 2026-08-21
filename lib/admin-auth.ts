@@ -1,15 +1,16 @@
-import { randomUUID, scryptSync, createHmac } from "node:crypto";
+import { randomUUID, createHmac } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {safeEqualBuffer, safeEqualText} from "@/lib/crypto-equal";
-import {validatePasswordStrength} from "@/lib/password-policy";
+import {safeEqualText} from "@/lib/crypto-equal";
+import {
+  matchAdminCredentials,
+  normalizeUsernameInput,
+} from "@/lib/admin-credentials";
 import {SESSION_TTL_SECONDS} from "@/lib/admin-session-policy";
 
 export {SESSION_TTL_SECONDS};
 
 const ADMIN_SESSION_COOKIE = "growcast_admin_session";
-
-const MAX_USERNAME_LENGTH = 64;
 
 const sessionStore = new Map<string, StoredAdminSession>();
 const loginAttemptStore = new Map<string, LoginAttemptState>();
@@ -121,50 +122,6 @@ function getRequiredAdminConfig(): AdminConfig {
     passwordHash: getEnv("ADMIN_PASSWORD_HASH")!,
     secret: getEnv("ADMIN_SESSION_SECRET")!,
   };
-}
-
-function stripInvisibleControls(value: string): string {
-  return value.replace(/[\u0000-\u001F\u007F]/g, "");
-}
-
-function normalizeUsernameInput(input: string): string {
-  return stripInvisibleControls(input).normalize("NFKC").trim();
-}
-
-function validateUsernameInput(input: string): boolean {
-  if (input.length < 1 || input.length > MAX_USERNAME_LENGTH) {
-    return false;
-  }
-
-  return /^[a-zA-Z0-9._@-]+$/.test(input);
-}
-
-function validatePasswordInput(input: string): boolean {
-  return validatePasswordStrength(input);
-}
-
-function verifyPassword(passwordInput: string, storedHash: string): boolean {
-  try {
-    const parts = storedHash.split("$");
-
-    if (parts.length !== 3 || parts[0] !== "scrypt") {
-      return false;
-    }
-
-    const [, saltBase64Url, hashBase64Url] = parts;
-
-    const salt = Buffer.from(saltBase64Url, "base64url");
-    const expectedHash = Buffer.from(hashBase64Url, "base64url");
-
-    if (salt.length === 0 || expectedHash.length === 0) {
-      return false;
-    }
-
-    const actualHash = scryptSync(passwordInput, salt, expectedHash.length);
-    return safeEqualBuffer(actualHash, expectedHash);
-  } catch {
-    return false;
-  }
 }
 
 function sign(value: string, secret: string): string {
@@ -355,22 +312,9 @@ export async function loginAdmin(
     };
   }
 
-  const normalizedUsername = normalizeUsernameInput(usernameInput);
-
-  if (!validateUsernameInput(normalizedUsername) || !validatePasswordInput(passwordInput)) {
-    return {
-      ok: false,
-      code: "invalid_credentials",
-      reason: "Invalid credentials.",
-    };
-  }
-
   const config = getRequiredAdminConfig();
 
-  const usernameMatches = safeEqualText(normalizedUsername, config.username);
-  const passwordMatches = verifyPassword(passwordInput, config.passwordHash);
-
-  if (!usernameMatches || !passwordMatches) {
+  if (!matchAdminCredentials(usernameInput, passwordInput, config)) {
     return {
       ok: false,
       code: "invalid_credentials",

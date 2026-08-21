@@ -48,6 +48,15 @@ npm run setup:admin
 
 This script creates `.env.local` with required admin variables.
 
+Passwords must be at least 12 characters by default. For local/dev only, short passwords can be allowed with:
+
+```bash
+npm run setup:admin:insecure
+# or: npm run setup:admin -- --allow-insecure
+```
+
+(Do not use `npm run setup:admin --allow-insecure` — npm treats that as its own config, not a script argument.)
+
 ### Environment variables
 Required for admin login:
 
@@ -62,7 +71,7 @@ Notes:
 - `ADMIN_SESSION_SECRET` must be at least 32 characters.
 - The same `.env.local` file is used by `docker compose` through `env_file`.
 - **Required for mesh/plugin API:** set `GROWCAST_MESH_TOKEN` to a long random secret. Requests without a matching `Authorization: Bearer <token>` are denied (fail-closed). Official plugins must send this header.
-- Admin passwords must be at least **12 characters** (`npm run setup:admin` enforces this).
+- Admin passwords must be at least **12 characters** (`npm run setup:admin` enforces this). For local/dev only, use `npm run setup:admin:insecure` (or `npm run setup:admin -- --allow-insecure`).
 - Admin sessions last **24 hours**.
 ## 4. Running the Application
 
@@ -98,6 +107,8 @@ What gets persisted on the host:
 - `./public/yourPictures` -> `/app/public/yourPictures`
 
 This means grow data, timelapse assets, and uploaded media survive container restarts and image rebuilds.
+
+The container process runs as uid 1001 (`growcast`). The entrypoint `chown`s those bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host.
 
 Optional port override:
 - The compose file publishes `${GROWCAST_PORT:-3000}:3000`.
@@ -221,7 +232,9 @@ This app uses Next.js route handlers and local filesystem storage.
   - Always requires `GROWCAST_MESH_TOKEN` and matching `Authorization: Bearer <token>` (fail-closed if token unset)
 
 ### Auth model
-- Username + scrypt password hash from env vars (password minimum 12 characters)
+- Username + scrypt password hash from env vars
+- Default `setup:admin` requires a 12-character password; `--allow-insecure` is local/dev only
+- Login verifies the stored scrypt hash (non-empty + max length); it does not re-apply the 12-character setup minimum
 - Signed cookie-based sessions (24-hour TTL)
 - In-memory session store (single-node deploy)
 

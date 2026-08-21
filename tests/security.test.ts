@@ -12,7 +12,9 @@ import {
   safeHttpUrlOrEmpty,
 } from "../lib/url-policy.ts";
 import {
+  MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
+  validatePasswordHardLimits,
   validatePasswordStrength,
 } from "../lib/password-policy.ts";
 import {
@@ -114,20 +116,26 @@ describe("URL policy (http/https only)", () => {
 });
 
 describe("password and session policy", () => {
-  it("rejects passwords shorter than minimum", () => {
+  it("rejects passwords shorter than minimum for setup strength", () => {
     assert.equal(MIN_PASSWORD_LENGTH, 12);
     for (let length = 1; length < MIN_PASSWORD_LENGTH; length += 1) {
       assert.equal(
         validatePasswordStrength("a".repeat(length)),
         false,
-        `length ${length} should fail`,
+        `length ${length} should fail strength`,
       );
     }
   });
 
-  it("accepts passwords at least 12 characters", () => {
+  it("accepts passwords at least 12 characters for setup strength", () => {
     assert.equal(validatePasswordStrength("a".repeat(12)), true);
     assert.equal(validatePasswordStrength("secure-pass-99"), true);
+  });
+
+  it("login hard limits allow short passwords but reject empty and over-max", () => {
+    assert.equal(validatePasswordHardLimits(""), false);
+    assert.equal(validatePasswordHardLimits("admin"), true);
+    assert.equal(validatePasswordHardLimits("a".repeat(MAX_PASSWORD_LENGTH + 1)), false);
   });
 
   it("session TTL is at most 24 hours", () => {

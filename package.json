@@ -9,6 +9,7 @@
     "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
     "setup:admin": "node scripts/admin-creator.mjs",
+    "setup:admin:insecure": "node scripts/admin-creator.mjs --allow-insecure",
     "test": "node --experimental-strip-types --import ./tests/register.mjs --test tests/**/*.test.ts"
   },
   "dependencies": {

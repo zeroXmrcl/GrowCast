@@ -3,6 +3,12 @@ import {createInterface} from "node:readline";
 import {stdin as input, stdout as output} from "node:process";
 import fs from "node:fs";
 import path from "node:path";
+import {fileURLToPath} from "node:url";
+
+/** Opt-in: allow short passwords that fail the normal strength policy (e.g. admin:admin). */
+const ALLOW_INSECURE_FLAG = "--allow-insecure";
+
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function question(rl, text) {
     return new Promise((resolve) => rl.question(text, resolve));
@@ -10,6 +16,8 @@ function question(rl, text) {
 
 function fail(message) {
     console.error(`\nError: ${message}`);
+    process.exitCode = 1;
+    console.error(); // trailing blank line for readability
     process.exit(1);
 }
 
@@ -48,27 +56,96 @@ function askHidden(query) {
     });
 }
 
-function normalizeUsernameInput(input) {
-    return input.replace(/[\u0000-\u001F\u007F]/g, "").normalize("NFKC").trim();
+/** Read all piped stdin lines (reliable for non-interactive / test use). */
+function readPipedLines() {
+    return new Promise((resolve, reject) => {
+        let data = "";
+        input.setEncoding("utf8");
+        input.on("data", (chunk) => {
+            data += chunk;
+        });
+        input.on("end", () => {
+            const lines = data.split(/\r?\n/);
+            // Drop trailing empty line from final newline
+            if (lines.length > 0 && lines[lines.length - 1] === "") {
+                lines.pop();
+            }
+            resolve(lines);
+        });
+        input.on("error", reject);
+    });
 }
 
-function validateUsernameInput(input) {
-    return input.length >= 1 && input.length <= 64 && /^[a-zA-Z0-9._@-]+$/.test(input);
+/**
+ * Read username + password + confirm.
+ * Interactive TTY uses hidden password entry; piped stdin reads three lines.
+ */
+async function promptCredentials() {
+    if (!input.isTTY) {
+        const lines = await readPipedLines();
+        const rawUsername = lines[0] ?? "";
+        const password = lines[1] ?? "";
+        const passwordConfirm = lines[2] ?? "";
+        output.write("Admin username: " + rawUsername + "\n");
+        output.write("Admin password: " + "*".repeat(Math.max(password.length, 0)) + "\n");
+        output.write(
+            "Repeat admin password: " + "*".repeat(Math.max(passwordConfirm.length, 0)) + "\n",
+        );
+        return {rawUsername, password, passwordConfirm};
+    }
+
+    const rl = createInterface({input, output, terminal: true});
+    try {
+        const rawUsername = await question(rl, "Admin username: ");
+        rl.pause();
+        const password = await askHidden("Admin password: ");
+        const passwordConfirm = await askHidden("Repeat admin password: ");
+        return {rawUsername, password, passwordConfirm};
+    } finally {
+        rl.close();
+    }
+}
+
+function normalizeUsernameInput(value) {
+    return value.replace(/[\u0000-\u001F\u007F]/g, "").normalize("NFKC").trim();
+}
+
+function validateUsernameInput(value) {
+    return value.length >= 1 && value.length <= 64 && /^[a-zA-Z0-9._@-]+$/.test(value);
 }
 
 /** Single source of truth shared with lib/password-policy.ts */
 const passwordPolicy = JSON.parse(
-    fs.readFileSync(path.resolve(process.cwd(), "lib/password-policy.json"), "utf8"),
+    fs.readFileSync(path.resolve(projectRoot, "lib/password-policy.json"), "utf8"),
 );
 const MIN_PASSWORD_LENGTH = passwordPolicy.minPasswordLength;
 const MAX_PASSWORD_LENGTH = passwordPolicy.maxPasswordLength;
 
-function validatePasswordInput(input) {
-    return input.length >= MIN_PASSWORD_LENGTH && input.length <= MAX_PASSWORD_LENGTH;
+function parseAllowInsecure(argv = process.argv.slice(2)) {
+    return argv.includes(ALLOW_INSECURE_FLAG);
 }
 
-function hashAdminPasswordForEnv(plainPassword) {
-    if (!validatePasswordInput(plainPassword)) {
+/**
+ * Default: min + max length. With allowInsecure: non-empty + max only.
+ * @param {string} value
+ * @param {{allowInsecure?: boolean}} [options]
+ */
+function validatePasswordInput(value, options = {}) {
+    if (value.length < 1 || value.length > MAX_PASSWORD_LENGTH) {
+        return false;
+    }
+    if (options.allowInsecure) {
+        return true;
+    }
+    return value.length >= MIN_PASSWORD_LENGTH;
+}
+
+/**
+ * @param {string} plainPassword
+ * @param {{allowInsecure?: boolean}} [options]
+ */
+function hashAdminPasswordForEnv(plainPassword, options = {}) {
+    if (!validatePasswordInput(plainPassword, options)) {
         throw new Error("Invalid password.");
     }
 
@@ -79,11 +156,16 @@ function hashAdminPasswordForEnv(plainPassword) {
 }
 
 async function main() {
-    const rl = createInterface({input, output});
+    const allowInsecure = parseAllowInsecure();
+
+    if (allowInsecure) {
+        console.warn(
+            `\nWarning: ${ALLOW_INSECURE_FLAG} is set. Short/weak passwords are allowed (not for production).\n`,
+        );
+    }
 
     try {
-        const rawUsername = await question(rl, "Admin username: ");
-        rl.close();
+        const {rawUsername, password, passwordConfirm} = await promptCredentials();
 
         const username = normalizeUsernameInput(rawUsername);
 
@@ -91,18 +173,28 @@ async function main() {
             fail("Invalid username. Allowed: 1-64 characters (a-z, A-Z, 0-9, ., _, @, -)");
         }
 
-        const password = await askHidden("Admin password: ");
-        const passwordConfirm = await askHidden("Repeat admin password: ");
-
         if (password !== passwordConfirm) {
             fail("Passwords do not match.");
         }
 
-        if (!validatePasswordInput(password)) {
-            fail(`Invalid password. Minimum length is ${MIN_PASSWORD_LENGTH} characters.`);
+        if (!validatePasswordInput(password, {allowInsecure})) {
+            if (password.length < 1) {
+                fail("Invalid password. Password cannot be empty.");
+            }
+            if (password.length > MAX_PASSWORD_LENGTH) {
+                fail(`Invalid password. Maximum length is ${MAX_PASSWORD_LENGTH} characters.`);
+            }
+            fail(
+                `Invalid password. Minimum length is ${MIN_PASSWORD_LENGTH} characters.` +
+                    ` To allow short passwords (not for production), re-run with:` +
+                    `\n  npm run setup:admin -- ${ALLOW_INSECURE_FLAG}` +
+                    `\n  npm run setup:admin:insecure` +
+                    `\n(Note: npm requires \`--\` before script flags; ` +
+                    `\`npm run setup:admin ${ALLOW_INSECURE_FLAG}\` does not pass the flag through.)`,
+            );
         }
 
-        const passwordHash = hashAdminPasswordForEnv(password);
+        const passwordHash = hashAdminPasswordForEnv(password, {allowInsecure});
         const secret = randomBytes(48).toString("base64url");
 
         const escapedPasswordHash = passwordHash.replace(/\$/g, "\\$");
@@ -126,9 +218,11 @@ async function main() {
 
         console.log("\nDone.");
         console.log(".env.local has been created.");
+        if (allowInsecure) {
+            console.log(`Insecure password policy was used (${ALLOW_INSECURE_FLAG}).`);
+        }
         console.log("Please restart the app.");
     } catch (error) {
-        rl.close();
         console.error("\nError:", error instanceof Error ? error.message : String(error));
         process.exit(1);
     }
