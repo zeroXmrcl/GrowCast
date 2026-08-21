@@ -74,6 +74,18 @@ export function logAdminGrowUpdateFailed(
   logSecurityEvent("admin.grow.update_failed", fields, "error");
 }
 
+export function logAdminGrowArchived(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.grow.archived", fields, "info");
+}
+
+export function logAdminGrowArchiveFailed(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.grow.archive_failed", fields, "error");
+}
+
 export function logAppStart(fields: Record<string, unknown> = {}): void {
   logSecurityEvent("app.start", fields, "info");
 }

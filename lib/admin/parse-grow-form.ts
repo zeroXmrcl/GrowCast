@@ -1,3 +1,4 @@
+import type {CompleteGrowInput} from "@/lib/archives";
 import type {GrowUpdateInput} from "@/lib/db";
 import {
     DEFAULT_TIMELAPSE_SETTINGS,
@@ -100,4 +101,12 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
     );
 
     return {grow, timelapse};
+}
+
+export function parseCompleteGrowForm(formData: FormData): CompleteGrowInput {
+    return {
+        harvestedAt: fieldString(formData, "harvestedAt"),
+        yieldGrams: toOptionalNumber(formData.get("yieldGrams")),
+        finalNotes: fieldString(formData, "finalNotes"),
+    };
 }

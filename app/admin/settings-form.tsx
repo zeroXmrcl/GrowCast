@@ -24,23 +24,30 @@ const sectionLinks = [
     {href: "#stream", label: "Stream"},
     {href: "#timelapse", label: "Timelapse"},
     {href: "#socials", label: "Socials"},
+    {href: "#archive", label: "Archive"},
 ];
 
 type SettingsFormProps = {
     grow: GrowRecord;
     timelapseSettings: TimelapseSettings;
     saved?: string;
+    archived?: string;
     error?: string;
     saveAction: (formData: FormData) => Promise<void>;
+    completeAction: (formData: FormData) => Promise<void>;
 };
 
 export function AdminSettingsForm({
     grow,
     timelapseSettings,
     saved,
+    archived,
     error,
     saveAction,
+    completeAction,
 }: SettingsFormProps) {
+    const today = new Date().toISOString().slice(0, 10);
+
     return (
         <div className="admin-theme min-h-screen bg-(--admin-bg) text-(--admin-text) lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
             <aside className="border-b border-(--admin-border) bg-(--admin-surface) lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
@@ -93,9 +100,31 @@ export function AdminSettingsForm({
                             </AdminNotice>
                         ) : null}
 
+                        {archived ? (
+                            <AdminNotice tone="success" title="Grow archived">
+                                The grow was moved to the archive and the current grow was reset.{" "}
+                                <Link href="/grows" className="underline" target="_blank">
+                                    View past grows
+                                </Link>
+                            </AdminNotice>
+                        ) : null}
+
                         {error === "save_failed" ? (
                             <AdminNotice tone="danger" title="Save failed">
                                 Could not save all settings. Review logs and try again.
+                            </AdminNotice>
+                        ) : null}
+
+                        {error === "archive_failed" ? (
+                            <AdminNotice tone="danger" title="Archive failed">
+                                Could not archive the grow. Review logs and try again — the current
+                                grow was left untouched.
+                            </AdminNotice>
+                        ) : null}
+
+                        {error === "archive_not_confirmed" ? (
+                            <AdminNotice tone="warning" title="Archive not confirmed">
+                                Tick the confirmation checkbox to complete and archive the grow.
                             </AdminNotice>
                         ) : null}
 
@@ -473,6 +502,53 @@ export function AdminSettingsForm({
                                     </div>
                                 </AdminPanel>
                             </div>
+                        </form>
+
+                        <form action={completeAction}>
+                            <AdminPanel
+                                id="archive"
+                                title="Complete Grow"
+                                description="Finish this grow and move it to the public archive. This cannot be undone from the UI."
+                                className="border-red-900/50"
+                            >
+                                <div className="space-y-4">
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <AdminField label="Harvest Date">
+                                            <AdminInput
+                                                name="harvestedAt"
+                                                type="date"
+                                                defaultValue={today}
+                                                required
+                                            />
+                                        </AdminField>
+                                        <AdminField label="Yield (grams)" hint="Leave empty if not measured.">
+                                            <AdminInput
+                                                name="yieldGrams"
+                                                type="number"
+                                                min={0}
+                                                step="0.1"
+                                                placeholder="e.g. 120"
+                                            />
+                                        </AdminField>
+                                    </div>
+                                    <AdminField label="Final Notes" hint="How did it go? Shown on the archived grow page.">
+                                        <AdminTextarea
+                                            name="finalNotes"
+                                            rows={4}
+                                            placeholder="Harvest impressions, lessons learned..."
+                                        />
+                                    </AdminField>
+                                    <AdminCheckboxRow
+                                        name="confirmArchive"
+                                        required
+                                        label="I understand this moves all pictures into the archive"
+                                        description="All snapshots, the timelapse and dashboard pictures move to the archive, and the grow details reset for the next run. Stream URL, socials and setup info are kept."
+                                    />
+                                    <AdminButton type="submit" tone="danger" className="w-full sm:w-auto">
+                                        Complete &amp; Archive Grow
+                                    </AdminButton>
+                                </div>
+                            </AdminPanel>
                         </form>
                     </div>
                 </main>

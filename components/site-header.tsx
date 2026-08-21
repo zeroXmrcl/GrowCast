@@ -7,20 +7,17 @@ import {useEffect, useState} from "react";
 
 type NavItem = {href: string; label: string};
 
+const NAV_ITEMS: NavItem[] = [
+    {href: "/", label: "Dashboard"},
+    {href: "/gallery", label: "Gallery"},
+    {href: "/grows", label: "Past Grows"},
+    {href: "/admin", label: "Settings"},
+];
+
 function navItemsFor(pathname: string): NavItem[] {
-    const isGalleryRoute = pathname.startsWith("/gallery");
-
-    if (isGalleryRoute) {
-        return [
-            {href: "/", label: "Dashboard"},
-            {href: "/admin", label: "Settings"},
-        ];
-    }
-
-    return [
-        {href: "/gallery", label: "Gallery"},
-        {href: "/admin", label: "Settings"},
-    ];
+    return NAV_ITEMS.filter((item) =>
+        item.href === "/" ? pathname !== "/" : !pathname.startsWith(item.href),
+    );
 }
 
 export default function SiteHeader() {

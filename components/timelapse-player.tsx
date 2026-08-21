@@ -1,10 +1,24 @@
 import {getTimelapseFiles} from "@/lib/extension-status";
 
-export default async function TimelapsePlayer() {
-    const files = await getTimelapseFiles();
-    const latestFile = files[0];
+type TimelapsePlayerProps = {
+    /**
+     * Explicit video URL (archived grows). `null` renders the empty state,
+     * `undefined` falls back to the live timelapse.
+     */
+    videoUrl?: string | null;
+};
 
-    if (!latestFile) {
+export default async function TimelapsePlayer({videoUrl}: TimelapsePlayerProps = {}) {
+    let resolvedUrl: string | null;
+
+    if (videoUrl === undefined) {
+        const files = await getTimelapseFiles();
+        resolvedUrl = files[0] ? "/api/timelapse" : null;
+    } else {
+        resolvedUrl = videoUrl;
+    }
+
+    if (!resolvedUrl) {
         return (
             <section className="p-4">
                 <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -16,8 +30,6 @@ export default async function TimelapsePlayer() {
             </section>
         );
     }
-
-    const videoUrl = "/api/timelapse";
 
     return (
         <section className="space-y-5">
@@ -33,7 +45,7 @@ export default async function TimelapsePlayer() {
                     preload="metadata"
                     className="block h-auto w-full"
                 >
-                    <source src={videoUrl} type="video/mp4"/>
+                    <source src={resolvedUrl} type="video/mp4"/>
                     Your browser does not support video.
                 </video>
             </div>

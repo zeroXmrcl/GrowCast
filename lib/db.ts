@@ -195,7 +195,7 @@ const DEFAULT_GROW: GrowRecord = {
   },
 };
 
-function normalizeGrowRecord(raw: unknown): GrowRecord {
+export function normalizeGrowRecord(raw: unknown): GrowRecord {
   const parsed = migrateGrowRaw(raw);
   const rawDetails = isRecord(parsed.details) ? parsed.details : {};
   const rawSetup = isRecord(parsed.growSetup) ? parsed.growSetup : {};
@@ -277,6 +277,14 @@ export async function getCurrentGrow(): Promise<GrowRecord> {
   } catch {
     return DEFAULT_GROW;
   }
+}
+
+/**
+ * Overwrite the current grow with a full record, bypassing merge logic.
+ * Used by the archive flow to reset the grow for a fresh run.
+ */
+export async function replaceCurrentGrow(record: GrowRecord): Promise<void> {
+  await saveCurrentGrow(record);
 }
 
 export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRecord> {

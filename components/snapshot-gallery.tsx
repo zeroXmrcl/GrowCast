@@ -1,11 +1,16 @@
 import { getSnapshotFiles } from "@/lib/extension-status";
 
-type SnapshotFile = {
+export type SnapshotItem = {
     name: string;
     url: string;
 };
 
-async function loadSnapshots(): Promise<SnapshotFile[]> {
+type SnapshotGalleryProps = {
+    /** Explicit snapshot list (archived grows); `undefined` falls back to the live snapshot folder. */
+    snapshots?: SnapshotItem[];
+};
+
+async function loadLiveSnapshots(): Promise<SnapshotItem[]> {
     const files = await getSnapshotFiles();
 
     return files.map((name) => ({
@@ -14,10 +19,10 @@ async function loadSnapshots(): Promise<SnapshotFile[]> {
     }));
 }
 
-export default async function SnapshotGallery() {
-    const snapshots = await loadSnapshots();
+export default async function SnapshotGallery({ snapshots }: SnapshotGalleryProps = {}) {
+    const resolved = snapshots ?? (await loadLiveSnapshots());
 
-    if (snapshots.length === 0) {
+    if (resolved.length === 0) {
         return (
             <section className="border-t border-zinc-200 p-4 pt-15 dark:border-zinc-800">
                 <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
@@ -37,12 +42,12 @@ export default async function SnapshotGallery() {
                     Snapshots
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                    {snapshots.length} images available
+                    {resolved.length} images available
                 </p>
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {snapshots.map((snapshot) => (
+                {resolved.map((snapshot) => (
                     <a
                         key={snapshot.name}
                         href={snapshot.url}

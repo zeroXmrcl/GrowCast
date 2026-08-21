@@ -21,6 +21,8 @@ export type SecurityEventName =
   | "http.path_traversal_blocked"
   | "admin.grow.updated"
   | "admin.grow.update_failed"
+  | "admin.grow.archived"
+  | "admin.grow.archive_failed"
   | "app.start"
   | "log.init";
 

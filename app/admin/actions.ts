@@ -4,10 +4,13 @@ import {revalidatePath} from "next/cache";
 import {headers} from "next/headers";
 import {redirect} from "next/navigation";
 import {loginAdmin, requireAdmin} from "@/lib/admin-auth";
-import {parseAdminSettingsForm} from "@/lib/admin/parse-grow-form";
+import {parseAdminSettingsForm, parseCompleteGrowForm} from "@/lib/admin/parse-grow-form";
 import {saveAdminSettings} from "@/lib/admin/save-settings";
+import {completeCurrentGrow} from "@/lib/archives";
 import {
     extractClientIp,
+    logAdminGrowArchiveFailed,
+    logAdminGrowArchived,
     logAdminGrowUpdateFailed,
     logAdminGrowUpdated,
     sanitizeError,
@@ -59,5 +62,31 @@ export async function saveGrowAction(formData: FormData): Promise<void> {
         revalidatePath("/");
         revalidatePath("/admin");
         redirect("/admin?saved=1");
+    });
+}
+
+export async function completeGrowAction(formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin", async () => {
+        await requireAdmin();
+
+        if (formData.get("confirmArchive") !== "on") {
+            redirect("/admin?error=archive_not_confirmed");
+        }
+
+        const input = parseCompleteGrowForm(formData);
+        const result = await completeCurrentGrow(input);
+
+        if (!result.ok) {
+            logAdminGrowArchiveFailed({err: sanitizeError(result.error)});
+            redirect("/admin?error=archive_failed");
+        }
+
+        logAdminGrowArchived({archiveId: result.archive.archiveId});
+        revalidatePath("/");
+        revalidatePath("/gallery");
+        revalidatePath("/grows");
+        revalidatePath(`/grows/${result.archive.archiveId}`);
+        revalidatePath("/admin");
+        redirect("/admin?archived=1");
     });
 }
