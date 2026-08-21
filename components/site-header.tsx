@@ -14,15 +14,19 @@ const NAV_ITEMS: NavItem[] = [
     {href: "/admin", label: "Settings"},
 ];
 
-function navItemsFor(pathname: string): NavItem[] {
-    return NAV_ITEMS.filter((item) =>
-        item.href === "/" ? pathname !== "/" : !pathname.startsWith(item.href),
-    );
+function navItemsFor(pathname: string, showSettingsLink: boolean): NavItem[] {
+    return NAV_ITEMS.filter((item) => {
+        if (item.href === "/admin" && !showSettingsLink) {
+            return false;
+        }
+
+        return item.href === "/" ? pathname !== "/" : !pathname.startsWith(item.href);
+    });
 }
 
-export default function SiteHeader() {
+export default function SiteHeader({showSettingsLink = true}: {showSettingsLink?: boolean}) {
     const pathname = usePathname();
-    const navItems = navItemsFor(pathname);
+    const navItems = navItemsFor(pathname, showSettingsLink);
 
     const [logoText, setLogoText] = useState("GrowCast");
     const [logoFading, setLogoFading] = useState(false);
