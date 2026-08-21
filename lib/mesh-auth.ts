@@ -1,4 +1,6 @@
 import {safeEqualText} from "@/lib/crypto-equal";
+import {extractClientIp, extractUserAgent} from "@/lib/logging/http";
+import {logMeshAuthFailed} from "@/lib/logging/security-events";
 
 export const MESH_TOKEN_ENV = "GROWCAST_MESH_TOKEN";
 
@@ -70,6 +72,11 @@ export function requireMeshAuth(request: Request): Response | null {
     if (isMeshTokenAuthorized(expectedToken, providedToken)) {
         return null;
     }
+
+    logMeshAuthFailed({
+        client_ip: extractClientIp(request.headers),
+        user_agent: extractUserAgent(request.headers),
+    });
 
     return unauthorizedResponse();
 }

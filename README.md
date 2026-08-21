@@ -73,6 +73,13 @@ Notes:
 - **Required for mesh/plugin API:** set `GROWCAST_MESH_TOKEN` to a long random secret. Requests without a matching `Authorization: Bearer <token>` are denied (fail-closed). Official plugins must send this header.
 - Admin passwords must be at least **12 characters** (`npm run setup:admin` enforces this). For local/dev only, use `npm run setup:admin:insecure` (or `npm run setup:admin -- --allow-insecure`).
 - Admin sessions last **24 hours**.
+
+### Logging
+
+GrowCast writes **structured JSON logs to stdout** (Pino) for production observability and security events (auth, mesh, path traversal, HTTP requests). Correlation IDs are set in middleware (`X-Request-ID` on responses). Optional env vars: `LOG_LEVEL`, `LOG_PRETTY` (dev only), `GROWCAST_ENV`.
+
+Full schema, event catalog, redaction rules, Docker log shipping, retention guidance, and alert examples: **[docs/logging.md](docs/logging.md)**.
+
 ## 4. Running the Application
 
 ### Docker Compose

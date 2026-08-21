@@ -24,7 +24,14 @@ export async function resolve(specifier, context, nextResolve) {
             try {
                 return await nextResolve(withTs, context);
             } catch {
-                // fall through
+                const withIndex = next.startsWith("file:")
+                    ? pathToFileURL(path.join(asPath, "index.ts")).href
+                    : `${next}/index.ts`;
+                try {
+                    return await nextResolve(withIndex, context);
+                } catch {
+                    // fall through
+                }
             }
         }
         throw error;

@@ -3,6 +3,7 @@ import {
     getTimelapseSettingsRecord,
     isKnownMeshPlugin,
 } from "@/lib/timelapse-settings";
+import {logMeshPluginUnknown, withRequestLog} from "@/lib/logging";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,31 +15,34 @@ type PluginSettingsRouteContext = {
 };
 
 export async function GET(request: Request, {params}: PluginSettingsRouteContext) {
-    const authResponse = requireMeshAuth(request);
+    return withRequestLog(request, "/api/mesh/:pluginId", async () => {
+        const authResponse = requireMeshAuth(request);
 
-    if (authResponse) {
-        return authResponse;
-    }
+        if (authResponse) {
+            return authResponse;
+        }
 
-    const {pluginId} = await params;
+        const {pluginId} = await params;
 
-    if (!isKnownMeshPlugin(pluginId)) {
-        return Response.json(
-            {error: "Unknown plugin"},
-            {
-                status: 404,
-                headers: {
-                    "Cache-Control": "no-store",
+        if (!isKnownMeshPlugin(pluginId)) {
+            logMeshPluginUnknown({plugin_id: pluginId});
+            return Response.json(
+                {error: "Unknown plugin"},
+                {
+                    status: 404,
+                    headers: {
+                        "Cache-Control": "no-store",
+                    },
                 },
+            );
+        }
+
+        const data = await getTimelapseSettingsRecord();
+
+        return Response.json(data, {
+            headers: {
+                "Cache-Control": "no-store, must-revalidate",
             },
-        );
-    }
-
-    const data = await getTimelapseSettingsRecord();
-
-    return Response.json(data, {
-        headers: {
-            "Cache-Control": "no-store, must-revalidate",
-        },
+        });
     });
 }
