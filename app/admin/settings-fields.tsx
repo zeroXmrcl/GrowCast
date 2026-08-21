@@ -1,0 +1,355 @@
+import {
+    AdminCheckboxRow,
+    AdminField,
+    AdminInput,
+    AdminPanel,
+    AdminSelect,
+    AdminTextarea,
+} from "@/components/admin/ui";
+import type {GrowRecord} from "@/lib/db";
+import type {TimelapseSettings} from "@/lib/timelapse-settings";
+
+type SettingsFieldsProps = {
+    grow: GrowRecord;
+    timelapseSettings: TimelapseSettings;
+};
+
+export function SettingsFields({grow, timelapseSettings}: SettingsFieldsProps) {
+    return (
+        <div className="space-y-6">
+            <AdminPanel id="general" title="General">
+                <div className="grid gap-4 md:grid-cols-2">
+                    <AdminField label="Grow Name">
+                        <AdminInput name="name" defaultValue={grow.name} required/>
+                    </AdminField>
+                    <AdminField label="Plant">
+                        <AdminInput name="plant" defaultValue={grow.plant}/>
+                    </AdminField>
+                    <AdminField label="Plant Amount">
+                        <AdminInput
+                            name="plantAmount"
+                            type="number"
+                            min={0}
+                            defaultValue={grow.plantAmount}
+                        />
+                    </AdminField>
+                    <AdminField label="Strain">
+                        <AdminInput name="strain" defaultValue={grow.details.strain}/>
+                    </AdminField>
+                </div>
+                <div className="mt-4">
+                    <AdminCheckboxRow
+                        name="showSettingsLink"
+                        defaultChecked={grow.showSettingsLink}
+                        label="Show Settings link in the site header"
+                        description="When disabled, the link is hidden for all visitors. The admin area stays reachable at /admin."
+                    />
+                </div>
+            </AdminPanel>
+
+            <AdminPanel id="lifecycle" title="Lifecycle">
+                <div className="grid gap-4 md:grid-cols-2">
+                    <AdminField label="Stage">
+                        <AdminSelect name="stage" defaultValue={grow.details.stage}>
+                            <option value="Seed">Seed</option>
+                            <option value="Seedling">Seedling</option>
+                            <option value="Vegetative">Vegetative</option>
+                            <option value="Flowering">Flowering</option>
+                            <option value="Drying">Drying</option>
+                        </AdminSelect>
+                    </AdminField>
+                    <AdminField label="Date of Seeding">
+                        <AdminInput
+                            name="seededAt"
+                            type="date"
+                            defaultValue={grow.details.seededAt}
+                        />
+                    </AdminField>
+                    <AdminField label="Light Schedule">
+                        <AdminInput
+                            name="lightSchedule"
+                            defaultValue={grow.details.lightSchedule}
+                        />
+                    </AdminField>
+                </div>
+            </AdminPanel>
+
+            <AdminPanel id="climate" title="Climate">
+                <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-4">
+                        <p className="text-xs font-semibold uppercase text-(--admin-subtle)">
+                            Day
+                        </p>
+                        <AdminField label="Temperature (C)">
+                            <AdminInput
+                                name="temperatureDay"
+                                type="number"
+                                min={0}
+                                step="0.1"
+                                defaultValue={grow.climate.temperatureDay}
+                            />
+                        </AdminField>
+                        <AdminField label="Humidity (%)">
+                            <AdminInput
+                                name="humidityDay"
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="1"
+                                defaultValue={grow.climate.humidityDay}
+                            />
+                        </AdminField>
+                    </div>
+                    <div className="space-y-4">
+                        <p className="text-xs font-semibold uppercase text-(--admin-subtle)">
+                            Night
+                        </p>
+                        <AdminField label="Temperature (C)">
+                            <AdminInput
+                                name="temperatureNight"
+                                type="number"
+                                min={0}
+                                step="0.1"
+                                defaultValue={grow.climate.temperatureNight}
+                            />
+                        </AdminField>
+                        <AdminField label="Humidity (%)">
+                            <AdminInput
+                                name="humidityNight"
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="1"
+                                defaultValue={grow.climate.humidityNight}
+                            />
+                        </AdminField>
+                    </div>
+                </div>
+            </AdminPanel>
+
+            <AdminPanel id="status" title="Status">
+                <div className="grid gap-4 md:grid-cols-2">
+                    <AdminField label="Health">
+                        <AdminSelect name="health" defaultValue={grow.status.health}>
+                            <option value="Healthy">Healthy</option>
+                            <option value="Warning">Warning</option>
+                            <option value="Critical">Critical</option>
+                        </AdminSelect>
+                    </AdminField>
+                    <AdminField label="Estimated Harvest Date">
+                        <AdminInput
+                            name="estimatedHarvestDate"
+                            type="date"
+                            defaultValue={grow.status.estimatedHarvestDate}
+                            disabled
+                        />
+                    </AdminField>
+                </div>
+                <div className="mt-4">
+                    <AdminField label="Health Notes">
+                        <AdminTextarea
+                            name="statusNotes"
+                            defaultValue={grow.status.notes}
+                            rows={4}
+                        />
+                    </AdminField>
+                </div>
+            </AdminPanel>
+
+            <AdminPanel id="notes" title="Notes">
+                <AdminField label="Markdown supported">
+                    <AdminTextarea
+                        name="notes"
+                        defaultValue={grow.details.notes}
+                        rows={6}
+                    />
+                </AdminField>
+            </AdminPanel>
+
+            <AdminPanel id="hardware" title="Hardware">
+                <div className="grid gap-4 md:grid-cols-2">
+                    <AdminField label="Medium">
+                        <AdminInput
+                            name="growingMedium"
+                            defaultValue={grow.growSetup.growingMedium}
+                            placeholder="Soil, coco, hydro..."
+                        />
+                    </AdminField>
+                    <AdminField label="Pot Size (L)">
+                        <AdminInput
+                            name="potSizeLiters"
+                            type="number"
+                            min={0}
+                            defaultValue={grow.growSetup.potSizeLiters}
+                        />
+                    </AdminField>
+                </div>
+                <div className="mt-4">
+                    <AdminField label="Setup Description (MD-Supported)">
+                        <AdminTextarea
+                            name="setupText"
+                            defaultValue={grow.growSetup.setupText}
+                            rows={8}
+                            placeholder={"Tent: ...\nLight: ...\nFan: ..."}
+                        />
+                    </AdminField>
+                </div>
+            </AdminPanel>
+
+            <AdminPanel id="stream" title="Stream">
+                <div className="space-y-4">
+                    <AdminCheckboxRow
+                        name="showGrowName"
+                        defaultChecked={grow.showGrowName}
+                        label="Show grow name above stream"
+                        description="Displays the grow-name as header above the stream."
+                    />
+                    <AdminField label="Stream URL">
+                        <AdminInput
+                            name="streamUrl"
+                            defaultValue={grow.streamUrl}
+                            placeholder="https://..."
+                        />
+                    </AdminField>
+                </div>
+            </AdminPanel>
+
+            <AdminPanel id="timelapse" title="Timelapse">
+                <div className="space-y-4">
+                    <AdminCheckboxRow
+                        name="timelapsePaused"
+                        defaultChecked={timelapseSettings.paused}
+                        label="Pause timelapse"
+                        description="Stops the plugin from taking new snapshots until it is resumed."
+                    />
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <AdminField
+                            label="Timezone"
+                            hint="Use an IANA timezone such as UTC or Europe/Berlin."
+                        >
+                            <AdminInput
+                                name="timelapseTimezone"
+                                defaultValue={timelapseSettings.timezone}
+                                placeholder="UTC"
+                            />
+                        </AdminField>
+                        <AdminField
+                            label="Interval (minutes)"
+                            hint="Leave empty to use trigger times only."
+                        >
+                            <AdminInput
+                                name="timelapseInterval"
+                                type="number"
+                                min={1}
+                                step={1}
+                                defaultValue={timelapseSettings.intervalMinutes ?? ""}
+                            />
+                        </AdminField>
+                    </div>
+                    <div>
+                        <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
+                            Trigger Times
+                        </p>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <AdminField label="Time 1">
+                                <AdminInput
+                                    name="timelapseTime1"
+                                    type="time"
+                                    lang="en-GB"
+                                    step={60}
+                                    defaultValue={timelapseSettings.time1}
+                                />
+                            </AdminField>
+                            <AdminField label="Time 2">
+                                <AdminInput
+                                    name="timelapseTime2"
+                                    type="time"
+                                    lang="en-GB"
+                                    step={60}
+                                    defaultValue={timelapseSettings.time2}
+                                />
+                            </AdminField>
+                            <AdminField label="Time 3">
+                                <AdminInput
+                                    name="timelapseTime3"
+                                    type="time"
+                                    lang="en-GB"
+                                    step={60}
+                                    defaultValue={timelapseSettings.time3}
+                                />
+                            </AdminField>
+                        </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <AdminField label="Timelapse Length (seconds)">
+                            <AdminInput
+                                name="timelapseLength"
+                                type="number"
+                                min={1}
+                                step={1}
+                                defaultValue={timelapseSettings.timelapseLengthSeconds}
+                            />
+                        </AdminField>
+                        <AdminField label="Timelapse Quality">
+                            <AdminSelect
+                                name="timelapseQuality"
+                                defaultValue={timelapseSettings.timelapseQuality}
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </AdminSelect>
+                        </AdminField>
+                    </div>
+                </div>
+            </AdminPanel>
+
+            <AdminPanel id="socials" title="Socials">
+                <div className="grid gap-4 md:grid-cols-2">
+                    <AdminField label="YouTube">
+                        <AdminInput
+                            name="youtube"
+                            defaultValue={grow.socials.youtube}
+                            placeholder="https://www.youtube.com/..."
+                        />
+                    </AdminField>
+                    <AdminField label="X (Formerly Twitter)">
+                        <AdminInput
+                            name="twitter"
+                            defaultValue={grow.socials.twitter}
+                            placeholder="https://www.x.com/..."
+                        />
+                    </AdminField>
+                    <AdminField label="Instagram">
+                        <AdminInput
+                            name="instagram"
+                            defaultValue={grow.socials.instagram}
+                            placeholder="https://www.instagram.com/..."
+                        />
+                    </AdminField>
+                    <AdminField label="GrowDiaries">
+                        <AdminInput
+                            name="growDiaries"
+                            defaultValue={grow.socials.growDiaries}
+                            placeholder="https://growdiaries.com/..."
+                        />
+                    </AdminField>
+                    <AdminField label="Discord Invite">
+                        <AdminInput
+                            name="discordInvite"
+                            defaultValue={grow.socials.discordInvite}
+                            placeholder="https://discord.gg/..."
+                        />
+                    </AdminField>
+                    <AdminField label="Custom URL">
+                        <AdminInput
+                            name="customWebsite"
+                            defaultValue={grow.socials.customWebsite}
+                            placeholder="https://growcast.0xmarcel.com/"
+                        />
+                    </AdminField>
+                </div>
+            </AdminPanel>
+        </div>
+    );
+}

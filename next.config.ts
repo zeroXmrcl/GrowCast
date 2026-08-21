@@ -16,7 +16,7 @@ const CONTENT_SECURITY_POLICY = [
     "media-src 'self' https: blob:",
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
-    "script-src 'self' 'unsafe-inline'",
+    "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
     "connect-src 'self' https:",
     "frame-src 'self' https: http:",
 ].join("; ");
@@ -24,13 +24,8 @@ const CONTENT_SECURITY_POLICY = [
 const nextConfig: NextConfig = {
     output: isStandaloneBuild ? "standalone" : undefined,
     experimental: {
-        serverActions: {
-            // Default is 1mb — a 4.4mb phone photo already exceeds it and the
-            // client only sees "An unexpected response was received from the server."
-            bodySizeLimit: "40mb",
-        },
-        // middleware.ts is a Next 16 proxy. This must match the action limit
-        // or the proxy silently truncates the multipart body first.
+        // proxy.ts clones request bodies. Admin picture POSTs to
+        // /api/admin/media can be tens of MB.
         proxyClientMaxBodySize: "40mb",
     },
     async headers() {

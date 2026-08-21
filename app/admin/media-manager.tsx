@@ -6,20 +6,13 @@ import {
     type MediaFile,
 } from "@/lib/media-library";
 
-type MediaAction = (formData: FormData) => Promise<void>;
-
-type MediaManagerProps = {
-    uploadAction: MediaAction;
-    deleteAction: MediaAction;
-};
+const MEDIA_ENDPOINT = "/api/admin/media";
 
 type CollectionSectionProps = {
     collection: MediaCollectionId;
     title: string;
     description: string;
     files: MediaFile[];
-    uploadAction: MediaAction;
-    deleteAction: MediaAction;
 };
 
 function CollectionSection({
@@ -27,8 +20,6 @@ function CollectionSection({
     title,
     description,
     files,
-    uploadAction,
-    deleteAction,
 }: CollectionSectionProps) {
     return (
         <div className="space-y-4">
@@ -37,7 +28,13 @@ function CollectionSection({
                 <p className="mt-1 text-xs text-(--admin-muted)">{description}</p>
             </div>
 
-            <form action={uploadAction} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <form
+                action={MEDIA_ENDPOINT}
+                method="post"
+                encType="multipart/form-data"
+                className="flex flex-col gap-3 sm:flex-row sm:items-end"
+            >
+                <input type="hidden" name="intent" value="upload"/>
                 <input type="hidden" name="collection" value={collection}/>
                 <div className="min-w-0 flex-1">
                     <AdminField
@@ -88,7 +85,8 @@ function CollectionSection({
                                 >
                                     {file.name}
                                 </span>
-                                <form action={deleteAction} className="shrink-0">
+                                <form action={MEDIA_ENDPOINT} method="post" className="shrink-0">
+                                    <input type="hidden" name="intent" value="delete"/>
                                     <input type="hidden" name="collection" value={collection}/>
                                     <input type="hidden" name="filename" value={file.name}/>
                                     <button
@@ -107,7 +105,7 @@ function CollectionSection({
     );
 }
 
-export default async function MediaManager({uploadAction, deleteAction}: MediaManagerProps) {
+export default async function MediaManager() {
     const [dashboardFiles, setupFiles] = await Promise.all([
         listMediaFiles("dashboard"),
         listMediaFiles("setup"),
@@ -125,16 +123,12 @@ export default async function MediaManager({uploadAction, deleteAction}: MediaMa
                     title="Dashboard Pictures"
                     description="Shown in the picture strip on the dashboard. Moved to the archive when a grow is completed."
                     files={dashboardFiles}
-                    uploadAction={uploadAction}
-                    deleteAction={deleteAction}
                 />
                 <CollectionSection
                     collection="setup"
                     title="Setup Images"
                     description="Shown below the setup description on the dashboard."
                     files={setupFiles}
-                    uploadAction={uploadAction}
-                    deleteAction={deleteAction}
                 />
             </div>
         </AdminPanel>

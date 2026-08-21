@@ -2,7 +2,6 @@ import {getAdminAuthStatus, isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {getTimelapseSettings} from "@/lib/timelapse-settings";
 import {completeGrowAction, loginAction, saveGrowAction} from "@/app/admin/actions";
-import {deleteMediaAction, uploadMediaAction} from "@/app/admin/media-actions";
 import {AdminLoginForm} from "@/app/admin/login-form";
 import {AdminSettingsForm} from "@/app/admin/settings-form";
 
@@ -45,8 +44,6 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
             error={params.error}
             saveAction={saveGrowAction}
             completeAction={completeGrowAction}
-            uploadMediaAction={uploadMediaAction}
-            deleteMediaAction={deleteMediaAction}
         />
     );
 }

@@ -29,7 +29,7 @@ function generateSpanId(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const incoming = request.headers.get("x-request-id");
   const requestId = isValidRequestId(incoming)
     ? incoming.trim()
