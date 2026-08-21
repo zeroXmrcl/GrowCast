@@ -56,6 +56,8 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    // Skip /admin so picture-upload POSTs are not body-cloned/truncated by
+    // the Next 16 proxy that wraps this middleware file.
+    "/((?!_next/static|_next/image|favicon.ico|admin).*)",
   ],
 };

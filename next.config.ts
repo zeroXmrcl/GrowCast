@@ -29,6 +29,11 @@ const nextConfig: NextConfig = {
             // plus multipart overhead. Default is 1 MB.
             bodySizeLimit: "40mb",
         },
+        // middleware.ts is treated as a proxy in Next 16. That layer clones
+        // the request body and silently truncates past this cap (default 10mb),
+        // which corrupts server-action uploads into "unexpected response".
+        proxyClientMaxBodySize: "40mb",
+        middlewareClientMaxBodySize: "40mb",
     },
     async headers() {
         return [
