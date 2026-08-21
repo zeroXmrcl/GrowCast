@@ -140,7 +140,7 @@ export default async function Home() {
                 <aside className="w-full lg:w-1/3">
                     <div
                         className="h-full rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
-                        <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Grow Info</h2>
+                        <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Details</h2>
                         <dl className="space-y-3 text-sm">
                             {grow.plant && (<div className="flex justify-between gap-3">
                                 <dt className="text-zinc-500 dark:text-zinc-400">Plant</dt>
