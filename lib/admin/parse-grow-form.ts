@@ -1,4 +1,4 @@
-import type {CompleteGrowInput} from "@/lib/archives";
+import type {ArchiveEditInput, CompleteGrowInput} from "@/lib/archives";
 import type {GrowUpdateInput} from "@/lib/db";
 import {
     DEFAULT_TIMELAPSE_SETTINGS,
@@ -39,6 +39,7 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
     const grow: GrowUpdateInput = {
         name: fieldString(formData, "name"),
         showGrowName: formData.get("showGrowName") === "on",
+        showSettingsLink: formData.get("showSettingsLink") === "on",
         plant: fieldString(formData, "plant"),
         plantAmount: toNumber(formData.get("plantAmount"), 0),
         streamUrl: safeUrl(formData.get("streamUrl")),
@@ -105,6 +106,18 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
 
 export function parseCompleteGrowForm(formData: FormData): CompleteGrowInput {
     return {
+        harvestedAt: fieldString(formData, "harvestedAt"),
+        yieldGrams: toOptionalNumber(formData.get("yieldGrams")),
+        finalNotes: fieldString(formData, "finalNotes"),
+    };
+}
+
+export function parseArchiveEditForm(formData: FormData): ArchiveEditInput {
+    return {
+        name: fieldString(formData, "name"),
+        plant: fieldString(formData, "plant"),
+        strain: fieldString(formData, "strain"),
+        seededAt: fieldString(formData, "seededAt"),
         harvestedAt: fieldString(formData, "harvestedAt"),
         yieldGrams: toOptionalNumber(formData.get("yieldGrams")),
         finalNotes: fieldString(formData, "finalNotes"),

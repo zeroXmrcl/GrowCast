@@ -39,6 +39,12 @@ export {
 export { withNextRequestLogContext } from "./next";
 
 export {
+  logAdminArchiveDeleteFailed,
+  logAdminArchiveDeleted,
+  logAdminArchiveMediaDeleteFailed,
+  logAdminArchiveMediaDeleted,
+  logAdminArchiveUpdateFailed,
+  logAdminArchiveUpdated,
   logAdminGrowArchiveFailed,
   logAdminGrowArchived,
   logAdminGrowUpdateFailed,

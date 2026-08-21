@@ -74,7 +74,10 @@ function generatedFileName(prefix: string): string {
     return `${prefix}-${stamp}-${rand}.webp`;
 }
 
-function isSafeMediaFilename(name: string): boolean {
+export function isSafeMediaFilename(
+    name: string,
+    allowedExtensions: Set<string> = IMAGE_EXTENSIONS,
+): boolean {
     if (name.length === 0 || name.length > 255) {
         return false;
     }
@@ -89,7 +92,7 @@ function isSafeMediaFilename(name: string): boolean {
     ) {
         return false;
     }
-    return IMAGE_EXTENSIONS.has(path.extname(name).toLowerCase());
+    return allowedExtensions.has(path.extname(name).toLowerCase());
 }
 
 /**

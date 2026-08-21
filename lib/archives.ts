@@ -1,4 +1,4 @@
-import {copyFile, mkdir, readdir, readFile, rename, unlink, writeFile} from "node:fs/promises";
+import {copyFile, mkdir, readdir, readFile, rename, rm, unlink, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {growcastDataDir} from "@/lib/data-paths";
@@ -9,6 +9,7 @@ import {
     type GrowRecord,
 } from "@/lib/db";
 import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/lib/extension-status";
+import {isSafeMediaFilename} from "@/lib/media-library";
 
 export type ArchiveCompletion = {
     harvestedAt: string;
@@ -341,5 +342,155 @@ export async function completeCurrentGrow(
             ok: false,
             error: error instanceof Error ? error.message : String(error),
         };
+    }
+}
+
+/** Editable subset of an archived grow; everything else stays frozen. */
+export type ArchiveEditInput = {
+    name: string;
+    plant: string;
+    strain: string;
+    seededAt: string;
+    harvestedAt: string;
+    yieldGrams: number | null;
+    finalNotes: string;
+};
+
+export type UpdateArchivedGrowResult =
+    | {ok: true; archive: ArchivedGrow}
+    | {ok: false; error: "not_found" | "update_failed"};
+
+export async function updateArchivedGrow(
+    archiveId: string,
+    edits: ArchiveEditInput,
+): Promise<UpdateArchivedGrowResult> {
+    const existing = await getArchivedGrow(archiveId);
+    if (!existing) {
+        return {ok: false, error: "not_found"};
+    }
+
+    // The archiveId (and its name-based slug) stays stable so public URLs keep working.
+    const next: ArchivedGrow = {
+        ...existing,
+        completion: {
+            harvestedAt: isDateOnly(edits.harvestedAt)
+                ? edits.harvestedAt
+                : existing.completion.harvestedAt,
+            yieldGrams:
+                typeof edits.yieldGrams === "number" &&
+                Number.isFinite(edits.yieldGrams) &&
+                edits.yieldGrams >= 0
+                    ? edits.yieldGrams
+                    : null,
+            finalNotes: edits.finalNotes.trim(),
+        },
+        grow: {
+            ...existing.grow,
+            name: edits.name.trim() || existing.grow.name,
+            plant: edits.plant.trim(),
+            details: {
+                ...existing.grow.details,
+                strain: edits.strain.trim(),
+                seededAt: isDateOnly(edits.seededAt)
+                    ? edits.seededAt
+                    : existing.grow.details.seededAt,
+            },
+        },
+    };
+
+    try {
+        await writeFile(archiveGrowFile(archiveId), JSON.stringify(next, null, 2), "utf8");
+        return {ok: true, archive: next};
+    } catch {
+        return {ok: false, error: "update_failed"};
+    }
+}
+
+async function recountArchiveMedia(archiveId: string): Promise<ArchivedGrowMedia> {
+    const [snapshots, pictures, videos] = await Promise.all([
+        listFilesByExtension(archiveMediaDir(archiveId, "snapshots"), IMAGE_EXTENSIONS),
+        listFilesByExtension(archiveMediaDir(archiveId, "pictures"), IMAGE_EXTENSIONS),
+        listFilesByExtension(archiveMediaDir(archiveId, "timelapse"), VIDEO_EXTENSIONS),
+    ]);
+
+    return {
+        snapshotCount: snapshots.length,
+        pictureCount: pictures.length,
+        hasTimelapse: videos.length > 0,
+    };
+}
+
+export type DeleteArchiveMediaResult =
+    | {ok: true; deleted: number; media: ArchivedGrowMedia}
+    | {ok: false; error: "not_found" | "invalid_request" | "delete_failed"};
+
+export async function deleteArchiveMediaFiles(
+    archiveId: string,
+    kind: ArchiveMediaKind,
+    filenames: string[],
+): Promise<DeleteArchiveMediaResult> {
+    if (!isValidArchiveId(archiveId) || filenames.length === 0) {
+        return {ok: false, error: "invalid_request"};
+    }
+
+    const allowedExtensions = kind === "timelapse" ? VIDEO_EXTENSIONS : IMAGE_EXTENSIONS;
+    const dir = path.resolve(archiveMediaDir(archiveId, kind));
+
+    for (const name of filenames) {
+        if (!isSafeMediaFilename(name, allowedExtensions)) {
+            return {ok: false, error: "invalid_request"};
+        }
+        if (path.dirname(path.resolve(dir, name)) !== dir) {
+            return {ok: false, error: "invalid_request"};
+        }
+    }
+
+    const existing = await getArchivedGrow(archiveId);
+    if (!existing) {
+        return {ok: false, error: "not_found"};
+    }
+
+    let deleted = 0;
+    try {
+        for (const name of filenames) {
+            try {
+                await unlink(path.resolve(dir, name));
+                deleted += 1;
+            } catch (error) {
+                if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                    throw error;
+                }
+            }
+        }
+
+        const media = await recountArchiveMedia(archiveId);
+        const next: ArchivedGrow = {...existing, media};
+        await writeFile(archiveGrowFile(archiveId), JSON.stringify(next, null, 2), "utf8");
+
+        return {ok: true, deleted, media};
+    } catch {
+        return {ok: false, error: "delete_failed"};
+    }
+}
+
+export type DeleteArchivedGrowResult =
+    | {ok: true}
+    | {ok: false; error: "not_found" | "delete_failed"};
+
+export async function deleteArchivedGrow(archiveId: string): Promise<DeleteArchivedGrowResult> {
+    if (!isValidArchiveId(archiveId)) {
+        return {ok: false, error: "not_found"};
+    }
+
+    const dir = path.join(archivesDir(), archiveId);
+    if (!(await pathExists(dir))) {
+        return {ok: false, error: "not_found"};
+    }
+
+    try {
+        await rm(dir, {recursive: true, force: true});
+        return {ok: true};
+    } catch {
+        return {ok: false, error: "delete_failed"};
     }
 }

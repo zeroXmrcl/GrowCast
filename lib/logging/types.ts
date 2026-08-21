@@ -27,6 +27,12 @@ export type SecurityEventName =
   | "admin.media.upload_failed"
   | "admin.media.deleted"
   | "admin.media.delete_failed"
+  | "admin.archive.updated"
+  | "admin.archive.update_failed"
+  | "admin.archive.media_deleted"
+  | "admin.archive.media_delete_failed"
+  | "admin.archive.deleted"
+  | "admin.archive.delete_failed"
   | "app.start"
   | "log.init";
 

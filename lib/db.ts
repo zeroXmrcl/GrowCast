@@ -44,6 +44,7 @@ export type GrowRecord = {
   id: string;
   name: string;
   showGrowName: boolean;
+  showSettingsLink: boolean;
   plant: string;
   plantAmount: number;
   streamUrl: string;
@@ -57,6 +58,7 @@ export type GrowRecord = {
 export type GrowUpdateInput = {
   name: string;
   showGrowName?: boolean;
+  showSettingsLink?: boolean;
   plant: string;
   plantAmount?: number;
   streamUrl: string;
@@ -153,6 +155,7 @@ const DEFAULT_GROW: GrowRecord = {
   id: "grow-001",
   name: "My First Tomato Grow",
   showGrowName: false,
+  showSettingsLink: true,
   plant: "Tomatoes",
   plantAmount: 3,
   streamUrl: "",
@@ -247,6 +250,7 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
     id: asString(parsed.id, DEFAULT_GROW.id),
     name: asString(parsed.name, DEFAULT_GROW.name),
     showGrowName: asBoolean(parsed.showGrowName, DEFAULT_GROW.showGrowName),
+    showSettingsLink: asBoolean(parsed.showSettingsLink, DEFAULT_GROW.showSettingsLink),
     plant: asString(parsed.plant, DEFAULT_GROW.plant),
     plantAmount: asNumber(parsed.plantAmount, DEFAULT_GROW.plantAmount),
     streamUrl: asString(parsed.streamUrl, DEFAULT_GROW.streamUrl),
@@ -294,6 +298,8 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
     ...current,
     name: input.name,
     showGrowName: typeof input.showGrowName === "boolean" ? input.showGrowName : current.showGrowName,
+    showSettingsLink:
+      typeof input.showSettingsLink === "boolean" ? input.showSettingsLink : current.showSettingsLink,
     plant: input.plant,
     plantAmount: Number.isFinite(input.plantAmount) ? Number(input.plantAmount) : current.plantAmount,
     streamUrl: input.streamUrl,

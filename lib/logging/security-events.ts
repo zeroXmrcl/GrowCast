@@ -110,6 +110,42 @@ export function logAdminMediaDeleteFailed(
   logSecurityEvent("admin.media.delete_failed", fields, "warn");
 }
 
+export function logAdminArchiveUpdated(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.archive.updated", fields, "info");
+}
+
+export function logAdminArchiveUpdateFailed(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.archive.update_failed", fields, "warn");
+}
+
+export function logAdminArchiveMediaDeleted(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.archive.media_deleted", fields, "info");
+}
+
+export function logAdminArchiveMediaDeleteFailed(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.archive.media_delete_failed", fields, "warn");
+}
+
+export function logAdminArchiveDeleted(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.archive.deleted", fields, "info");
+}
+
+export function logAdminArchiveDeleteFailed(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.archive.delete_failed", fields, "warn");
+}
+
 export function logAppStart(fields: Record<string, unknown> = {}): void {
   logSecurityEvent("app.start", fields, "info");
 }

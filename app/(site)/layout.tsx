@@ -1,10 +1,13 @@
 import type {ReactNode} from "react";
 import SiteHeader from "@/components/site-header";
+import {getCurrentGrow} from "@/lib/db";
 
-export default function SiteLayout({children}: {children: ReactNode}) {
+export default async function SiteLayout({children}: {children: ReactNode}) {
+    const grow = await getCurrentGrow();
+
     return (
         <div className="flex min-h-full flex-col">
-            <SiteHeader/>
+            <SiteHeader showSettingsLink={grow.showSettingsLink}/>
             <div className="flex flex-1 flex-col">{children}</div>
         </div>
     );

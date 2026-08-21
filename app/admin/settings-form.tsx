@@ -217,6 +217,14 @@ export function AdminSettingsForm({
                                             <AdminInput name="strain" defaultValue={grow.details.strain}/>
                                         </AdminField>
                                     </div>
+                                    <div className="mt-4">
+                                        <AdminCheckboxRow
+                                            name="showSettingsLink"
+                                            defaultChecked={grow.showSettingsLink}
+                                            label="Show Settings link in the site header"
+                                            description="When disabled, the link is hidden for all visitors. The admin area stays reachable at /admin."
+                                        />
+                                    </div>
                                 </AdminPanel>
 
                                 <AdminPanel id="lifecycle" title="Lifecycle">
@@ -547,6 +555,12 @@ export function AdminSettingsForm({
                                             className="rounded-xl border border-(--admin-border) bg-(--admin-bg) px-3 py-2 text-sm font-medium text-(--admin-text) transition hover:border-zinc-500 hover:bg-(--admin-surface-muted)"
                                         >
                                             Open Dashboard
+                                        </Link>
+                                        <Link
+                                            href="/admin/archives"
+                                            className="rounded-xl border border-(--admin-border) bg-(--admin-bg) px-3 py-2 text-sm font-medium text-(--admin-text) transition hover:border-zinc-500 hover:bg-(--admin-surface-muted)"
+                                        >
+                                            Manage Archives
                                         </Link>
                                         <Link
                                             href="https://growcast.0xmarcel.com/"
