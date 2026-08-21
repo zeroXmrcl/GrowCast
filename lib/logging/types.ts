@@ -23,6 +23,10 @@ export type SecurityEventName =
   | "admin.grow.update_failed"
   | "admin.grow.archived"
   | "admin.grow.archive_failed"
+  | "admin.media.uploaded"
+  | "admin.media.upload_failed"
+  | "admin.media.deleted"
+  | "admin.media.delete_failed"
   | "app.start"
   | "log.init";
 

@@ -86,6 +86,30 @@ export function logAdminGrowArchiveFailed(
   logSecurityEvent("admin.grow.archive_failed", fields, "error");
 }
 
+export function logAdminMediaUploaded(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.media.uploaded", fields, "info");
+}
+
+export function logAdminMediaUploadFailed(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.media.upload_failed", fields, "warn");
+}
+
+export function logAdminMediaDeleted(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.media.deleted", fields, "info");
+}
+
+export function logAdminMediaDeleteFailed(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("admin.media.delete_failed", fields, "warn");
+}
+
 export function logAppStart(fields: Record<string, unknown> = {}): void {
   logSecurityEvent("app.start", fields, "info");
 }

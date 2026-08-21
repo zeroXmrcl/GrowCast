@@ -11,7 +11,9 @@ import {
     AdminTextarea,
     NavLink,
 } from "@/components/admin/ui";
+import MediaManager from "@/app/admin/media-manager";
 import type {GrowRecord} from "@/lib/db";
+import type {Tone} from "@/components/admin/ui";
 import type {TimelapseSettings} from "@/lib/timelapse-settings";
 
 const sectionLinks = [
@@ -24,17 +26,61 @@ const sectionLinks = [
     {href: "#stream", label: "Stream"},
     {href: "#timelapse", label: "Timelapse"},
     {href: "#socials", label: "Socials"},
+    {href: "#pictures", label: "Pictures"},
     {href: "#archive", label: "Archive"},
 ];
+
+type NoticeContent = {tone: Tone; title: string; body: string};
+
+const MEDIA_NOTICES: Record<string, NoticeContent> = {
+    uploaded: {tone: "success", title: "Pictures uploaded", body: "Done."},
+    uploaded_partial: {
+        tone: "warning",
+        title: "Some pictures were skipped",
+        body: "Files that are not valid JPEG/PNG/WebP images or exceed 15 MB were skipped. The rest were uploaded.",
+    },
+    deleted: {tone: "success", title: "Picture deleted", body: "Done."},
+};
+
+const MEDIA_ERROR_NOTICES: Record<string, NoticeContent> = {
+    media_no_files: {
+        tone: "warning",
+        title: "No files selected",
+        body: "Choose at least one image to upload.",
+    },
+    media_too_many_files: {
+        tone: "warning",
+        title: "Too many files",
+        body: "Upload at most 10 files at a time.",
+    },
+    media_invalid_file: {
+        tone: "danger",
+        title: "Upload failed",
+        body: "None of the files were valid JPEG/PNG/WebP images under 15 MB.",
+    },
+    media_upload_failed: {
+        tone: "danger",
+        title: "Upload failed",
+        body: "Could not save the pictures. Review logs and try again.",
+    },
+    media_delete_failed: {
+        tone: "danger",
+        title: "Delete failed",
+        body: "Could not delete the picture. Review logs and try again.",
+    },
+};
 
 type SettingsFormProps = {
     grow: GrowRecord;
     timelapseSettings: TimelapseSettings;
     saved?: string;
     archived?: string;
+    media?: string;
     error?: string;
     saveAction: (formData: FormData) => Promise<void>;
     completeAction: (formData: FormData) => Promise<void>;
+    uploadMediaAction: (formData: FormData) => Promise<void>;
+    deleteMediaAction: (formData: FormData) => Promise<void>;
 };
 
 export function AdminSettingsForm({
@@ -42,10 +88,15 @@ export function AdminSettingsForm({
     timelapseSettings,
     saved,
     archived,
+    media,
     error,
     saveAction,
     completeAction,
+    uploadMediaAction,
+    deleteMediaAction,
 }: SettingsFormProps) {
+    const mediaNotice = media ? MEDIA_NOTICES[media] : undefined;
+    const mediaErrorNotice = error ? MEDIA_ERROR_NOTICES[error] : undefined;
     const today = new Date().toISOString().slice(0, 10);
 
     return (
@@ -125,6 +176,18 @@ export function AdminSettingsForm({
                         {error === "archive_not_confirmed" ? (
                             <AdminNotice tone="warning" title="Archive not confirmed">
                                 Tick the confirmation checkbox to complete and archive the grow.
+                            </AdminNotice>
+                        ) : null}
+
+                        {mediaNotice ? (
+                            <AdminNotice tone={mediaNotice.tone} title={mediaNotice.title}>
+                                {mediaNotice.body}
+                            </AdminNotice>
+                        ) : null}
+
+                        {mediaErrorNotice ? (
+                            <AdminNotice tone={mediaErrorNotice.tone} title={mediaErrorNotice.title}>
+                                {mediaErrorNotice.body}
                             </AdminNotice>
                         ) : null}
 
@@ -503,6 +566,11 @@ export function AdminSettingsForm({
                                 </AdminPanel>
                             </div>
                         </form>
+
+                        <MediaManager
+                            uploadAction={uploadMediaAction}
+                            deleteAction={deleteMediaAction}
+                        />
 
                         <form action={completeAction}>
                             <AdminPanel

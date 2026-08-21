@@ -23,6 +23,13 @@ const CONTENT_SECURITY_POLICY = [
 
 const nextConfig: NextConfig = {
     output: isStandaloneBuild ? "standalone" : undefined,
+    experimental: {
+        serverActions: {
+            // Admin picture uploads: up to 10 files at 15 MB each (pre-encode)
+            // plus multipart overhead. Default is 1 MB.
+            bodySizeLimit: "40mb",
+        },
+    },
     async headers() {
         return [
             {

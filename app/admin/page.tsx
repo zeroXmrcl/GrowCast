@@ -1,7 +1,13 @@
 import {getAdminAuthStatus, isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {getTimelapseSettings} from "@/lib/timelapse-settings";
-import {completeGrowAction, loginAction, saveGrowAction} from "@/app/admin/actions";
+import {
+    completeGrowAction,
+    deleteMediaAction,
+    loginAction,
+    saveGrowAction,
+    uploadMediaAction,
+} from "@/app/admin/actions";
 import {AdminLoginForm} from "@/app/admin/login-form";
 import {AdminSettingsForm} from "@/app/admin/settings-form";
 
@@ -10,6 +16,7 @@ type AdminPageProps = {
         error?: string;
         saved?: string;
         archived?: string;
+        media?: string;
         retry?: string;
     }>;
 };
@@ -39,9 +46,12 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
             timelapseSettings={timelapseSettings}
             saved={params.saved}
             archived={params.archived}
+            media={params.media}
             error={params.error}
             saveAction={saveGrowAction}
             completeAction={completeGrowAction}
+            uploadMediaAction={uploadMediaAction}
+            deleteMediaAction={deleteMediaAction}
         />
     );
 }
