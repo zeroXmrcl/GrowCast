@@ -25,15 +25,13 @@ const nextConfig: NextConfig = {
     output: isStandaloneBuild ? "standalone" : undefined,
     experimental: {
         serverActions: {
-            // Admin picture uploads: up to 10 files at 15 MB each (pre-encode)
-            // plus multipart overhead. Default is 1 MB.
+            // Default is 1mb — a 4.4mb phone photo already exceeds it and the
+            // client only sees "An unexpected response was received from the server."
             bodySizeLimit: "40mb",
         },
-        // middleware.ts is treated as a proxy in Next 16. That layer clones
-        // the request body and silently truncates past this cap (default 10mb),
-        // which corrupts server-action uploads into "unexpected response".
+        // middleware.ts is a Next 16 proxy. This must match the action limit
+        // or the proxy silently truncates the multipart body first.
         proxyClientMaxBodySize: "40mb",
-        middlewareClientMaxBodySize: "40mb",
     },
     async headers() {
         return [
