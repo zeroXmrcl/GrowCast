@@ -20,3 +20,16 @@ services:
       - ./extensions:/app/extensions
       - ./public/setup:/app/public/setup
       - ./public/yourPictures:/app/public/yourPictures
+
+  ggs:
+    build:
+      context: ./extensions/GrowCast-GGS
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: ./extensions/GrowCast-GGS/.env
+        format: raw
+    environment:
+      GROWCAST_URL: http://growcast:3000
+    depends_on:
+      - growcast
