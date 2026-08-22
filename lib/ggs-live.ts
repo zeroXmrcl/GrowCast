@@ -57,9 +57,12 @@ export type GgsLiveIngest = {
     devices: GgsDeviceSnapshot[];
 };
 
-export type GgsLivePublic = Omit<GgsLiveIngest, "updatedAt"> & {
+export type GgsPublicDevice = Omit<GgsDeviceSnapshot, "serial">;
+
+export type GgsLivePublic = Omit<GgsLiveIngest, "updatedAt" | "devices"> & {
     stale: boolean;
     updatedAt: string | null;
+    devices: GgsPublicDevice[];
 };
 
 export const EMPTY_LIVE_PUBLIC: GgsLivePublic = {
@@ -247,14 +250,92 @@ export function parseIngestBody(raw: unknown): ParseResult {
 export function withStale(state: GgsLiveIngest, nowMs: number = Date.now()): GgsLivePublic {
     const ts = Date.parse(state.updatedAt);
     const stale = !Number.isFinite(ts) || nowMs - ts >= GGS_STALE_AFTER_MS;
-    return {
-        ...state,
-        stale,
-        online: stale ? false : state.online,
+    return toPublicLive({
+        pluginId: state.pluginId,
+        source: state.source,
         updatedAt: state.updatedAt,
+        online: stale ? false : state.online,
+        stale,
+        devices: state.devices,
+    });
+}
+
+export function toPublicLive(
+    state: Omit<GgsLivePublic, "devices"> & {devices: Array<GgsPublicDevice & {serial?: string}>},
+): GgsLivePublic {
+    return {
+        pluginId: state.pluginId,
+        source: state.source,
+        updatedAt: state.updatedAt,
+        online: state.online,
+        stale: state.stale,
+        devices: state.devices.map((device) => {
+            const {serial: _serial, ...rest} = device;
+            return rest;
+        }),
     };
 }
 
-export function fingerprint(state: Pick<GgsLiveIngest, "online" | "devices">): string {
+function parsePublicDevice(raw: unknown): GgsPublicDevice | null {
+    if (!isRecord(raw)) {
+        return null;
+    }
+    const {serial: _serial, ...withoutSerial} = raw;
+    return parseDevice({...withoutSerial, serial: "PUBLIC"});
+}
+
+export type PublicParseResult =
+    | {ok: true; value: GgsLivePublic}
+    | {ok: false; error: string};
+
+export function parsePublicLiveBody(raw: unknown): PublicParseResult {
+    if (!isRecord(raw)) {
+        return {ok: false, error: "body must be an object"};
+    }
+    for (const key of Object.keys(raw)) {
+        if (SECRET_KEYS.has(key)) {
+            return {ok: false, error: "forbidden key"};
+        }
+    }
+    if (raw.pluginId !== GGS_PLUGIN_ID || raw.source !== "ggs-cloud") {
+        return {ok: false, error: "pluginId/source mismatch"};
+    }
+    if (!Array.isArray(raw.devices) || raw.devices.length > GGS_MAX_DEVICES) {
+        return {ok: false, error: "devices"};
+    }
+    const devices: GgsPublicDevice[] = [];
+    for (const item of raw.devices) {
+        const parsed = parsePublicDevice(item);
+        if (!parsed) {
+            return {ok: false, error: "device"};
+        }
+        const {serial: _serial, ...rest} = parsed as GgsPublicDevice & {serial?: string};
+        devices.push(rest);
+    }
+
+    let updatedAt: string | null = null;
+    if (raw.updatedAt !== null && raw.updatedAt !== undefined && raw.updatedAt !== "") {
+        const ts = Date.parse(asString(raw.updatedAt, ""));
+        if (!Number.isFinite(ts)) {
+            return {ok: false, error: "updatedAt"};
+        }
+        updatedAt = new Date(ts).toISOString();
+    }
+
+    const stale = asBoolean(raw.stale, updatedAt === null);
+    return {
+        ok: true,
+        value: {
+            pluginId: GGS_PLUGIN_ID,
+            source: "ggs-cloud",
+            updatedAt,
+            online: asBoolean(raw.online, false),
+            stale,
+            devices,
+        },
+    };
+}
+
+export function fingerprint(state: Pick<GgsLivePublic, "online" | "devices">): string {
     return JSON.stringify({online: state.online, devices: state.devices});
 }

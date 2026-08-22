@@ -6,5 +6,7 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-    return withRequestLog(request, "/api/data/live-climate/stream", () => liveClimateStreamResponse());
+    return withRequestLog(request, "/api/data/live-climate/stream", () =>
+        liveClimateStreamResponse(request),
+    );
 }

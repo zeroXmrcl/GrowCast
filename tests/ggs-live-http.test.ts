@@ -5,6 +5,7 @@ import path from "node:path";
 import {afterEach, describe, it} from "node:test";
 import {GGS_PLUGIN_ID} from "../lib/ggs-live.ts";
 import {
+    GGS_MAX_SSE_PER_CLIENT,
     GGS_MAX_SSE_SUBSCRIBERS,
     _resetGgsHubForTests,
     publishLive,
@@ -17,6 +18,7 @@ import {
     liveClimateIngestResponse,
     liveClimateStreamResponse,
 } from "../lib/ggs-live-http.ts";
+import {MESH_AUTH_MAX_FAILURES, _resetMeshAuthThrottleForTests} from "../lib/mesh-throttle.ts";
 import {EMPTY_LIVE_PUBLIC, withStale} from "../lib/ggs-live.ts";
 import {saveGgsLive} from "../lib/ggs-live-store.ts";
 
@@ -28,11 +30,13 @@ async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     process.env.GROWCAST_MESH_TOKEN = "test-mesh-token";
     _resetGgsHubForTests();
     _resetIngestRateForTests();
+    _resetMeshAuthThrottleForTests();
     try {
         return await fn(dir);
     } finally {
         _resetGgsHubForTests();
         _resetIngestRateForTests();
+        _resetMeshAuthThrottleForTests();
         if (previousDir === undefined) {
             delete process.env.GROWCAST_DATA_DIR;
         } else {
@@ -94,6 +98,7 @@ function ingestRequest(body: unknown, token = "test-mesh-token"): Request {
 afterEach(() => {
     _resetGgsHubForTests();
     _resetIngestRateForTests();
+    _resetMeshAuthThrottleForTests();
 });
 
 describe("ggs live hub", () => {
@@ -171,6 +176,7 @@ describe("live climate GET", () => {
             const body = await response.json();
             assert.equal(body.devices[0].sensor.tempC, 25.4);
             assert.equal(body.stale, false);
+            assert.equal("serial" in body.devices[0], false);
         });
     });
 
@@ -212,7 +218,50 @@ describe("live climate SSE", () => {
             const text = new TextDecoder().decode(value);
             assert.match(text, /event: snapshot/);
             assert.match(text, /25\.4/);
+            const dataLine = text.split("\n").find((line) => line.startsWith("data: "));
+            assert.ok(dataLine);
+            const payload = JSON.parse(dataLine.slice(6)) as {devices: Array<Record<string, unknown>>};
+            assert.equal("serial" in payload.devices[0], false);
             await reader.cancel();
+        });
+    });
+
+    it("caps SSE per client identity without starving another identity", async () => {
+        await withTempDataDir(async () => {
+            const previousTrust = process.env.GROWCAST_TRUST_PROXY;
+            process.env.GROWCAST_TRUST_PROXY = "1";
+            try {
+                const openers: Array<() => void> = [];
+                function streamFor(ip: string): Request {
+                    return new Request("http://localhost/api/data/live-climate/stream", {
+                        headers: {"cf-connecting-ip": ip},
+                    });
+                }
+                for (let i = 0; i < GGS_MAX_SSE_PER_CLIENT; i += 1) {
+                    const response = await liveClimateStreamResponse(streamFor("203.0.113.10"));
+                    assert.equal(response.status, 200);
+                    const reader = response.body?.getReader();
+                    assert.ok(reader);
+                    openers.push(() => {
+                        void reader.cancel();
+                    });
+                }
+                const overflow = await liveClimateStreamResponse(streamFor("203.0.113.10"));
+                assert.equal(overflow.status, 503);
+                const other = await liveClimateStreamResponse(streamFor("198.51.100.20"));
+                assert.equal(other.status, 200);
+                assert.match(other.headers.get("content-type") ?? "", /text\/event-stream/);
+                await other.body?.getReader().cancel();
+                for (const close of openers) {
+                    close();
+                }
+            } finally {
+                if (previousTrust === undefined) {
+                    delete process.env.GROWCAST_TRUST_PROXY;
+                } else {
+                    process.env.GROWCAST_TRUST_PROXY = previousTrust;
+                }
+            }
         });
     });
 
@@ -245,6 +294,30 @@ describe("live climate ingest", () => {
 
             const wrong = await liveClimateIngestResponse(ingestRequest(validBody(), "wrong"), GGS_PLUGIN_ID);
             assert.equal(wrong.status, 401);
+        });
+    });
+
+    it("throttles repeated wrong Bearer from one client then still accepts a valid token", async () => {
+        await withTempDataDir(async () => {
+            let lastUnauthorized = 0;
+            for (let i = 0; i < MESH_AUTH_MAX_FAILURES - 1; i += 1) {
+                const response = await liveClimateIngestResponse(
+                    ingestRequest(validBody(), "wrong"),
+                    GGS_PLUGIN_ID,
+                );
+                assert.equal(response.status, 401);
+                lastUnauthorized = response.status;
+            }
+            assert.equal(lastUnauthorized, 401);
+            const blocked = await liveClimateIngestResponse(ingestRequest(validBody(), "wrong"), GGS_PLUGIN_ID);
+            assert.equal(blocked.status, 429);
+            assert.ok(Number(blocked.headers.get("retry-after") ?? "0") > 0);
+
+            const ok = await liveClimateIngestResponse(
+                ingestRequest(validBody({updatedAt: new Date().toISOString()})),
+                GGS_PLUGIN_ID,
+            );
+            assert.equal(ok.status, 204);
         });
     });
 

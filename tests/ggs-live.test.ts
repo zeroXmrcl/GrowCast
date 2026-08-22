@@ -6,8 +6,10 @@ import {
     GGS_STALE_AFTER_MS,
     fingerprint,
     parseIngestBody,
+    parsePublicLiveBody,
     withStale,
 } from "../lib/ggs-live.ts";
+import {asLivePublic} from "../hooks/use-live-climate.ts";
 
 const now = Date.parse("2026-08-22T18:00:00.000Z");
 
@@ -111,5 +113,57 @@ describe("ggs live parse", () => {
         assert.equal(EMPTY_LIVE_PUBLIC.online, false);
         assert.equal(EMPTY_LIVE_PUBLIC.stale, true);
         assert.deepEqual(EMPTY_LIVE_PUBLIC.devices, []);
+    });
+
+    it("strips serial from public live state", () => {
+        const parsed = parseIngestBody(validBody());
+        assert.equal(parsed.ok, true);
+        if (!parsed.ok) return;
+        const publicState = withStale(parsed.value, now);
+        assert.equal("serial" in publicState.devices[0], false);
+        assert.equal(publicState.devices[0].name, "SF-GGS-CB-7088");
+    });
+});
+
+describe("parsePublicLiveBody", () => {
+    it("accepts a snapshot without serial", () => {
+        const body = {
+            pluginId: GGS_PLUGIN_ID,
+            source: "ggs-cloud",
+            updatedAt: "2026-08-22T17:59:50.000Z",
+            online: true,
+            stale: false,
+            devices: validBody().devices.map(({serial: _s, ...rest}) => rest),
+        };
+        const parsed = parsePublicLiveBody(body);
+        assert.equal(parsed.ok, true);
+        if (!parsed.ok) return;
+        assert.equal("serial" in parsed.value.devices[0], false);
+        assert.equal(parsed.value.devices[0].sensor.tempC, 25.4);
+    });
+
+    it("rejects mqttPwd", () => {
+        const parsed = parsePublicLiveBody({...validBody(), mqttPwd: "nope"});
+        assert.equal(parsed.ok, false);
+    });
+
+    it("rejects non-array devices", () => {
+        const parsed = parsePublicLiveBody({...validBody(), devices: {not: "array"}});
+        assert.equal(parsed.ok, false);
+    });
+
+    it("asLivePublic drops secret keys and bad device shapes", () => {
+        assert.equal(asLivePublic({...validBody(), mqttPwd: "nope"}), null);
+        assert.equal(asLivePublic({...validBody(), devices: "nope"}), null);
+        const ok = asLivePublic({
+            pluginId: GGS_PLUGIN_ID,
+            source: "ggs-cloud",
+            updatedAt: "2026-08-22T17:59:50.000Z",
+            online: true,
+            stale: false,
+            devices: validBody().devices.map(({serial: _s, ...rest}) => rest),
+        });
+        assert.ok(ok);
+        assert.equal("serial" in ok.devices[0], false);
     });
 });

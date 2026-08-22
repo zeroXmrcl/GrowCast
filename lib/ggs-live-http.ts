@@ -8,11 +8,18 @@ import {
 } from "@/lib/ggs-live";
 import {readGgsLive, saveGgsLive} from "@/lib/ggs-live-store";
 import {
+    GGS_MAX_SSE_PER_CLIENT,
     GGS_MAX_SSE_SUBSCRIBERS,
+    identitySubscriberCount,
     publishLive,
     subscribeLive,
     subscriberCount,
 } from "@/lib/ggs-live-hub";
+import {
+    clearMeshAuthFailures,
+    meshClientKey,
+    noteMeshAuthFailure,
+} from "@/lib/mesh-throttle";
 import {
     logGgsStateIngested,
     logGgsStateRejected,
@@ -57,15 +64,23 @@ function encodeSse(event: "snapshot" | "heartbeat", state: GgsLivePublic): Uint8
     );
 }
 
-export async function liveClimateStreamResponse(): Promise<Response> {
+function sseUnavailable(): Response {
+    return new Response(null, {
+        status: 503,
+        headers: {
+            "Cache-Control": "no-store",
+            "Retry-After": "5",
+        },
+    });
+}
+
+export async function liveClimateStreamResponse(request?: Request): Promise<Response> {
+    const identity = request ? meshClientKey(request) : "unknown";
     if (subscriberCount() >= GGS_MAX_SSE_SUBSCRIBERS) {
-        return new Response(null, {
-            status: 503,
-            headers: {
-                "Cache-Control": "no-store",
-                "Retry-After": "5",
-            },
-        });
+        return sseUnavailable();
+    }
+    if (identitySubscriberCount(identity) >= GGS_MAX_SSE_PER_CLIENT) {
+        return sseUnavailable();
     }
 
     const stored = await readGgsLive();
@@ -87,7 +102,7 @@ export async function liveClimateStreamResponse(): Promise<Response> {
                 }
             };
             send("snapshot", hello);
-            unsubscribe = subscribeLive(send);
+            unsubscribe = subscribeLive(send, identity);
         },
         cancel() {
             closed = true;
@@ -109,10 +124,22 @@ export async function liveClimateIngestResponse(
     request: Request,
     pluginId: string,
 ): Promise<Response> {
+    const clientKey = meshClientKey(request);
     const auth = requireMeshAuth(request);
     if (auth) {
+        const limited = noteMeshAuthFailure(clientKey);
+        if (limited.blocked) {
+            return new Response(null, {
+                status: 429,
+                headers: {
+                    "Cache-Control": "no-store",
+                    "Retry-After": String(limited.retryAfterSeconds),
+                },
+            });
+        }
         return auth;
     }
+    clearMeshAuthFailures(clientKey);
 
     if (pluginId !== GGS_PLUGIN_ID) {
         logMeshPluginUnknown({plugin_id: pluginId});

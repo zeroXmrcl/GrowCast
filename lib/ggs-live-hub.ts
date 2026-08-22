@@ -1,10 +1,12 @@
 import {GGS_HEARTBEAT_MS, fingerprint, type GgsLivePublic} from "@/lib/ggs-live";
 
 export const GGS_MAX_SSE_SUBSCRIBERS = 64;
+export const GGS_MAX_SSE_PER_CLIENT = 8;
 
 type Listener = (event: "snapshot" | "heartbeat", state: GgsLivePublic) => void;
 
 const listeners = new Set<Listener>();
+const identityCounts = new Map<string, number>();
 let lastPublic: GgsLivePublic | null = null;
 let lastFingerprint = "";
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -15,6 +17,10 @@ export function getLastPublic(): GgsLivePublic | null {
 
 export function subscriberCount(): number {
     return listeners.size;
+}
+
+export function identitySubscriberCount(identity: string): number {
+    return identityCounts.get(identity) ?? 0;
 }
 
 export function publishLive(state: GgsLivePublic): {changed: boolean} {
@@ -30,11 +36,18 @@ export function publishLive(state: GgsLivePublic): {changed: boolean} {
     return {changed};
 }
 
-export function subscribeLive(listener: Listener): () => void {
+export function subscribeLive(listener: Listener, identity = "unknown"): () => void {
     listeners.add(listener);
+    identityCounts.set(identity, (identityCounts.get(identity) ?? 0) + 1);
     ensureHeartbeat();
     return () => {
         listeners.delete(listener);
+        const remaining = (identityCounts.get(identity) ?? 1) - 1;
+        if (remaining <= 0) {
+            identityCounts.delete(identity);
+        } else {
+            identityCounts.set(identity, remaining);
+        }
         if (listeners.size === 0 && heartbeatTimer) {
             clearInterval(heartbeatTimer);
             heartbeatTimer = null;
@@ -62,6 +75,7 @@ function ensureHeartbeat(): void {
 /** Tests only. */
 export function _resetGgsHubForTests(): void {
     listeners.clear();
+    identityCounts.clear();
     lastPublic = null;
     lastFingerprint = "";
     if (heartbeatTimer) {

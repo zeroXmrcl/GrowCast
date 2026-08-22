@@ -63,11 +63,18 @@ export function extractClientIp(
     return undefined;
 }
 
+export function clientIdentityKey(
+    headers: Headers | Record<string, string | string[] | undefined>,
+    env: NodeJS.ProcessEnv = process.env,
+): string {
+    return extractClientIp(headers, env) ?? "unknown";
+}
+
 export function loginRateLimitKey(
     headers: Headers | Record<string, string | string[] | undefined>,
     env: NodeJS.ProcessEnv = process.env,
 ): string {
-    return `admin-login:${extractClientIp(headers, env) ?? "unknown"}`;
+    return `admin-login:${clientIdentityKey(headers, env)}`;
 }
 
 export function shouldUseSecureCookie(
