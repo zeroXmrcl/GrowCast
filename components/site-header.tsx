@@ -4,25 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {usePathname} from "next/navigation";
 import {useEffect, useState} from "react";
-
-type NavItem = {href: string; label: string};
-
-const NAV_ITEMS: NavItem[] = [
-    {href: "/", label: "Dashboard"},
-    {href: "/gallery", label: "Gallery"},
-    {href: "/grows", label: "Past Grows"},
-    {href: "/admin", label: "Settings"},
-];
-
-function navItemsFor(pathname: string, showSettingsLink: boolean): NavItem[] {
-    return NAV_ITEMS.filter((item) => {
-        if (item.href === "/admin" && !showSettingsLink) {
-            return false;
-        }
-
-        return item.href === "/" ? pathname !== "/" : !pathname.startsWith(item.href);
-    });
-}
+import {navItemsFor} from "@/lib/site-nav";
 
 export default function SiteHeader({showSettingsLink = true}: {showSettingsLink?: boolean}) {
     const pathname = usePathname();

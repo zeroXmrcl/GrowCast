@@ -9,12 +9,14 @@ import {
 import {todayDateOnly} from "@/lib/date-only";
 
 type CompleteGrowPanelProps = {
+    growId: string;
     completeAction: (formData: FormData) => Promise<void>;
 };
 
-export function CompleteGrowPanel({completeAction}: CompleteGrowPanelProps) {
+export function CompleteGrowPanel({growId, completeAction}: CompleteGrowPanelProps) {
     return (
         <form action={completeAction}>
+            <input type="hidden" name="growId" value={growId} />
             <AdminPanel
                 id="archive"
                 title="Complete Grow"

@@ -10,8 +10,16 @@ import {
 import { runWithContext } from "./context";
 import { childLogger } from "./logger";
 import { sanitizeError } from "./redact";
+import { extractClientIp as extractTrustedClientIp } from "@/lib/request-trust";
 
 const USER_AGENT_MAX = 256;
+
+export function extractClientIp(
+  headers: Headers | Record<string, string | string[] | undefined>,
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  return extractTrustedClientIp(headers, env);
+}
 
 function headerGet(
   headers: Headers | Record<string, string | string[] | undefined>,
@@ -30,28 +38,6 @@ function headerGet(
       if (val != null && val !== "") return val;
     }
   }
-  return undefined;
-}
-
-export function extractClientIp(
-  headers: Headers | Record<string, string | string[] | undefined>,
-): string | undefined {
-  const cf = headerGet(headers, "cf-connecting-ip");
-  if (cf) {
-    return cf.trim();
-  }
-
-  const xff = headerGet(headers, "x-forwarded-for");
-  if (xff) {
-    const first = xff.split(",")[0]?.trim();
-    if (first) return first;
-  }
-
-  const realIp = headerGet(headers, "x-real-ip");
-  if (realIp) {
-    return realIp.trim();
-  }
-
   return undefined;
 }
 

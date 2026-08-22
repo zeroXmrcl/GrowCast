@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import {mkdir, mkdtemp, readdir, rm, writeFile} from "node:fs/promises";
+import {access, chmod, mkdir, mkdtemp, readdir, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {parseCompleteGrowForm} from "../lib/admin/parse-grow-form.ts";
 import {
+    archivesDir,
     completeCurrentGrow,
     getArchivedGrow,
     getArchivePictureFiles,
@@ -216,6 +217,154 @@ describe("completeCurrentGrow", () => {
             assert.deepEqual(await getArchiveSnapshotFiles(result.archive.archiveId), []);
         });
     });
+
+    it("rejects a stale grow id and does not create another archive", async () => {
+        await withTempEnv(async ({sources}) => {
+            const first = await completeCurrentGrow(
+                {harvestedAt: "2026-04-20", yieldGrams: null, finalNotes: ""},
+                sources,
+            );
+            assert.equal(first.ok, true);
+            if (!first.ok) {
+                return;
+            }
+
+            const second = await completeCurrentGrow(
+                {
+                    harvestedAt: "2026-04-21",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: first.archive.grow.id,
+                },
+                sources,
+            );
+            assert.equal(second.ok, false);
+            if (!second.ok) {
+                assert.equal(second.error, "stale_grow");
+            }
+            assert.equal((await listArchivedGrows()).length, 1);
+        });
+    });
+
+    it("rejects a second complete of the same grow id and keeps the published archive", async () => {
+        await withTempEnv(async ({sources}) => {
+            const live = await updateCurrentGrow({
+                name: "Once",
+                plant: "Basil",
+                streamUrl: "",
+            });
+            const first = await completeCurrentGrow(
+                {
+                    harvestedAt: "2026-04-20",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: live.id,
+                },
+                sources,
+            );
+            assert.equal(first.ok, true);
+            if (!first.ok) {
+                return;
+            }
+
+            const duplicate = await completeCurrentGrow(
+                {
+                    harvestedAt: "2026-04-21",
+                    yieldGrams: null,
+                    finalNotes: "retry",
+                    expectedGrowId: live.id,
+                },
+                sources,
+            );
+            assert.equal(duplicate.ok, false);
+            if (!duplicate.ok) {
+                assert.ok(duplicate.error === "stale_grow" || duplicate.error === "already_archived");
+            }
+            const archives = await listArchivedGrows();
+            assert.equal(archives.length, 1);
+            assert.equal(archives[0].archiveId, first.archive.archiveId);
+        });
+    });
+
+    it("keeps a published archive if the post-rename live reset throws", async () => {
+        await withTempEnv(async ({sources}) => {
+            const live = await updateCurrentGrow({
+                name: "Keep Archive",
+                plant: "Basil",
+                streamUrl: "",
+            });
+            await writeFile(path.join(sources.snapshotsDir, "1000.webp"), "snap");
+
+            const result = await completeCurrentGrow(
+                {
+                    harvestedAt: "2026-04-20",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: live.id,
+                },
+                sources,
+                async () => {
+                    throw new Error("reset exploded");
+                },
+            );
+
+            assert.equal(result.ok, false);
+            if (!result.ok) {
+                assert.equal(result.error, "reset exploded");
+            }
+
+            const archives = await listArchivedGrows();
+            assert.equal(archives.length, 1);
+            const publishedId = archives[0].archiveId;
+            assert.equal(archives[0].grow.id, live.id);
+            await access(path.join(archivesDir(), publishedId));
+            const loaded = await getArchivedGrow(publishedId);
+            assert.ok(loaded);
+            assert.equal(loaded.grow.name, "Keep Archive");
+            assert.deepEqual(await getArchiveSnapshotFiles(publishedId), ["1000.webp"]);
+
+            const current = await getCurrentGrow();
+            assert.equal(current.id, live.id);
+            assert.equal(current.name, "Keep Archive");
+        });
+    });
+
+    it("does not report success when live media deletes fail after publish", async () => {
+        await withTempEnv(async ({sources}) => {
+            const live = await updateCurrentGrow({
+                name: "Cleanup Fail",
+                plant: "Basil",
+                streamUrl: "",
+            });
+            await writeFile(path.join(sources.snapshotsDir, "1000.webp"), "snap");
+
+            try {
+                const result = await completeCurrentGrow(
+                    {
+                        harvestedAt: "2026-04-20",
+                        yieldGrams: null,
+                        finalNotes: "",
+                        expectedGrowId: live.id,
+                    },
+                    sources,
+                    async () => {
+                        await chmod(sources.snapshotsDir, 0o555);
+                    },
+                );
+
+                assert.equal(result.ok, false);
+                if (!result.ok) {
+                    assert.equal(result.error, "media_cleanup_failed");
+                }
+                const archives = await listArchivedGrows();
+                assert.equal(archives.length, 1);
+                assert.equal(archives[0].grow.id, live.id);
+                await access(path.join(archivesDir(), archives[0].archiveId));
+            } finally {
+                await chmod(sources.snapshotsDir, 0o755).catch(() => undefined);
+            }
+        });
+    });
 });
 
 describe("parseCompleteGrowForm", () => {
@@ -229,6 +378,19 @@ describe("parseCompleteGrowForm", () => {
             harvestedAt: "2026-04-20",
             yieldGrams: 150.5,
             finalNotes: "solid harvest",
+        });
+    });
+
+    it("parses growId as expectedGrowId for complete CAS", () => {
+        const form = new FormData();
+        form.set("harvestedAt", "2026-04-20");
+        form.set("growId", "grow-001");
+
+        assert.deepEqual(parseCompleteGrowForm(form), {
+            harvestedAt: "2026-04-20",
+            yieldGrams: null,
+            finalNotes: "",
+            expectedGrowId: "grow-001",
         });
     });
 

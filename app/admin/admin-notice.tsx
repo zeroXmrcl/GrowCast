@@ -1,10 +1,11 @@
 import Link from "next/link";
 import {AdminNotice, type Tone} from "@/components/admin/ui";
+import {isAdminNoticeId, type AdminNoticeId} from "@/lib/admin/notice";
 import type {ReactNode} from "react";
 
 type NoticeContent = {tone: Tone; title: string; body: ReactNode};
 
-const SETTINGS_NOTICES: Record<string, NoticeContent> = {
+const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     saved: {tone: "success", title: "Configuration saved", body: "Done."},
     archived: {
         tone: "success",
@@ -22,6 +23,11 @@ const SETTINGS_NOTICES: Record<string, NoticeContent> = {
         tone: "danger",
         title: "Save failed",
         body: "Could not save all settings. Review logs and try again.",
+    },
+    stale_grow: {
+        tone: "warning",
+        title: "Grow already changed",
+        body: "This grow was archived or replaced. Reload Settings and try again.",
     },
     archive_failed: {
         tone: "danger",
@@ -65,43 +71,54 @@ const SETTINGS_NOTICES: Record<string, NoticeContent> = {
         title: "Delete failed",
         body: "Could not delete the picture. Review logs and try again.",
     },
+    archive_updated: {tone: "success", title: "Archive updated", body: "Done."},
+    archive_deleted: {
+        tone: "success",
+        title: "Archive deleted",
+        body: "The archive and all of its media were removed.",
+    },
+    archive_not_found: {
+        tone: "danger",
+        title: "Archive not found",
+        body: "The requested archive does not exist.",
+    },
+    archive_update_failed: {
+        tone: "danger",
+        title: "Update failed",
+        body: "Could not save the archive details. Review logs and try again.",
+    },
+    archive_media_deleted: {tone: "success", title: "Files deleted", body: "Done."},
+    archive_media_delete_failed: {
+        tone: "danger",
+        title: "Delete failed",
+        body: "Could not delete the selected files. Review logs and try again.",
+    },
+    archive_none_selected: {
+        tone: "warning",
+        title: "Nothing selected",
+        body: "Tick at least one file to delete.",
+    },
+    archive_delete_not_confirmed: {
+        tone: "warning",
+        title: "Deletion not confirmed",
+        body: "Tick the confirmation checkbox to delete the archive.",
+    },
+    archive_delete_failed: {
+        tone: "danger",
+        title: "Delete failed",
+        body: "Could not delete the archive. Review logs and try again.",
+    },
 };
 
-export function settingsNoticeFromQuery(query: {
-    saved?: string;
-    archived?: string;
-    media?: string;
-    error?: string;
-}): NoticeContent | null {
-    if (query.saved) {
-        return SETTINGS_NOTICES.saved;
-    }
-    if (query.archived) {
-        return SETTINGS_NOTICES.archived;
-    }
-    if (query.media && SETTINGS_NOTICES[query.media]) {
-        return SETTINGS_NOTICES[query.media];
-    }
-    if (query.error && SETTINGS_NOTICES[query.error]) {
-        return SETTINGS_NOTICES[query.error];
-    }
-    return null;
-}
-
-export function SettingsNotice(query: {
-    saved?: string;
-    archived?: string;
-    media?: string;
-    error?: string;
-}) {
-    const notice = settingsNoticeFromQuery(query);
-    if (!notice) {
+export function AdminFlashNotice({notice}: {notice?: string}) {
+    if (!notice || !isAdminNoticeId(notice)) {
         return null;
     }
 
+    const content = NOTICES[notice];
     return (
-        <AdminNotice tone={notice.tone} title={notice.title}>
-            {notice.body}
+        <AdminNotice tone={content.tone} title={content.title}>
+            {content.body}
         </AdminNotice>
     );
 }

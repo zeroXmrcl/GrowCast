@@ -1,6 +1,7 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
+import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
 import {isDateOnly} from "@/lib/date-only";
 
@@ -126,45 +127,45 @@ function mergeGrowDetails(
 }
 
 async function saveCurrentGrow(record: GrowRecord): Promise<void> {
-  await mkdir(dataDir(), { recursive: true });
-  await writeFile(dataFile(), JSON.stringify(record, null, 2), "utf8");
+  await atomicWriteFile(dataFile(), JSON.stringify(record, null, 2));
 }
 
-const DEFAULT_GROW: GrowRecord = {
+/** First-run / missing-field fallback. Not demo copy. */
+export const EMPTY_GROW: GrowRecord = {
   id: "grow-001",
-  name: "My First Tomato Grow",
+  name: "",
   showGrowName: false,
-  showSettingsLink: true,
-  plant: "Tomatoes",
-  plantAmount: 3,
+  showSettingsLink: false,
+  plant: "",
+  plantAmount: 0,
   streamUrl: "",
 
   details: {
-    strain: "Cherry Tomato",
-    stage: "Vegetative",
-    seededAt: "2026-03-01",
-    lightSchedule: "16/8",
-    updatedAt: "2026-03-30T21:58:00Z",
-    notes: "First attempt growing tomatoes – hoping for a good harvest!",
+    strain: "",
+    stage: "",
+    seededAt: "",
+    lightSchedule: "",
+    updatedAt: "",
+    notes: "",
   },
 
   growSetup: {
-    setupText: "Indoor on a windowsill",
-    growingMedium: "Soil",
-    potSizeLiters: 10,
+    setupText: "",
+    growingMedium: "",
+    potSizeLiters: 0,
   },
 
   status: {
-    health: "Healthy",
-    estimatedHarvestDate: "2026-06-15",
-    notes: "Growing steadily so far",
+    health: "",
+    estimatedHarvestDate: "",
+    notes: "",
   },
 
   climate: {
-    temperatureDay: 25,
-    temperatureNight: 20,
-    humidityDay: 60,
-    humidityNight: 65,
+    temperatureDay: 0,
+    temperatureNight: 0,
+    humidityDay: 0,
+    humidityNight: 0,
   },
 
   socials: {
@@ -186,53 +187,53 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
   const rawSocials = isRecord(parsed.socials) ? parsed.socials : {};
 
   const details: GrowDetails = {
-    strain: asString(rawDetails.strain, DEFAULT_GROW.details.strain),
-    stage: asString(rawDetails.stage, DEFAULT_GROW.details.stage),
+    strain: asString(rawDetails.strain, EMPTY_GROW.details.strain),
+    stage: asString(rawDetails.stage, EMPTY_GROW.details.stage),
     seededAt: normalizeSeededAt(
-      asString(rawDetails.seededAt, DEFAULT_GROW.details.seededAt),
-      DEFAULT_GROW.details.seededAt,
+      asString(rawDetails.seededAt, EMPTY_GROW.details.seededAt),
+      EMPTY_GROW.details.seededAt,
     ),
-    lightSchedule: asString(rawDetails.lightSchedule, DEFAULT_GROW.details.lightSchedule),
-    updatedAt: asString(rawDetails.updatedAt, DEFAULT_GROW.details.updatedAt),
-    notes: asString(rawDetails.notes, DEFAULT_GROW.details.notes),
+    lightSchedule: asString(rawDetails.lightSchedule, EMPTY_GROW.details.lightSchedule),
+    updatedAt: asString(rawDetails.updatedAt, EMPTY_GROW.details.updatedAt),
+    notes: asString(rawDetails.notes, EMPTY_GROW.details.notes),
   };
 
   const growSetup: GrowSetup = {
-    setupText: asString(rawSetup.setupText, DEFAULT_GROW.growSetup.setupText),
-    growingMedium: asString(rawSetup.growingMedium, DEFAULT_GROW.growSetup.growingMedium),
-    potSizeLiters: asNumber(rawSetup.potSizeLiters, DEFAULT_GROW.growSetup.potSizeLiters),
+    setupText: asString(rawSetup.setupText, EMPTY_GROW.growSetup.setupText),
+    growingMedium: asString(rawSetup.growingMedium, EMPTY_GROW.growSetup.growingMedium),
+    potSizeLiters: asNumber(rawSetup.potSizeLiters, EMPTY_GROW.growSetup.potSizeLiters),
   };
 
   const status: GrowStatus = {
-    health: asString(rawStatus.health, DEFAULT_GROW.status.health),
-    estimatedHarvestDate: asString(rawStatus.estimatedHarvestDate, DEFAULT_GROW.status.estimatedHarvestDate),
-    notes: asString(rawStatus.notes, DEFAULT_GROW.status.notes),
+    health: asString(rawStatus.health, EMPTY_GROW.status.health),
+    estimatedHarvestDate: asString(rawStatus.estimatedHarvestDate, EMPTY_GROW.status.estimatedHarvestDate),
+    notes: asString(rawStatus.notes, EMPTY_GROW.status.notes),
   };
 
   const climate: Climate = {
-    temperatureDay: asNumber(rawClimate.temperatureDay, DEFAULT_GROW.climate.temperatureDay),
-    temperatureNight: asNumber(rawClimate.temperatureNight, DEFAULT_GROW.climate.temperatureNight),
-    humidityDay: asNumber(rawClimate.humidityDay, DEFAULT_GROW.climate.humidityDay),
-    humidityNight: asNumber(rawClimate.humidityNight, DEFAULT_GROW.climate.humidityNight),
+    temperatureDay: asNumber(rawClimate.temperatureDay, EMPTY_GROW.climate.temperatureDay),
+    temperatureNight: asNumber(rawClimate.temperatureNight, EMPTY_GROW.climate.temperatureNight),
+    humidityDay: asNumber(rawClimate.humidityDay, EMPTY_GROW.climate.humidityDay),
+    humidityNight: asNumber(rawClimate.humidityNight, EMPTY_GROW.climate.humidityNight),
   };
 
   const socials: Socials = {
-    youtube: asString(rawSocials.youtube, DEFAULT_GROW.socials.youtube),
-    twitter: asString(rawSocials.twitter, DEFAULT_GROW.socials.twitter),
-    instagram: asString(rawSocials.instagram, DEFAULT_GROW.socials.instagram),
-    growDiaries: asString(rawSocials.growDiaries, DEFAULT_GROW.socials.growDiaries),
-    discordInvite: asString(rawSocials.discordInvite, DEFAULT_GROW.socials.discordInvite),
-    customWebsite: asString(rawSocials.customWebsite, DEFAULT_GROW.socials.customWebsite),
+    youtube: asString(rawSocials.youtube, EMPTY_GROW.socials.youtube),
+    twitter: asString(rawSocials.twitter, EMPTY_GROW.socials.twitter),
+    instagram: asString(rawSocials.instagram, EMPTY_GROW.socials.instagram),
+    growDiaries: asString(rawSocials.growDiaries, EMPTY_GROW.socials.growDiaries),
+    discordInvite: asString(rawSocials.discordInvite, EMPTY_GROW.socials.discordInvite),
+    customWebsite: asString(rawSocials.customWebsite, EMPTY_GROW.socials.customWebsite),
   };
 
   return {
-    id: asString(parsed.id, DEFAULT_GROW.id),
-    name: asString(parsed.name, DEFAULT_GROW.name),
-    showGrowName: asBoolean(parsed.showGrowName, DEFAULT_GROW.showGrowName),
-    showSettingsLink: asBoolean(parsed.showSettingsLink, DEFAULT_GROW.showSettingsLink),
-    plant: asString(parsed.plant, DEFAULT_GROW.plant),
-    plantAmount: asNumber(parsed.plantAmount, DEFAULT_GROW.plantAmount),
-    streamUrl: asString(parsed.streamUrl, DEFAULT_GROW.streamUrl),
+    id: asString(parsed.id, EMPTY_GROW.id),
+    name: asString(parsed.name, EMPTY_GROW.name),
+    showGrowName: asBoolean(parsed.showGrowName, EMPTY_GROW.showGrowName),
+    showSettingsLink: asBoolean(parsed.showSettingsLink, EMPTY_GROW.showSettingsLink),
+    plant: asString(parsed.plant, EMPTY_GROW.plant),
+    plantAmount: asNumber(parsed.plantAmount, EMPTY_GROW.plantAmount),
+    streamUrl: asString(parsed.streamUrl, EMPTY_GROW.streamUrl),
     details,
     climate,
     socials,
@@ -241,24 +242,16 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
   };
 }
 
-async function ensureDataFile(): Promise<void> {
-  try {
-    await readFile(dataFile(), "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      await saveCurrentGrow(DEFAULT_GROW);
-    }
-  }
-}
-
 export async function getCurrentGrow(): Promise<GrowRecord> {
-  await ensureDataFile();
-
   try {
     const content = await readFile(dataFile(), "utf8");
     return normalizeGrowRecord(JSON.parse(content));
-  } catch {
-    return DEFAULT_GROW;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      await saveCurrentGrow(EMPTY_GROW);
+      return EMPTY_GROW;
+    }
+    throw error;
   }
 }
 

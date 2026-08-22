@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {contentLengthExceedsCap, maxBodyBytesFor} from "@/lib/request-body-limit";
 
 const REQUEST_ID_MIN_LEN = 8;
 const REQUEST_ID_MAX_LEN = 128;
@@ -30,6 +31,14 @@ function generateSpanId(): string {
 }
 
 export function proxy(request: NextRequest) {
+  const cap = maxBodyBytesFor(request.method, request.nextUrl.pathname);
+  if (contentLengthExceedsCap(request.headers.get("content-length"), cap)) {
+    return new NextResponse("Payload Too Large", {
+      status: 413,
+      headers: {"Content-Type": "text/plain; charset=utf-8"},
+    });
+  }
+
   const incoming = request.headers.get("x-request-id");
   const requestId = isValidRequestId(incoming)
     ? incoming.trim()

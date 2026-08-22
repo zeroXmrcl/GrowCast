@@ -1,54 +1,36 @@
 import { NextRequest } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
 import { SNAPSHOT_DIR } from "@/lib/extension-status";
 import {
     logHttpPathTraversalBlocked,
     withRequestLog,
 } from "@/lib/logging";
+import { openMediaFile } from "@/lib/open-media-file";
+import { IMAGE_EXTENSIONS } from "@/lib/safe-media-filename";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function getContentType(filename: string): string {
-    const lower = filename.toLowerCase();
-
-    if (lower.endsWith(".webp")) return "image/webp";
-    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-    if (lower.endsWith(".png")) return "image/png";
-
-    return "application/octet-stream";
-}
 
 export async function GET(
     request: NextRequest,
     context: { params: Promise<{ filename: string }> }
 ) {
     return withRequestLog(request, "/api/snapshots/:filename", async () => {
-        try {
-            const { filename } = await context.params;
-
-            if (
-                filename.includes("/") ||
-                filename.includes("\\") ||
-                filename.includes("..")
-            ) {
+        const { filename } = await context.params;
+        const opened = await openMediaFile(SNAPSHOT_DIR, filename, IMAGE_EXTENSIONS);
+        if (!opened.ok) {
+            if (opened.status === 400) {
                 logHttpPathTraversalBlocked({ reason: "invalid_filename" });
                 return new Response("Invalid filename", { status: 400 });
             }
-
-            const filePath = path.join(SNAPSHOT_DIR, filename);
-            const fileBuffer = await fs.readFile(filePath);
-
-            return new Response(fileBuffer, {
-                status: 200,
-                headers: {
-                    "Content-Type": getContentType(filename),
-                    "Cache-Control": "no-store, must-revalidate",
-                },
-            });
-        } catch {
             return new Response("File not found", { status: 404 });
         }
+
+        return new Response(new Uint8Array(opened.buffer), {
+            status: 200,
+            headers: {
+                "Content-Type": opened.contentType,
+                "Cache-Control": "no-store, must-revalidate",
+            },
+        });
     });
 }

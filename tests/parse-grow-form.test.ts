@@ -78,4 +78,33 @@ describe("parseAdminSettingsForm", () => {
         );
         assert.equal(checked.grow.showSettingsLink, true);
     });
+
+    it("does not include estimatedHarvestDate when the field is omitted", () => {
+        const result = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+            }),
+        );
+        assert.equal("estimatedHarvestDate" in (result.grow.status ?? {}), false);
+    });
+
+    it("parses growId as expectedGrowId for save CAS", () => {
+        const withoutId = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+            }),
+        );
+        assert.equal(withoutId.expectedGrowId, undefined);
+
+        const withId = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                growId: "grow-001",
+            }),
+        );
+        assert.equal(withId.expectedGrowId, "grow-001");
+    });
 });

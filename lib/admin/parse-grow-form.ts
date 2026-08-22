@@ -10,6 +10,7 @@ import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 export type AdminSettingsFormResult = {
     grow: GrowUpdateInput;
     timelapse: TimelapseSettings;
+    expectedGrowId?: string;
 };
 
 function fieldString(formData: FormData, name: string, fallback = ""): string {
@@ -57,8 +58,10 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
         },
         status: {
             health: fieldString(formData, "health", "Healthy"),
-            estimatedHarvestDate: fieldString(formData, "estimatedHarvestDate"),
             notes: fieldString(formData, "statusNotes"),
+            ...(formData.has("estimatedHarvestDate")
+                ? {estimatedHarvestDate: fieldString(formData, "estimatedHarvestDate")}
+                : {}),
         },
         climate: {
             temperatureDay: toNumber(formData.get("temperatureDay")),
@@ -101,14 +104,21 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
         DEFAULT_TIMELAPSE_SETTINGS,
     );
 
-    return {grow, timelapse};
+    const expectedGrowId = fieldString(formData, "growId").trim();
+    return {
+        grow,
+        timelapse,
+        ...(expectedGrowId.length > 0 ? {expectedGrowId} : {}),
+    };
 }
 
 export function parseCompleteGrowForm(formData: FormData): CompleteGrowInput {
+    const expectedGrowId = fieldString(formData, "growId").trim();
     return {
         harvestedAt: fieldString(formData, "harvestedAt"),
         yieldGrams: toOptionalNumber(formData.get("yieldGrams")),
         finalNotes: fieldString(formData, "finalNotes"),
+        ...(expectedGrowId.length > 0 ? {expectedGrowId} : {}),
     };
 }
 

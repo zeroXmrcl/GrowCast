@@ -8,6 +8,11 @@ import {
 } from "@/lib/admin-credentials";
 import {SESSION_TTL_SECONDS} from "@/lib/admin-session-policy";
 import {
+  getAdminLoginAttemptStore,
+  getAdminSessionStore,
+} from "@/lib/admin-session-store";
+import {shouldUseSecureCookie} from "@/lib/request-trust";
+import {
   extractClientIp,
   extractUserAgent,
   logAuthLoginDisabled,
@@ -24,19 +29,8 @@ export {SESSION_TTL_SECONDS};
 
 const ADMIN_SESSION_COOKIE = "growcast_admin_session";
 
-const sessionStore = new Map<string, StoredAdminSession>();
-const loginAttemptStore = new Map<string, LoginAttemptState>();
-
-type StoredAdminSession = {
-  sid: string;
-  expiresAt: number;
-};
-
-type LoginAttemptState = {
-  count: number;
-  firstAttemptAt: number;
-  blockedUntil: number;
-};
+const sessionStore = getAdminSessionStore();
+const loginAttemptStore = getAdminLoginAttemptStore();
 
 type AdminConfig = {
   username: string;
@@ -254,10 +248,16 @@ async function getClientLogFields(): Promise<{
 
 async function setSessionCookie(sessionToken: string): Promise<void> {
   const cookieStore = await cookies();
+  let headerList: Headers;
+  try {
+    headerList = await headers();
+  } catch {
+    headerList = new Headers();
+  }
 
   cookieStore.set(ADMIN_SESSION_COOKIE, sessionToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookie(headerList),
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_TTL_SECONDS,

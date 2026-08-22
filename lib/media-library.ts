@@ -50,7 +50,7 @@ export type DeleteMediaResult =
     | {ok: false; error: "invalid_filename" | "not_found" | "delete_failed"};
 
 /** Literal path segments per collection keep Turbopack's file tracing statically scoped. */
-function collectionDir(collection: MediaCollectionId, dirOverride?: string): string {
+export function mediaCollectionDir(collection: MediaCollectionId, dirOverride?: string): string {
     if (dirOverride) {
         return dirOverride;
     }
@@ -129,7 +129,7 @@ export async function listMediaFiles(
     collection: MediaCollectionId,
     dirOverride?: string,
 ): Promise<MediaFile[]> {
-    const dir = collectionDir(collection, dirOverride);
+    const dir = mediaCollectionDir(collection, dirOverride);
     const {urlPrefix} = COLLECTIONS[collection];
 
     try {
@@ -145,6 +145,14 @@ export async function listMediaFiles(
     }
 }
 
+export async function listMediaUrls(
+    collection: MediaCollectionId,
+    dirOverride?: string,
+): Promise<string[]> {
+    const files = await listMediaFiles(collection, dirOverride);
+    return files.map((file) => file.url);
+}
+
 export async function saveUploadedImages(
     collection: MediaCollectionId,
     files: File[],
@@ -157,7 +165,7 @@ export async function saveUploadedImages(
         return {ok: false, error: "too_many_files"};
     }
 
-    const dir = collectionDir(collection, dirOverride);
+    const dir = mediaCollectionDir(collection, dirOverride);
     await mkdir(dir, {recursive: true});
 
     const saved: string[] = [];
@@ -199,7 +207,7 @@ export async function deleteMediaFile(
         return {ok: false, error: "invalid_filename"};
     }
 
-    const dir = path.resolve(collectionDir(collection, dirOverride));
+    const dir = path.resolve(mediaCollectionDir(collection, dirOverride));
     const filePath = path.resolve(dir, filename);
     if (path.dirname(filePath) !== dir) {
         return {ok: false, error: "invalid_filename"};

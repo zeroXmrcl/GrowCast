@@ -207,14 +207,38 @@ async function main() {
         ].join("\n");
 
         const envPath = path.resolve(process.cwd(), ".env.local");
-
+        const mergedLines = [];
         if (fs.existsSync(envPath)) {
             const backupPath = path.resolve(process.cwd(), `.env.local.bak.${Date.now()}`);
             fs.copyFileSync(envPath, backupPath);
             console.log(`Existing .env.local backed up to: ${path.basename(backupPath)}`);
+            const previous = fs.readFileSync(envPath, "utf8");
+            const replaced = new Set(["ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "ADMIN_SESSION_SECRET"]);
+            for (const line of previous.split(/\r?\n/)) {
+                if (!line || line.startsWith("#")) {
+                    mergedLines.push(line);
+                    continue;
+                }
+                const eq = line.indexOf("=");
+                const key = eq === -1 ? line : line.slice(0, eq);
+                if (replaced.has(key)) {
+                    continue;
+                }
+                mergedLines.push(line);
+            }
+            while (mergedLines.length > 0 && mergedLines[mergedLines.length - 1] === "") {
+                mergedLines.pop();
+            }
+            if (mergedLines.length > 0) {
+                mergedLines.push("");
+            }
         }
 
-        fs.writeFileSync(envPath, envContent, {encoding: "utf8", mode: 0o600});
+        const output = mergedLines.length > 0
+            ? `${mergedLines.join("\n")}${envContent}`
+            : envContent;
+
+        fs.writeFileSync(envPath, output, {encoding: "utf8", mode: 0o600});
 
         console.log("\nDone.");
         console.log(".env.local has been created.");

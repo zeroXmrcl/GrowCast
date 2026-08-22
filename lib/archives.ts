@@ -1,4 +1,5 @@
-import {copyFile, mkdir, readdir, readFile, rename, rm, unlink, writeFile} from "node:fs/promises";
+import {copyFile, mkdir, readdir, readFile, rename, rm, unlink} from "node:fs/promises";
+import {atomicWriteFile} from "@/lib/atomic-file";
 import path from "node:path";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {growcastDataDir} from "@/lib/data-paths";
@@ -10,6 +11,7 @@ import {
 } from "@/lib/db";
 import {isDateOnly, todayDateOnly} from "@/lib/date-only";
 import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/lib/extension-status";
+import {mediaCollectionDir} from "@/lib/media-library";
 import {
     IMAGE_EXTENSIONS,
     VIDEO_EXTENSIONS,
@@ -36,7 +38,9 @@ export type ArchivedGrow = {
     grow: GrowRecord;
 };
 
-export type CompleteGrowInput = ArchiveCompletion;
+export type CompleteGrowInput = ArchiveCompletion & {
+    expectedGrowId?: string;
+};
 
 export type CompleteGrowResult =
     | {ok: true; archive: ArchivedGrow}
@@ -49,7 +53,7 @@ export function isArchiveMediaKind(value: string): value is ArchiveMediaKind {
     return (ARCHIVE_MEDIA_KINDS as readonly string[]).includes(value);
 }
 
-/** Source directories the completed grow's media is moved out of (overridable for tests). */
+/** Source directories the completed grow's media is copied from (overridable for tests). */
 export type ArchiveMediaSources = {
     snapshotsDir: string;
     timelapseDir: string;
@@ -78,7 +82,7 @@ function defaultMediaSources(): ArchiveMediaSources {
     return {
         snapshotsDir: SNAPSHOT_DIR,
         timelapseDir: TIMELAPSE_DIR,
-        picturesDir: path.join(process.cwd(), "public", "yourPictures"),
+        picturesDir: mediaCollectionDir("dashboard"),
     };
 }
 
@@ -141,27 +145,28 @@ async function listFilesByExtension(dir: string, extensions: Set<string>): Promi
     }
 }
 
-/** Rename with EXDEV fallback: extensions/ and data/ are separate bind mounts in Docker. */
-async function moveFile(source: string, destination: string): Promise<void> {
-    try {
-        await rename(source, destination);
-    } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "EXDEV") {
-            throw error;
-        }
-        await copyFile(source, destination);
-        await unlink(source);
-    }
-}
-
-async function moveFiles(
+async function copyFiles(
     sourceDir: string,
     fileNames: string[],
     destinationDir: string,
 ): Promise<void> {
     for (const name of fileNames) {
-        await moveFile(path.join(sourceDir, name), path.join(destinationDir, name));
+        await copyFile(path.join(sourceDir, name), path.join(destinationDir, name));
     }
+}
+
+async function deleteFiles(sourceDir: string, fileNames: string[]): Promise<void> {
+    await Promise.all(
+        fileNames.map(async (name) => {
+            try {
+                await unlink(path.join(sourceDir, name));
+            } catch (error) {
+                if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                    throw error;
+                }
+            }
+        }),
+    );
 }
 
 function nextGrowId(currentId: string): string {
@@ -296,15 +301,26 @@ export async function getArchiveTimelapseFile(archiveId: string): Promise<string
 
 /**
  * Freeze the current grow into data/archives/<archiveId>/ and reset the current grow.
- * Media and grow.json are assembled under a hidden staging dir, then renamed
- * onto the public archive id. Failed attempts stay invisible to listArchivedGrows
- * (no readable grow.json under a valid id). Current grow is reset last.
+ * Media is copied into a hidden staging dir, grow.json is written last, then the
+ * dir is renamed onto the public id. Sources are deleted only after the current
+ * grow reset succeeds. Failed attempts stay invisible to listArchivedGrows.
  */
+export type ResetLiveGrow = (grow: GrowRecord) => Promise<void>;
+
 export async function completeCurrentGrow(
     input: CompleteGrowInput,
     sources: ArchiveMediaSources = defaultMediaSources(),
+    resetLiveGrow?: ResetLiveGrow,
 ): Promise<CompleteGrowResult> {
     const grow = await getCurrentGrow();
+    if (input.expectedGrowId && input.expectedGrowId !== grow.id) {
+        return {ok: false, error: "stale_grow"};
+    }
+    const already = await findArchiveForGrowId(grow.id);
+    if (already) {
+        return {ok: false, error: "already_archived"};
+    }
+
     const archiveId = await reserveArchiveId(grow.name);
     const stagingRoot = path.join(archivesDir(), `.tmp-${archiveId}`);
     const destinationRoot = path.join(archivesDir(), archiveId);
@@ -330,16 +346,25 @@ export async function completeCurrentGrow(
             await mkdir(path.join(stagingRoot, kind), {recursive: true});
         }
 
-        await moveFiles(sources.snapshotsDir, snapshotFiles, path.join(stagingRoot, "snapshots"));
-        await moveFiles(sources.timelapseDir, timelapseFiles, path.join(stagingRoot, "timelapse"));
-        await moveFiles(sources.picturesDir, pictureFiles, path.join(stagingRoot, "pictures"));
-        await writeFile(
+        await copyFiles(sources.snapshotsDir, snapshotFiles, path.join(stagingRoot, "snapshots"));
+        await copyFiles(sources.timelapseDir, timelapseFiles, path.join(stagingRoot, "timelapse"));
+        await copyFiles(sources.picturesDir, pictureFiles, path.join(stagingRoot, "pictures"));
+        await atomicWriteFile(
             path.join(stagingRoot, "grow.json"),
             JSON.stringify(archive, null, 2),
-            "utf8",
         );
         await rename(stagingRoot, destinationRoot);
-        await replaceCurrentGrow(buildNextGrow(grow));
+        const reset = resetLiveGrow ?? ((current: GrowRecord) => replaceCurrentGrow(buildNextGrow(current)));
+        await reset(grow);
+
+        const cleanup = await Promise.allSettled([
+            deleteFiles(sources.snapshotsDir, snapshotFiles),
+            deleteFiles(sources.timelapseDir, timelapseFiles),
+            deleteFiles(sources.picturesDir, pictureFiles),
+        ]);
+        if (cleanup.some((entry) => entry.status === "rejected")) {
+            return {ok: false, error: "media_cleanup_failed"};
+        }
 
         return {ok: true, archive};
     } catch (error) {
@@ -349,6 +374,14 @@ export async function completeCurrentGrow(
             error: error instanceof Error ? error.message : String(error),
         };
     }
+}
+
+async function findArchiveForGrowId(growId: string): Promise<ArchivedGrow | null> {
+    if (!growId) {
+        return null;
+    }
+    const archives = await listArchivedGrows();
+    return archives.find((entry) => entry.grow.id === growId) ?? null;
 }
 
 /** Editable subset of an archived grow; everything else stays frozen. */
@@ -394,7 +427,7 @@ export async function updateArchivedGrow(
     };
 
     try {
-        await writeFile(archiveGrowFile(archiveId), JSON.stringify(next, null, 2), "utf8");
+        await atomicWriteFile(archiveGrowFile(archiveId), JSON.stringify(next, null, 2));
         return {ok: true, archive: next};
     } catch {
         return {ok: false, error: "update_failed"};
@@ -460,7 +493,7 @@ export async function deleteArchiveMediaFiles(
 
         const media = await recountArchiveMedia(archiveId);
         const next: ArchivedGrow = {...existing, media};
-        await writeFile(archiveGrowFile(archiveId), JSON.stringify(next, null, 2), "utf8");
+        await atomicWriteFile(archiveGrowFile(archiveId), JSON.stringify(next, null, 2));
 
         return {ok: true, deleted, media};
     } catch {

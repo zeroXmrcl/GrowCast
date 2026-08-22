@@ -7,6 +7,8 @@ import sharp from "sharp";
 import {
     deleteMediaFile,
     listMediaFiles,
+    listMediaUrls,
+    mediaCollectionDir,
     MAX_UPLOAD_FILE_BYTES,
     MAX_UPLOAD_FILES,
     saveUploadedImages,
@@ -238,5 +240,17 @@ describe("listMediaFiles", () => {
     it("returns an empty list for a missing directory", async () => {
         const files = await listMediaFiles("setup", "/nonexistent/growcast-media-test");
         assert.deepEqual(files, []);
+    });
+
+    it("exposes collection URLs and the canonical dashboard directory", async () => {
+        await withTempDir(async (dir) => {
+            await writeFile(path.join(dir, "hero.webp"), "x");
+            assert.deepEqual(await listMediaUrls("dashboard", dir), ["/yourPictures/hero.webp"]);
+        });
+        assert.equal(
+            mediaCollectionDir("dashboard"),
+            path.join(process.cwd(), "public", "yourPictures"),
+        );
+        assert.equal(mediaCollectionDir("setup"), path.join(process.cwd(), "public", "setup"));
     });
 });

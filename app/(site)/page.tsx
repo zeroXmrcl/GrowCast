@@ -1,7 +1,7 @@
 import {getCurrentGrow} from "@/lib/db";
 import DashPictures from "@/components/dash-pictures";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
-import getSetupImages from "@/lib/getSetupImages";
+import {listMediaUrls} from "@/lib/media-library";
 import SiteFooter from "@/components/site-footer";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
@@ -71,7 +71,7 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
 
 export default async function Home() {
     const grow = await getCurrentGrow();
-    const setupImages = await getSetupImages();
+    const setupImages = await listMediaUrls("setup");
     const details = grow.details;
     const streamUrl = safeHttpUrlOrEmpty(grow.streamUrl);
     const socialLinks = [
@@ -229,30 +229,39 @@ export default async function Home() {
 
             <DashPictures />
 
-            {grow.growSetup.setupText?.trim() && (
+            {(grow.growSetup.setupText?.trim() || setupImages.length > 0) && (
                 <section
                     className="rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
                     <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                         Setup
                     </h2>
 
-                    <div className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
-                        <ReactMarkdown urlTransform={markdownUrlTransform}>
-                            {grow.growSetup.setupText}
-                        </ReactMarkdown>
-                    </div>
+                    {grow.growSetup.setupText?.trim() ? (
+                        <div className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
+                            <ReactMarkdown urlTransform={markdownUrlTransform}>
+                                {grow.growSetup.setupText}
+                            </ReactMarkdown>
+                        </div>
+                    ) : null}
 
                     {setupImages.length > 0 && (
                         <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                            {setupImages.map((src, i) => (
-                                <Image
-                                    key={i}
-                                    src={src}
-                                    alt={`${i + 1}`}
-                                    width={500}
-                                    height={500}
-                                    className="rounded-xl border border-zinc-200 dark:border-zinc-800"
-                                />
+                            {setupImages.map((src) => (
+                                <a
+                                    key={src}
+                                    href={src}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800"
+                                >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={src}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                    />
+                                </a>
                             ))}
                         </div>
                     )}

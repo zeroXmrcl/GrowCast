@@ -30,21 +30,31 @@ describe("security event request context", () => {
     });
 
     it("withRequestLog stores client_ip for path-traversal events", async () => {
-        const request = new Request("http://localhost/api/snapshots/x.webp", {
-            headers: {
-                "x-forwarded-for": "203.0.113.9",
-                "user-agent": "GrowCast-Test",
-            },
-        });
-
-        await withRequestLog(request, "/api/snapshots/:filename", async () => {
-            const ctx = getContext();
-            assert.equal(ctx?.client_ip, "203.0.113.9");
-            const payload = buildSecurityEventPayload("http.path_traversal_blocked", {
-                reason: "invalid_filename",
+        const previous = process.env.GROWCAST_TRUST_PROXY;
+        process.env.GROWCAST_TRUST_PROXY = "1";
+        try {
+            const request = new Request("http://localhost/api/snapshots/x.webp", {
+                headers: {
+                    "cf-connecting-ip": "203.0.113.9",
+                    "user-agent": "GrowCast-Test",
+                },
             });
-            assert.equal(payload.client_ip, "203.0.113.9");
-            return new Response("ok");
-        });
+
+            await withRequestLog(request, "/api/snapshots/:filename", async () => {
+                const ctx = getContext();
+                assert.equal(ctx?.client_ip, "203.0.113.9");
+                const payload = buildSecurityEventPayload("http.path_traversal_blocked", {
+                    reason: "invalid_filename",
+                });
+                assert.equal(payload.client_ip, "203.0.113.9");
+                return new Response("ok");
+            });
+        } finally {
+            if (previous === undefined) {
+                delete process.env.GROWCAST_TRUST_PROXY;
+            } else {
+                process.env.GROWCAST_TRUST_PROXY = previous;
+            }
+        }
     });
 });

@@ -5,16 +5,18 @@ import {
     deleteArchiveMediaAction,
     updateArchiveAction,
 } from "@/app/admin/archives/actions";
+import {AdminChrome} from "@/app/admin/admin-chrome";
+import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {
     AdminButton,
     AdminCheckboxRow,
     AdminField,
     AdminInput,
-    AdminNotice,
     AdminPanel,
     AdminTextarea,
 } from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
+import {withNotice} from "@/lib/admin/notice";
 import {
     archiveMediaUrl,
     getArchivedGrow,
@@ -27,38 +29,8 @@ import {
 type ArchiveEditorPageProps = {
     params: Promise<{archiveId: string}>;
     searchParams: Promise<{
-        saved?: string;
-        mediaDeleted?: string;
-        error?: string;
+        notice?: string;
     }>;
-};
-
-const ERROR_NOTICES: Record<string, {tone: "warning" | "danger"; title: string; body: string}> = {
-    update_failed: {
-        tone: "danger",
-        title: "Update failed",
-        body: "Could not save the archive details. Review logs and try again.",
-    },
-    media_delete_failed: {
-        tone: "danger",
-        title: "Delete failed",
-        body: "Could not delete the selected files. Review logs and try again.",
-    },
-    delete_failed: {
-        tone: "danger",
-        title: "Delete failed",
-        body: "Could not delete the archive. Review logs and try again.",
-    },
-    none_selected: {
-        tone: "warning",
-        title: "Nothing selected",
-        body: "Tick at least one file to delete.",
-    },
-    not_confirmed: {
-        tone: "warning",
-        title: "Deletion not confirmed",
-        body: "Tick the confirmation checkbox to delete the archive.",
-    },
 };
 
 type MediaDeleteGridProps = {
@@ -131,7 +103,7 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
 
     const archive = await getArchivedGrow(archiveId);
     if (!archive) {
-        redirect("/admin/archives?error=not_found");
+        redirect(withNotice("/admin/archives", "archive_not_found"));
     }
 
     const [snapshotFiles, pictureFiles, timelapseFile] = await Promise.all([
@@ -150,54 +122,31 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
     }));
 
     const {grow, completion} = archive;
-    const errorNotice = query.error ? ERROR_NOTICES[query.error] : undefined;
-    const mediaDeletedCount = Number(query.mediaDeleted);
 
     return (
-        <div className="admin-theme min-h-screen bg-(--admin-bg) px-4 py-8 text-(--admin-text) sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-4xl space-y-6">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                        <Link
-                            href="/admin/archives"
-                            className="text-xs text-(--admin-muted) hover:text-(--admin-text)"
-                        >
-                            &larr; Archived Grows
-                        </Link>
-                        <h1 className="mt-1 truncate text-lg font-semibold text-(--admin-text)">
-                            {grow.name}
-                        </h1>
-                    </div>
-                    <Link
-                        href={`/grows/${archiveId}`}
-                        target="_blank"
-                        className="shrink-0 text-sm text-(--admin-muted) hover:text-(--admin-text)"
-                    >
-                        View public page
-                    </Link>
-                </div>
+        <AdminChrome
+            title={grow.name}
+            eyebrow={
+                <Link
+                    href="/admin/archives"
+                    className="text-xs text-(--admin-muted) hover:text-(--admin-text)"
+                >
+                    &larr; Archived Grows
+                </Link>
+            }
+            actions={
+                <Link
+                    href={`/grows/${archiveId}`}
+                    target="_blank"
+                    className="shrink-0 text-sm text-(--admin-muted) hover:text-(--admin-text)"
+                >
+                    View public page
+                </Link>
+            }
+        >
+            <AdminFlashNotice notice={query.notice}/>
 
-                {query.saved ? (
-                    <AdminNotice tone="success" title="Archive updated">
-                        Done.
-                    </AdminNotice>
-                ) : null}
-
-                {query.mediaDeleted ? (
-                    <AdminNotice tone="success" title="Files deleted">
-                        {Number.isFinite(mediaDeletedCount) && mediaDeletedCount > 0
-                            ? `Deleted ${mediaDeletedCount} ${mediaDeletedCount === 1 ? "file" : "files"}.`
-                            : "Done."}
-                    </AdminNotice>
-                ) : null}
-
-                {errorNotice ? (
-                    <AdminNotice tone={errorNotice.tone} title={errorNotice.title}>
-                        {errorNotice.body}
-                    </AdminNotice>
-                ) : null}
-
-                <form action={updateArchiveAction}>
+            <form action={updateArchiveAction}>
                     <AdminPanel
                         title="Details"
                         description="Fix the archived grow's display information. The archive URL stays the same."
@@ -318,7 +267,6 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                         </div>
                     </AdminPanel>
                 </form>
-            </div>
-        </div>
+        </AdminChrome>
     );
 }

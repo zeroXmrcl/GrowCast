@@ -76,7 +76,7 @@ Notes:
 
 ### Logging
 
-GrowCast writes **structured JSON logs to stdout** (Pino) for production observability and security events (auth, mesh, path traversal, HTTP requests). Correlation IDs are set in middleware (`X-Request-ID` on responses). Optional env vars: `LOG_LEVEL`, `LOG_PRETTY` (dev only), `GROWCAST_ENV`.
+GrowCast writes **structured JSON logs to stdout** (Pino) for production observability and security events (auth, mesh, path traversal, HTTP requests). Correlation IDs are set in the Next.js proxy (`X-Request-ID` on responses). Optional env vars: `LOG_LEVEL`, `LOG_PRETTY` (dev only), `GROWCAST_ENV`.
 
 Full schema, event catalog, redaction rules, Docker log shipping, retention guidance, and alert examples: **[docs/logging.md](docs/logging.md)**.
 
@@ -98,7 +98,9 @@ npm run setup:admin
 docker compose up --build -d
 ```
 
-3. Open `http://localhost:3000`.
+3. For production, put the origin behind a **Cloudflare Tunnel** (HTTPS public hostname → `http://127.0.0.1:3000`). Compose publishes only on loopback (`127.0.0.1:${GROWCAST_PORT:-3000}`) and sets `GROWCAST_TRUST_PROXY=1` so login rate-limits use `CF-Connecting-IP` (then `X-Real-IP`). Spoofed forwarded IPs are ignored unless that flag is set. Admin cookies are `Secure` when `X-Forwarded-Proto: https` or `CF-Connecting-IP` is present (or `COOKIE_SECURE=1`). Direct HTTP to a public `:3000` is not the supported admin path.
+
+Local-only UI: `http://localhost:3000` (session cookie is not Secure).
 
 Useful commands:
 
@@ -118,8 +120,8 @@ This means grow data, timelapse assets, and uploaded media survive container res
 The container process runs as uid 1001 (`growcast`). The entrypoint `chown`s those bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host.
 
 Optional port override:
-- The compose file publishes `${GROWCAST_PORT:-3000}:3000`.
-- If you want a different host port, set `GROWCAST_PORT` before starting Compose.
+- The compose file publishes `127.0.0.1:${GROWCAST_PORT:-3000}:3000`.
+- If you want a different loopback port, set `GROWCAST_PORT` before starting Compose.
 
 Important:
 - The container only runs GrowCast. MediaMTX is still a separate service and must be run outside this compose file.
@@ -166,7 +168,7 @@ lib/
   mesh-auth.ts                 # Fail-closed Bearer auth for mesh API
   timelapse-settings.ts        # Timelapse settings normalize + I/O
   extension-status.ts          # Timelapse plugin file discovery
-  getSetupImages.ts            # Reads public/setup images
+  media-library.ts             # Live picture dirs, listing, upload encode
   app-timezone.ts              # Shared app timezone for day math
 scripts/
   admin-creator.mjs            # Interactive .env.local generator

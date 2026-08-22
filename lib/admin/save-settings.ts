@@ -1,4 +1,4 @@
-import {getCurrentGrow, updateCurrentGrow, type GrowRecord, type GrowUpdateInput} from "@/lib/db";
+import {getCurrentGrow, replaceCurrentGrow, updateCurrentGrow, type GrowRecord, type GrowUpdateInput} from "@/lib/db";
 import {
     getTimelapseSettings,
     saveTimelapseSettings,
@@ -8,6 +8,7 @@ import {
 export type SaveAdminSettingsInput = {
     grow: GrowUpdateInput;
     timelapse: TimelapseSettings;
+    expectedGrowId?: string;
 };
 
 export type SaveAdminSettingsResult =
@@ -23,6 +24,9 @@ export async function saveAdminSettings(
     input: SaveAdminSettingsInput,
 ): Promise<SaveAdminSettingsResult> {
     const previousGrow = await getCurrentGrow();
+    if (!input.expectedGrowId || input.expectedGrowId !== previousGrow.id) {
+        return {ok: false, error: "stale_grow"};
+    }
     const previousTimelapse = await getTimelapseSettings();
 
     let nextGrow: GrowRecord;
@@ -44,18 +48,7 @@ export async function saveAdminSettings(
         };
     } catch (error) {
         try {
-            await updateCurrentGrow({
-                name: previousGrow.name,
-                showGrowName: previousGrow.showGrowName,
-                plant: previousGrow.plant,
-                plantAmount: previousGrow.plantAmount,
-                streamUrl: previousGrow.streamUrl,
-                details: previousGrow.details,
-                growSetup: previousGrow.growSetup,
-                status: previousGrow.status,
-                socials: previousGrow.socials,
-                climate: previousGrow.climate,
-            });
+            await replaceCurrentGrow(previousGrow);
             await saveTimelapseSettings(previousTimelapse);
         } catch (rollbackError) {
             return {

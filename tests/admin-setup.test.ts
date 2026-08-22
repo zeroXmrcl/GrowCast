@@ -121,6 +121,29 @@ describe("admin-creator.mjs (setup:admin)", () => {
       fs.rmSync(cwd, {recursive: true, force: true});
     }
   });
+
+  it("merge-preserves GROWCAST_MESH_TOKEN when rewriting .env.local", () => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), "growcast-admin-merge-"));
+    try {
+      fs.writeFileSync(
+        path.join(cwd, ".env.local"),
+        "GROWCAST_MESH_TOKEN=keep-this-mesh-token\nLOG_LEVEL=info\nADMIN_USERNAME=old\n",
+        "utf8",
+      );
+      const result = runAdminCreator(
+        ["--allow-insecure"],
+        "freshadmin\nshort\nshort\n",
+        cwd,
+      );
+      assert.equal(result.status, 0, result.stderr || result.stdout);
+      const env = parseEnvLocal(path.join(cwd, ".env.local"));
+      assert.equal(env.GROWCAST_MESH_TOKEN, "keep-this-mesh-token");
+      assert.equal(env.LOG_LEVEL, "info");
+      assert.equal(env.ADMIN_USERNAME, "freshadmin");
+    } finally {
+      fs.rmSync(cwd, {recursive: true, force: true});
+    }
+  });
 });
 
 describe("password hard limits vs strength (login vs setup)", () => {

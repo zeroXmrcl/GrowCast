@@ -6,9 +6,10 @@ import {redirect} from "next/navigation";
 import {loginAdmin, requireAdmin} from "@/lib/admin-auth";
 import {parseAdminSettingsForm, parseCompleteGrowForm} from "@/lib/admin/parse-grow-form";
 import {saveAdminSettings} from "@/lib/admin/save-settings";
+import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
+import {loginRateLimitKey} from "@/lib/request-trust";
 import {
-    extractClientIp,
     logAdminGrowArchiveFailed,
     logAdminGrowArchived,
     logAdminGrowUpdateFailed,
@@ -17,14 +18,9 @@ import {
     withNextRequestLogContext,
 } from "@/lib/logging";
 
-async function getRequestIp(): Promise<string> {
-    const h = await headers();
-    return extractClientIp(h) ?? "unknown";
-}
-
 export async function loginAction(formData: FormData): Promise<void> {
-    const ip = await getRequestIp();
-    const clientKey = `admin-login:${ip}`;
+    const h = await headers();
+    const clientKey = loginRateLimitKey(h);
 
     const username = String(formData.get("username") ?? "");
     const password = String(formData.get("password") ?? "");
@@ -55,13 +51,13 @@ export async function saveGrowAction(formData: FormData): Promise<void> {
 
         if (!result.ok) {
             logAdminGrowUpdateFailed({err: sanitizeError(result.error)});
-            redirect("/admin?error=save_failed");
+            redirect(withNotice("/admin", result.error === "stale_grow" ? "stale_grow" : "save_failed"));
         }
 
         logAdminGrowUpdated();
         revalidatePath("/");
         revalidatePath("/admin");
-        redirect("/admin?saved=1");
+        redirect(withNotice("/admin", "saved"));
     });
 }
 
@@ -70,7 +66,7 @@ export async function completeGrowAction(formData: FormData): Promise<void> {
         await requireAdmin();
 
         if (formData.get("confirmArchive") !== "on") {
-            redirect("/admin?error=archive_not_confirmed");
+            redirect(withNotice("/admin", "archive_not_confirmed"));
         }
 
         const input = parseCompleteGrowForm(formData);
@@ -78,7 +74,7 @@ export async function completeGrowAction(formData: FormData): Promise<void> {
 
         if (!result.ok) {
             logAdminGrowArchiveFailed({err: sanitizeError(result.error)});
-            redirect("/admin?error=archive_failed");
+            redirect(withNotice("/admin", result.error === "stale_grow" ? "stale_grow" : "archive_failed"));
         }
 
         logAdminGrowArchived({archiveId: result.archive.archiveId});
@@ -87,6 +83,6 @@ export async function completeGrowAction(formData: FormData): Promise<void> {
         revalidatePath("/grows");
         revalidatePath(`/grows/${result.archive.archiveId}`);
         revalidatePath("/admin");
-        redirect("/admin?archived=1");
+        redirect(withNotice("/admin", "archived"));
     });
 }

@@ -2,7 +2,7 @@
 
 GrowCast emits **structured JSON logs to stdout** (Pino). In production, logs are always JSON lines — suitable for Docker log drivers, journald, and log aggregators. A pretty (human-readable) transport is available only in non-production when explicitly enabled.
 
-Implementation lives under `lib/logging/`. Edge middleware (`middleware.ts`) is intentionally free of Pino/Node APIs and only handles correlation IDs.
+Implementation lives under `lib/logging/`. The Next.js proxy (`proxy.ts`) is intentionally free of Pino/Node APIs and only handles correlation IDs.
 
 ---
 
@@ -71,7 +71,7 @@ Event-specific fields are added alongside the base schema (e.g. `method`, `path`
 
 ### Request context (AsyncLocalStorage)
 
-Route handlers wrapped with `withRequestLog` bind a `RequestLogContext` for the async continuation. **Server Actions** use `withNextRequestLogContext` (reads middleware-stamped headers via `next/headers`) so auth and admin mutation events still get `request_id` / `trace_id` / `span_id`:
+Route handlers wrapped with `withRequestLog` bind a `RequestLogContext` for the async continuation. **Server Actions** use `withNextRequestLogContext` (reads proxy-stamped headers via `next/headers`) so auth and admin mutation events still get `request_id` / `trace_id` / `span_id`:
 
 | Field | Description |
 | --- | --- |
@@ -250,9 +250,9 @@ Adjust for disk capacity and compliance needs. If you export to an aggregator, s
 
 ## Correlation headers
 
-### Middleware (Edge)
+### Proxy (Edge)
 
-`middleware.ts` runs on matched paths (excluding `_next/static`, `_next/image`, `favicon.ico`):
+`proxy.ts` runs on matched paths (excluding `_next/static`, `_next/image`, `favicon.ico`):
 
 | Header | Direction | Behavior (v1) |
 | --- | --- | --- |
@@ -272,7 +272,7 @@ ID formats:
 
 ### Route helpers
 
-`withRequestLog` rebuilds context from request headers. It will reuse valid inbound `x-request-id` / `x-trace-id` / `x-span-id` if present. In normal browser traffic, middleware has already set those headers on the internal request, so handlers inherit the edge-generated IDs.
+`withRequestLog` rebuilds context from request headers. It will reuse valid inbound `x-request-id` / `x-trace-id` / `x-span-id` if present. In normal browser traffic, the proxy has already set those headers on the internal request, so handlers inherit the edge-generated IDs.
 
 Clients and reverse proxies can supply `X-Request-ID` for end-to-end correlation; they should read `X-Request-ID` from the response for support tickets.
 
@@ -376,8 +376,8 @@ May indicate session expiry noise or probing of `/admin`.
 | `lib/logging/context.ts` | AsyncLocalStorage request context |
 | `lib/logging/security-events.ts` | Named security event helpers |
 | `lib/logging/types.ts` | `SecurityEventName`, context and binding types |
-| `lib/logging/index.ts` | Public barrel (**do not import from Edge middleware**) |
-| `middleware.ts` | Edge-safe correlation only |
+| `lib/logging/index.ts` | Public barrel (**do not import from the Edge proxy**) |
+| `proxy.ts` | Edge-safe correlation only |
 | `instrumentation.ts` | Emits `app.start` on Node runtime boot |
 | `tests/logging/` | Unit tests for redact, IDs, HTTP helpers, level resolution |
 

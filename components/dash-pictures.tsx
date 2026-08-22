@@ -1,7 +1,7 @@
-import getDashPics from "@/lib/getDashPics";
+import {listMediaUrls} from "@/lib/media-library";
 
 export default async function DashPictures() {
-    const images = await getDashPics();
+    const images = await listMediaUrls("dashboard");
 
     if (images.length === 0) {
         return null;
