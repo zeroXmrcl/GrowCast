@@ -11,6 +11,7 @@ import {
     releaseSseSlot,
     subscribeLive,
     tryReserveSseSlot,
+    type SseSlot,
 } from "@/lib/ggs-live-hub";
 import {meshClientKey, requireMeshAuthThrottled} from "@/lib/mesh-throttle";
 import {
@@ -69,10 +70,11 @@ function sseUnavailable(): Response {
 
 export async function liveClimateStreamResponse(request?: Request): Promise<Response> {
     const identity = request ? meshClientKey(request) : "unknown";
-    const slot = tryReserveSseSlot(identity);
-    if (!slot) {
+    const reserved = tryReserveSseSlot(identity);
+    if (reserved === null) {
         return sseUnavailable();
     }
+    const slot: SseSlot = reserved;
 
     let stored;
     try {
