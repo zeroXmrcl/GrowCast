@@ -8,9 +8,12 @@ import {
     GGS_MAX_SSE_PER_CLIENT,
     GGS_MAX_SSE_SUBSCRIBERS,
     _resetGgsHubForTests,
+    identitySubscriberCount,
     publishLive,
+    releaseSseSlot,
     subscribeLive,
     subscriberCount,
+    tryReserveSseSlot,
 } from "../lib/ggs-live-hub.ts";
 import {
     _resetIngestRateForTests,
@@ -140,13 +143,24 @@ describe("ggs live hub", () => {
         void a;
     });
 
-    it("tracks subscriber count", () => {
+    it("tracks reserved SSE slots", () => {
         _resetGgsHubForTests();
         assert.equal(subscriberCount(), 0);
-        const stop = subscribeLive(() => undefined);
+        const slot = tryReserveSseSlot("a");
+        assert.ok(slot);
         assert.equal(subscriberCount(), 1);
-        stop();
+        assert.equal(identitySubscriberCount("a"), 1);
+        releaseSseSlot(slot);
+        releaseSseSlot(slot);
         assert.equal(subscriberCount(), 0);
+        assert.equal(identitySubscriberCount("a"), 0);
+    });
+
+    it("subscribeLive unsubscribe is idempotent", () => {
+        _resetGgsHubForTests();
+        const stop = subscribeLive(() => undefined);
+        stop();
+        stop();
     });
 });
 
@@ -226,35 +240,35 @@ describe("live climate SSE", () => {
         });
     });
 
-    it("caps SSE per client identity without starving another identity", async () => {
+    it("caps concurrent same-identity streams at GGS_MAX_SSE_PER_CLIENT", async () => {
         await withTempDataDir(async () => {
             const previousTrust = process.env.GROWCAST_TRUST_PROXY;
             process.env.GROWCAST_TRUST_PROXY = "1";
             try {
-                const openers: Array<() => void> = [];
                 function streamFor(ip: string): Request {
                     return new Request("http://localhost/api/data/live-climate/stream", {
                         headers: {"cf-connecting-ip": ip},
                     });
                 }
-                for (let i = 0; i < GGS_MAX_SSE_PER_CLIENT; i += 1) {
-                    const response = await liveClimateStreamResponse(streamFor("203.0.113.10"));
-                    assert.equal(response.status, 200);
-                    const reader = response.body?.getReader();
-                    assert.ok(reader);
-                    openers.push(() => {
-                        void reader.cancel();
-                    });
-                }
-                const overflow = await liveClimateStreamResponse(streamFor("203.0.113.10"));
-                assert.equal(overflow.status, 503);
+                const responses = await Promise.all(
+                    Array.from({length: GGS_MAX_SSE_PER_CLIENT * 2}, () =>
+                        liveClimateStreamResponse(streamFor("203.0.113.10")),
+                    ),
+                );
+                const ok = responses.filter((response) => response.status === 200);
+                const denied = responses.filter((response) => response.status === 503);
+                assert.equal(ok.length, GGS_MAX_SSE_PER_CLIENT);
+                assert.equal(denied.length, GGS_MAX_SSE_PER_CLIENT);
+                assert.equal(identitySubscriberCount("203.0.113.10"), GGS_MAX_SSE_PER_CLIENT);
+                assert.equal(subscriberCount(), GGS_MAX_SSE_PER_CLIENT);
+
                 const other = await liveClimateStreamResponse(streamFor("198.51.100.20"));
                 assert.equal(other.status, 200);
                 assert.match(other.headers.get("content-type") ?? "", /text\/event-stream/);
-                await other.body?.getReader().cancel();
-                for (const close of openers) {
-                    close();
-                }
+
+                await Promise.all(ok.map((response) => response.body?.cancel()));
+                await other.body?.cancel();
+                assert.equal(identitySubscriberCount("203.0.113.10"), 0);
             } finally {
                 if (previousTrust === undefined) {
                     delete process.env.GROWCAST_TRUST_PROXY;
@@ -265,17 +279,14 @@ describe("live climate SSE", () => {
         });
     });
 
-    it("returns 503 when the subscriber cap is reached", async () => {
+    it("returns 503 when the global subscriber cap is reached", async () => {
         await withTempDataDir(async () => {
-            const stops: Array<() => void> = [];
             for (let i = 0; i < GGS_MAX_SSE_SUBSCRIBERS; i += 1) {
-                stops.push(subscribeLive(() => undefined));
+                const identity = `cap-${Math.floor(i / GGS_MAX_SSE_PER_CLIENT)}-${i}`;
+                assert.ok(tryReserveSseSlot(identity));
             }
             const response = await liveClimateStreamResponse();
             assert.equal(response.status, 503);
-            for (const stop of stops) {
-                stop();
-            }
         });
     });
 });

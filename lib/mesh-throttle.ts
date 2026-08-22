@@ -1,3 +1,4 @@
+import {requireMeshAuth} from "@/lib/mesh-auth";
 import {clientIdentityKey} from "@/lib/request-trust";
 
 export const MESH_AUTH_MAX_FAILURES = 8;
@@ -38,6 +39,30 @@ export function noteMeshAuthFailure(
 
 export function clearMeshAuthFailures(key: string): void {
     failures.delete(key);
+}
+
+/**
+ * Fail-closed mesh Bearer check with the shared per-identity failure throttle.
+ * Returns null when authorized; 401 or 429 otherwise.
+ */
+export function requireMeshAuthThrottled(request: Request): Response | null {
+    const clientKey = meshClientKey(request);
+    const auth = requireMeshAuth(request);
+    if (auth) {
+        const limited = noteMeshAuthFailure(clientKey);
+        if (limited.blocked) {
+            return new Response(null, {
+                status: 429,
+                headers: {
+                    "Cache-Control": "no-store",
+                    "Retry-After": String(limited.retryAfterSeconds),
+                },
+            });
+        }
+        return auth;
+    }
+    clearMeshAuthFailures(clientKey);
+    return null;
 }
 
 export function _resetMeshAuthThrottleForTests(): void {

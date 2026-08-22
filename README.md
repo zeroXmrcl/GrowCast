@@ -112,9 +112,11 @@ docker compose down
 
 What gets persisted on the host:
 - `./data` -> `/app/data`
-- `./extensions` -> `/app/extensions`
+- `./extensions/GrowCast-Timelapse` -> `/app/extensions/GrowCast-Timelapse`
 - `./public/setup` -> `/app/public/setup`
 - `./public/yourPictures` -> `/app/public/yourPictures`
+
+GrowCast-GGS `.env` is **not** mounted into the web container. The `ggs` sidecar reads it via its own `env_file`.
 
 This means grow data, timelapse assets, and uploaded media survive container restarts and image rebuilds.
 

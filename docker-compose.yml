@@ -17,7 +17,9 @@ services:
       GROWCAST_TRUST_PROXY: "1"
     volumes:
       - ./data:/app/data
-      - ./extensions:/app/extensions
+      # Timelapse media only. Do not bind the whole extensions/ tree — GrowCast-GGS/.env
+      # would otherwise be readable/owned by the internet-facing app user.
+      - ./extensions/GrowCast-Timelapse:/app/extensions/GrowCast-Timelapse
       - ./public/setup:/app/public/setup
       - ./public/yourPictures:/app/public/yourPictures
 

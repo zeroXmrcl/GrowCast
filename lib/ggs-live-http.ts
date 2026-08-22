@@ -1,4 +1,3 @@
-import {requireMeshAuth} from "@/lib/mesh-auth";
 import {
     EMPTY_LIVE_PUBLIC,
     GGS_PLUGIN_ID,
@@ -8,18 +7,12 @@ import {
 } from "@/lib/ggs-live";
 import {readGgsLive, saveGgsLive} from "@/lib/ggs-live-store";
 import {
-    GGS_MAX_SSE_PER_CLIENT,
-    GGS_MAX_SSE_SUBSCRIBERS,
-    identitySubscriberCount,
     publishLive,
+    releaseSseSlot,
     subscribeLive,
-    subscriberCount,
+    tryReserveSseSlot,
 } from "@/lib/ggs-live-hub";
-import {
-    clearMeshAuthFailures,
-    meshClientKey,
-    noteMeshAuthFailure,
-} from "@/lib/mesh-throttle";
+import {meshClientKey, requireMeshAuthThrottled} from "@/lib/mesh-throttle";
 import {
     logGgsStateIngested,
     logGgsStateRejected,
@@ -76,17 +69,27 @@ function sseUnavailable(): Response {
 
 export async function liveClimateStreamResponse(request?: Request): Promise<Response> {
     const identity = request ? meshClientKey(request) : "unknown";
-    if (subscriberCount() >= GGS_MAX_SSE_SUBSCRIBERS) {
-        return sseUnavailable();
-    }
-    if (identitySubscriberCount(identity) >= GGS_MAX_SSE_PER_CLIENT) {
+    const slot = tryReserveSseSlot(identity);
+    if (!slot) {
         return sseUnavailable();
     }
 
-    const stored = await readGgsLive();
+    let stored;
+    try {
+        stored = await readGgsLive();
+    } catch (error) {
+        releaseSseSlot(slot);
+        throw error;
+    }
     const hello = stored ? withStale(stored) : EMPTY_LIVE_PUBLIC;
     let unsubscribe: (() => void) | undefined;
     let closed = false;
+
+    function teardown(): void {
+        closed = true;
+        unsubscribe?.();
+        releaseSseSlot(slot);
+    }
 
     const stream = new ReadableStream<Uint8Array>({
         start(controller) {
@@ -97,16 +100,14 @@ export async function liveClimateStreamResponse(request?: Request): Promise<Resp
                 try {
                     controller.enqueue(encodeSse(event, state));
                 } catch {
-                    closed = true;
-                    unsubscribe?.();
+                    teardown();
                 }
             };
             send("snapshot", hello);
             unsubscribe = subscribeLive(send, identity);
         },
         cancel() {
-            closed = true;
-            unsubscribe?.();
+            teardown();
         },
     });
 
@@ -124,22 +125,10 @@ export async function liveClimateIngestResponse(
     request: Request,
     pluginId: string,
 ): Promise<Response> {
-    const clientKey = meshClientKey(request);
-    const auth = requireMeshAuth(request);
+    const auth = requireMeshAuthThrottled(request);
     if (auth) {
-        const limited = noteMeshAuthFailure(clientKey);
-        if (limited.blocked) {
-            return new Response(null, {
-                status: 429,
-                headers: {
-                    "Cache-Control": "no-store",
-                    "Retry-After": String(limited.retryAfterSeconds),
-                },
-            });
-        }
         return auth;
     }
-    clearMeshAuthFailures(clientKey);
 
     if (pluginId !== GGS_PLUGIN_ID) {
         logMeshPluginUnknown({plugin_id: pluginId});

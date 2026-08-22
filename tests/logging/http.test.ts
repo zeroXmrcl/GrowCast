@@ -81,5 +81,16 @@ describe("docker compose listen address", () => {
     assert.match(yml, /127\.0\.0\.1:\$\{GROWCAST_PORT:-3000\}:3000/);
     assert.doesNotMatch(yml, /ports:\s*\n\s*-\s*"\$\{GROWCAST_PORT:-3000\}:3000"/);
     assert.match(yml, /GROWCAST_TRUST_PROXY:\s*"?1"?/);
+    assert.doesNotMatch(yml, /-\s*"?\.\/extensions:\/app\/extensions"?/);
+    assert.match(
+      yml,
+      /-\s*"?\.\/extensions\/GrowCast-Timelapse:\/app\/extensions\/GrowCast-Timelapse"?/,
+    );
+  });
+
+  it("does not recursively chown /app/extensions in the entrypoint", async () => {
+    const {readFile} = await import("node:fs/promises");
+    const sh = await readFile(new URL("../../docker-entrypoint.sh", import.meta.url), "utf8");
+    assert.doesNotMatch(sh, /^\s*\/app\/extensions\s*\\?\s*$/m);
   });
 });

@@ -5,7 +5,13 @@ export const GGS_MAX_SSE_PER_CLIENT = 8;
 
 type Listener = (event: "snapshot" | "heartbeat", state: GgsLivePublic) => void;
 
+export type SseSlot = {
+    identity: string;
+    released: boolean;
+};
+
 const listeners = new Set<Listener>();
+const slots = new Set<SseSlot>();
 const identityCounts = new Map<string, number>();
 let lastPublic: GgsLivePublic | null = null;
 let lastFingerprint = "";
@@ -16,11 +22,40 @@ export function getLastPublic(): GgsLivePublic | null {
 }
 
 export function subscriberCount(): number {
-    return listeners.size;
+    return slots.size;
 }
 
 export function identitySubscriberCount(identity: string): number {
     return identityCounts.get(identity) ?? 0;
+}
+
+export function tryReserveSseSlot(identity: string): SseSlot | null {
+    if (slots.size >= GGS_MAX_SSE_SUBSCRIBERS) {
+        return null;
+    }
+    if ((identityCounts.get(identity) ?? 0) >= GGS_MAX_SSE_PER_CLIENT) {
+        return null;
+    }
+    const slot: SseSlot = {identity, released: false};
+    slots.add(slot);
+    identityCounts.set(identity, (identityCounts.get(identity) ?? 0) + 1);
+    return slot;
+}
+
+export function releaseSseSlot(slot: SseSlot): void {
+    if (slot.released) {
+        return;
+    }
+    slot.released = true;
+    if (!slots.delete(slot)) {
+        return;
+    }
+    const remaining = (identityCounts.get(slot.identity) ?? 1) - 1;
+    if (remaining <= 0) {
+        identityCounts.delete(slot.identity);
+    } else {
+        identityCounts.set(slot.identity, remaining);
+    }
 }
 
 export function publishLive(state: GgsLivePublic): {changed: boolean} {
@@ -36,18 +71,16 @@ export function publishLive(state: GgsLivePublic): {changed: boolean} {
     return {changed};
 }
 
-export function subscribeLive(listener: Listener, identity = "unknown"): () => void {
+export function subscribeLive(listener: Listener, _identity = "unknown"): () => void {
     listeners.add(listener);
-    identityCounts.set(identity, (identityCounts.get(identity) ?? 0) + 1);
     ensureHeartbeat();
+    let unsubscribed = false;
     return () => {
-        listeners.delete(listener);
-        const remaining = (identityCounts.get(identity) ?? 1) - 1;
-        if (remaining <= 0) {
-            identityCounts.delete(identity);
-        } else {
-            identityCounts.set(identity, remaining);
+        if (unsubscribed) {
+            return;
         }
+        unsubscribed = true;
+        listeners.delete(listener);
         if (listeners.size === 0 && heartbeatTimer) {
             clearInterval(heartbeatTimer);
             heartbeatTimer = null;
@@ -75,6 +108,7 @@ function ensureHeartbeat(): void {
 /** Tests only. */
 export function _resetGgsHubForTests(): void {
     listeners.clear();
+    slots.clear();
     identityCounts.clear();
     lastPublic = null;
     lastFingerprint = "";

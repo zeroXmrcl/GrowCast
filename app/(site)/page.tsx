@@ -1,5 +1,6 @@
 import {getCurrentGrow} from "@/lib/db";
 import DashPictures from "@/components/dash-pictures";
+import LiveTentRow from "@/components/live-tent-row";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
 import {listMediaUrls} from "@/lib/media-library";
 import SiteFooter from "@/components/site-footer";
@@ -9,7 +10,6 @@ import {markdownUrlTransform, safeHttpUrlOrEmpty} from "@/lib/url-policy";
 
 export const dynamic = "force-dynamic";
 
-/* TODO Climate widget*/
 /* TODO Light widget (schedule/PPFD)*/
 
 function formatDate(value: string): string {
@@ -190,6 +190,8 @@ export default async function Home() {
                     </div>
                 </aside>
             </div>
+
+            <LiveTentRow />
 
             <section className="grid gap-6 lg:grid-cols-2">
                 <article
