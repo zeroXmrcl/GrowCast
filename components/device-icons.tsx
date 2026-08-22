@@ -1,3 +1,4 @@
+// Lucide icons, https://lucide.dev, ISC
 import type {GgsActuatorKind} from "@/lib/ggs-live";
 
 type IconProps = {
@@ -12,7 +13,7 @@ function iconProps(className?: string) {
         viewBox: "0 0 24 24",
         fill: "none" as const,
         stroke: "currentColor",
-        strokeWidth: 1.8,
+        strokeWidth: 2,
         strokeLinecap: "round" as const,
         strokeLinejoin: "round" as const,
         "aria-hidden": true as const,
@@ -23,8 +24,15 @@ function iconProps(className?: string) {
 function SunIcon({className}: IconProps) {
     return (
         <svg {...iconProps(className)}>
-            <circle cx="12" cy="12" r="3.6"/>
-            <path d="M12 2.8v2.4M12 18.8v2.4M4.2 12H6.6M17.4 12h2.4M6.1 6.1l1.7 1.7M16.2 16.2l1.7 1.7M6.1 17.9l1.7-1.7M16.2 7.8l1.7-1.7"/>
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/>
+            <path d="M12 20v2"/>
+            <path d="m4.93 4.93 1.41 1.41"/>
+            <path d="m17.66 17.66 1.41 1.41"/>
+            <path d="M2 12h2"/>
+            <path d="M20 12h2"/>
+            <path d="m6.34 17.66-1.41 1.41"/>
+            <path d="m19.07 4.93-1.41 1.41"/>
         </svg>
     );
 }
@@ -32,12 +40,8 @@ function SunIcon({className}: IconProps) {
 function FanIcon({className}: IconProps) {
     return (
         <svg {...iconProps(className)}>
-            <circle cx="12" cy="12" r="9"/>
-            <circle cx="12" cy="12" r="1.6"/>
-            <path d="M12 12c2.4-3.8 6-4.8 8.2-2.4-2.6.6-5.4 1.4-8.2 2.4Z"/>
-            <path d="M12 12c3.8 2.4 4.8 6 2.4 8.2-.6-2.6-1.4-5.4-2.4-8.2Z"/>
-            <path d="M12 12c-2.4 3.8-6 4.8-8.2 2.4 2.6-.6 5.4-1.4 8.2-2.4Z"/>
-            <path d="M12 12c-3.8-2.4-4.8-6-2.4-8.2.6 2.6 1.4 5.4 2.4 8.2Z"/>
+            <path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"/>
+            <path d="M12 12v.01"/>
         </svg>
     );
 }
@@ -45,10 +49,9 @@ function FanIcon({className}: IconProps) {
 function BlowerIcon({className}: IconProps) {
     return (
         <svg {...iconProps(className)}>
-            <rect x="3.5" y="6" width="12" height="12" rx="2.5"/>
-            <circle cx="9.5" cy="12" r="3"/>
-            <path d="M9.5 10.4v3.2M7.9 12h3.2"/>
-            <path d="M15.5 9.2H19l2 2.8-2 2.8h-3.5"/>
+            <path d="M12.8 19.6A2 2 0 1 0 14 16H2"/>
+            <path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/>
+            <path d="M9.8 4.4A2 2 0 1 1 11 8H2"/>
         </svg>
     );
 }
@@ -56,7 +59,7 @@ function BlowerIcon({className}: IconProps) {
 function DropletIcon({className}: IconProps) {
     return (
         <svg {...iconProps(className)}>
-            <path d="M12 3.5c0 0-6 7-6 11.2a6 6 0 0 0 12 0C18 10.5 12 3.5 12 3.5Z"/>
+            <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>
         </svg>
     );
 }
@@ -64,8 +67,9 @@ function DropletIcon({className}: IconProps) {
 function DropletOffIcon({className}: IconProps) {
     return (
         <svg {...iconProps(className)}>
-            <path d="M12 3.5c0 0-6 7-6 11.2a6 6 0 0 0 12 0C18 10.5 12 3.5 12 3.5Z"/>
-            <path d="M5 19.5 19 4.5"/>
+            <path d="M18.715 13.186C18.29 11.858 17.384 10.607 16 9.5c-2-1.6-3.5-4-4-6.5a10.7 10.7 0 0 1-.884 2.586"/>
+            <path d="m2 2 20 20"/>
+            <path d="M8.795 8.797A11 11 0 0 1 8 9.5C6 11.1 5 13 5 15a7 7 0 0 0 13.222 3.208"/>
         </svg>
     );
 }
@@ -73,7 +77,7 @@ function DropletOffIcon({className}: IconProps) {
 function FlameIcon({className}: IconProps) {
     return (
         <svg {...iconProps(className)}>
-            <path d="M12 20.5c3.6 0 5.5-2.4 5.5-5.6 0-3.2-2.4-5.4-4.1-7.4-.4-.5-1.2.1-1 .8.3 1.4-.5 2.3-1.6 3.2-1.4-2.4-1.4-4.8 0-7.2.3-.5-.3-1.1-.8-.8C7.6 5.2 5.5 8.4 5.5 13c0 3.8 2.6 7.5 6.5 7.5Z"/>
+            <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>
         </svg>
     );
 }
@@ -81,9 +85,10 @@ function FlameIcon({className}: IconProps) {
 function PlugIcon({className}: IconProps) {
     return (
         <svg {...iconProps(className)}>
-            <path d="M9 8.5V3.5M15 8.5V3.5"/>
-            <rect x="6.5" y="8.5" width="11" height="8" rx="2"/>
-            <path d="M12 16.5v4M9.5 20.5h5"/>
+            <path d="M12 22v-5"/>
+            <path d="M15 8V2"/>
+            <path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z"/>
+            <path d="M9 8V2"/>
         </svg>
     );
 }

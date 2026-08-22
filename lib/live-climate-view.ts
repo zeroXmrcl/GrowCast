@@ -183,18 +183,22 @@ export function actuatorLabel(actuator: Pick<GgsActuator, "id" | "kind" | "label
 function tileLevelText(actuator: GgsActuator): string {
     const level = finiteNumber(actuator.level);
     if (level !== null) {
-        return `${Math.round(level)}%`;
+        const rounded = Math.round(level);
+        return rounded === 0 ? "OFF" : `${rounded}%`;
     }
     return actuator.on ? "on" : "off";
 }
 
 function tileAccessibleName(label: string, actuator: GgsActuator): string {
+    const caption = tileLevelText(actuator);
+    if (caption === "OFF") {
+        return `${label}: OFF`;
+    }
     if (!actuator.on) {
         return `${label}: off`;
     }
-    const level = finiteNumber(actuator.level);
-    if (level !== null) {
-        return `${label}: on ${Math.round(level)}%`;
+    if (finiteNumber(actuator.level) !== null) {
+        return `${label}: on ${caption}`;
     }
     return `${label}: on`;
 }

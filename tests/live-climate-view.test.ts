@@ -204,6 +204,27 @@ describe("mapDeviceTiles", () => {
         assert.equal(tiles[3].label, "Outlet 1");
         assert.equal(tiles[3].running, true);
     });
+
+    it("shows OFF when rounded level is 0, not for idle non-zero levels", () => {
+        const tiles = mapDeviceTiles(snapshot({
+            devices: [
+                {
+                    ...snapshot().devices[0],
+                    actuators: [
+                        {id: "light", label: "Light", kind: "light", on: true, level: 0},
+                        {id: "fan", label: "Fan", kind: "fan", on: true, level: 11},
+                        {id: "blower", label: "Blower", kind: "blower", on: false, level: 40},
+                        {id: "heater", label: "Heater", kind: "heater", on: false, level: 0},
+                    ],
+                },
+            ],
+        }));
+        assert.equal(tiles[0].levelText, "OFF");
+        assert.ok(tiles[0].accessibleName.includes("OFF"));
+        assert.equal(tiles[1].levelText, "11%");
+        assert.equal(tiles[2].levelText, "40%");
+        assert.equal(tiles[3].levelText, "OFF");
+    });
 });
 
 describe("climate freshness", () => {
