@@ -65,5 +65,7 @@ export {
   logInit,
   logMeshAuthFailed,
   logMeshPluginUnknown,
+  logGgsStateIngested,
+  logGgsStateRejected,
   logValidationFailed,
 } from "./security-events";

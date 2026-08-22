@@ -12,6 +12,7 @@ GrowCast lets you share your grow in real time. Visitors can view the live strea
 - Public grow dashboard
 - Markdown support for notes/setup text
 - Optional gallery page for snapshots + timelapse video ([GrowCast Timelapse plugin](https://github.com/zeroXmrcl/GrowCast-Timelapse))
+- Optional live tent climate from a Spider Farmer GGS ([GrowCast-GGS plugin](https://github.com/zeroXmrcl/GrowCast-GGS))
 
 ## 2. Demo 
 
@@ -116,6 +117,15 @@ What gets persisted on the host:
 - `./public/yourPictures` -> `/app/public/yourPictures`
 
 This means grow data, timelapse assets, and uploaded media survive container restarts and image rebuilds.
+
+Optional GGS live climate plugin (own repo, same pattern as Timelapse):
+
+```bash
+git clone https://github.com/zeroXmrcl/GrowCast-GGS.git extensions/GrowCast-GGS
+copy extensions\GrowCast-GGS\.env.example extensions\GrowCast-GGS\.env
+```
+
+Fill `SF_MQTT_NAME`, `SF_MQTT_PWD`, `SF_SERIAL`, and the same `GROWCAST_MESH_TOKEN` as `.env.local`. Never commit `.env`. Compose service `ggs` builds that folder.
 
 The container process runs as uid 1001 (`growcast`). The entrypoint `chown`s those bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host.
 
@@ -236,9 +246,18 @@ This app uses Next.js route handlers and local filesystem storage.
   - Serves image files from `extensions/GrowCast-Timelapse/snapshots`
 - `GET /api/timelapse`
   - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
+- `GET /api/data/live-climate`
+  - Public latest GGS climate JSON (no credentials)
+  - `Cache-Control: no-store`
+- `GET /api/data/live-climate/stream`
+  - Public SSE; snapshot on change + heartbeat every 15s
+  - Reverse proxy must not buffer this path
+    (`nginx`: `location /api/data/live-climate/stream { proxy_buffering off; proxy_http_version 1.1; }`, Caddy: `flush_interval -1`)
 - `GET /api/mesh/[pluginId]`
   - Returns registered plugin settings, for example `/api/mesh/growcast.timelapse`
   - Always requires `GROWCAST_MESH_TOKEN` and matching `Authorization: Bearer <token>` (fail-closed if token unset)
+- `POST /api/mesh/growcast.ggs/state`
+  - Sidecar ingest, Bearer `GROWCAST_MESH_TOKEN`
 
 ### Auth model
 - Username + scrypt password hash from env vars

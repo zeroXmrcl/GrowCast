@@ -17,6 +17,8 @@ export type SecurityEventName =
   | "authz.denied"
   | "mesh.auth.failed"
   | "mesh.plugin.unknown"
+  | "mesh.ggs.state_ingested"
+  | "mesh.ggs.state_rejected"
   | "validation.failed"
   | "http.path_traversal_blocked"
   | "admin.grow.updated"

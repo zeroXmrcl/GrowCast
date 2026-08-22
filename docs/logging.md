@@ -117,6 +117,8 @@ Emitted via `logSecurityEvent` / helpers in `lib/logging/security-events.ts`. Th
 | `authz.denied` | `warn` | Unauthenticated access to protected admin action | `reason` (`unauthenticated`), `resource` (`admin`), client fields |
 | `mesh.auth.failed` | `warn` | Mesh token missing/invalid when `GROWCAST_MESH_TOKEN` is set | `client_ip`, `user_agent` |
 | `mesh.plugin.unknown` | `warn` | Unknown mesh plugin ID | `plugin_id` |
+| `mesh.ggs.state_ingested` | `info` | Sidecar posted a GGS live snapshot | `device_count`, `online`, `changed` (never the body) |
+| `mesh.ggs.state_rejected` | `warn` | Ingest body failed validation | `reason` |
 | `validation.failed` | `warn` | Reserved helper (available; call sites may grow) | caller-defined |
 | `http.path_traversal_blocked` | `warn` | Snapshot filename rejected as unsafe | `reason` (`invalid_filename`) |
 | `admin.grow.updated` | `info` | Admin saved grow data | optional fields |

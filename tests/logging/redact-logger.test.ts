@@ -49,6 +49,19 @@ describe("redact / logger", () => {
     assert.doesNotMatch(JSON.stringify(line), /super-secret-password/);
   });
 
+  it("redacts mqtt credential fields", () => {
+    const line = capturePinoLog({
+      event: "test",
+      mqttPwd: "secret-uuid",
+      mqttName: "user@example.com",
+    });
+
+    assert.equal(line.mqttPwd, "[Redacted]");
+    assert.equal(line.mqttName, "[Redacted]");
+    assert.doesNotMatch(JSON.stringify(line), /secret-uuid/);
+    assert.doesNotMatch(JSON.stringify(line), /user@example.com/);
+  });
+
   it("redacts authorization fields", () => {
     const line = capturePinoLog({
       event: "test",
