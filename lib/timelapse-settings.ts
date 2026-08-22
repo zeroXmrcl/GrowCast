@@ -2,8 +2,9 @@ import {mkdir, readFile, rename, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {growcastDataDir} from "@/lib/data-paths";
+import {TIMELAPSE_PLUGIN_ID} from "@/lib/mesh-plugins";
 
-export const TIMELAPSE_PLUGIN_ID = "growcast.timelapse";
+export {TIMELAPSE_PLUGIN_ID};
 
 export type TimelapseQuality = "low" | "medium" | "high";
 
@@ -206,7 +207,4 @@ export async function updateTimelapseSettings(
     });
 }
 
-/** Mesh API: only the known timelapse plugin is registered. */
-export function isKnownMeshPlugin(pluginId: string): boolean {
-    return pluginId === TIMELAPSE_PLUGIN_ID;
-}
+
