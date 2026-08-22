@@ -49,6 +49,7 @@ workspace.xml
 /public/setup
 /public/yourPictures
 /extensions/GrowCast-Timelapse
+/extensions/GrowCast-GGS
 .env.local.bak.*
 
 # typescript
