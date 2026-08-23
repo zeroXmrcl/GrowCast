@@ -86,6 +86,7 @@ describe("docker compose listen address", () => {
       yml,
       /-\s*"?\.\/extensions\/GrowCast-Timelapse:\/app\/extensions\/GrowCast-Timelapse"?/,
     );
+    assert.match(yml, /ggs:\s*\n\s*profiles:\s*\n\s*-\s*"?ggs"?/m);
   });
 
   it("does not recursively chown /app/extensions in the entrypoint", async () => {

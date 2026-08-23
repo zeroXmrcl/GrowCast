@@ -24,6 +24,8 @@ services:
       - ./public/yourPictures:/app/public/yourPictures
 
   ggs:
+    profiles:
+      - ggs
     build:
       context: ./extensions/GrowCast-GGS
       dockerfile: Dockerfile
@@ -31,6 +33,7 @@ services:
     env_file:
       - path: ./extensions/GrowCast-GGS/.env
         format: raw
+        required: false
     environment:
       GROWCAST_URL: http://growcast:3000
     depends_on:
