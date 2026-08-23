@@ -141,6 +141,14 @@ function axisLabels(series: EnergySeries): {start: string; mid: string; end: str
             end: "now",
         };
     }
+    if (series.kind === "slot6h") {
+        const withYear = berlinYear(points[0].t) !== berlinYear(points[points.length - 1].t);
+        return {
+            start: formatDayLabel(points[0].t, withYear),
+            mid: formatDayLabel(mid.t, withYear),
+            end: "now",
+        };
+    }
     const withYear = berlinYear(points[0].t) !== berlinYear(points[points.length - 1].t);
     return {
         start: formatDayLabel(points[0].t, withYear),
@@ -152,7 +160,7 @@ function axisLabels(series: EnergySeries): {start: string; mid: string; end: str
 function tooltipLabel(series: EnergySeries, index: number): string {
     const point = series.points[index];
     const watts = `${formatWatts(point.watts)} W`;
-    if (series.kind === "hour") {
+    if (series.kind === "hour" || series.kind === "slot6h") {
         return `${padHour(berlinHour(Date.parse(point.t)))}:00 · ${watts}`;
     }
     return `${formatDayLabel(point.t, false)} · ${watts}`;

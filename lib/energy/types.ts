@@ -48,7 +48,7 @@ export type EnergySeriesPoint = {
 };
 
 export type EnergySeries = {
-    kind: "hour" | "day";
+    kind: "hour" | "slot6h" | "day";
     points: EnergySeriesPoint[];
 };
 

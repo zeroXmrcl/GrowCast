@@ -112,17 +112,21 @@ describe("energy series", () => {
         assert.equal(series.today.points.length, 15);
     });
 
-    it("emits 7 daily points and pads 0 from the window start", () => {
+    it("emits 6-hour 7d points and pads 0 from the window start", () => {
         const series = seriesAt(NOW_MS, [lightDay("2026-08-23", {"14": 1200})], "2026-08-23T08:00:00.000Z");
-        assert.equal(series["7d"].points.length, 7);
+        assert.equal(series["7d"].kind, "slot6h");
+        assert.equal(series["7d"].points.length, 27);
         assert.equal(series["30d"].points.length, 30);
-        const leading = series["7d"].points.slice(0, 6);
+        const last = series["7d"].points.at(-1);
+        assert.ok(last);
+        const slotStart = Date.parse(last.t);
+        const slotElapsed = (NOW_MS - slotStart) / 1000;
+        assert.equal(last.watts, (305 * 1200) / slotElapsed);
+        const leading = series["7d"].points.slice(0, -1);
         for (const point of leading) {
             assert.equal(point.watts, 0);
             assert.equal(point.held, undefined);
         }
-        const todayElapsed = (NOW_MS - berlinDayStartMs("2026-08-23")) / 1000;
-        assert.equal(series["7d"].points[6].watts, (305 * 1200) / todayElapsed);
         assert.equal(series.grow.points.length, 1);
     });
 
@@ -134,13 +138,13 @@ describe("energy series", () => {
 
         const springNow = Date.parse("2026-03-30T12:00:00.000Z");
         const spring = seriesAt(springNow, [lightDay("2026-03-29", {"10": 3600})], "2026-03-29T00:00:00.000Z");
-        const springPoint = findPoint(spring["7d"].points, berlinDayStartMs("2026-03-29"));
+        const springPoint = findPoint(spring["30d"].points, berlinDayStartMs("2026-03-29"));
         assert.ok(springPoint);
         assert.equal(springPoint.watts, 305 / 23);
 
         const fallNow = Date.parse("2026-10-26T12:00:00.000Z");
         const fall = seriesAt(fallNow, [lightDay("2026-10-25", {"10": 3600})], "2026-10-25T00:00:00.000Z");
-        const fallPoint = findPoint(fall["7d"].points, berlinDayStartMs("2026-10-25"));
+        const fallPoint = findPoint(fall["30d"].points, berlinDayStartMs("2026-10-25"));
         assert.ok(fallPoint);
         assert.equal(fallPoint.watts, 305 / 25);
     });
@@ -158,7 +162,8 @@ describe("energy series", () => {
         const series = seriesAt(NOW_MS, [], null);
         assert.ok(series.today.points.length > 0);
         assert.ok(series.today.points.every((point) => point.watts === 0 && !point.held));
-        assert.equal(series["7d"].points.length, 7);
+        assert.equal(series["7d"].kind, "slot6h");
+        assert.equal(series["7d"].points.length, 27);
         assert.ok(series["7d"].points.every((point) => point.watts === 0 && !point.held));
         assert.equal(series.grow.points.length, 1);
         assert.equal(series.grow.points[0].watts, 0);
@@ -185,7 +190,8 @@ describe("energy series", () => {
             }
             assert.ok(current.dto.series);
             assert.equal(current.dto.series.today.kind, "hour");
-            assert.equal(current.dto.series["7d"].points.length, 7);
+            assert.equal(current.dto.series["7d"].kind, "slot6h");
+            assert.equal(current.dto.series["7d"].points.length, 27);
             const seriesText = JSON.stringify(current.dto.series);
             const dtoText = JSON.stringify(current.dto);
             assert.equal(seriesText.includes("90E5B1B87088"), false);

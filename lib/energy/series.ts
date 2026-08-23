@@ -7,6 +7,7 @@ import {
     berlinHour,
     nextBerlinHourBoundary,
     shiftDateOnly,
+    splitBerlinHours,
 } from "@/lib/energy/berlin";
 import type {
     EnergyActuatorHours,
@@ -111,6 +112,63 @@ function chronologicalWindow(endDate: string, days: number): string[] {
     return berlinDateWindow(endDate, days).slice().reverse();
 }
 
+function nextSixHourBoundary(ms: number): number {
+    let t = ms;
+    for (let i = 0; i < 6; i += 1) {
+        t = nextBerlinHourBoundary(t);
+    }
+    return t;
+}
+
+function rangeWattSeconds(
+    t1Ms: number,
+    t2Ms: number,
+    days: Map<string, EnergyDayFile>,
+    refs: Map<string, EnergyActuatorRef>,
+    overrides: readonly EnergyOverride[],
+): {wattSeconds: number; seconds: number} {
+    let wattSeconds = 0;
+    let seconds = 0;
+    for (const slice of splitBerlinHours(t1Ms, t2Ms)) {
+        const part = slotWattSeconds(
+            days.get(slice.date)?.hours[String(slice.hour)],
+            refs,
+            overrides,
+        );
+        wattSeconds += part.wattSeconds;
+        seconds += part.seconds;
+    }
+    return {wattSeconds, seconds};
+}
+
+function sixHourSeries(
+    startMs: number,
+    nowMs: number,
+    days: Map<string, EnergyDayFile>,
+    refs: Map<string, EnergyActuatorRef>,
+    overrides: readonly EnergyOverride[],
+): EnergySeriesPoint[] {
+    const buckets: {t: string; watts: number | null}[] = [];
+    let t = startMs;
+    let guard = 0;
+    while (t <= nowMs && guard < 200) {
+        guard += 1;
+        const boundary = nextSixHourBoundary(t);
+        const end = Math.min(boundary, nowMs);
+        const {wattSeconds, seconds} = rangeWattSeconds(t, end, days, refs, overrides);
+        const divisor = Math.max(1, (end - t) / 1000);
+        buckets.push({t: iso(t), watts: averageOrNull(wattSeconds, seconds, divisor)});
+        if (boundary > nowMs) {
+            break;
+        }
+        t = boundary;
+    }
+    if (buckets.length === 0) {
+        buckets.push({t: iso(startMs), watts: null});
+    }
+    return toPoints(buckets);
+}
+
 function datesInclusive(startDate: string, endDate: string): string[] {
     const start = startDate <= endDate ? startDate : endDate;
     const end = startDate <= endDate ? endDate : startDate;
@@ -213,8 +271,14 @@ export function buildEnergySeries(options: {
             points: todayHourSeries(days, refs, overrides, nowMs),
         },
         "7d": {
-            kind: "day",
-            points: dailySeries(chronologicalWindow(today, 7), days, refs, overrides, today, nowMs),
+            kind: "slot6h",
+            points: sixHourSeries(
+                berlinDayStartMs(shiftDateOnly(today, -6)),
+                nowMs,
+                days,
+                refs,
+                overrides,
+            ),
         },
         "30d": {
             kind: "day",

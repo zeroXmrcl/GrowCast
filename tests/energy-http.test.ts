@@ -92,8 +92,8 @@ describe("GET /api/data/energy", () => {
                 grow: {kind: string; points: unknown[]};
             };
             assert.equal(series.today.kind, "hour");
-            assert.equal(series["7d"].kind, "day");
-            assert.equal(series["7d"].points.length, 7);
+            assert.equal(series["7d"].kind, "slot6h");
+            assert.ok(series["7d"].points.length >= 25 && series["7d"].points.length <= 28);
             assert.equal(series["30d"].points.length, 30);
             assert.ok(series.grow.points.length >= 1);
 
