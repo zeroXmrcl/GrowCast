@@ -1,16 +1,25 @@
 import Link from "next/link";
 import {AdminButton, AdminPanel} from "@/components/admin/ui";
 import {SettingsFields} from "@/app/admin/settings-fields";
+import type {EnergyActuatorRow, EnergySettings} from "@/lib/energy/settings";
 import type {GrowRecord} from "@/lib/db";
 import type {TimelapseSettings} from "@/lib/timelapse-settings";
 
 type SettingsFormProps = {
     grow: GrowRecord;
     timelapseSettings: TimelapseSettings;
+    energySettings: EnergySettings;
+    energyActuators: EnergyActuatorRow[];
     saveAction: (formData: FormData) => Promise<void>;
 };
 
-export function AdminSettingsForm({grow, timelapseSettings, saveAction}: SettingsFormProps) {
+export function AdminSettingsForm({
+    grow,
+    timelapseSettings,
+    energySettings,
+    energyActuators,
+    saveAction,
+}: SettingsFormProps) {
     return (
         <form
             id="admin-settings-form"
@@ -18,7 +27,12 @@ export function AdminSettingsForm({grow, timelapseSettings, saveAction}: Setting
             className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
         >
             <input type="hidden" name="growId" value={grow.id} />
-            <SettingsFields grow={grow} timelapseSettings={timelapseSettings}/>
+            <SettingsFields
+                grow={grow}
+                timelapseSettings={timelapseSettings}
+                energySettings={energySettings}
+                energyActuators={energyActuators}
+            />
 
             <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
                 <AdminPanel title="Apply Changes" description="Changes will be live immediately.">

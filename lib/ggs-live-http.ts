@@ -5,6 +5,8 @@ import {
     withStale,
     type GgsLivePublic,
 } from "@/lib/ggs-live";
+import {accrueEnergyOnIngest} from "@/lib/energy/accrue";
+import {logEnergy} from "@/lib/energy/log";
 import {readGgsLive, saveGgsLive} from "@/lib/ggs-live-store";
 import {
     publishLive,
@@ -159,6 +161,11 @@ export async function liveClimateIngestResponse(
     }
 
     await saveGgsLive(parsed.value);
+    try {
+        await accrueEnergyOnIngest(parsed.value);
+    } catch {
+        logEnergy("energy_accrue_failed");
+    }
     const publicState = withStale(parsed.value);
     const {changed} = publishLive(publicState);
     logGgsStateIngested({

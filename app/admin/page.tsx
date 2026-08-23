@@ -1,5 +1,7 @@
 import {getAdminAuthStatus, isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
+import {energyActuatorRows, readEnergySettings} from "@/lib/energy/settings";
+import {readGgsLive} from "@/lib/ggs-live-store";
 import {getTimelapseSettings} from "@/lib/timelapse-settings";
 import {completeGrowAction, loginAction, saveGrowAction} from "@/app/admin/actions";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
@@ -33,9 +35,11 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
         );
     }
 
-    const [grow, timelapseSettings] = await Promise.all([
+    const [grow, timelapseSettings, energySettings, live] = await Promise.all([
         getCurrentGrow(),
         getTimelapseSettings(),
+        readEnergySettings(),
+        readGgsLive(),
     ]);
 
     return (
@@ -48,6 +52,8 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
             <AdminSettingsForm
                 grow={grow}
                 timelapseSettings={timelapseSettings}
+                energySettings={energySettings}
+                energyActuators={energyActuatorRows(live, energySettings)}
                 saveAction={saveGrowAction}
             />
             <MediaManager/>

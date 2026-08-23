@@ -2,6 +2,7 @@ export type NavItem = {href: string; label: string};
 
 const NAV_ITEMS: NavItem[] = [
     {href: "/", label: "Dashboard"},
+    {href: "/energy", label: "Energy"},
     {href: "/gallery", label: "Gallery"},
     {href: "/grows", label: "Past Grows"},
 ];

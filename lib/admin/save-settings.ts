@@ -4,22 +4,20 @@ import {
     saveTimelapseSettings,
     type TimelapseSettings,
 } from "@/lib/timelapse-settings";
+import {readEnergySettings, writeEnergySettings, type EnergySettings} from "@/lib/energy/settings";
 
 export type SaveAdminSettingsInput = {
     grow: GrowUpdateInput;
     timelapse: TimelapseSettings;
     expectedGrowId?: string;
+    energy?: EnergySettings;
 };
 
 export type SaveAdminSettingsResult =
     | {ok: true; grow: GrowRecord; timelapse: TimelapseSettings}
     | {ok: false; error: string};
 
-/**
- * Persist grow + timelapse with best-effort atomicity for a two-file store:
- * snapshot previous values, write grow then timelapse; on timelapse failure
- * restore previous grow so the pair is not left half-applied successfully.
- */
+/** Rollback exists because grow, timelapse, and energy are separate files. */
 export async function saveAdminSettings(
     input: SaveAdminSettingsInput,
 ): Promise<SaveAdminSettingsResult> {
@@ -28,6 +26,7 @@ export async function saveAdminSettings(
         return {ok: false, error: "stale_grow"};
     }
     const previousTimelapse = await getTimelapseSettings();
+    const previousEnergy = input.energy !== undefined ? await readEnergySettings() : null;
 
     let nextGrow: GrowRecord;
     try {
@@ -41,6 +40,9 @@ export async function saveAdminSettings(
 
     try {
         const nextTimelapseRecord = await saveTimelapseSettings(input.timelapse);
+        if (input.energy !== undefined) {
+            await writeEnergySettings(input.energy);
+        }
         return {
             ok: true,
             grow: nextGrow,
@@ -50,6 +52,9 @@ export async function saveAdminSettings(
         try {
             await replaceCurrentGrow(previousGrow);
             await saveTimelapseSettings(previousTimelapse);
+            if (previousEnergy) {
+                await writeEnergySettings(previousEnergy);
+            }
         } catch (rollbackError) {
             return {
                 ok: false,

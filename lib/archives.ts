@@ -12,6 +12,8 @@ import {
 import {isDateOnly, todayDateOnly} from "@/lib/date-only";
 import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/lib/extension-status";
 import {mediaCollectionDir} from "@/lib/media-library";
+import {EnergyCopyError, resetEnergyCurrentLocked, stageEnergyArchive} from "@/lib/energy/archive";
+import {logEnergy} from "@/lib/energy/log";
 import {
     IMAGE_EXTENSIONS,
     VIDEO_EXTENSIONS,
@@ -349,6 +351,7 @@ export async function completeCurrentGrow(
         await copyFiles(sources.snapshotsDir, snapshotFiles, path.join(stagingRoot, "snapshots"));
         await copyFiles(sources.timelapseDir, timelapseFiles, path.join(stagingRoot, "timelapse"));
         await copyFiles(sources.picturesDir, pictureFiles, path.join(stagingRoot, "pictures"));
+        await stageEnergyArchive(stagingRoot, grow.id, archive.archivedAt);
         await atomicWriteFile(
             path.join(stagingRoot, "grow.json"),
             JSON.stringify(archive, null, 2),
@@ -356,6 +359,11 @@ export async function completeCurrentGrow(
         await rename(stagingRoot, destinationRoot);
         const reset = resetLiveGrow ?? ((current: GrowRecord) => replaceCurrentGrow(buildNextGrow(current)));
         await reset(grow);
+        try {
+            await resetEnergyCurrentLocked();
+        } catch {
+            logEnergy("energy_reset_failed");
+        }
 
         const cleanup = await Promise.allSettled([
             deleteFiles(sources.snapshotsDir, snapshotFiles),
@@ -371,7 +379,12 @@ export async function completeCurrentGrow(
         await rm(stagingRoot, {recursive: true, force: true}).catch(() => undefined);
         return {
             ok: false,
-            error: error instanceof Error ? error.message : String(error),
+            error:
+                error instanceof EnergyCopyError
+                    ? "energy_copy_failed"
+                    : error instanceof Error
+                      ? error.message
+                      : String(error),
         };
     }
 }

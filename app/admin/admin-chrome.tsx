@@ -7,6 +7,7 @@ export const SETTINGS_SECTION_LINKS = [
     {href: "#general", label: "General"},
     {href: "#lifecycle", label: "Lifecycle"},
     {href: "#climate", label: "Climate"},
+    {href: "#energy", label: "Energy"},
     {href: "#status", label: "Status"},
     {href: "#notes", label: "Notes"},
     {href: "#hardware", label: "Hardware"},

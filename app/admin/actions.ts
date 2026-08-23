@@ -6,6 +6,7 @@ import {redirect} from "next/navigation";
 import {loginAdmin, requireAdmin} from "@/lib/admin-auth";
 import {parseAdminSettingsForm, parseCompleteGrowForm} from "@/lib/admin/parse-grow-form";
 import {saveAdminSettings} from "@/lib/admin/save-settings";
+import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
 import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
 import {loginRateLimitKey} from "@/lib/request-trust";
@@ -47,7 +48,13 @@ export async function saveGrowAction(formData: FormData): Promise<void> {
         await requireAdmin();
 
         const parsed = parseAdminSettingsForm(formData);
-        const result = await saveAdminSettings(parsed);
+        const previousEnergy = await readEnergySettings();
+        const energy = parseEnergySettingsForm(formData, previousEnergy);
+        if (!energy.ok) {
+            logAdminGrowUpdateFailed({err: sanitizeError(energy.error)});
+            redirect(withNotice("/admin", "save_failed"));
+        }
+        const result = await saveAdminSettings({...parsed, energy: energy.settings});
 
         if (!result.ok) {
             logAdminGrowUpdateFailed({err: sanitizeError(result.error)});
@@ -56,6 +63,7 @@ export async function saveGrowAction(formData: FormData): Promise<void> {
 
         logAdminGrowUpdated();
         revalidatePath("/");
+        revalidatePath("/energy");
         revalidatePath("/admin");
         redirect(withNotice("/admin", "saved"));
     });
@@ -79,6 +87,7 @@ export async function completeGrowAction(formData: FormData): Promise<void> {
 
         logAdminGrowArchived({archiveId: result.archive.archiveId});
         revalidatePath("/");
+        revalidatePath("/energy");
         revalidatePath("/gallery");
         revalidatePath("/grows");
         revalidatePath(`/grows/${result.archive.archiveId}`);
