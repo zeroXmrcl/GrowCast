@@ -41,6 +41,24 @@ export type EnergyDeviceRow = {
     sharePct: number;
 };
 
+export type EnergySeriesPoint = {
+    t: string;
+    watts: number;
+    held?: boolean;
+};
+
+export type EnergySeries = {
+    kind: "hour" | "day";
+    points: EnergySeriesPoint[];
+};
+
+export type EnergySeriesWindows = {
+    today: EnergySeries;
+    "7d": EnergySeries;
+    "30d": EnergySeries;
+    grow: EnergySeries;
+};
+
 export type EnergyPublicDto = {
     grow: string;
     estimated: true;
@@ -56,6 +74,7 @@ export type EnergyPublicDto = {
         "30d": EnergyWindow;
         grow: EnergyWindow;
     } | null;
+    series?: EnergySeriesWindows;
     kWh: number;
     costEur: number | null;
     devices: EnergyDeviceRow[];

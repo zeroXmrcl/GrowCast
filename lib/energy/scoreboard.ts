@@ -9,6 +9,7 @@ import {berlinDateOnly, berlinDateWindow} from "@/lib/energy/berlin";
 import {logEnergy} from "@/lib/energy/log";
 import {costEur, round1, round2, totalsForDays} from "@/lib/energy/math";
 import {readArchiveEnergy} from "@/lib/energy/archive";
+import {buildEnergySeries} from "@/lib/energy/series";
 import {readAllCurrentDays, readEnergyCursor} from "@/lib/energy/store";
 import {readEnergySettings, viewerTariff} from "@/lib/energy/settings";
 import type {
@@ -217,6 +218,13 @@ export async function buildEnergyDto(options: {
             "30d": toWindow(d30Totals.kWh, tariff),
             grow: toWindow(growTotals.kWh, tariff),
         },
+        series: buildEnergySeries({
+            days: activeDays,
+            refs,
+            overrides: settings.overrides,
+            startedAt: activeCursor?.startedAt ?? null,
+            nowMs,
+        }),
         kWh: round1(growTotals.kWh),
         costEur: growCost === null ? null : round2(growCost),
         devices: deviceRows(growTotals.kWh, tariff, refs, growTotals.devices),

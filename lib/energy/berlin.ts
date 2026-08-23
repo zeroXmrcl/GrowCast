@@ -37,13 +37,36 @@ export function berlinDateWindow(endDate: string, days: number): string[] {
     return dates;
 }
 
+export function berlinDayStartMs(dateOnly: string): number {
+    const [year, month, day] = dateOnly.split("-").map(Number);
+    const utcMidnight = Date.UTC(year, month - 1, day);
+    // Berlin is UTC+1/+2; ±3h around UTC midnight always contains local 00:00.
+    let lo = utcMidnight - 3 * 60 * 60 * 1000;
+    let hi = utcMidnight + 3 * 60 * 60 * 1000;
+    while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (berlinDateOnly(mid) < dateOnly) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    return lo;
+}
+
+export function berlinDayLengthSeconds(dateOnly: string): number {
+    const start = berlinDayStartMs(dateOnly);
+    const end = berlinDayStartMs(shiftDateOnly(dateOnly, 1));
+    return Math.max(1, (end - start) / 1000);
+}
+
 export type BerlinHourSlice = {
     date: string;
     hour: number;
     seconds: number;
 };
 
-function nextBerlinHourBoundary(ms: number): number {
+export function nextBerlinHourBoundary(ms: number): number {
     // Fall-back repeats a civil hour for ~2h; search until date/hour actually change.
     const date = berlinDateOnly(ms);
     const hour = berlinHour(ms);
