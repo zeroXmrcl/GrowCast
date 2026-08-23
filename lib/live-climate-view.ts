@@ -180,13 +180,40 @@ export function actuatorLabel(actuator: Pick<GgsActuator, "id" | "kind" | "label
     }
 }
 
+const GEAR_MAX: Partial<Record<GgsActuatorKind, number>> = {
+    fan: 10,
+    heater: 10,
+    humidifier: 4,
+};
+
+function displayPercent(kind: GgsActuatorKind, level: number): number {
+    const gears = GEAR_MAX[kind];
+    if (gears !== undefined && level > 0 && level <= gears) {
+        return (level / gears) * 100;
+    }
+    return level;
+}
+
 function tileLevelText(actuator: GgsActuator): string {
     const level = finiteNumber(actuator.level);
-    if (level !== null) {
-        const rounded = Math.round(level);
-        return rounded === 0 ? "OFF" : `${rounded}%`;
+    if (level === null) {
+        return actuator.on ? "on" : "off";
     }
-    return actuator.on ? "on" : "off";
+    if (actuator.kind === "dehumidifier") {
+        const speed = Math.round(level);
+        if (speed === 0) {
+            return "OFF";
+        }
+        if (speed === 1) {
+            return "LOW";
+        }
+        if (speed === 2) {
+            return "HIGH";
+        }
+        return actuator.on ? "on" : "off";
+    }
+    const rounded = Math.round(displayPercent(actuator.kind, level));
+    return rounded === 0 ? "OFF" : `${rounded}%`;
 }
 
 function tileAccessibleName(label: string, actuator: GgsActuator): string {

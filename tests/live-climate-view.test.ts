@@ -225,6 +225,37 @@ describe("mapDeviceTiles", () => {
         assert.equal(tiles[2].levelText, "40%");
         assert.equal(tiles[3].levelText, "OFF");
     });
+
+    it("scales GGS gear indexes to percent and labels dehumidifier LOW/HIGH", () => {
+        const tiles = mapDeviceTiles(snapshot({
+            devices: [
+                {
+                    ...snapshot().devices[0],
+                    actuators: [
+                        {id: "heater", label: "Heater", kind: "heater", on: true, level: 1},
+                        {id: "humidifier", label: "Humidifier", kind: "humidifier", on: true, level: 1},
+                        {id: "humidifier-4", label: "Humidifier", kind: "humidifier", on: true, level: 4},
+                        {id: "fan", label: "Fan", kind: "fan", on: true, level: 5},
+                        {id: "dehumidifier", label: "Dehumidifier", kind: "dehumidifier", on: true, level: 1},
+                        {id: "dehumidifier-high", label: "Dehumidifier", kind: "dehumidifier", on: true, level: 2},
+                        {id: "blower", label: "Blower", kind: "blower", on: true, level: 25},
+                        {id: "light", label: "Light", kind: "light", on: true, level: 11},
+                    ],
+                },
+            ],
+        }));
+        assert.equal(tiles[0].levelText, "10%");
+        assert.equal(tiles[0].accessibleName, "Heater: on 10%");
+        assert.equal(tiles[1].levelText, "25%");
+        assert.equal(tiles[2].levelText, "100%");
+        assert.equal(tiles[3].levelText, "50%");
+        assert.equal(tiles[4].levelText, "LOW");
+        assert.equal(tiles[4].accessibleName, "Dehumidifier: on LOW");
+        assert.equal(tiles[5].levelText, "HIGH");
+        assert.equal(tiles[5].accessibleName, "Dehumidifier: on HIGH");
+        assert.equal(tiles[6].levelText, "25%");
+        assert.equal(tiles[7].levelText, "11%");
+    });
 });
 
 describe("climate freshness", () => {
