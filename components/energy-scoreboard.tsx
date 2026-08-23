@@ -1,8 +1,9 @@
 "use client";
 
-import {useState, type PointerEvent} from "react";
+import {useEffect, useState, type PointerEvent} from "react";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/lib/energy/berlin";
+import {ENERGY_POLL_MS, fetchEnergyDto, shouldPollEnergy} from "@/lib/energy/poll";
 import {
     formatEur,
     formatHoursOn,
@@ -418,7 +419,42 @@ function EnergyGraphCard({series}: {series: EnergySeriesWindows}) {
     );
 }
 
-export default function EnergyScoreboard({dto}: {dto: EnergyPublicDto}) {
+function usePolledEnergyDto(initial: EnergyPublicDto): EnergyPublicDto {
+    const [dto, setDto] = useState(initial);
+    useEffect(() => {
+        setDto(initial);
+    }, [initial]);
+    useEffect(() => {
+        let cancelled = false;
+        async function tick() {
+            if (!shouldPollEnergy(document.visibilityState === "visible")) {
+                return;
+            }
+            const next = await fetchEnergyDto();
+            if (!cancelled && next) {
+                setDto(next);
+            }
+        }
+        const id = window.setInterval(() => {
+            void tick();
+        }, ENERGY_POLL_MS);
+        function onVisibility() {
+            if (document.visibilityState === "visible") {
+                void tick();
+            }
+        }
+        document.addEventListener("visibilitychange", onVisibility);
+        return () => {
+            cancelled = true;
+            window.clearInterval(id);
+            document.removeEventListener("visibilitychange", onVisibility);
+        };
+    }, []);
+    return dto;
+}
+
+export default function EnergyScoreboard({dto: initial}: {dto: EnergyPublicDto}) {
+    const dto = usePolledEnergyDto(initial);
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">

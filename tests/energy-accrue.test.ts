@@ -7,7 +7,9 @@ import {
     ENERGY_ACCRUE_GAP_MS,
     _resetEnergyAccrueLockForTests,
     accrueEnergyOnIngest,
+    accrueEnergyPending,
     eventTimeMs,
+    pendingAccrueEventTimeMs,
     persistAccruePlan,
     planAccrue,
 } from "../lib/energy/accrue.ts";
@@ -21,6 +23,8 @@ import {
     writeEnergyCursor,
     writeEnergyDay,
 } from "../lib/energy/store.ts";
+import {getCurrentGrow} from "../lib/db.ts";
+import {saveGgsLive} from "../lib/ggs-live-store.ts";
 import {GGS_FUTURE_SKEW_MS, GGS_PLUGIN_ID, parseIngestBody} from "../lib/ggs-live.ts";
 import {
     _resetIngestRateForTests,
@@ -257,6 +261,47 @@ describe("event time", () => {
         const future = new Date(now + GGS_FUTURE_SKEW_MS + 1).toISOString();
         assert.equal(eventTimeMs(future, now), now);
         assert.equal(eventTimeMs("2026-08-23T12:00:01.000Z", now), Date.parse("2026-08-23T12:00:01.000Z"));
+    });
+
+    it("caps pending accrue at snapshot time plus the 15 minute gap", () => {
+        const snapshot = Date.parse("2026-08-23T12:00:00.000Z");
+        const updatedAt = new Date(snapshot).toISOString();
+        assert.equal(pendingAccrueEventTimeMs(updatedAt, snapshot + 60_000), snapshot + 60_000);
+        assert.equal(
+            pendingAccrueEventTimeMs(updatedAt, snapshot + ENERGY_ACCRUE_GAP_MS + 60_000),
+            snapshot + ENERGY_ACCRUE_GAP_MS,
+        );
+    });
+
+    it("does not keep accruing past snapshot plus the gap when pending is polled", async () => {
+        await withTempDataDir(async () => {
+            const snapshot = Date.parse("2026-08-23T12:00:00.000Z");
+            const updatedAt = new Date(snapshot).toISOString();
+            const parsed = parseIngestBody(ingestBody(updatedAt, true, 1));
+            assert.equal(parsed.ok, true);
+            if (!parsed.ok) {
+                return;
+            }
+            await saveGgsLive(parsed.value);
+            const grow = await getCurrentGrow();
+            await writeEnergyCursor({
+                growId: grow.id,
+                startedAt: updatedAt,
+                lastAccruedAt: updatedAt,
+                devices: [heaterDevice(true, 1)],
+            });
+
+            const late = snapshot + ENERGY_ACCRUE_GAP_MS + 120_000;
+            await accrueEnergyPending(late);
+            await accrueEnergyPending(late + 60_000);
+
+            const cap = new Date(snapshot + ENERGY_ACCRUE_GAP_MS).toISOString();
+            const cursor = await readEnergyCursor();
+            assert.equal(cursor?.lastAccruedAt, cap);
+            const day = await readEnergyDay("2026-08-23");
+            const hour = String(berlinHour(snapshot));
+            assert.equal(day?.hours[hour]?.["90E5B1B87088:heater"]?.["1"], ENERGY_ACCRUE_GAP_MS / 1000);
+        });
     });
 });
 

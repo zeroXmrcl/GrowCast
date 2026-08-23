@@ -57,6 +57,11 @@ export function eventTimeMs(updatedAt: string, serverNowMs: number): number {
     return ts;
 }
 
+export function pendingAccrueEventTimeMs(updatedAt: string, serverNowMs: number): number {
+    const snapshotMs = eventTimeMs(updatedAt, serverNowMs);
+    return Math.min(serverNowMs, snapshotMs + ENERGY_ACCRUE_GAP_MS);
+}
+
 function iso(ms: number): string {
     return new Date(ms).toISOString();
 }
@@ -262,7 +267,7 @@ export async function accrueEnergyPending(nowMs: number = Date.now()): Promise<v
             return;
         }
         await accrueUnlocked({
-            eventTimeMs: nowMs,
+            eventTimeMs: pendingAccrueEventTimeMs(live.updatedAt, nowMs),
             newDevices: live.devices,
         });
     });
