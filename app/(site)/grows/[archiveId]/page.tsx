@@ -1,7 +1,9 @@
 import Link from "next/link";
 import {notFound} from "next/navigation";
+import {EnergyArchiveSection} from "@/components/energy-scoreboard";
 import SnapshotGallery from "@/components/snapshot-gallery";
 import TimelapsePlayer from "@/components/timelapse-player";
+import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {
     archiveMediaUrl,
     getArchivedGrow,
@@ -9,6 +11,7 @@ import {
     getArchiveSnapshotFiles,
     getArchiveTimelapseFile,
 } from "@/lib/archives";
+import {buildEnergyDto} from "@/lib/energy/scoreboard";
 import {formatDateDisplay, growDurationDays} from "../format";
 
 export const dynamic = "force-dynamic";
@@ -52,10 +55,15 @@ export default async function ArchivedGrowPage({
         notFound();
     }
 
-    const [snapshotFiles, pictureFiles, timelapseFile] = await Promise.all([
+    const isAdmin = await isAdminAuthenticated();
+    const [snapshotFiles, pictureFiles, timelapseFile, energy] = await Promise.all([
         getArchiveSnapshotFiles(archiveId),
         getArchivePictureFiles(archiveId),
         getArchiveTimelapseFile(archiveId),
+        buildEnergyDto({
+            grow: archiveId,
+            tariffKind: isAdmin ? "private" : "public",
+        }),
     ]);
 
     const snapshots = snapshotFiles.map((name) => ({
@@ -156,6 +164,8 @@ export default async function ArchivedGrowPage({
                         ) : null}
                     </article>
                 </section>
+
+                {energy.ok ? <EnergyArchiveSection dto={energy.dto}/> : null}
 
                 {videoUrl ? <TimelapsePlayer videoUrl={videoUrl}/> : null}
                 <SnapshotGallery snapshots={snapshots}/>

@@ -1,5 +1,5 @@
 import {withStale, type GgsDeviceSnapshot, type GgsLiveIngest} from "@/lib/ggs-live";
-import {getArchivedGrow, listArchivedGrows} from "@/lib/archives";
+import {getArchivedGrow} from "@/lib/archives";
 import {getCurrentGrow} from "@/lib/db";
 import {readGgsLive} from "@/lib/ggs-live-store";
 import {actuatorLabel} from "@/lib/live-climate-view";
@@ -113,19 +113,6 @@ function deviceRows(
     return rows;
 }
 
-export type EnergyGrowOption = {
-    id: string;
-    label: string;
-};
-
-export async function listEnergyGrowOptions(): Promise<EnergyGrowOption[]> {
-    const archives = await listArchivedGrows();
-    return archives.map((archive) => ({
-        id: archive.archiveId,
-        label: archive.grow.name || archive.archiveId,
-    }));
-}
-
 export async function buildEnergyDto(options: {
     grow: string;
     tariffKind: "public" | "private";
@@ -158,7 +145,7 @@ export async function buildEnergyDto(options: {
             tariffKind: options.tariffKind,
             appliedTariffEurPerKwh: tariff,
             startedAt: energy?.startedAt || null,
-            empty: false,
+            empty: energy == null,
             nowWatts: null,
             nowWattsStale: null,
             windows: null,
