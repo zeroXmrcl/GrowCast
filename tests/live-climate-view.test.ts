@@ -199,13 +199,13 @@ describe("mapDeviceTiles", () => {
         assert.equal(tiles[1].label, "Light 2");
         assert.equal(tiles[1].running, false);
         assert.equal(tiles[2].running, false);
-        assert.equal(tiles[2].levelText, "off");
-        assert.equal(tiles[2].accessibleName, "Humidifier: off");
+        assert.equal(tiles[2].levelText, "OFF");
+        assert.equal(tiles[2].accessibleName, "Humidifier: OFF");
         assert.equal(tiles[3].label, "Outlet 1");
         assert.equal(tiles[3].running, true);
     });
 
-    it("shows OFF when rounded level is 0, not for idle non-zero levels", () => {
+    it("shows OFF when the device is not running, even if a gear is stored", () => {
         const tiles = mapDeviceTiles(snapshot({
             devices: [
                 {
@@ -214,7 +214,7 @@ describe("mapDeviceTiles", () => {
                         {id: "light", label: "Light", kind: "light", on: true, level: 0},
                         {id: "fan", label: "Fan", kind: "fan", on: true, level: 11},
                         {id: "blower", label: "Blower", kind: "blower", on: false, level: 40},
-                        {id: "heater", label: "Heater", kind: "heater", on: false, level: 0},
+                        {id: "heater", label: "Heater", kind: "heater", on: false, level: 1},
                     ],
                 },
             ],
@@ -222,8 +222,9 @@ describe("mapDeviceTiles", () => {
         assert.equal(tiles[0].levelText, "OFF");
         assert.ok(tiles[0].accessibleName.includes("OFF"));
         assert.equal(tiles[1].levelText, "11%");
-        assert.equal(tiles[2].levelText, "40%");
+        assert.equal(tiles[2].levelText, "OFF");
         assert.equal(tiles[3].levelText, "OFF");
+        assert.equal(tiles[3].accessibleName, "Heater: OFF");
     });
 
     it("scales GGS gear indexes to percent and labels dehumidifier LOW/HIGH", () => {

@@ -195,9 +195,12 @@ function displayPercent(kind: GgsActuatorKind, level: number): number {
 }
 
 function tileLevelText(actuator: GgsActuator): string {
+    if (!actuator.on) {
+        return "OFF";
+    }
     const level = finiteNumber(actuator.level);
     if (level === null) {
-        return actuator.on ? "on" : "off";
+        return "on";
     }
     if (actuator.kind === "dehumidifier") {
         const speed = Math.round(level);
