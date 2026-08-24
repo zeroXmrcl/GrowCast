@@ -26,6 +26,14 @@ export async function pathExists(targetPath: string): Promise<boolean> {
     }
 }
 
+async function dirHasMatchingFile(dir: string, pattern: RegExp): Promise<boolean> {
+    if (!(await pathExists(dir))) {
+        return false;
+    }
+    const entries = await fs.readdir(dir, {withFileTypes: true});
+    return entries.some((entry) => entry.isFile() && pattern.test(entry.name));
+}
+
 export async function isTimelapsePluginInstalled(): Promise<boolean> {
     const root = timelapsePluginRoot();
     for (const marker of TIMELAPSE_PLUGIN_MARKERS) {
@@ -33,7 +41,10 @@ export async function isTimelapsePluginInstalled(): Promise<boolean> {
             return true;
         }
     }
-    return false;
+    if (await dirHasMatchingFile(path.join(root, "snapshots"), /\.webp$/i)) {
+        return true;
+    }
+    return dirHasMatchingFile(path.join(root, "timelapse"), /\.mp4$/i);
 }
 
 export async function getSnapshotFiles(): Promise<string[]> {
