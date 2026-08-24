@@ -28,6 +28,10 @@ RUN apk add --no-cache su-exec \
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+# File tracing often omits @img/sharp-libvips-* (libvips-cpp.so). Copy the
+# full Alpine musl prebuilds from the deps/build install.
+COPY --from=builder /app/node_modules/@img ./node_modules/@img
+COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \

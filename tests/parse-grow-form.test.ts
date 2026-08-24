@@ -79,6 +79,34 @@ describe("parseAdminSettingsForm", () => {
         assert.equal(checked.grow.showSettingsLink, true);
     });
 
+    it("keeps unused timelapse trigger times empty so 0, 1, 2, or 3 slots work", () => {
+        const one = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                timelapseTime1: "08:00",
+                timelapseTime2: "",
+                timelapseTime3: "",
+            }),
+        );
+        assert.equal(one.timelapse.time1, "08:00");
+        assert.equal(one.timelapse.time2, "");
+        assert.equal(one.timelapse.time3, "");
+
+        const none = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                timelapseTime1: "",
+                timelapseTime2: "",
+                timelapseTime3: "",
+            }),
+        );
+        assert.equal(none.timelapse.time1, "");
+        assert.equal(none.timelapse.time2, "");
+        assert.equal(none.timelapse.time3, "");
+    });
+
     it("does not include estimatedHarvestDate when the field is omitted", () => {
         const result = parseAdminSettingsForm(
             formFrom({
