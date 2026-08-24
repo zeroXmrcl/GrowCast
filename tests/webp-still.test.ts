@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import {createRequire} from "node:module";
 import {describe, it} from "node:test";
-import {convertWebpBufferToJpeg} from "../lib/webp-still.ts";
+import {existsSync} from "node:fs";
+import {convertWebpBufferToJpeg, webpWasmDecoderFiles} from "../lib/webp-still.ts";
 
 const require = createRequire(import.meta.url);
 const webp = require("webp-wasm") as {
@@ -10,6 +11,16 @@ const webp = require("webp-wasm") as {
         options: Record<string, unknown>,
     ) => Promise<Buffer>;
 };
+
+describe("webpWasmDecoderFiles", () => {
+    it("points at process.cwd node_modules, not a bundled /ROOT path", () => {
+        const files = webpWasmDecoderFiles();
+        assert.equal(files.wasm.includes(`${"ROOT"}`), false);
+        assert.match(files.wasm, /webp_node_dec\.wasm$/);
+        assert.equal(existsSync(files.wasm), true);
+        assert.equal(existsSync(files.factory), true);
+    });
+});
 
 describe("convertWebpBufferToJpeg", () => {
     it("decodes a WebP still to a JPEG without native Sharp", async () => {
