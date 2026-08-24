@@ -1,10 +1,12 @@
 import {readFile} from "node:fs/promises";
 import path from "node:path";
+import {sanitizeError, getLogger} from "@/lib/logging";
 import {
     shareCardStillPath,
     stillImageMime,
     type ShareCardStill,
 } from "@/lib/share-card";
+import {convertWebpBufferToJpeg} from "@/lib/webp-still";
 
 function asDataUrl(mime: string, buffer: Buffer): string {
     return `data:${mime};base64,${buffer.toString("base64")}`;
@@ -20,17 +22,9 @@ async function stillSrcFromFile(still: ShareCardStill): Promise<string | null> {
         const bytes = await readFile(filePath);
         return asDataUrl(mime, bytes);
     }
-    try {
-        const sharp = (await import("sharp")).default;
-        const stillPng = await sharp(filePath, {limitInputPixels: 80_000_000})
-            .rotate()
-            .resize(1200, 630, {fit: "cover"})
-            .png()
-            .toBuffer();
-        return asDataUrl("image/png", stillPng);
-    } catch {
-        return null;
-    }
+    const webp = await readFile(filePath);
+    const jpeg = await convertWebpBufferToJpeg(webp);
+    return asDataUrl("image/jpeg", jpeg);
 }
 
 export async function rasterizeShareCardAssets(still: ShareCardStill | null): Promise<{
@@ -52,7 +46,16 @@ export async function rasterizeShareCardAssets(still: ShareCardStill | null): Pr
     if (still) {
         try {
             stillSrc = await stillSrcFromFile(still);
-        } catch {
+        } catch (error) {
+            getLogger().warn(
+                {
+                    event: "og.still.convert_failed",
+                    still_kind: still.kind,
+                    still_name: still.name,
+                    err: sanitizeError(error),
+                },
+                "share card still conversion failed",
+            );
             stillSrc = null;
         }
     }

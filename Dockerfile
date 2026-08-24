@@ -32,6 +32,8 @@ COPY --from=builder /app/public ./public
 # full Alpine musl prebuilds from the deps/build install.
 COPY --from=builder /app/node_modules/@img ./node_modules/@img
 COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder /app/node_modules/webp-wasm ./node_modules/webp-wasm
+COPY --from=builder /app/node_modules/jpeg-js ./node_modules/jpeg-js
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
