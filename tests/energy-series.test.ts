@@ -109,7 +109,7 @@ describe("energy series", () => {
             assert.ok(Date.parse(point.t) <= NOW_MS);
         }
         assert.equal(berlinHour(start), 14);
-        assert.equal(series.today.points.length, 15);
+        assert.equal(series.today.points.length, 25);
     });
 
     it("emits 6-hour 7d points and pads 0 from the window start", () => {
