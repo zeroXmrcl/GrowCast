@@ -42,4 +42,20 @@ describe("isTimelapsePluginInstalled", () => {
             assert.equal(await isTimelapsePluginInstalled(), false);
         });
     });
+
+    it("is installed when snapshots exist even without a plugin marker file", async () => {
+        await withPluginDir(async (dir) => {
+            await mkdir(path.join(dir, "snapshots"), {recursive: true});
+            await writeFile(path.join(dir, "snapshots", "1001.webp"), "still");
+            assert.equal(await isTimelapsePluginInstalled(), true);
+        });
+    });
+
+    it("is installed when a timelapse video exists even without a plugin marker file", async () => {
+        await withPluginDir(async (dir) => {
+            await mkdir(path.join(dir, "timelapse"), {recursive: true});
+            await writeFile(path.join(dir, "timelapse", "latest_timelapse.mp4"), "video");
+            assert.equal(await isTimelapsePluginInstalled(), true);
+        });
+    });
 });
