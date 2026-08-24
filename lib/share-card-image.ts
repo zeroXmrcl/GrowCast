@@ -10,23 +10,29 @@ export async function rasterizeShareCardAssets(still: ShareCardStill | null): Pr
     stillSrc: string | null;
     logoSrc: string;
 }> {
-    const sharp = (await import("sharp")).default;
     const logoSvg = await readFile(path.join(process.cwd(), "public", "growCastLogo_green.svg"));
-    const logoPng = await sharp(logoSvg).resize(80, 80).png().toBuffer();
-    const logoSrc = asPngDataUrl(logoPng);
-
-    if (!still) {
-        return {stillSrc: null, logoSrc};
-    }
+    let logoSrc = `data:image/svg+xml;base64,${logoSvg.toString("base64")}`;
+    let stillSrc: string | null = null;
 
     try {
-        const stillPng = await sharp(shareCardStillPath(still), {limitInputPixels: 80_000_000})
-            .rotate()
-            .resize(1200, 630, {fit: "cover"})
-            .png()
-            .toBuffer();
-        return {stillSrc: asPngDataUrl(stillPng), logoSrc};
+        const sharp = (await import("sharp")).default;
+        try {
+            const logoPng = await sharp(logoSvg).resize(80, 80).png().toBuffer();
+            logoSrc = asPngDataUrl(logoPng);
+        } catch {
+            // Keep the SVG data URL if native sharp/libvips is missing.
+        }
+        if (still) {
+            const stillPng = await sharp(shareCardStillPath(still), {limitInputPixels: 80_000_000})
+                .rotate()
+                .resize(1200, 630, {fit: "cover"})
+                .png()
+                .toBuffer();
+            stillSrc = asPngDataUrl(stillPng);
+        }
     } catch {
-        return {stillSrc: null, logoSrc};
+        stillSrc = null;
     }
+
+    return {stillSrc, logoSrc};
 }

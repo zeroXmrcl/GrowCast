@@ -1,3 +1,4 @@
+import {AdminOptionalTimeInput} from "@/components/admin/optional-time-input";
 import {
     AdminCheckboxRow,
     AdminField,
@@ -312,31 +313,26 @@ export function SettingsFields({
                         <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
                             Trigger Times
                         </p>
+                        <p className="mb-3 text-xs text-(--admin-subtle)">
+                            Optional. Use any of the three, or none (interval-only). Clear a slot
+                            to turn it off.
+                        </p>
                         <div className="grid gap-4 md:grid-cols-3">
                             <AdminField label="Time 1">
-                                <AdminInput
+                                <AdminOptionalTimeInput
                                     name="timelapseTime1"
-                                    type="time"
-                                    lang="en-GB"
-                                    step={60}
                                     defaultValue={timelapseSettings.time1}
                                 />
                             </AdminField>
                             <AdminField label="Time 2">
-                                <AdminInput
+                                <AdminOptionalTimeInput
                                     name="timelapseTime2"
-                                    type="time"
-                                    lang="en-GB"
-                                    step={60}
                                     defaultValue={timelapseSettings.time2}
                                 />
                             </AdminField>
                             <AdminField label="Time 3">
-                                <AdminInput
+                                <AdminOptionalTimeInput
                                     name="timelapseTime3"
-                                    type="time"
-                                    lang="en-GB"
-                                    step={60}
                                     defaultValue={timelapseSettings.time3}
                                 />
                             </AdminField>
