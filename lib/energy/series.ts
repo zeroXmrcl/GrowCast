@@ -204,37 +204,47 @@ function growStartDate(
     return first ?? today;
 }
 
+function berlinHourStartAtOrBefore(ms: number): number {
+    let t = berlinDayStartMs(berlinDateOnly(ms));
+    let guard = 0;
+    while (guard < 30) {
+        guard += 1;
+        const boundary = nextBerlinHourBoundary(t);
+        if (boundary > ms) {
+            return t;
+        }
+        t = boundary;
+    }
+    return t;
+}
+
 function todayHourSeries(
     days: Map<string, EnergyDayFile>,
     refs: Map<string, EnergyActuatorRef>,
     overrides: readonly EnergyOverride[],
     nowMs: number,
 ): EnergySeriesPoint[] {
-    const date = berlinDateOnly(nowMs);
-    const day = days.get(date);
-    const dayStart = berlinDayStartMs(date);
+    const startMs = berlinHourStartAtOrBefore(nowMs - 24 * 60 * 60 * 1000);
     const buckets: {t: string; watts: number | null}[] = [];
-    let t = dayStart;
+    let t = startMs;
     let guard = 0;
-    while (t <= nowMs && guard < 30) {
+    while (t <= nowMs && guard < 40) {
         guard += 1;
+        const date = berlinDateOnly(t);
         const hour = berlinHour(t);
         const boundary = nextBerlinHourBoundary(t);
-        const isCurrent = boundary > nowMs;
-        const slot = day?.hours[String(hour)];
+        const end = Math.min(boundary, nowMs);
+        const slot = days.get(date)?.hours[String(hour)];
         const {wattSeconds, seconds} = slotWattSeconds(slot, refs, overrides);
-        const divisor = Math.max(1, (Math.min(boundary, nowMs) - t) / 1000);
+        const divisor = Math.max(1, (end - t) / 1000);
         buckets.push({t: iso(t), watts: averageOrNull(wattSeconds, seconds, divisor)});
-        if (isCurrent) {
+        if (boundary > nowMs) {
             break;
         }
         t = boundary;
-        if (berlinDateOnly(t) !== date) {
-            break;
-        }
     }
     if (buckets.length === 0) {
-        buckets.push({t: iso(dayStart), watts: null});
+        buckets.push({t: iso(startMs), watts: null});
     }
     return toPoints(buckets);
 }

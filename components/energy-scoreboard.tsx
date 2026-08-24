@@ -137,7 +137,7 @@ function axisLabels(series: EnergySeries): {start: string; mid: string; end: str
     const mid = points[Math.floor((points.length - 1) / 2)];
     if (series.kind === "hour") {
         return {
-            start: "00",
+            start: padHour(berlinHour(Date.parse(points[0].t))),
             mid: padHour(berlinHour(Date.parse(mid.t))),
             end: "now",
         };
