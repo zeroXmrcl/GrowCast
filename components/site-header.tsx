@@ -5,11 +5,21 @@ import Image from "next/image";
 import {usePathname} from "next/navigation";
 import {useEffect, useState} from "react";
 import {SITE_FRAME_CLASS} from "@/lib/site-frame";
-import {navItemsFor} from "@/lib/site-nav";
+import {navItemsFor, type NavFlags} from "@/lib/site-nav";
 
-export default function SiteHeader({showSettingsLink = true}: {showSettingsLink?: boolean}) {
+export default function SiteHeader({
+    showEnergy = false,
+    showGallery = false,
+    showPastGrows = false,
+    showSettingsLink = false,
+}: NavFlags) {
     const pathname = usePathname();
-    const navItems = navItemsFor(pathname, showSettingsLink);
+    const navItems = navItemsFor(pathname, {
+        showEnergy,
+        showGallery,
+        showPastGrows,
+        showSettingsLink,
+    });
 
     const [logoText, setLogoText] = useState("GrowCast");
     const [logoFading, setLogoFading] = useState(false);
