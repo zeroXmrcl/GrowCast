@@ -108,7 +108,7 @@ export default async function Home() {
     ].filter(({href}) => href.length > 0);
 
     return (
-        <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-8">
+        <main className="flex flex-1 flex-col gap-6 py-4 md:py-8">
             <div className="flex w-full flex-col gap-6 lg:flex-row">
                 <section className="w-full lg:w-2/3">
                     <div

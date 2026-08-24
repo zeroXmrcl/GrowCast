@@ -32,21 +32,18 @@ export default async function GrowsPage() {
 
     if (cards.length === 0) {
         return (
-            <main className="min-h-screen bg-white px-6 py-10 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-                <div className="mx-auto max-w-5xl">
-                    <h1 className="text-3xl font-bold tracking-tight">Past Grows</h1>
-                    <p className="mt-3 max-w-2xl text-zinc-600 dark:text-zinc-300">
-                        No grows have been archived yet. Once a grow is completed, it shows up
-                        here with its details, snapshots and timelapse.
-                    </p>
-                </div>
+            <main className="flex flex-1 flex-col py-10 text-zinc-900 dark:text-zinc-100">
+                <h1 className="text-3xl font-bold tracking-tight">Past Grows</h1>
+                <p className="mt-3 max-w-2xl text-zinc-600 dark:text-zinc-300">
+                    No grows have been archived yet. Once a grow is completed, it shows up
+                    here with its details, snapshots and timelapse.
+                </p>
             </main>
         );
     }
 
     return (
-        <main className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-            <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10">
+        <main className="flex flex-1 flex-col gap-8 py-10 text-zinc-900 dark:text-zinc-100">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Past Grows</h1>
                     <p className="mt-2 text-zinc-600 dark:text-zinc-300">
@@ -134,7 +131,6 @@ export default async function GrowsPage() {
                         );
                     })}
                 </div>
-            </div>
         </main>
     );
 }

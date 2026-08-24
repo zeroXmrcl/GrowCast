@@ -13,14 +13,12 @@ export default async function EnergyPage() {
     const dto = result.ok ? result.dto : null;
 
     return (
-        <main className="min-h-screen bg-white px-4 py-10 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 md:px-8">
-            <div className="mx-auto w-full max-w-7xl">
-                {dto ? (
-                    <EnergyScoreboard dto={dto}/>
-                ) : (
-                    <h1 className="text-3xl font-bold tracking-tight">Energy</h1>
-                )}
-            </div>
+        <main className="flex flex-1 flex-col py-10 text-zinc-900 dark:text-zinc-100">
+            {dto ? (
+                <EnergyScoreboard dto={dto}/>
+            ) : (
+                <h1 className="text-3xl font-bold tracking-tight">Energy</h1>
+            )}
         </main>
     );
 }

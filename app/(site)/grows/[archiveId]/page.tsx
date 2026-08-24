@@ -93,8 +93,7 @@ export default async function ArchivedGrowPage({
     );
 
     return (
-        <main className="min-h-screen bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
-            <div className="mx-auto flex max-w-7xl flex-col gap-10 px-6 py-10">
+        <main className="flex flex-1 flex-col gap-10 py-10 text-zinc-900 dark:text-zinc-100">
                 <div>
                     <Link
                         href="/grows"
@@ -203,7 +202,6 @@ export default async function ArchivedGrowPage({
                         </div>
                     </section>
                 ) : null}
-            </div>
         </main>
     );
 }
