@@ -3,7 +3,7 @@ import {describe, it} from "node:test";
 import {
     buildShareCardCopy,
     pickShareCardStill,
-    publicHostFromHeaders,
+    shareCardMetadataOrigin,
     shareCardVisibleHost,
     stillImageMime,
 } from "../lib/share-card.ts";
@@ -81,20 +81,61 @@ describe("pickShareCardStill", () => {
     });
 });
 
-describe("publicHostFromHeaders", () => {
-    it("prefers the first X-Forwarded-Host and strips a default port", () => {
+describe("shareCardMetadataOrigin", () => {
+    it("matches CSRF publicRequestOrigin for Cloudflare Tunnel Host vs listen X-Forwarded-Host", () => {
         assert.equal(
-            publicHostFromHeaders("127.0.0.1:3000", "grow.0xmarcel.com, 10.0.0.1"),
-            "grow.0xmarcel.com",
+            shareCardMetadataOrigin({
+                host: "tunnel.example",
+                "x-forwarded-host": "0.0.0.0:3000",
+                "x-forwarded-proto": "https",
+            }),
+            "https://tunnel.example",
         );
-        assert.equal(publicHostFromHeaders("grow.0xmarcel.com:443", null), "grow.0xmarcel.com");
-        assert.equal(publicHostFromHeaders(null, null), "");
+    });
+
+    it("uses GROWCAST_PUBLIC_URL when set", () => {
+        assert.equal(
+            shareCardMetadataOrigin(
+                {host: "localhost:3000"},
+                {GROWCAST_PUBLIC_URL: "https://grow.example.com"},
+            ),
+            "https://grow.example.com",
+        );
+    });
+
+    it("does not use a spoofed X-Forwarded-Host when Host is the public tunnel name", () => {
+        assert.equal(
+            shareCardMetadataOrigin({
+                host: "tunnel.example",
+                "x-forwarded-host": "attacker.example",
+                "x-forwarded-proto": "https",
+            }),
+            "https://tunnel.example",
+        );
+    });
+
+    it("does not throw on junk proto or host", () => {
+        assert.doesNotThrow(() =>
+            shareCardMetadataOrigin({
+                host: "%%%",
+                "x-forwarded-proto": "https:",
+            }),
+        );
     });
 
     it("hides loopback hosts on the card", () => {
         assert.equal(shareCardVisibleHost("grow.0xmarcel.com"), "grow.0xmarcel.com");
         assert.equal(shareCardVisibleHost("localhost:3000"), "");
         assert.equal(shareCardVisibleHost("127.0.0.1:3000"), "");
+    });
+});
+
+describe("rasterizeShareCardAssets logo", () => {
+    it("uses an SVG data URL and does not import sharp", async () => {
+        const {readFileSync} = await import("node:fs");
+        const src = readFileSync(new URL("../lib/share-card-image.ts", import.meta.url), "utf8");
+        assert.equal(/import\(["']sharp["']\)/.test(src), false);
+        assert.match(src, /image\/svg\+xml/);
     });
 });
 

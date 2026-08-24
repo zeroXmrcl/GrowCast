@@ -90,13 +90,30 @@ export async function liveClimateStreamResponse(request?: Request): Promise<Resp
     let closed = false;
 
     function teardown(): void {
+        if (closed) {
+            return;
+        }
         closed = true;
         unsubscribe?.();
         releaseSseSlot(slot);
     }
 
+    if (request?.signal.aborted) {
+        teardown();
+        return sseUnavailable();
+    }
+    request?.signal.addEventListener("abort", teardown, {once: true});
+
     const stream = new ReadableStream<Uint8Array>({
         start(controller) {
+            if (closed) {
+                try {
+                    controller.close();
+                } catch {
+                    /* already closed */
+                }
+                return;
+            }
             const send = (event: "snapshot" | "heartbeat", state: GgsLivePublic) => {
                 if (closed) {
                     return;

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import path from "node:path";
 import {describe, it} from "node:test";
 import {airVpdKPa} from "../lib/air-vpd.ts";
 import {EMPTY_LIVE_PUBLIC, GGS_PLUGIN_ID, GGS_STALE_AFTER_MS, type GgsLivePublic} from "../lib/ggs-live.ts";
@@ -62,6 +64,15 @@ describe("shouldShowLiveRow", () => {
 
     it("shows when a snapshot with devices exists", () => {
         assert.equal(shouldShowLiveRow(snapshot()), true);
+    });
+});
+
+describe("homepage live-climate gate", () => {
+    it("does not render LiveTentRow unless hasGgsLiveUi is true", () => {
+        const src = readFileSync(path.join(process.cwd(), "app", "(site)", "page.tsx"), "utf8");
+        assert.match(src, /hasGgsLiveUi\(/);
+        assert.match(src, /showLiveClimate\s*\?\s*<LiveTentRow/);
+        assert.equal(/^\s*<LiveTentRow\s*\/>/m.test(src), false);
     });
 });
 

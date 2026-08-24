@@ -1,6 +1,6 @@
 import {Geist, Geist_Mono} from "next/font/google";
 import {headers} from "next/headers";
-import {loadShareCardCopy, publicHostFromHeaders} from "@/lib/share-card";
+import {loadShareCardCopy, shareCardMetadataOrigin, shareCardVisibleHost} from "@/lib/share-card";
 import type {Metadata} from "next";
 import React from "react";
 import "./globals.css";
@@ -17,19 +17,18 @@ const geistMono = Geist_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
     const headerList = await headers();
-    const host = publicHostFromHeaders(
-        headerList.get("host"),
-        headerList.get("x-forwarded-host"),
-    );
-    const copy = await loadShareCardCopy(host);
-    const proto = (headerList.get("x-forwarded-proto") ?? "").split(",")[0].trim();
-    const origin = host
-        ? `${proto || (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https")}://${host}`
-        : null;
+    const origin = shareCardMetadataOrigin(headerList);
+    let metadataBase: URL | undefined;
+    try {
+        metadataBase = new URL(origin);
+    } catch {
+        metadataBase = undefined;
+    }
+    const copy = await loadShareCardCopy(shareCardVisibleHost(metadataBase?.host ?? ""));
 
     return {
         title: copy.title,
-        ...(origin ? {metadataBase: new URL(origin)} : {}),
+        ...(metadataBase ? {metadataBase} : {}),
         openGraph: {
             title: copy.title,
             siteName: "GrowCast",

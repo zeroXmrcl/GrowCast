@@ -12,6 +12,35 @@ export function asLivePublic(raw: unknown): GgsLivePublic | null {
     return parsed.ok ? parsed.value : null;
 }
 
+export async function recoverLiveClimateOnSseFailure(input: {
+    reason: number | "error";
+    current: GgsLivePublic | null;
+    fetch: typeof fetch;
+    url?: string;
+    signal?: AbortSignal;
+}): Promise<GgsLivePublic | null> {
+    if (input.reason !== 503 && input.reason !== "error") {
+        return input.current;
+    }
+    try {
+        const response = await input.fetch(input.url ?? LIVE_CLIMATE_URL, {
+            cache: "no-store",
+            headers: {Accept: "application/json"},
+            signal: input.signal,
+        });
+        if (!response.ok) {
+            return input.current;
+        }
+        const parsed = asLivePublic(await response.json());
+        if (!parsed) {
+            return input.current;
+        }
+        return preferLiveSnapshot(input.current, parsed);
+    } catch {
+        return input.current;
+    }
+}
+
 export function useLiveClimate(): {
     snapshot: GgsLivePublic | null;
     stale: boolean;
@@ -93,6 +122,22 @@ export function useLiveClimate(): {
         };
         source.addEventListener("snapshot", onEvent);
         source.addEventListener("heartbeat", onEvent);
+        source.onerror = () => {
+            sseHasApplied = false;
+            void recoverLiveClimateOnSseFailure({
+                reason: "error",
+                current: latest,
+                fetch,
+                signal: abort.signal,
+            }).then((next) => {
+                if (cancelled || !next) {
+                    return;
+                }
+                latest = next;
+                setSnapshot(next);
+                setLastEventAtMs(Date.now());
+            });
+        };
 
         const tick = setInterval(() => {
             setNowMs(Date.now());

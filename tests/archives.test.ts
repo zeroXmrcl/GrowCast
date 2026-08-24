@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {access, chmod, mkdir, mkdtemp, readdir, rm, writeFile} from "node:fs/promises";
+import {access, mkdir, mkdtemp, readdir, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
@@ -308,10 +308,12 @@ describe("completeCurrentGrow", () => {
                 },
             );
 
-            assert.equal(result.ok, false);
+            assert.equal(result.ok, true);
             if (!result.ok) {
-                assert.equal(result.error, "reset exploded");
+                return;
             }
+            assert.equal(result.warning, "reset_failed");
+            assert.equal(result.archive.grow.id, live.id);
 
             const archives = await listArchivedGrows();
             assert.equal(archives.length, 1);
@@ -329,7 +331,7 @@ describe("completeCurrentGrow", () => {
         });
     });
 
-    it("does not report success when live media deletes fail after publish", async () => {
+    it("reports success with a cleanup warning when live media deletes fail after publish", async () => {
         await withTempEnv(async ({sources}) => {
             const live = await updateCurrentGrow({
                 name: "Cleanup Fail",
@@ -338,31 +340,29 @@ describe("completeCurrentGrow", () => {
             });
             await writeFile(path.join(sources.snapshotsDir, "1000.webp"), "snap");
 
-            try {
-                const result = await completeCurrentGrow(
-                    {
-                        harvestedAt: "2026-04-20",
-                        yieldGrams: null,
-                        finalNotes: "",
-                        expectedGrowId: live.id,
-                    },
-                    sources,
-                    async () => {
-                        await chmod(sources.snapshotsDir, 0o555);
-                    },
-                );
+            const result = await completeCurrentGrow(
+                {
+                    harvestedAt: "2026-04-20",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: live.id,
+                },
+                sources,
+                async () => {
+                    await rm(path.join(sources.snapshotsDir, "1000.webp"));
+                    await mkdir(path.join(sources.snapshotsDir, "1000.webp"));
+                },
+            );
 
-                assert.equal(result.ok, false);
-                if (!result.ok) {
-                    assert.equal(result.error, "media_cleanup_failed");
-                }
-                const archives = await listArchivedGrows();
-                assert.equal(archives.length, 1);
-                assert.equal(archives[0].grow.id, live.id);
-                await access(path.join(archivesDir(), archives[0].archiveId));
-            } finally {
-                await chmod(sources.snapshotsDir, 0o755).catch(() => undefined);
+            assert.equal(result.ok, true);
+            if (!result.ok) {
+                return;
             }
+            assert.equal(result.warning, "media_cleanup_failed");
+            const archives = await listArchivedGrows();
+            assert.equal(archives.length, 1);
+            assert.equal(archives[0].grow.id, live.id);
+            await access(path.join(archivesDir(), archives[0].archiveId));
         });
     });
 });

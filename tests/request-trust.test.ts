@@ -44,4 +44,37 @@ describe("publicRequestOrigin", () => {
             "https://grow.example.com",
         );
     });
+
+    it("does not throw on junk X-Forwarded-Proto or Host", () => {
+        assert.doesNotThrow(() =>
+            publicRequestOrigin(
+                requestAt("http://127.0.0.1:3000/api/admin/media", {
+                    host: "%%%",
+                    "x-forwarded-proto": "https:",
+                }),
+            ),
+        );
+        assert.equal(
+            publicRequestOrigin(
+                requestAt("http://127.0.0.1:3000/api/admin/media", {
+                    host: "%%%",
+                    "x-forwarded-proto": "https:",
+                }),
+            ),
+            "http://127.0.0.1:3000",
+        );
+    });
+
+    it("does not use a spoofed X-Forwarded-Host when Host is the public tunnel name", () => {
+        assert.equal(
+            publicRequestOrigin(
+                requestAt("http://0.0.0.0:3000/opengraph-image", {
+                    host: "tunnel.example",
+                    "x-forwarded-host": "attacker.example",
+                    "x-forwarded-proto": "https",
+                }),
+            ),
+            "https://tunnel.example",
+        );
+    });
 });

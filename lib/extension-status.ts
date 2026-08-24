@@ -7,8 +7,15 @@ export const TIMELAPSE_PLUGIN_DIR = path.resolve(
     "GrowCast-Timelapse"
 );
 
+export const TIMELAPSE_PLUGIN_MARKERS = ["Dockerfile", "requirements.txt", "plugin.json"] as const;
+
 export const SNAPSHOT_DIR = path.join(TIMELAPSE_PLUGIN_DIR, "snapshots");
 export const TIMELAPSE_DIR = path.join(TIMELAPSE_PLUGIN_DIR, "timelapse");
+
+function timelapsePluginRoot(): string {
+    const override = (process.env.GROWCAST_TIMELAPSE_DIR ?? "").trim();
+    return override ? path.resolve(override) : TIMELAPSE_PLUGIN_DIR;
+}
 
 export async function pathExists(targetPath: string): Promise<boolean> {
     try {
@@ -20,7 +27,13 @@ export async function pathExists(targetPath: string): Promise<boolean> {
 }
 
 export async function isTimelapsePluginInstalled(): Promise<boolean> {
-    return pathExists(TIMELAPSE_PLUGIN_DIR);
+    const root = timelapsePluginRoot();
+    for (const marker of TIMELAPSE_PLUGIN_MARKERS) {
+        if (await pathExists(path.join(root, marker))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 export async function getSnapshotFiles(): Promise<string[]> {

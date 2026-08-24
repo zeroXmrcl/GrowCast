@@ -92,6 +92,12 @@ export async function completeGrowAction(formData: FormData): Promise<void> {
         revalidatePath("/grows");
         revalidatePath(`/grows/${result.archive.archiveId}`);
         revalidatePath("/admin");
-        redirect(withNotice("/admin", "archived"));
+        const notice =
+            result.warning === "reset_failed"
+                ? "archived_reset_warning"
+                : result.warning === "media_cleanup_failed"
+                  ? "archived_cleanup_warning"
+                  : "archived";
+        redirect(withNotice("/admin", notice));
     });
 }

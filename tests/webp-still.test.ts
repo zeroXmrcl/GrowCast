@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import {createRequire} from "node:module";
 import {describe, it} from "node:test";
 import {existsSync} from "node:fs";
-import {convertWebpBufferToJpeg, webpWasmDecoderFiles} from "../lib/webp-still.ts";
+import {
+    convertWebpBufferToJpeg,
+    MAX_WEBP_COMPRESSED_BYTES,
+    webpWasmDecoderFiles,
+} from "../lib/webp-still.ts";
 
 const require = createRequire(import.meta.url);
 const webp = require("webp-wasm") as {
@@ -30,5 +34,13 @@ describe("convertWebpBufferToJpeg", () => {
         assert.equal(jpeg[0], 0xff);
         assert.equal(jpeg[1], 0xd8);
         assert.ok(jpeg.length > 32);
+    });
+
+    it("rejects oversized compressed input before decode", async () => {
+        const huge = Buffer.alloc(MAX_WEBP_COMPRESSED_BYTES + 1);
+        await assert.rejects(
+            () => convertWebpBufferToJpeg(huge),
+            /compressed input exceeds size limit/,
+        );
     });
 });

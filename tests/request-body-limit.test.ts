@@ -5,7 +5,13 @@ import {
     MEDIA_MAX_BODY_BYTES,
     contentLengthExceedsCap,
     maxBodyBytesFor,
+    payloadTooLargeResponse,
 } from "../lib/request-body-limit.ts";
+import {
+    MAX_UPLOAD_FILE_BYTES,
+    MAX_UPLOAD_FILES,
+    MULTIPART_OVERHEAD_BYTES,
+} from "../lib/media-library.ts";
 
 describe("maxBodyBytesFor", () => {
     it("allows the large cap only on POST /api/admin/media", () => {
@@ -31,5 +37,25 @@ describe("contentLengthExceedsCap", () => {
             false,
         );
         assert.equal(contentLengthExceedsCap(null, DEFAULT_MAX_BODY_BYTES), false);
+    });
+});
+
+describe("admin media upload vs proxy cap", () => {
+    it("fits files × size plus multipart overhead under MEDIA_MAX_BODY_BYTES", () => {
+        assert.ok(
+            MAX_UPLOAD_FILES * MAX_UPLOAD_FILE_BYTES + MULTIPART_OVERHEAD_BYTES
+                <= MEDIA_MAX_BODY_BYTES,
+        );
+    });
+
+    it("maps a media POST 413 to an admin notice 303, not a raw body", async () => {
+        const response = payloadTooLargeResponse("POST", "/api/admin/media");
+        assert.equal(response.status, 303);
+        assert.equal(response.headers.get("location"), "/admin?notice=media_payload_too_large");
+        assert.equal(await response.text(), "");
+
+        const other = payloadTooLargeResponse("POST", "/api/mesh/growcast.ggs/state");
+        assert.equal(other.status, 413);
+        assert.equal(await other.text(), "Payload Too Large");
     });
 });

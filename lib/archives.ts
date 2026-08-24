@@ -44,8 +44,10 @@ export type CompleteGrowInput = ArchiveCompletion & {
     expectedGrowId?: string;
 };
 
+export type CompleteGrowWarning = "media_cleanup_failed" | "reset_failed";
+
 export type CompleteGrowResult =
-    | {ok: true; archive: ArchivedGrow}
+    | {ok: true; archive: ArchivedGrow; warning?: CompleteGrowWarning}
     | {ok: false; error: string};
 
 export const ARCHIVE_MEDIA_KINDS = ["snapshots", "timelapse", "pictures"] as const;
@@ -358,7 +360,11 @@ export async function completeCurrentGrow(
         );
         await rename(stagingRoot, destinationRoot);
         const reset = resetLiveGrow ?? ((current: GrowRecord) => replaceCurrentGrow(buildNextGrow(current)));
-        await reset(grow);
+        try {
+            await reset(grow);
+        } catch {
+            return {ok: true, archive, warning: "reset_failed"};
+        }
         try {
             await resetEnergyCurrentLocked();
         } catch {
@@ -371,7 +377,7 @@ export async function completeCurrentGrow(
             deleteFiles(sources.picturesDir, pictureFiles),
         ]);
         if (cleanup.some((entry) => entry.status === "rejected")) {
-            return {ok: false, error: "media_cleanup_failed"};
+            return {ok: true, archive, warning: "media_cleanup_failed"};
         }
 
         return {ok: true, archive};
