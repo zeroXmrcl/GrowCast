@@ -5,6 +5,7 @@ import jpeg from "jpeg-js";
 
 export const SHARE_CARD_STILL_WIDTH = 1200;
 export const SHARE_CARD_STILL_HEIGHT = 630;
+export const MAX_WEBP_COMPRESSED_BYTES = 8 * 1024 * 1024;
 const MAX_INPUT_PIXELS = 80_000_000;
 const JPEG_QUALITY = 80;
 
@@ -90,14 +91,22 @@ function coverResizeRgba(
     return dest;
 }
 
-/** CPU-portable WebP → JPEG. No native Sharp / x86-64-v2 requirement. */
-export async function convertWebpBufferToJpeg(webpBytes: Buffer): Promise<Buffer> {
+export async function decodeWebpRgba(webpBytes: Buffer): Promise<WebpImage> {
+    if (webpBytes.length > MAX_WEBP_COMPRESSED_BYTES) {
+        throw new Error("webp compressed input exceeds size limit");
+    }
     const decoder = await getDecoder();
     const copy = Uint8Array.from(webpBytes);
     const image = decoder.decode(copy);
     if (!image?.width || !image.height) {
         throw new Error("webp decode produced empty dimensions");
     }
+    return image;
+}
+
+/** CPU-portable WebP → JPEG. No native Sharp / x86-64-v2 requirement. */
+export async function convertWebpBufferToJpeg(webpBytes: Buffer): Promise<Buffer> {
+    const image = await decodeWebpRgba(webpBytes);
     if (image.width * image.height > MAX_INPUT_PIXELS) {
         throw new Error("webp still exceeds pixel limit");
     }

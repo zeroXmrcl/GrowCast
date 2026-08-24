@@ -1,10 +1,12 @@
 import {AdminButton, AdminField, AdminPanel} from "@/components/admin/ui";
 import {
     listMediaFiles,
+    MAX_UPLOAD_FILE_BYTES,
     MAX_UPLOAD_FILES,
     type MediaCollectionId,
     type MediaFile,
 } from "@/lib/media-library";
+import {MEDIA_MAX_BODY_BYTES} from "@/lib/request-body-limit";
 
 const MEDIA_ENDPOINT = "/api/admin/media";
 
@@ -39,7 +41,7 @@ function CollectionSection({
                 <div className="min-w-0 flex-1">
                     <AdminField
                         label="Add images"
-                        hint={`JPEG, PNG or WebP. Up to ${MAX_UPLOAD_FILES} files, 15 MB each (40 MB total per upload). Converted to webp, metadata removed.`}
+                        hint={`JPEG, PNG or WebP. Up to ${MAX_UPLOAD_FILES} files, ${Math.round(MAX_UPLOAD_FILE_BYTES / 1024 / 1024)} MB each (${Math.round(MEDIA_MAX_BODY_BYTES / 1024 / 1024)} MB total per upload).`}
                     >
                         <input
                             type="file"

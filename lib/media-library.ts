@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import {mkdir, unlink, readdir, writeFile} from "node:fs/promises";
 import path from "node:path";
+import {
+    encodeUploadedImage,
+    type EncodeUploadOptions,
+} from "@/lib/image-encode";
 import {IMAGE_EXTENSIONS, isSafeMediaFilename} from "@/lib/safe-media-filename";
 
 export const MEDIA_COLLECTION_IDS = ["setup", "dashboard"] as const;
@@ -20,16 +24,9 @@ const COLLECTIONS: Record<MediaCollectionId, MediaCollectionConfig> = {
     dashboard: {urlPrefix: "/yourPictures", filePrefix: "picture"},
 };
 
-export const MAX_UPLOAD_FILES = 10;
+export const MAX_UPLOAD_FILES = 2;
 export const MAX_UPLOAD_FILE_BYTES = 15 * 1024 * 1024;
-
-/** Output cap keeps public pages fast while staying sharp on large screens. */
-const MAX_OUTPUT_DIMENSION = 2560;
-const WEBP_QUALITY = 82;
-/** Decode guard against decompression bombs (~80MP). */
-const MAX_INPUT_PIXELS = 80_000_000;
-
-const ALLOWED_INPUT_FORMATS = new Set(["jpeg", "png", "webp"]);
+export const MULTIPART_OVERHEAD_BYTES = 1 * 1024 * 1024;
 
 export type MediaFile = {
     name: string;
@@ -38,7 +35,7 @@ export type MediaFile = {
 
 export type RejectedUpload = {
     name: string;
-    reason: "too_large" | "invalid_image";
+    reason: "too_large" | "invalid_image" | "encoder_unavailable";
 };
 
 export type SaveUploadedImagesResult =
@@ -63,55 +60,25 @@ export function mediaCollectionDir(collection: MediaCollectionId, dirOverride?: 
  * Server-generated names only — the client filename never reaches the
  * filesystem. Timestamp prefix keeps the ascending display order stable.
  */
-function generatedFileName(prefix: string): string {
+function generatedFileName(prefix: string, extension: string): string {
     const stamp = new Date()
         .toISOString()
         .replace(/[-:]/g, "")
         .replace("T", "-")
         .slice(0, 15);
     const rand = crypto.randomBytes(3).toString("hex");
-    return `${prefix}-${stamp}-${rand}.webp`;
-}
-
-/**
- * Decode-validate and re-encode an upload. Returns null when the bytes are
- * not a real jpeg/png/webp image. Re-encoding strips all metadata (EXIF/GPS)
- * after `.rotate()` has applied the EXIF orientation.
- *
- * Sharp is loaded only here so listing/delete paths and archive pages never
- * pull the native encoder into Next page-data collection.
- */
-async function encodeImage(input: Buffer): Promise<Buffer | null> {
-    try {
-        const sharp = (await import("sharp")).default;
-        const metadata = await sharp(input, {limitInputPixels: MAX_INPUT_PIXELS}).metadata();
-        if (!metadata.format || !ALLOWED_INPUT_FORMATS.has(metadata.format)) {
-            return null;
-        }
-
-        return await sharp(input, {limitInputPixels: MAX_INPUT_PIXELS})
-            .rotate()
-            .resize({
-                width: MAX_OUTPUT_DIMENSION,
-                height: MAX_OUTPUT_DIMENSION,
-                fit: "inside",
-                withoutEnlargement: true,
-            })
-            .webp({quality: WEBP_QUALITY})
-            .toBuffer();
-    } catch {
-        return null;
-    }
+    return `${prefix}-${stamp}-${rand}.${extension}`;
 }
 
 async function writeWithUniqueName(
     dir: string,
     prefix: string,
     data: Buffer,
+    extension: string,
 ): Promise<string> {
     let lastError: unknown;
     for (let attempt = 0; attempt < 3; attempt += 1) {
-        const fileName = generatedFileName(prefix);
+        const fileName = generatedFileName(prefix, extension);
         try {
             await writeFile(path.join(dir, fileName), data, {flag: "wx"});
             return fileName;
@@ -157,6 +124,7 @@ export async function saveUploadedImages(
     collection: MediaCollectionId,
     files: File[],
     dirOverride?: string,
+    options: EncodeUploadOptions = {},
 ): Promise<SaveUploadedImagesResult> {
     if (files.length === 0) {
         return {ok: false, error: "no_files"};
@@ -181,16 +149,17 @@ export async function saveUploadedImages(
         }
 
         const input = Buffer.from(await file.arrayBuffer());
-        const encoded = await encodeImage(input);
-        if (!encoded) {
-            rejected.push({name: file.name, reason: "invalid_image"});
+        const encoded = await encodeUploadedImage(input, options);
+        if (!encoded.ok) {
+            rejected.push({name: file.name, reason: encoded.reason});
             continue;
         }
 
         const fileName = await writeWithUniqueName(
             dir,
             COLLECTIONS[collection].filePrefix,
-            encoded,
+            encoded.value.data,
+            encoded.value.extension,
         );
         saved.push(fileName);
     }

@@ -1,6 +1,8 @@
 export const ADMIN_NOTICE_IDS = [
     "saved",
     "archived",
+    "archived_reset_warning",
+    "archived_cleanup_warning",
     "save_failed",
     "stale_grow",
     "archive_failed",
@@ -12,6 +14,7 @@ export const ADMIN_NOTICE_IDS = [
     "media_too_many_files",
     "media_invalid_file",
     "media_upload_failed",
+    "media_payload_too_large",
     "media_delete_failed",
     "archive_updated",
     "archive_deleted",

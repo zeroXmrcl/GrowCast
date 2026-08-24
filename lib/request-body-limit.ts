@@ -1,3 +1,6 @@
+import {withNotice} from "@/lib/admin/notice";
+import {seeOther} from "@/lib/http-redirect";
+
 /** Default cap for unauthenticated / non-media requests (proxy clones bodies). */
 export const DEFAULT_MAX_BODY_BYTES = 1 * 1024 * 1024;
 
@@ -29,4 +32,14 @@ export function contentLengthExceedsCap(
     }
     const length = Number(contentLengthHeader);
     return Number.isFinite(length) && length > capBytes;
+}
+
+export function payloadTooLargeResponse(method: string, pathname: string): Response {
+    if (method.toUpperCase() === "POST" && normalizePathname(pathname) === MEDIA_PATH) {
+        return seeOther(withNotice("/admin", "media_payload_too_large"));
+    }
+    return new Response("Payload Too Large", {
+        status: 413,
+        headers: {"Content-Type": "text/plain; charset=utf-8"},
+    });
 }

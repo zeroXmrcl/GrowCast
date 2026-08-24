@@ -92,6 +92,8 @@ describe("docker compose listen address", () => {
   it("does not recursively chown /app/extensions in the entrypoint", async () => {
     const {readFile} = await import("node:fs/promises");
     const sh = await readFile(new URL("../../docker-entrypoint.sh", import.meta.url), "utf8");
+    assert.match(sh, /\/app\/extensions\/GrowCast-Timelapse/);
     assert.doesNotMatch(sh, /^\s*\/app\/extensions\s*\\?\s*$/m);
+    assert.doesNotMatch(sh, /GrowCast-GGS/);
   });
 });

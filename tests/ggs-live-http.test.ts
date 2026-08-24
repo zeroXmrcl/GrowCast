@@ -289,6 +289,34 @@ describe("live climate SSE", () => {
             assert.equal(response.status, 503);
         });
     });
+
+    it("releases the SSE slot when request.signal aborts", async () => {
+        await withTempDataDir(async () => {
+            const previousTrust = process.env.GROWCAST_TRUST_PROXY;
+            process.env.GROWCAST_TRUST_PROXY = "1";
+            try {
+                const abort = new AbortController();
+                const response = await liveClimateStreamResponse(
+                    new Request("http://localhost/api/data/live-climate/stream", {
+                        headers: {"cf-connecting-ip": "203.0.113.55"},
+                        signal: abort.signal,
+                    }),
+                );
+                assert.equal(response.status, 200);
+                assert.equal(identitySubscriberCount("203.0.113.55"), 1);
+                abort.abort();
+                assert.equal(identitySubscriberCount("203.0.113.55"), 0);
+                assert.equal(subscriberCount(), 0);
+                await response.body?.cancel();
+            } finally {
+                if (previousTrust === undefined) {
+                    delete process.env.GROWCAST_TRUST_PROXY;
+                } else {
+                    process.env.GROWCAST_TRUST_PROXY = previousTrust;
+                }
+            }
+        });
+    });
 });
 
 describe("live climate ingest", () => {

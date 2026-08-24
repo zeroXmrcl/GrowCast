@@ -1,4 +1,11 @@
+import {isDateOnly} from "@/lib/date-only";
+
 export function formatDateDisplay(value: string): string {
+    if (isDateOnly(value)) {
+        const [year, month, day] = value.split("-");
+        return `${day}.${month}.${year}`;
+    }
+
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
         return value;
@@ -8,6 +15,7 @@ export function formatDateDisplay(value: string): string {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
+        timeZone: "UTC",
     }).format(parsed);
 }
 

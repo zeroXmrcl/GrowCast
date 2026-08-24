@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import sharp from "sharp";
+import jpeg from "jpeg-js";
 import {
     deleteMediaFile,
     listMediaFiles,
@@ -13,6 +14,15 @@ import {
     MAX_UPLOAD_FILES,
     saveUploadedImages,
 } from "../lib/media-library.ts";
+import {createRequire} from "node:module";
+
+const require = createRequire(import.meta.url);
+const webp = require("webp-wasm") as {
+    encode: (
+        image: {data: Uint8ClampedArray; width: number; height: number},
+        options: Record<string, unknown>,
+    ) => Promise<Buffer>;
+};
 
 async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-media-"));
@@ -26,6 +36,19 @@ async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
 function toFile(buffer: Buffer, name: string, type: string): File {
     return new File([new Uint8Array(buffer)], name, {type});
 }
+
+function makeJpegPortable(width: number, height: number): Buffer {
+    const data = Buffer.alloc(width * height * 4, 80);
+    for (let i = 3; i < data.length; i += 4) {
+        data[i] = 255;
+    }
+    return Buffer.from(jpeg.encode({data, width, height}, 90).data);
+}
+
+const PNG_1X1 = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64",
+);
 
 async function makeJpeg(width: number, height: number, orientation?: number): Promise<Buffer> {
     let pipeline = sharp({
@@ -168,6 +191,85 @@ describe("saveUploadedImages", () => {
                 ok: false,
                 error: "no_files",
             });
+        });
+    });
+
+    it("stores a real jpeg/png/webp when Sharp is skipped", async () => {
+        await withTempDir(async (dir) => {
+            const jpegBytes = makeJpegPortable(32, 24);
+            const webpBytes = Buffer.from(
+                await webp.encode(
+                    {
+                        data: new Uint8ClampedArray([0, 160, 80, 255]),
+                        width: 1,
+                        height: 1,
+                    },
+                    {},
+                ),
+            );
+            const first = await saveUploadedImages(
+                "dashboard",
+                [
+                    toFile(jpegBytes, "leaf.jpg", "image/jpeg"),
+                    toFile(PNG_1X1, "dot.png", "image/png"),
+                ],
+                dir,
+                {allowSharp: false},
+            );
+            const second = await saveUploadedImages(
+                "dashboard",
+                [toFile(webpBytes, "still.webp", "image/webp")],
+                dir,
+                {allowSharp: false},
+            );
+            assert.equal(first.ok, true);
+            assert.equal(second.ok, true);
+            if (!first.ok || !second.ok) {
+                return;
+            }
+            const saved = [...first.saved, ...second.saved];
+            const rejected = [...first.rejected, ...second.rejected];
+            assert.equal(saved.length, 3);
+            assert.equal(rejected.length, 0);
+            assert.equal(
+                rejected.some((entry) => entry.reason === "invalid_image"),
+                false,
+            );
+            assert.equal(
+                saved.every((name) => name.endsWith(".webp")),
+                false,
+                "portable encode must not require Sharp webp output",
+            );
+            assert.ok(
+                saved.some((name) => /\.(jpe?g|png)$/i.test(name)),
+            );
+            const names = await readdir(dir);
+            assert.equal(names.length, 3);
+            for (const name of names) {
+                const bytes = await readFile(path.join(dir, name));
+                assert.ok(bytes.length > 8);
+            }
+        });
+    });
+
+    it("does not report encoder-unavailable as invalid_image", async () => {
+        await withTempDir(async (dir) => {
+            const jpegBytes = makeJpegPortable(16, 16);
+            const result = await saveUploadedImages(
+                "setup",
+                [toFile(jpegBytes, "ok.jpg", "image/jpeg")],
+                dir,
+                {allowSharp: false},
+            );
+            assert.equal(result.ok, true);
+            if (!result.ok) {
+                return;
+            }
+            assert.deepEqual(
+                result.rejected.map((entry) => entry.reason),
+                [],
+            );
+            assert.equal(result.saved.length, 1);
         });
     });
 });

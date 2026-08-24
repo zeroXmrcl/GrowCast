@@ -3,8 +3,8 @@ import {headers} from "next/headers";
 import {rasterizeShareCardAssets} from "@/lib/share-card-image";
 import {
     loadShareCardCopy,
-    publicHostFromHeaders,
     resolveShareCardStill,
+    shareCardMetadataOrigin,
     shareCardVisibleHost,
 } from "@/lib/share-card";
 
@@ -16,10 +16,12 @@ export const dynamic = "force-dynamic";
 
 export default async function Image() {
     const headerList = await headers();
-    const host = publicHostFromHeaders(
-        headerList.get("host"),
-        headerList.get("x-forwarded-host"),
-    );
+    let host = "";
+    try {
+        host = new URL(shareCardMetadataOrigin(headerList)).host;
+    } catch {
+        host = "";
+    }
     const copy = await loadShareCardCopy(host);
     const visibleHost = shareCardVisibleHost(copy.host);
     const {stillSrc, logoSrc} = await rasterizeShareCardAssets(await resolveShareCardStill());

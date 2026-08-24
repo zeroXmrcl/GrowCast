@@ -19,6 +19,16 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
             </>
         ),
     },
+    archived_reset_warning: {
+        tone: "warning",
+        title: "Grow archived — reload Settings",
+        body: "The archive was published, but the live grow could not be reset. Reload Settings before editing the current grow.",
+    },
+    archived_cleanup_warning: {
+        tone: "warning",
+        title: "Grow archived — leftover live media",
+        body: "The archive was published and the current grow was reset, but some live snapshots or pictures could not be deleted.",
+    },
     save_failed: {
         tone: "danger",
         title: "Save failed",
@@ -54,7 +64,7 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     media_too_many_files: {
         tone: "warning",
         title: "Too many files",
-        body: "Upload at most 10 files at a time.",
+        body: "Upload at most 2 files at a time.",
     },
     media_invalid_file: {
         tone: "danger",
@@ -65,6 +75,11 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         tone: "danger",
         title: "Upload failed",
         body: "Could not save the pictures. Review logs and try again.",
+    },
+    media_payload_too_large: {
+        tone: "warning",
+        title: "Upload too large",
+        body: "The request exceeded the 40 MB upload limit. Choose fewer or smaller pictures and try again.",
     },
     media_delete_failed: {
         tone: "danger",

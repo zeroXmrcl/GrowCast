@@ -159,7 +159,11 @@ export function publicRequestOrigin(
         forwardedHost ||
         url.host;
 
-    return originFromProtoHost(proto, host);
+    try {
+        return originFromProtoHost(proto, host);
+    } catch {
+        return url.origin;
+    }
 }
 
 export function publicAbsoluteUrl(request: Request, path: string): string {

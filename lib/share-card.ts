@@ -1,6 +1,7 @@
 import {readdir} from "node:fs/promises";
 import path from "node:path";
 import {getCurrentGrow} from "@/lib/db";
+import {publicRequestOrigin} from "@/lib/request-trust";
 import {SNAPSHOT_DIR, pathExists} from "@/lib/extension-status";
 import {IMAGE_EXTENSIONS} from "@/lib/safe-media-filename";
 import {withStale} from "@/lib/ggs-live";
@@ -50,15 +51,32 @@ export function stillImageMime(name: string): "image/jpeg" | "image/png" | "imag
     }
 }
 
-export function publicHostFromHeaders(
-    hostHeader: string | null | undefined,
-    forwardedHost: string | null | undefined,
-): string {
-    const raw = (forwardedHost || hostHeader || "").split(",")[0].trim().toLowerCase();
-    if (!raw) {
-        return "";
+function headersFromInput(
+    headers: Headers | Record<string, string | string[] | undefined | null>,
+): Headers {
+    if (typeof (headers as Headers).get === "function" && typeof (headers as Headers).forEach === "function") {
+        return headers as Headers;
     }
-    return raw.replace(/:(80|443)$/, "");
+    const out = new Headers();
+    for (const [key, val] of Object.entries(
+        headers as Record<string, string | string[] | undefined | null>,
+    )) {
+        if (val == null || val === "") {
+            continue;
+        }
+        out.set(key, Array.isArray(val) ? val[0] ?? "" : val);
+    }
+    return out;
+}
+
+export function shareCardMetadataOrigin(
+    headers: Headers | Record<string, string | string[] | undefined | null>,
+    env: NodeJS.ProcessEnv = process.env,
+): string {
+    return publicRequestOrigin(
+        new Request("http://127.0.0.1", {headers: headersFromInput(headers)}),
+        env,
+    );
 }
 
 export function shareCardVisibleHost(host: string): string {

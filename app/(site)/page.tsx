@@ -1,6 +1,8 @@
 import {getCurrentGrow} from "@/lib/db";
 import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
+import {formatDateDisplay} from "@/app/(site)/grows/format";
+import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
 import {listMediaUrls} from "@/lib/media-library";
 import SiteFooter from "@/components/site-footer";
@@ -11,19 +13,6 @@ import {markdownUrlTransform, safeHttpUrlOrEmpty} from "@/lib/url-policy";
 export const dynamic = "force-dynamic";
 
 /* TODO Light widget (schedule/PPFD)*/
-
-function formatDate(value: string): string {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return value;
-    }
-
-    return new Intl.DateTimeFormat("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    }).format(parsed);
-}
 
 function getHealthColor(health: string): string {
     switch (health.toLowerCase()) {
@@ -70,8 +59,11 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
 }
 
 export default async function Home() {
-    const grow = await getCurrentGrow();
-    const setupImages = await listMediaUrls("setup");
+    const [grow, setupImages, showLiveClimate] = await Promise.all([
+        getCurrentGrow(),
+        listMediaUrls("setup"),
+        hasGgsLiveUi(),
+    ]);
     const details = grow.details;
     const streamUrl = safeHttpUrlOrEmpty(grow.streamUrl);
     const socialLinks = [
@@ -174,10 +166,10 @@ export default async function Home() {
                                 night={grow.climate.humidityNight}
                                 unit="%"
                             />
-                            {(formatDate(details.seededAt) != '01.01.2001') && (
+                            {(formatDateDisplay(details.seededAt) != '01.01.2001') && (
                                 <div className="flex justify-between gap-3">
                                     <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
-                                    <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatDate(details.seededAt)}</dd>
+                                    <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatDateDisplay(details.seededAt)}</dd>
                                 </div>)}
                         </dl>
                         {details.notes && (
@@ -191,7 +183,7 @@ export default async function Home() {
                 </aside>
             </div>
 
-            <LiveTentRow />
+            {showLiveClimate ? <LiveTentRow /> : null}
 
             <section className="grid gap-6 lg:grid-cols-2">
                 <article

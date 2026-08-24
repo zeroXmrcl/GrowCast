@@ -34,7 +34,7 @@ describe("openMediaFile", () => {
         }
     });
 
-    it("does not follow a symlink out of the media root", async () => {
+    it("does not follow a symlink out of the media root", async (t) => {
         const root = await mkdtemp(path.join(os.tmpdir(), "growcast-media-link-"));
         try {
             const outside = path.join(root, "outside");
@@ -42,7 +42,15 @@ describe("openMediaFile", () => {
             await mkdir(outside);
             await mkdir(media);
             await writeFile(path.join(outside, "secret.webp"), "secret");
-            await symlink(path.join(outside, "secret.webp"), path.join(media, "secret.webp"));
+            try {
+                await symlink(path.join(outside, "secret.webp"), path.join(media, "secret.webp"));
+            } catch (error) {
+                if ((error as NodeJS.ErrnoException).code === "EPERM") {
+                    t.skip("host cannot create symlinks");
+                    return;
+                }
+                throw error;
+            }
 
             const opened = await openMediaFile(media, "secret.webp", IMAGE_EXTENSIONS);
             assert.equal(opened.ok, false);
@@ -56,13 +64,21 @@ describe("openMediaFile", () => {
 });
 
 describe("openFixedMediaFile", () => {
-    it("refuses a symlink timelapse path", async () => {
+    it("refuses a symlink timelapse path", async (t) => {
         const root = await mkdtemp(path.join(os.tmpdir(), "growcast-tl-"));
         try {
             const real = path.join(root, "real.mp4");
             const link = path.join(root, "latest_timelapse.mp4");
             await writeFile(real, "video");
-            await symlink(real, link);
+            try {
+                await symlink(real, link);
+            } catch (error) {
+                if ((error as NodeJS.ErrnoException).code === "EPERM") {
+                    t.skip("host cannot create symlinks");
+                    return;
+                }
+                throw error;
+            }
             const opened = await openFixedMediaFile(link, VIDEO_EXTENSIONS);
             assert.equal(opened.ok, false);
         } finally {

@@ -32,15 +32,7 @@ export async function rasterizeShareCardAssets(still: ShareCardStill | null): Pr
     logoSrc: string;
 }> {
     const logoSvg = await readFile(path.join(process.cwd(), "public", "growCastLogo_green.svg"));
-    let logoSrc = asDataUrl("image/svg+xml", logoSvg);
-
-    try {
-        const sharp = (await import("sharp")).default;
-        const logoPng = await sharp(logoSvg).resize(80, 80).png().toBuffer();
-        logoSrc = asDataUrl("image/png", logoPng);
-    } catch {
-        // Keep the SVG data URL if native sharp/libvips is missing.
-    }
+    const logoSrc = asDataUrl("image/svg+xml", logoSvg);
 
     let stillSrc: string | null = null;
     if (still) {
