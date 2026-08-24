@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {usePathname} from "next/navigation";
 import {useEffect, useState} from "react";
+import {SITE_FRAME_CLASS} from "@/lib/site-frame";
 import {navItemsFor} from "@/lib/site-nav";
 
 export default function SiteHeader({showSettingsLink = true}: {showSettingsLink?: boolean}) {
@@ -48,7 +49,7 @@ export default function SiteHeader({showSettingsLink = true}: {showSettingsLink?
         <header
             className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90"
         >
-            <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 md:px-8">
+            <div className={`${SITE_FRAME_CLASS} flex items-center justify-between py-3`}>
                 <Link href="/" className="flex items-center gap-3">
                     <Image
                         src="/growCastLogo_green.svg"
