@@ -1,6 +1,8 @@
+import {readdir} from "node:fs/promises";
 import path from "node:path";
 import {getCurrentGrow} from "@/lib/db";
-import {SNAPSHOT_DIR, getSnapshotFiles} from "@/lib/extension-status";
+import {SNAPSHOT_DIR, pathExists} from "@/lib/extension-status";
+import {IMAGE_EXTENSIONS} from "@/lib/safe-media-filename";
 import {withStale} from "@/lib/ggs-live";
 import {readGgsLive} from "@/lib/ggs-live-store";
 import {
@@ -33,6 +35,20 @@ export type ShareCardStill = {
     kind: "snapshot" | "dashboard" | "setup";
     name: string;
 };
+
+export function stillImageMime(name: string): "image/jpeg" | "image/png" | "image/webp" | null {
+    switch (path.extname(name).toLowerCase()) {
+        case ".jpg":
+        case ".jpeg":
+            return "image/jpeg";
+        case ".png":
+            return "image/png";
+        case ".webp":
+            return "image/webp";
+        default:
+            return null;
+    }
+}
 
 export function publicHostFromHeaders(
     hostHeader: string | null | undefined,
@@ -147,9 +163,21 @@ export async function loadShareCardCopy(host: string): Promise<ShareCardCopy> {
     });
 }
 
+async function listSnapshotImageNames(): Promise<string[]> {
+    if (!(await pathExists(SNAPSHOT_DIR))) {
+        return [];
+    }
+    const entries = await readdir(SNAPSHOT_DIR, {withFileTypes: true});
+    return entries
+        .filter((entry) => entry.isFile())
+        .map((entry) => entry.name)
+        .filter((name) => IMAGE_EXTENSIONS.has(path.extname(name).toLowerCase()))
+        .sort((a, b) => b.localeCompare(a, undefined, {numeric: true}));
+}
+
 export async function resolveShareCardStill(): Promise<ShareCardStill | null> {
     const [snapshots, dashboard, setup] = await Promise.all([
-        getSnapshotFiles(),
+        listSnapshotImageNames(),
         listMediaFiles("dashboard"),
         listMediaFiles("setup"),
     ]);

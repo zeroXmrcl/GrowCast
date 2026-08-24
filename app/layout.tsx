@@ -29,11 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
     return {
         title: copy.title,
-        description: copy.description,
         ...(origin ? {metadataBase: new URL(origin)} : {}),
         openGraph: {
             title: copy.title,
-            description: copy.description,
             siteName: "GrowCast",
             type: "website",
             locale: "en_US",
@@ -41,7 +39,6 @@ export async function generateMetadata(): Promise<Metadata> {
         twitter: {
             card: "summary_large_image",
             title: copy.title,
-            description: copy.description,
         },
     };
 }

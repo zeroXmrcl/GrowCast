@@ -5,6 +5,7 @@ import {
     pickShareCardStill,
     publicHostFromHeaders,
     shareCardVisibleHost,
+    stillImageMime,
 } from "../lib/share-card.ts";
 
 describe("buildShareCardCopy", () => {
@@ -94,5 +95,14 @@ describe("publicHostFromHeaders", () => {
         assert.equal(shareCardVisibleHost("grow.0xmarcel.com"), "grow.0xmarcel.com");
         assert.equal(shareCardVisibleHost("localhost:3000"), "");
         assert.equal(shareCardVisibleHost("127.0.0.1:3000"), "");
+    });
+});
+
+describe("stillImageMime", () => {
+    it("maps jpeg/png for direct embed and webp for conversion", () => {
+        assert.equal(stillImageMime("shot.jpg"), "image/jpeg");
+        assert.equal(stillImageMime("shot.PNG"), "image/png");
+        assert.equal(stillImageMime("shot.webp"), "image/webp");
+        assert.equal(stillImageMime("notes.txt"), null);
     });
 });
