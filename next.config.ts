@@ -26,7 +26,12 @@ const nextConfig: NextConfig = {
     // Standalone tracing copies sharp's .node but not @img/sharp-libvips-*,
     // which provides libvips-cpp.so on Alpine musl.
     outputFileTracingIncludes: {
-        "/**": ["./node_modules/sharp/**/*", "./node_modules/@img/**/*"],
+        "/**": [
+            "./node_modules/sharp/**/*",
+            "./node_modules/@img/**/*",
+            "./node_modules/webp-wasm/**/*",
+            "./node_modules/jpeg-js/**/*",
+        ],
     },
     experimental: {
         // proxy.ts clones request bodies. Admin picture POSTs to
