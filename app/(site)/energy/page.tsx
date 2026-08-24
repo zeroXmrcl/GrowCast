@@ -1,10 +1,16 @@
+import {notFound} from "next/navigation";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import EnergyScoreboard from "@/components/energy-scoreboard";
 import {buildEnergyDto} from "@/lib/energy/scoreboard";
+import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 
 export const dynamic = "force-dynamic";
 
 export default async function EnergyPage() {
+    if (!(await hasGgsLiveUi())) {
+        notFound();
+    }
+
     const isAdmin = await isAdminAuthenticated();
     const result = await buildEnergyDto({
         grow: "current",

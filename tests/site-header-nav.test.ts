@@ -1,33 +1,63 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {navItemsFor} from "../lib/site-nav.ts";
+import {navItemsFor, type NavFlags} from "../lib/site-nav.ts";
+
+const allOn: NavFlags = {
+    showEnergy: true,
+    showGallery: true,
+    showPastGrows: true,
+    showSettingsLink: true,
+};
 
 describe("navItemsFor", () => {
     it("hides the current section and appends Settings last when enabled", () => {
         assert.deepEqual(
-            navItemsFor("/gallery", true).map((item) => item.href),
+            navItemsFor("/gallery", allOn).map((item) => item.href),
             ["/", "/energy", "/grows", "/admin"],
         );
     });
 
     it("omits Settings when the flag is off", () => {
         assert.deepEqual(
-            navItemsFor("/gallery", false).map((item) => item.href),
+            navItemsFor("/gallery", {...allOn, showSettingsLink: false}).map((item) => item.href),
             ["/", "/energy", "/grows"],
         );
     });
 
     it("does not append Settings on admin routes", () => {
         assert.deepEqual(
-            navItemsFor("/admin/archives", true).map((item) => item.href),
+            navItemsFor("/admin/archives", allOn).map((item) => item.href),
             ["/", "/energy", "/gallery", "/grows"],
         );
     });
 
-    it("always includes Energy and hides it on the energy page", () => {
+    it("includes Energy only when GGS live data exists, and hides it on the energy page", () => {
         assert.deepEqual(
-            navItemsFor("/energy", false).map((item) => item.href),
+            navItemsFor("/energy", {...allOn, showSettingsLink: false}).map((item) => item.href),
             ["/", "/gallery", "/grows"],
+        );
+        assert.equal(
+            navItemsFor("/", {...allOn, showEnergy: false, showSettingsLink: false})
+                .some((item) => item.href === "/energy"),
+            false,
+        );
+    });
+
+    it("omits Past Grows when no grow has been archived", () => {
+        assert.deepEqual(
+            navItemsFor("/", {...allOn, showPastGrows: false, showSettingsLink: false}).map(
+                (item) => item.href,
+            ),
+            ["/energy", "/gallery"],
+        );
+    });
+
+    it("omits Gallery when the timelapse plugin is not installed", () => {
+        assert.deepEqual(
+            navItemsFor("/", {...allOn, showGallery: false, showSettingsLink: false}).map(
+                (item) => item.href,
+            ),
+            ["/energy", "/grows"],
         );
     });
 });
