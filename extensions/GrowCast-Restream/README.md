@@ -10,4 +10,7 @@ Optional `GROWCAST_RESTREAM_STREAM_URL` in the same `.env.local` so the capture 
 
 ```bash
 docker compose up --build -d
+docker compose logs -f restream
 ```
+
+Logs boot, idle vs Start, Chromium/ffmpeg start and stop, Twitch ingest host (never the stream key or capture token), and a still-live line about once a minute. Chromium GPU noise stays at `LOG_LEVEL=debug`.
