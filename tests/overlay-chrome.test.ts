@@ -46,8 +46,10 @@ describe("overlay chrome", () => {
         assert.match(pageSrc, /shareCardMetadataOrigin/);
         assert.match(pageSrc, /overlayPublicUrl/);
         assert.match(fieldsSrc, /name="overlayLayout"/);
+        assert.match(fieldsSrc, /name="overlayStream"/);
         assert.match(fieldsSrc, /1920×1080/);
         assert.doesNotMatch(fieldsSrc, /[?]layout=/);
+        assert.doesNotMatch(fieldsSrc, /[?]stream=/);
     });
 
     it("does not pause overlay polls when the Browser Source is hidden", () => {
@@ -58,5 +60,30 @@ describe("overlay chrome", () => {
         assert.equal(hudSrc.includes("shouldPollEnergy"), false);
         assert.match(hudSrc, /ENERGY_POLL_MS/);
         assert.match(hudSrc, /OVERLAY_GROW_POLL_MS/);
+    });
+
+    it("embeds the grow stream only when overlayStream is include", () => {
+        const shellSrc = readFileSync(
+            path.join(process.cwd(), "components", "overlay-shell.tsx"),
+            "utf8",
+        );
+        const hudSrc = readFileSync(
+            path.join(process.cwd(), "components", "overlay-hud.tsx"),
+            "utf8",
+        );
+        const energySrc = readFileSync(
+            path.join(process.cwd(), "components", "overlay-energy.tsx"),
+            "utf8",
+        );
+        const identitySrc = readFileSync(
+            path.join(process.cwd(), "components", "overlay-identity.tsx"),
+            "utf8",
+        );
+        assert.match(shellSrc, /overlayStreamEmbeds/);
+        assert.match(shellSrc, /<iframe/);
+        assert.match(hudSrc, /overlayStream/);
+        assert.match(energySrc, /overlayEnergyGrowWindow/);
+        assert.match(identitySrc, /overlayIdentityView/);
+        assert.doesNotMatch(identitySrc, /health/i);
     });
 });

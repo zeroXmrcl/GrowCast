@@ -5,6 +5,7 @@ import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
 import {isDateOnly} from "@/lib/date-only";
 import {DEFAULT_OVERLAY_LAYOUT, parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
+import {DEFAULT_OVERLAY_STREAM, parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
 
 export type GrowDetails = {
   strain: string;
@@ -57,6 +58,7 @@ export type GrowRecord = {
   socials: Socials;
   climate: Climate;
   overlayLayout: OverlayLayout;
+  overlayStream: OverlayStream;
 };
 
 export type GrowUpdateInput = {
@@ -72,6 +74,7 @@ export type GrowUpdateInput = {
   socials?: Partial<Socials>;
   climate?: Partial<Climate>;
   overlayLayout?: OverlayLayout;
+  overlayStream?: OverlayStream;
 };
 
 function dataDir(): string {
@@ -181,6 +184,7 @@ export const EMPTY_GROW: GrowRecord = {
   },
 
   overlayLayout: DEFAULT_OVERLAY_LAYOUT,
+  overlayStream: DEFAULT_OVERLAY_STREAM,
 };
 
 export function normalizeGrowRecord(raw: unknown): GrowRecord {
@@ -245,6 +249,7 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
     growSetup,
     status,
     overlayLayout: parseOverlayLayout(parsed.overlayLayout),
+    overlayStream: parseOverlayStream(parsed.overlayStream),
   };
 }
 
@@ -288,6 +293,9 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
     climate: mergeDefined(current.climate, input.climate),
     overlayLayout: parseOverlayLayout(
       input.overlayLayout !== undefined ? input.overlayLayout : current.overlayLayout,
+    ),
+    overlayStream: parseOverlayStream(
+      input.overlayStream !== undefined ? input.overlayStream : current.overlayStream,
     ),
   };
 
