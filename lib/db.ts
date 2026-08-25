@@ -4,6 +4,7 @@ import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
 import {isDateOnly} from "@/lib/date-only";
+import {DEFAULT_OVERLAY_LAYOUT, parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
 
 export type GrowDetails = {
   strain: string;
@@ -55,6 +56,7 @@ export type GrowRecord = {
   status: GrowStatus;
   socials: Socials;
   climate: Climate;
+  overlayLayout: OverlayLayout;
 };
 
 export type GrowUpdateInput = {
@@ -69,6 +71,7 @@ export type GrowUpdateInput = {
   status?: Partial<GrowStatus>;
   socials?: Partial<Socials>;
   climate?: Partial<Climate>;
+  overlayLayout?: OverlayLayout;
 };
 
 function dataDir(): string {
@@ -176,6 +179,8 @@ export const EMPTY_GROW: GrowRecord = {
     discordInvite: "",
     customWebsite: "",
   },
+
+  overlayLayout: DEFAULT_OVERLAY_LAYOUT,
 };
 
 export function normalizeGrowRecord(raw: unknown): GrowRecord {
@@ -239,6 +244,7 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
     socials,
     growSetup,
     status,
+    overlayLayout: parseOverlayLayout(parsed.overlayLayout),
   };
 }
 
@@ -280,6 +286,9 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
     socials: mergeDefined(current.socials, input.socials),
     details: mergeGrowDetails(current.details, input.details),
     climate: mergeDefined(current.climate, input.climate),
+    overlayLayout: parseOverlayLayout(
+      input.overlayLayout !== undefined ? input.overlayLayout : current.overlayLayout,
+    ),
   };
 
   await saveCurrentGrow(nextGrow);

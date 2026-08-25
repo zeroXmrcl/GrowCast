@@ -64,6 +64,7 @@ export async function saveGrowAction(formData: FormData): Promise<void> {
         logAdminGrowUpdated();
         revalidatePath("/");
         revalidatePath("/energy");
+        revalidatePath("/overlay");
         revalidatePath("/admin");
         redirect(withNotice("/admin", "saved"));
     });

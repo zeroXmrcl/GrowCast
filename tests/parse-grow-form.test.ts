@@ -60,6 +60,34 @@ describe("parseAdminSettingsForm", () => {
         assert.equal(result.timelapse.timezone, "UTC");
     });
 
+    it("parses overlayLayout radios with left-rail as the missing/junk default", () => {
+        const missing = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+            }),
+        );
+        assert.equal(missing.grow.overlayLayout, "left-rail");
+
+        const junk = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                overlayLayout: "wide",
+            }),
+        );
+        assert.equal(junk.grow.overlayLayout, "left-rail");
+
+        const bar = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                overlayLayout: "bottom-bar",
+            }),
+        );
+        assert.equal(bar.grow.overlayLayout, "bottom-bar");
+    });
+
     it("parses showSettingsLink from the checkbox", () => {
         const unchecked = parseAdminSettingsForm(
             formFrom({

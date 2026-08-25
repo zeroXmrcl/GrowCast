@@ -54,6 +54,33 @@ describe("grow JSON store", () => {
             assert.equal(grow.details.strain, "");
             assert.equal(grow.status.estimatedHarvestDate, "");
             assert.equal(grow.climate.temperatureDay, 0);
+            assert.equal(grow.overlayLayout, "left-rail");
+        });
+    });
+
+    it("persists overlayLayout bottom-bar and rejects junk on read", async () => {
+        await withTempDataDir(async (dir) => {
+            const file = path.join(dir, "current-grow.json");
+            await writeFile(file, JSON.stringify({name: "Rail Grow"}), "utf8");
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayLayout, "left-rail");
+
+            await updateCurrentGrow({
+                name: grow.name,
+                plant: grow.plant,
+                streamUrl: grow.streamUrl,
+                overlayLayout: "bottom-bar",
+            });
+            const saved = JSON.parse(await readFile(file, "utf8"));
+            assert.equal(saved.overlayLayout, "bottom-bar");
+            assert.equal((await getCurrentGrow()).overlayLayout, "bottom-bar");
+
+            await writeFile(
+                file,
+                JSON.stringify({name: "Junk Layout", overlayLayout: "wide"}),
+                "utf8",
+            );
+            assert.equal((await getCurrentGrow()).overlayLayout, "left-rail");
         });
     });
 

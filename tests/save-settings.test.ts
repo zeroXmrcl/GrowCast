@@ -54,9 +54,34 @@ describe("saveAdminSettings orchestration", () => {
             if (result.ok) {
                 assert.equal(result.grow.name, "Atomic Save Probe");
                 assert.equal(result.grow.streamUrl, "https://example.com/stream/");
+                assert.equal(result.grow.overlayLayout, "left-rail");
                 assert.equal(result.timelapse.timelapseQuality, "low");
                 assert.equal(result.timelapse.timelapseLengthSeconds, 8);
             }
+        });
+    });
+
+    it("persists overlayLayout from the settings form", async () => {
+        await withTempDataDir(async () => {
+            const live = await getCurrentGrow();
+            assert.equal(live.overlayLayout, "left-rail");
+
+            const parsed = parseAdminSettingsForm(
+                settingsForm({
+                    name: "Overlay Save",
+                    plant: "Basil",
+                    overlayLayout: "bottom-bar",
+                    growId: live.id,
+                    timelapseQuality: "medium",
+                    timelapseTimezone: "UTC",
+                    timelapseLength: "8",
+                }),
+            );
+            const result = await saveAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayLayout, "bottom-bar");
+            assert.equal(grow.name, "Overlay Save");
         });
     });
 
