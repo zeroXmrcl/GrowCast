@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {completeCurrentGrow, listArchivedGrows} from "../lib/archives.ts";
-import {todayDateOnly} from "../lib/date-only.ts";
 import {energyCurrentDir, energyCursorFile} from "../lib/energy/paths.ts";
-import {updateCurrentGrow} from "../lib/db.ts";
+import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
 import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
+import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
 
 async function withTempEnv<T>(
     fn: (env: {
@@ -29,10 +29,12 @@ async function withTempEnv<T>(
     const previous = process.env.GROWCAST_DATA_DIR;
     process.env.GROWCAST_DATA_DIR = dataDir;
     _resetEnergyAccrueLockForTests();
+    _resetGrowWriteLockForTests();
     try {
         return await fn({root, sources});
     } finally {
         _resetEnergyAccrueLockForTests();
+        _resetGrowWriteLockForTests();
         if (previous === undefined) {
             delete process.env.GROWCAST_DATA_DIR;
         } else {
@@ -161,7 +163,7 @@ describe("complete grow energy archive", () => {
         });
     });
 
-    it("fails complete and leaves current/ when cursor existed and copy failed", async () => {
+    it("fails complete and leaves current/ when a day file is corrupt", async () => {
         await withTempEnv(async ({sources}) => {
             const live = await updateCurrentGrow({
                 name: "CopyFail",
@@ -179,10 +181,7 @@ describe("complete grow energy archive", () => {
                 }),
                 "utf8",
             );
-
-            const archiveId = `${todayDateOnly()}-copyfail`;
-            const stagingRoot = path.join(process.env.GROWCAST_DATA_DIR!, "archives", `.tmp-${archiveId}`);
-            await mkdir(path.join(stagingRoot, "energy.json"), {recursive: true});
+            await writeFile(path.join(energyCurrentDir(), "2026-08-23.json"), "{not-json", "utf8");
 
             const result = await completeCurrentGrow(
                 {
@@ -201,6 +200,46 @@ describe("complete grow energy archive", () => {
             assert.deepEqual(await listArchivedGrows(), []);
             const current = await readFile(energyCursorFile(), "utf8");
             assert.ok(current.includes(live.id));
+            assert.equal(await readFile(path.join(energyCurrentDir(), "2026-08-23.json"), "utf8"), "{not-json");
+        });
+    });
+
+    it("fails complete and leaves current/ when day files exist without a matching cursor", async () => {
+        await withTempEnv(async ({sources}) => {
+            const live = await updateCurrentGrow({
+                name: "Orphan Days",
+                plant: "Basil",
+                streamUrl: "",
+            });
+            await mkdir(energyCurrentDir(), {recursive: true});
+            await writeFile(
+                path.join(energyCurrentDir(), "2026-08-23.json"),
+                JSON.stringify({
+                    date: "2026-08-23",
+                    hours: {"12": {"90E5B1B87088:heater": {"10": 3600}}},
+                }),
+                "utf8",
+            );
+
+            const result = await completeCurrentGrow(
+                {
+                    harvestedAt: "2026-08-23",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: live.id,
+                },
+                sources,
+            );
+            assert.equal(result.ok, false);
+            if (!result.ok) {
+                assert.equal(result.error, "energy_copy_failed");
+            }
+            assert.deepEqual(await listArchivedGrows(), []);
+            assert.equal((await getCurrentGrow()).id, live.id);
+            const day = JSON.parse(
+                await readFile(path.join(energyCurrentDir(), "2026-08-23.json"), "utf8"),
+            ) as {hours: Record<string, Record<string, Record<string, number>>>};
+            assert.equal(day.hours["12"]["90E5B1B87088:heater"]["10"], 3600);
         });
     });
 });

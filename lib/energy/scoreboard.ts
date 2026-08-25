@@ -158,7 +158,7 @@ export async function buildEnergyDto(options: {
     }
 
     try {
-        await accrueEnergyPending(nowMs);
+        await accrueEnergyPending(nowMs, {persist: false});
     } catch {
         logEnergy("energy_accrue_failed");
     }

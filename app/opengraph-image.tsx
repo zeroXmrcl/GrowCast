@@ -1,12 +1,6 @@
 import {ImageResponse} from "next/og";
 import {rasterizeShareCardAssets} from "@/lib/share-card-image";
-import {
-    loadShareCardCopy,
-    resolveShareCardStill,
-    shareCardOgImageId,
-    shareCardStillMtimeMs,
-    shareCardStillPath,
-} from "@/lib/share-card";
+import {loadShareCardCopySafe, resolveShareCardStill} from "@/lib/share-card";
 
 export const alt = "GrowCast";
 export const size = {width: 1200, height: 630};
@@ -14,29 +8,8 @@ export const contentType = "image/png";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function generateImageMetadata(): Promise<
-    Array<{
-        id: string;
-        alt: string;
-        size: {width: number; height: number};
-        contentType: string;
-    }>
-> {
-    const still = await resolveShareCardStill();
-    const mtimeMs = await shareCardStillMtimeMs(still ? shareCardStillPath(still) : null);
-    return [
-        {
-            id: shareCardOgImageId(still, mtimeMs),
-            alt,
-            size,
-            contentType,
-        },
-    ];
-}
-
-export default async function Image({id}: {id: Promise<string | number>}) {
-    await id;
-    const copy = await loadShareCardCopy("");
+export default async function Image() {
+    const copy = await loadShareCardCopySafe("");
     const {stillSrc, logoSrc} = await rasterizeShareCardAssets(await resolveShareCardStill());
 
     return new ImageResponse(

@@ -16,6 +16,11 @@ function normalizePathname(pathname: string): string {
     return pathname;
 }
 
+export function isBodyMethod(method: string): boolean {
+    const normalized = method.toUpperCase();
+    return normalized === "POST" || normalized === "PUT" || normalized === "PATCH";
+}
+
 export function maxBodyBytesFor(method: string, pathname: string): number {
     if (method.toUpperCase() === "POST" && normalizePathname(pathname) === MEDIA_PATH) {
         return MEDIA_MAX_BODY_BYTES;
@@ -23,15 +28,20 @@ export function maxBodyBytesFor(method: string, pathname: string): number {
     return DEFAULT_MAX_BODY_BYTES;
 }
 
+/** Fail-closed: missing, empty, or non-integer Content-Length is over cap. */
 export function contentLengthExceedsCap(
     contentLengthHeader: string | null | undefined,
     capBytes: number,
 ): boolean {
-    if (contentLengthHeader == null || contentLengthHeader.trim() === "") {
-        return false;
+    if (contentLengthHeader == null) {
+        return true;
     }
-    const length = Number(contentLengthHeader);
-    return Number.isFinite(length) && length > capBytes;
+    const trimmed = contentLengthHeader.trim();
+    if (trimmed === "" || !/^\d+$/.test(trimmed)) {
+        return true;
+    }
+    const length = Number(trimmed);
+    return !Number.isSafeInteger(length) || length > capBytes;
 }
 
 export function payloadTooLargeResponse(method: string, pathname: string): Response {

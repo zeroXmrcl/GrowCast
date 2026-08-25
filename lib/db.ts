@@ -263,8 +263,14 @@ export async function replaceCurrentGrow(record: GrowRecord): Promise<void> {
   await saveCurrentGrow(record);
 }
 
-export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRecord> {
+export async function updateCurrentGrow(
+  input: GrowUpdateInput,
+  expectedGrowId?: string,
+): Promise<GrowRecord> {
   const current = await getCurrentGrow();
+  if (expectedGrowId !== undefined && expectedGrowId !== current.id) {
+    throw new Error("stale_grow");
+  }
 
   const nextGrow: GrowRecord = {
     ...current,

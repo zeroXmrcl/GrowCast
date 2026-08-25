@@ -14,6 +14,7 @@ import {
     updateArchivedGrow,
     type ArchiveMediaSources,
 } from "../lib/archives.ts";
+import {getCurrentGrow} from "../lib/db.ts";
 
 async function withTempEnv<T>(
     fn: (sources: ArchiveMediaSources) => Promise<T>,
@@ -51,8 +52,14 @@ async function seedArchive(sources: ArchiveMediaSources) {
     await writeFile(path.join(sources.picturesDir, "hero.jpeg"), "p");
     await writeFile(path.join(sources.timelapseDir, "latest_timelapse.mp4"), "v");
 
+    const live = await getCurrentGrow();
     const result = await completeCurrentGrow(
-        {harvestedAt: "2026-04-20", yieldGrams: 80, finalNotes: "ok"},
+        {
+            harvestedAt: "2026-04-20",
+            yieldGrams: 80,
+            finalNotes: "ok",
+            expectedGrowId: live.id,
+        },
         sources,
     );
     assert.equal(result.ok, true);

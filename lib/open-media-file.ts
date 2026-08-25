@@ -2,9 +2,21 @@ import {lstat, readFile, realpath} from "node:fs/promises";
 import path from "node:path";
 import {IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, isSafeMediaFilename} from "@/lib/safe-media-filename";
 
+export const MAX_PUBLIC_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_PUBLIC_VIDEO_BYTES = 512 * 1024 * 1024;
+
 export type OpenMediaResult =
     | {ok: true; buffer: Buffer; contentType: string}
     | {ok: false; status: 400 | 404};
+
+function maxBytesFor(allowedExtensions: Set<string>): number {
+    for (const ext of allowedExtensions) {
+        if (VIDEO_EXTENSIONS.has(ext)) {
+            return MAX_PUBLIC_VIDEO_BYTES;
+        }
+    }
+    return MAX_PUBLIC_IMAGE_BYTES;
+}
 
 function contentTypeFor(filename: string): string {
     const lower = filename.toLowerCase();
@@ -48,6 +60,9 @@ export async function openMediaFile(
         if (stats.isSymbolicLink() || !stats.isFile()) {
             return {ok: false, status: 404};
         }
+        if (stats.size > maxBytesFor(allowedExtensions)) {
+            return {ok: false, status: 404};
+        }
 
         const realRoot = await realpath(root);
         const realFile = await realpath(candidate);
@@ -75,6 +90,9 @@ export async function openFixedMediaFile(
     try {
         const stats = await lstat(resolved);
         if (stats.isSymbolicLink() || !stats.isFile()) {
+            return {ok: false, status: 404};
+        }
+        if (stats.size > maxBytesFor(allowedExtensions)) {
             return {ok: false, status: 404};
         }
         const buffer = await readFile(resolved);

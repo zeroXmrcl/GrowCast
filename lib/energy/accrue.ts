@@ -260,7 +260,13 @@ export async function accrueEnergyOnIngest(snapshot: GgsLiveIngest): Promise<voi
     });
 }
 
-export async function accrueEnergyPending(nowMs: number = Date.now()): Promise<void> {
+export async function accrueEnergyPending(
+    nowMs: number = Date.now(),
+    opts?: {persist?: boolean},
+): Promise<void> {
+    if (opts?.persist === false) {
+        return;
+    }
     await withEnergyAccrueLock(async () => {
         const live = await readGgsLive();
         if (!live) {

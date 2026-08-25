@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
-import {mkdir, mkdtemp, rm} from "node:fs/promises";
+import {access, mkdir, mkdtemp, readFile, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {completeCurrentGrow} from "../lib/archives.ts";
 import {energyGetResponse} from "../lib/energy/http.ts";
 import {writeEnergyCursor, writeEnergyDay} from "../lib/energy/store.ts";
+import {energyCursorFile, energyDayFile} from "../lib/energy/paths.ts";
 import {writeEnergySettings} from "../lib/energy/settings.ts";
 import {updateCurrentGrow} from "../lib/db.ts";
 import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
+import {saveGgsLive} from "../lib/ggs-live-store.ts";
+import {GGS_PLUGIN_ID, parseIngestBody} from "../lib/ggs-live.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-energy-http-"));
@@ -169,6 +172,78 @@ describe("GET /api/data/energy", () => {
             const response = await energyGetResponse(requestFor("current"), "public");
             const body = (await response.json()) as {kWh: number};
             assert.equal(body.kWh, 0);
+            await access(energyCursorFile());
+            await access(energyDayFile("2026-08-23"));
+        });
+    });
+
+    it("does not persist accrual or wipe current/ when GGS live is present and the cursor is for another grow", async () => {
+        await withTempDataDir(async () => {
+            await writeEnergySettings({
+                publicTariffEurPerKwh: 0.3,
+                privateTariffEurPerKwh: null,
+                overrides: [],
+            });
+            const lastAccruedAt = "2026-08-23T10:00:00.000Z";
+            const seconds = 3600;
+            await writeEnergyCursor({
+                growId: "grow-old",
+                startedAt: "2026-08-01T00:00:00.000Z",
+                lastAccruedAt,
+                devices: [],
+            });
+            await writeEnergyDay({
+                date: "2026-08-23",
+                hours: {"12": {"90E5B1B87088:heater": {"10": seconds}}},
+            });
+
+            const parsed = parseIngestBody({
+                pluginId: GGS_PLUGIN_ID,
+                source: "ggs-cloud",
+                updatedAt: new Date().toISOString(),
+                online: true,
+                devices: [
+                    {
+                        serial: "90E5B1B87088",
+                        name: "Tent Controller",
+                        prefix: "CB",
+                        productType: "SF-GGS-CB",
+                        online: true,
+                        sensor: {
+                            tempC: 25,
+                            humidityPct: 50,
+                            vpd: 1,
+                            co2: null,
+                            ppfd: null,
+                            tempSoilC: null,
+                            humiditySoilPct: null,
+                            ecSoil: null,
+                        },
+                        actuators: [{id: "heater", label: "Heater", kind: "heater", on: true, level: 10}],
+                    },
+                ],
+            });
+            assert.equal(parsed.ok, true);
+            if (!parsed.ok) {
+                return;
+            }
+            await saveGgsLive(parsed.value);
+
+            const cursorBefore = await readFile(energyCursorFile(), "utf8");
+            const dayBefore = await readFile(energyDayFile("2026-08-23"), "utf8");
+
+            const response = await energyGetResponse(requestFor("current"), "public");
+            assert.equal(response.status, 200);
+            const body = (await response.json()) as {kWh: number};
+            assert.equal(body.kWh, 0);
+
+            assert.equal(await readFile(energyCursorFile(), "utf8"), cursorBefore);
+            assert.equal(await readFile(energyDayFile("2026-08-23"), "utf8"), dayBefore);
+            assert.equal(JSON.parse(cursorBefore).lastAccruedAt, lastAccruedAt);
+            assert.equal(
+                JSON.parse(dayBefore).hours["12"]["90E5B1B87088:heater"]["10"],
+                seconds,
+            );
         });
     });
 

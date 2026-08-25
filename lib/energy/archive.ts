@@ -7,9 +7,10 @@ import {accrueEnergyPending, withEnergyAccrueLock} from "@/lib/energy/accrue";
 import {archiveEnergyFile} from "@/lib/energy/paths";
 import {
     energyCursorExists,
+    inspectEnergyDay,
+    listCurrentEnergyDates,
     parseCursorDevices,
     parseEnergyDayFile,
-    readAllCurrentDays,
     readEnergyCursor,
     resetEnergyCurrent,
 } from "@/lib/energy/store";
@@ -86,19 +87,38 @@ export async function buildEnergyArchivePayload(
     growId: string,
     endedAt: string,
 ): Promise<EnergyArchiveFile> {
+    const dates = await listCurrentEnergyDates();
     const cursor = await readEnergyCursor();
-    const currentDays = await readAllCurrentDays();
+    if (!cursor || cursor.growId !== growId) {
+        if (dates.length > 0) {
+            throw new EnergyCopyError();
+        }
+        return {
+            version: 1,
+            growId,
+            startedAt: endedAt,
+            endedAt,
+            days: {},
+            devices: [],
+        };
+    }
     const days: Record<string, {hours: EnergyDayHours}> = {};
-    for (const [date, day] of currentDays) {
-        days[date] = {hours: day.hours};
+    for (const date of dates) {
+        const inspected = await inspectEnergyDay(date);
+        if (inspected.status === "corrupt") {
+            throw new EnergyCopyError();
+        }
+        if (inspected.status === "ok") {
+            days[date] = {hours: inspected.day.hours};
+        }
     }
     return {
         version: 1,
-        growId: cursor?.growId || growId,
-        startedAt: cursor?.startedAt || endedAt,
+        growId: cursor.growId,
+        startedAt: cursor.startedAt,
         endedAt,
         days,
-        devices: cursor?.devices ?? [],
+        devices: cursor.devices,
     };
 }
 
@@ -115,10 +135,17 @@ export async function stageEnergyArchive(
             logEnergy("energy_accrue_failed");
         }
         const payload = await buildEnergyArchivePayload(growId, endedAt);
-        await atomicWriteFile(path.join(stagingRoot, "energy.json"), JSON.stringify(payload, null, 2));
+        await atomicWriteFile(
+            path.join(stagingRoot, "energy.json"),
+            JSON.stringify(payload, null, 2),
+        );
     } catch (error) {
-        if (hadCursor) {
-            throw error instanceof EnergyCopyError ? error : new EnergyCopyError();
+        if (error instanceof EnergyCopyError) {
+            throw error;
+        }
+        const dates = await listCurrentEnergyDates();
+        if (hadCursor || dates.length > 0) {
+            throw new EnergyCopyError();
         }
         try {
             await atomicWriteFile(

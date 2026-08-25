@@ -39,6 +39,10 @@ export async function meshPluginGetResponse(
         return noStoreJson({error: "Unknown plugin"}, 404);
     }
 
-    const data = await getTimelapseSettingsRecord();
-    return noStoreJson(data);
+    try {
+        const data = await getTimelapseSettingsRecord();
+        return noStoreJson(data);
+    } catch {
+        return noStoreJson({error: "Unavailable"}, 503);
+    }
 }

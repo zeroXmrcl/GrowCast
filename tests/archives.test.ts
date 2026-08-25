@@ -16,6 +16,7 @@ import {
     type ArchiveMediaSources,
 } from "../lib/archives.ts";
 import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
+import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
 
 type TempEnv = {
     root: string;
@@ -38,9 +39,11 @@ async function withTempEnv<T>(fn: (env: TempEnv) => Promise<T>): Promise<T> {
 
     const previous = process.env.GROWCAST_DATA_DIR;
     process.env.GROWCAST_DATA_DIR = dataDir;
+    _resetGrowWriteLockForTests();
     try {
         return await fn({root, sources});
     } finally {
+        _resetGrowWriteLockForTests();
         if (previous === undefined) {
             delete process.env.GROWCAST_DATA_DIR;
         } else {
@@ -75,8 +78,14 @@ describe("completeCurrentGrow", () => {
             await writeFile(path.join(sources.timelapseDir, "latest_timelapse.mp4"), "v");
             await writeFile(path.join(sources.picturesDir, "IMG_1.jpeg"), "p");
 
+            const live = await getCurrentGrow();
             const result = await completeCurrentGrow(
-                {harvestedAt: "2026-04-20", yieldGrams: 120.5, finalNotes: "  great run  "},
+                {
+                    harvestedAt: "2026-04-20",
+                    yieldGrams: 120.5,
+                    finalNotes: "  great run  ",
+                    expectedGrowId: live.id,
+                },
                 sources,
             );
 
@@ -140,8 +149,14 @@ describe("completeCurrentGrow", () => {
 
     it("suffixes the archive id on same-day name collisions and lists newest first", async () => {
         await withTempEnv(async ({sources}) => {
+            const firstLive = await getCurrentGrow();
             const first = await completeCurrentGrow(
-                {harvestedAt: "2026-04-01", yieldGrams: null, finalNotes: "first"},
+                {
+                    harvestedAt: "2026-04-01",
+                    yieldGrams: null,
+                    finalNotes: "first",
+                    expectedGrowId: firstLive.id,
+                },
                 sources,
             );
             assert.equal(first.ok, true);
@@ -155,8 +170,14 @@ describe("completeCurrentGrow", () => {
                 streamUrl: "",
             });
 
+            const secondLive = await getCurrentGrow();
             const second = await completeCurrentGrow(
-                {harvestedAt: "2026-04-02", yieldGrams: null, finalNotes: "second"},
+                {
+                    harvestedAt: "2026-04-02",
+                    yieldGrams: null,
+                    finalNotes: "second",
+                    expectedGrowId: secondLive.id,
+                },
                 sources,
             );
             assert.equal(second.ok, true);
@@ -178,8 +199,14 @@ describe("completeCurrentGrow", () => {
 
     it("normalizes invalid harvest dates and negative yields", async () => {
         await withTempEnv(async ({sources}) => {
+            const live = await getCurrentGrow();
             const result = await completeCurrentGrow(
-                {harvestedAt: "not-a-date", yieldGrams: -5, finalNotes: ""},
+                {
+                    harvestedAt: "not-a-date",
+                    yieldGrams: -5,
+                    finalNotes: "",
+                    expectedGrowId: live.id,
+                },
                 sources,
             );
 
@@ -201,8 +228,14 @@ describe("completeCurrentGrow", () => {
                 picturesDir: path.join(root, "missing-pictures"),
             };
 
+            const live = await getCurrentGrow();
             const result = await completeCurrentGrow(
-                {harvestedAt: "2026-04-20", yieldGrams: null, finalNotes: ""},
+                {
+                    harvestedAt: "2026-04-20",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: live.id,
+                },
                 missingSources,
             );
 
@@ -220,8 +253,14 @@ describe("completeCurrentGrow", () => {
 
     it("rejects a stale grow id and does not create another archive", async () => {
         await withTempEnv(async ({sources}) => {
+            const firstLive = await getCurrentGrow();
             const first = await completeCurrentGrow(
-                {harvestedAt: "2026-04-20", yieldGrams: null, finalNotes: ""},
+                {
+                    harvestedAt: "2026-04-20",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: firstLive.id,
+                },
                 sources,
             );
             assert.equal(first.ok, true);
@@ -328,6 +367,44 @@ describe("completeCurrentGrow", () => {
             const current = await getCurrentGrow();
             assert.equal(current.id, live.id);
             assert.equal(current.name, "Keep Archive");
+
+            const retry = await completeCurrentGrow(
+                {
+                    harvestedAt: "2026-04-20",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: live.id,
+                },
+                sources,
+            );
+            assert.equal(retry.ok, true);
+            if (retry.ok) {
+                assert.equal(retry.warning, "reset_retried");
+                assert.equal(retry.archive.archiveId, publishedId);
+            }
+            const afterRetry = await getCurrentGrow();
+            assert.notEqual(afterRetry.id, live.id);
+            assert.equal((await listArchivedGrows()).length, 1);
+        });
+    });
+
+    it("rejects complete without a grow id instead of skipping CAS", async () => {
+        await withTempEnv(async ({sources}) => {
+            const live = await updateCurrentGrow({
+                name: "Needs CAS",
+                plant: "Basil",
+                streamUrl: "",
+            });
+            const result = await completeCurrentGrow(
+                {harvestedAt: "2026-04-20", yieldGrams: null, finalNotes: ""},
+                sources,
+            );
+            assert.equal(result.ok, false);
+            if (!result.ok) {
+                assert.equal(result.error, "stale_grow");
+            }
+            assert.equal((await listArchivedGrows()).length, 0);
+            assert.equal((await getCurrentGrow()).id, live.id);
         });
     });
 

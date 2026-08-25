@@ -2,11 +2,16 @@ import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {
     buildShareCardCopy,
+    loadShareCardCopy,
+    loadShareCardCopySafe,
     pickShareCardStill,
     shareCardMetadataOrigin,
     shareCardOgImageId,
     stillImageMime,
 } from "../lib/share-card.ts";
+import {mkdir, mkdtemp, rm, writeFile} from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
 describe("buildShareCardCopy", () => {
     it("matches the mockup: plant, day, temp, humidity, host, and Discord description", () => {
@@ -153,15 +158,37 @@ describe("shareCardOgImageId", () => {
 });
 
 describe("opengraph-image still identity", () => {
-    it("advertises generateImageMetadata so the og:image URL follows the still", async () => {
+    it("does not export generateImageMetadata so a rotated still cannot 404 the card URL", async () => {
         const {readFile} = await import("node:fs/promises");
         const src = await readFile(
             new URL("../app/opengraph-image.tsx", import.meta.url),
             "utf8",
         );
-        assert.match(src, /export async function generateImageMetadata/);
-        assert.match(src, /shareCardOgImageId/);
-        assert.match(src, /shareCardStillMtimeMs/);
+        assert.equal(/export async function generateImageMetadata/.test(src), false);
+        assert.match(src, /export default async function Image/);
+    });
+});
+
+describe("loadShareCardCopySafe", () => {
+    it("returns fallback copy when current-grow.json is corrupt instead of throwing", async () => {
+        const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-og-"));
+        const previous = process.env.GROWCAST_DATA_DIR;
+        process.env.GROWCAST_DATA_DIR = dir;
+        try {
+            await mkdir(dir, {recursive: true});
+            await writeFile(path.join(dir, "current-grow.json"), "{not-json", "utf8");
+            await assert.rejects(() => loadShareCardCopy(""));
+            const copy = await loadShareCardCopySafe("");
+            assert.equal(copy.title, "GrowCast");
+            assert.equal(copy.plant, "Plants");
+        } finally {
+            if (previous === undefined) {
+                delete process.env.GROWCAST_DATA_DIR;
+            } else {
+                process.env.GROWCAST_DATA_DIR = previous;
+            }
+            await rm(dir, {recursive: true, force: true});
+        }
     });
 });
 
