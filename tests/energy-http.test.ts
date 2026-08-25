@@ -5,10 +5,10 @@ import path from "node:path";
 import {describe, it} from "node:test";
 import {completeCurrentGrow} from "../lib/archives.ts";
 import {energyGetResponse} from "../lib/energy/http.ts";
-import {writeEnergyCursor, writeEnergyDay} from "../lib/energy/store.ts";
+import {listCurrentEnergyDates, writeEnergyCursor, writeEnergyDay} from "../lib/energy/store.ts";
 import {energyCursorFile, energyDayFile} from "../lib/energy/paths.ts";
 import {writeEnergySettings} from "../lib/energy/settings.ts";
-import {updateCurrentGrow} from "../lib/db.ts";
+import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
 import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
 import {saveGgsLive} from "../lib/ggs-live-store.ts";
 import {GGS_PLUGIN_ID, parseIngestBody} from "../lib/ggs-live.ts";
@@ -244,6 +244,66 @@ describe("GET /api/data/energy", () => {
                 JSON.parse(dayBefore).hours["12"]["90E5B1B87088:heater"]["10"],
                 seconds,
             );
+        });
+    });
+
+    it("previews pending kWh from live state on GET without writing current/", async () => {
+        await withTempDataDir(async () => {
+            await writeEnergySettings({
+                publicTariffEurPerKwh: 0.3,
+                privateTariffEurPerKwh: null,
+                overrides: [],
+            });
+            const liveGrow = await getCurrentGrow();
+            const now = Date.now();
+            const lastIso = new Date(now - 600_000).toISOString();
+            const heater = {
+                serial: "90E5B1B87088",
+                name: "Tent Controller",
+                prefix: "CB" as const,
+                productType: "SF-GGS-CB",
+                online: true,
+                sensor: {
+                    tempC: 25,
+                    humidityPct: 50,
+                    vpd: 1,
+                    co2: null,
+                    ppfd: null,
+                    tempSoilC: null,
+                    humiditySoilPct: null,
+                    ecSoil: null,
+                },
+                actuators: [{id: "heater", label: "Heater", kind: "heater" as const, on: true, level: 10}],
+            };
+            await writeEnergyCursor({
+                growId: liveGrow.id,
+                startedAt: lastIso,
+                lastAccruedAt: lastIso,
+                devices: [heater],
+            });
+            const parsed = parseIngestBody({
+                pluginId: GGS_PLUGIN_ID,
+                source: "ggs-cloud",
+                updatedAt: new Date(now).toISOString(),
+                online: true,
+                devices: [heater],
+            });
+            assert.equal(parsed.ok, true);
+            if (!parsed.ok) {
+                return;
+            }
+            await saveGgsLive(parsed.value);
+
+            const cursorBefore = await readFile(energyCursorFile(), "utf8");
+            const datesBefore = await listCurrentEnergyDates();
+
+            const response = await energyGetResponse(requestFor("current"), "public");
+            assert.equal(response.status, 200);
+            const body = (await response.json()) as {kWh: number};
+            assert.equal(body.kWh, 0.1);
+
+            assert.equal(await readFile(energyCursorFile(), "utf8"), cursorBefore);
+            assert.deepEqual(await listCurrentEnergyDates(), datesBefore);
         });
     });
 

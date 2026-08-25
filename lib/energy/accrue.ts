@@ -146,6 +146,56 @@ export function planAccrue(options: {
     };
 }
 
+export function applyAccruePlanInMemory(
+    days: Map<string, EnergyDayFile>,
+    plan: AccruePlan,
+): Map<string, EnergyDayFile> {
+    if (plan.kind !== "advance" || plan.additions.length === 0) {
+        return days;
+    }
+    const next = new Map(days);
+    for (const addition of plan.additions) {
+        const existing = next.get(addition.date) ?? {date: addition.date, hours: {}};
+        next.set(
+            addition.date,
+            mergeDaySeconds(existing, addition.hour, addition.key, addition.level, addition.seconds),
+        );
+    }
+    return next;
+}
+
+/** Scoreboard-only: apply pending seconds from live state without writing current/. */
+export function previewPendingAccrue(options: {
+    live: GgsLiveIngest | null;
+    cursor: EnergyCursor | null;
+    growId: string;
+    days: Map<string, EnergyDayFile>;
+    nowMs: number;
+}): {cursor: EnergyCursor | null; days: Map<string, EnergyDayFile>} {
+    if (options.cursor && options.cursor.growId !== options.growId) {
+        return {cursor: null, days: new Map()};
+    }
+    if (!options.live) {
+        return {cursor: options.cursor, days: options.days};
+    }
+    const plan = planAccrue({
+        cursor: options.cursor,
+        currentGrowId: options.growId,
+        eventTimeMs: pendingAccrueEventTimeMs(options.live.updatedAt, options.nowMs),
+        newDevices: options.live.devices,
+    });
+    if (plan.kind === "skip" || plan.kind === "noop") {
+        return {cursor: options.cursor, days: options.days};
+    }
+    if (plan.kind === "init") {
+        return {cursor: plan.cursor, days: options.days};
+    }
+    return {
+        cursor: plan.cursor,
+        days: applyAccruePlanInMemory(options.days, plan),
+    };
+}
+
 class CorruptEnergyDayError extends Error {
     constructor() {
         super("corrupt_energy_day");
@@ -260,13 +310,7 @@ export async function accrueEnergyOnIngest(snapshot: GgsLiveIngest): Promise<voi
     });
 }
 
-export async function accrueEnergyPending(
-    nowMs: number = Date.now(),
-    opts?: {persist?: boolean},
-): Promise<void> {
-    if (opts?.persist === false) {
-        return;
-    }
+export async function accrueEnergyPending(nowMs: number = Date.now()): Promise<void> {
     await withEnergyAccrueLock(async () => {
         const live = await readGgsLive();
         if (!live) {
