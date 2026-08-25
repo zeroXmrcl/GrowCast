@@ -1,11 +1,11 @@
 import {ImageResponse} from "next/og";
-import {headers} from "next/headers";
 import {rasterizeShareCardAssets} from "@/lib/share-card-image";
 import {
     loadShareCardCopy,
     resolveShareCardStill,
-    shareCardMetadataOrigin,
-    shareCardVisibleHost,
+    shareCardOgImageId,
+    shareCardStillMtimeMs,
+    shareCardStillPath,
 } from "@/lib/share-card";
 
 export const alt = "GrowCast";
@@ -14,16 +14,29 @@ export const contentType = "image/png";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function Image() {
-    const headerList = await headers();
-    let host = "";
-    try {
-        host = new URL(shareCardMetadataOrigin(headerList)).host;
-    } catch {
-        host = "";
-    }
-    const copy = await loadShareCardCopy(host);
-    const visibleHost = shareCardVisibleHost(copy.host);
+export async function generateImageMetadata(): Promise<
+    Array<{
+        id: string;
+        alt: string;
+        size: {width: number; height: number};
+        contentType: string;
+    }>
+> {
+    const still = await resolveShareCardStill();
+    const mtimeMs = await shareCardStillMtimeMs(still ? shareCardStillPath(still) : null);
+    return [
+        {
+            id: shareCardOgImageId(still, mtimeMs),
+            alt,
+            size,
+            contentType,
+        },
+    ];
+}
+
+export default async function Image({id}: {id: Promise<string | number>}) {
+    await id;
+    const copy = await loadShareCardCopy("");
     const {stillSrc, logoSrc} = await rasterizeShareCardAssets(await resolveShareCardStill());
 
     return new ImageResponse(
@@ -119,18 +132,6 @@ export default async function Image() {
                                 }}
                             >
                                 {copy.stats}
-                            </div>
-                        ) : null}
-                        {visibleHost ? (
-                            <div
-                                style={{
-                                    display: "flex",
-                                    marginTop: 8,
-                                    fontSize: 16,
-                                    color: "#a1a1aa",
-                                }}
-                            >
-                                {visibleHost}
                             </div>
                         ) : null}
                     </div>
