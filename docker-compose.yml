@@ -38,3 +38,24 @@ services:
       GROWCAST_URL: http://growcast:3000
     depends_on:
       - growcast
+
+  restream:
+    profiles:
+      - twitch
+    build:
+      context: ./extensions/GrowCast-Restream
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    shm_size: "2gb"
+    user: "1001:1001"
+    env_file:
+      - path: .env.local
+        format: raw
+        required: false
+    environment:
+      GROWCAST_URL: http://growcast:3000
+      TWITCH_INGEST: ${TWITCH_INGEST:-rtmps://live.twitch.tv:443/app}
+    volumes:
+      - ./data:/data
+    depends_on:
+      - growcast

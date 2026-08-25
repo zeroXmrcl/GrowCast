@@ -14,6 +14,7 @@ import type {GgsLivePublic} from "@/lib/ggs-live";
 import {
     OVERLAY_GROW_PATH,
     OVERLAY_GROW_POLL_MS,
+    mergeOverlayGrowPoll,
     parseOverlayGrowBody,
     type OverlayGrowView,
 } from "@/lib/overlay-grow";
@@ -29,7 +30,10 @@ import {
     overlayEnergyVisible,
 } from "@/lib/overlay-presence";
 
-export default function OverlayHud(initial: OverlayGrowView) {
+export default function OverlayHud({
+    lockStream = false,
+    ...initial
+}: OverlayGrowView & {lockStream?: boolean}) {
     const [grow, setGrow] = useState<OverlayGrowView>(initial);
     const [energy, setEnergy] = useState<EnergyPublicDto | null>(null);
     const [heldSnapshot, setHeldSnapshot] = useState<GgsLivePublic | null>(null);
@@ -57,7 +61,7 @@ export default function OverlayHud(initial: OverlayGrowView) {
                 }
                 const next = parseOverlayGrowBody(await response.json());
                 if (!cancelled && next) {
-                    setGrow(next);
+                    setGrow((current) => mergeOverlayGrowPoll(current, next, lockStream));
                 }
             } catch {
             }
@@ -71,7 +75,7 @@ export default function OverlayHud(initial: OverlayGrowView) {
             cancelled = true;
             window.clearInterval(id);
         };
-    }, []);
+    }, [lockStream]);
 
     useEffect(() => {
         let cancelled = false;

@@ -1,4 +1,5 @@
 import type {ReactNode} from "react";
+import OverlayWatermark from "@/components/overlay-watermark";
 import type {OverlayLayout} from "@/lib/overlay-layout";
 import {overlayHudScaleStyle} from "@/lib/overlay-scale";
 import {overlayStreamEmbeds, type OverlayStream} from "@/lib/overlay-stream";
@@ -47,6 +48,7 @@ export default function OverlayShell({
             >
                 {children}
             </div>
+            <OverlayWatermark layout={layout}/>
         </div>
     );
 }

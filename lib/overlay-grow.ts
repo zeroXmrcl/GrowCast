@@ -19,6 +19,21 @@ export type OverlayGrowView = {
     strain: string;
 };
 
+export function mergeOverlayGrowPoll(
+    current: OverlayGrowView,
+    incoming: OverlayGrowView,
+    lockStream: boolean,
+): OverlayGrowView {
+    if (!lockStream) {
+        return incoming;
+    }
+    return {
+        ...incoming,
+        overlayStream: current.overlayStream,
+        streamUrl: current.streamUrl,
+    };
+}
+
 export function parseOverlayGrowBody(raw: unknown): OverlayGrowView | null {
     if (!isRecord(raw)) {
         return null;
