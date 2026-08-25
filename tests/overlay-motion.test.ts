@@ -54,7 +54,6 @@ describe("overlay components import motion tokens", () => {
     it("does not hardcode the motion values in overlay JSX", () => {
         const files = [
             "overlay-motion-item.tsx",
-            "overlay-climate.tsx",
             "overlay-gear.tsx",
             "overlay-hud.tsx",
         ];

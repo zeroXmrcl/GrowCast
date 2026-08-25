@@ -8,6 +8,7 @@ import {
     climateBadge,
     climateMetrics,
     formatHumidityPct,
+    formatHumidityPctTenths,
     formatRelativeAge,
     formatTempC,
     formatVpd,
@@ -113,6 +114,7 @@ describe("climateMetrics", () => {
         assert.notEqual(metrics.vpd, 9.99);
         assert.equal(formatTempC(metrics.tempC), "25.3°");
         assert.equal(formatHumidityPct(metrics.humidityPct), "47%");
+        assert.equal(formatHumidityPctTenths(metrics.humidityPct), "47.1%");
         assert.equal(formatVpd(metrics.vpd), expected === null ? "—" : expected.toFixed(2));
     });
 
@@ -176,6 +178,7 @@ describe("climateMetrics", () => {
         assert.equal(metrics.humidityPct, null);
         assert.equal(metrics.vpd, null);
         assert.equal(formatHumidityPct(null), "—");
+        assert.equal(formatHumidityPctTenths(null), "—");
         assert.equal(formatVpd(null), "—");
         assert.equal(formatTempC(null), "—");
     });
