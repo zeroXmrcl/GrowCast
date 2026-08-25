@@ -3,10 +3,9 @@ import {getArchivedGrow} from "@/lib/archives";
 import {getCurrentGrow} from "@/lib/db";
 import {readGgsLive} from "@/lib/ggs-live-store";
 import {actuatorLabel} from "@/lib/live-climate-view";
-import {accrueEnergyPending} from "@/lib/energy/accrue";
+import {previewPendingAccrue} from "@/lib/energy/accrue";
 import {actuatorKey, kindFromActuatorId, lookupWatts} from "@/lib/energy/catalog";
 import {berlinDateOnly, berlinDateWindow} from "@/lib/energy/berlin";
-import {logEnergy} from "@/lib/energy/log";
 import {costEur, round1, round2, totalsForDays} from "@/lib/energy/math";
 import {readArchiveEnergy} from "@/lib/energy/archive";
 import {buildEnergySeries} from "@/lib/energy/series";
@@ -157,21 +156,21 @@ export async function buildEnergyDto(options: {
         return {ok: true, dto};
     }
 
-    try {
-        await accrueEnergyPending(nowMs, {persist: false});
-    } catch {
-        logEnergy("energy_accrue_failed");
-    }
-
     const [live, cursor, days, grow] = await Promise.all([
         readGgsLive(),
         readEnergyCursor(),
         readAllCurrentDays(),
         getCurrentGrow(),
     ]);
-    const cursorMatches = cursor?.growId === grow.id;
-    const activeCursor = cursorMatches ? cursor : null;
-    const activeDays = cursorMatches ? days : new Map<string, EnergyDayFile>();
+    const previewed = previewPendingAccrue({
+        live,
+        cursor,
+        growId: grow.id,
+        days,
+        nowMs,
+    });
+    const activeCursor = previewed.cursor;
+    const activeDays = previewed.days;
     const refs = collectRefs([live?.devices, activeCursor?.devices]);
     const today = berlinDateOnly(nowMs);
     const growTotals = totalsForDays(activeDays.values(), null, refs, settings.overrides);

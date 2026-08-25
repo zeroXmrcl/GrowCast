@@ -12,6 +12,7 @@ import {
     pendingAccrueEventTimeMs,
     persistAccruePlan,
     planAccrue,
+    previewPendingAccrue,
 } from "../lib/energy/accrue.ts";
 import {energyCurrentDir, energyCursorFile, energyDayFile} from "../lib/energy/paths.ts";
 import {
@@ -252,6 +253,36 @@ describe("Berlin hour split", () => {
             [1, 3],
         );
         assert.ok(!slices.some((slice) => slice.hour === 2));
+    });
+});
+
+describe("previewPendingAccrue", () => {
+    it("merges pending heater seconds into memory without requiring a disk write", () => {
+        const last = Date.parse("2026-08-23T12:00:00.000Z");
+        const now = last + 600_000;
+        const live = parseIngestBody(ingestBody(new Date(now).toISOString(), true, 10));
+        assert.equal(live.ok, true);
+        if (!live.ok) {
+            return;
+        }
+        const previewed = previewPendingAccrue({
+            live: live.value,
+            cursor: {
+                growId: "grow-001",
+                startedAt: new Date(last).toISOString(),
+                lastAccruedAt: new Date(last).toISOString(),
+                devices: [heaterDevice(true, 10)],
+            },
+            growId: "grow-001",
+            days: new Map(),
+            nowMs: now,
+        });
+        const hour = String(berlinHour(last));
+        assert.equal(
+            previewed.days.get("2026-08-23")?.hours[hour]?.["90E5B1B87088:heater"]?.["10"],
+            600,
+        );
+        assert.equal(previewed.cursor?.lastAccruedAt, new Date(now).toISOString());
     });
 });
 
