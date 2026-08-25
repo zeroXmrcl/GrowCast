@@ -3,7 +3,11 @@ import {mkdir, mkdtemp, rm, symlink, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {openFixedMediaFile, openMediaFile} from "../lib/open-media-file.ts";
+import {
+    MAX_PUBLIC_IMAGE_BYTES,
+    openFixedMediaFile,
+    openMediaFile,
+} from "../lib/open-media-file.ts";
 import {IMAGE_EXTENSIONS, VIDEO_EXTENSIONS} from "../lib/safe-media-filename.ts";
 
 describe("openMediaFile", () => {
@@ -81,6 +85,21 @@ describe("openFixedMediaFile", () => {
             }
             const opened = await openFixedMediaFile(link, VIDEO_EXTENSIONS);
             assert.equal(opened.ok, false);
+        } finally {
+            await rm(root, {recursive: true, force: true});
+        }
+    });
+
+    it("does not read an oversized image into the heap", async () => {
+        const root = await mkdtemp(path.join(os.tmpdir(), "growcast-media-huge-"));
+        try {
+            const huge = path.join(root, "shot.webp");
+            await writeFile(huge, Buffer.alloc(MAX_PUBLIC_IMAGE_BYTES + 1));
+            const opened = await openMediaFile(root, "shot.webp", IMAGE_EXTENSIONS);
+            assert.equal(opened.ok, false);
+            if (!opened.ok) {
+                assert.equal(opened.status, 404);
+            }
         } finally {
             await rm(root, {recursive: true, force: true});
         }

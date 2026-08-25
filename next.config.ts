@@ -34,9 +34,9 @@ const nextConfig: NextConfig = {
         ],
     },
     experimental: {
-        // proxy.ts clones request bodies. Admin picture POSTs to
-        // /api/admin/media can be tens of MB.
-        proxyClientMaxBodySize: "40mb",
+        // Non-media POSTs (login, mesh, server actions). Admin media is
+        // excluded from proxy.ts matcher and capped in the route.
+        proxyClientMaxBodySize: "1mb",
     },
     async headers() {
         return [

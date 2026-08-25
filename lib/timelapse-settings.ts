@@ -1,6 +1,7 @@
-import {mkdir, readFile, rename, writeFile} from "node:fs/promises";
+import {readFile} from "node:fs/promises";
 import path from "node:path";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
+import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
 import {TIMELAPSE_PLUGIN_ID} from "@/lib/mesh-plugins";
 
@@ -163,11 +164,7 @@ function createRecord(settings: TimelapseSettings): TimelapseSettingsRecord {
 }
 
 async function writeRecord(record: TimelapseSettingsRecord): Promise<void> {
-    const file = settingsFile();
-    await mkdir(path.dirname(file), {recursive: true});
-    const tmp = `${file}.${process.pid}.tmp`;
-    await writeFile(tmp, JSON.stringify(toFile(record), null, 2), "utf8");
-    await rename(tmp, file);
+    await atomicWriteFile(settingsFile(), JSON.stringify(toFile(record), null, 2));
 }
 
 export async function getTimelapseSettingsRecord(): Promise<TimelapseSettingsRecord> {
@@ -180,7 +177,7 @@ export async function getTimelapseSettingsRecord(): Promise<TimelapseSettingsRec
             await writeRecord(record);
             return record;
         }
-        return createRecord(DEFAULT_TIMELAPSE_SETTINGS);
+        throw error;
     }
 }
 

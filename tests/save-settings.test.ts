@@ -8,14 +8,17 @@ import {saveAdminSettings} from "../lib/admin/save-settings.ts";
 import {completeCurrentGrow, listArchivedGrows} from "../lib/archives.ts";
 import {getTimelapseSettings} from "../lib/timelapse-settings.ts";
 import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
+import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-save-"));
     const previous = process.env.GROWCAST_DATA_DIR;
     process.env.GROWCAST_DATA_DIR = dir;
+    _resetGrowWriteLockForTests();
     try {
         return await fn(dir);
     } finally {
+        _resetGrowWriteLockForTests();
         if (previous === undefined) {
             delete process.env.GROWCAST_DATA_DIR;
         } else {

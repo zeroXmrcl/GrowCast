@@ -13,12 +13,21 @@ import {
 } from "@/lib/logging";
 import {seeOther} from "@/lib/http-redirect";
 import {isSameOriginRequest} from "@/lib/same-origin";
+import {
+    MEDIA_MAX_BODY_BYTES,
+    contentLengthExceedsCap,
+    payloadTooLargeResponse,
+} from "@/lib/request-body-limit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function POST(request: Request) {
     return withRequestLog(request, "/api/admin/media", async () => {
+        if (contentLengthExceedsCap(request.headers.get("content-length"), MEDIA_MAX_BODY_BYTES)) {
+            return payloadTooLargeResponse("POST", "/api/admin/media");
+        }
+
         if (!isSameOriginRequest(request)) {
             logAdminMediaUploadFailed({reason: "cross_origin"});
             return seeOther(withNotice("/admin", "media_upload_failed"));

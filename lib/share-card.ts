@@ -167,6 +167,23 @@ export function shareCardStillPath(still: ShareCardStill): string {
     return path.join(mediaCollectionDir(collection), still.name);
 }
 
+export function fallbackShareCardCopy(host = ""): ShareCardCopy {
+    return buildShareCardCopy({
+        plant: "Plants",
+        daysSince: null,
+        climate: null,
+        host,
+    });
+}
+
+export async function loadShareCardCopySafe(host: string): Promise<ShareCardCopy> {
+    try {
+        return await loadShareCardCopy(host);
+    } catch {
+        return fallbackShareCardCopy(host);
+    }
+}
+
 export async function loadShareCardCopy(host: string): Promise<ShareCardCopy> {
     const grow = await getCurrentGrow();
     const daysSince = grow.details.seededAt ? getDaysSince(grow.details.seededAt) : null;

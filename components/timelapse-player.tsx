@@ -35,7 +35,7 @@ export default async function TimelapsePlayer({videoUrl}: TimelapsePlayerProps =
         <section className="space-y-5">
             <div className="flex items-end justify-between gap-4">
                 <div>
-                    <h2 className="text-xl font-semibold text-white">Timelapse</h2>
+                    <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Timelapse</h2>
                 </div>
             </div>
 
@@ -44,6 +44,7 @@ export default async function TimelapsePlayer({videoUrl}: TimelapsePlayerProps =
                     controls
                     preload="metadata"
                     className="block h-auto w-full"
+                    aria-label="Grow timelapse"
                 >
                     <source src={resolvedUrl} type="video/mp4"/>
                     Your browser does not support video.

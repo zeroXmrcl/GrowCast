@@ -1,6 +1,8 @@
+import {randomBytes} from "node:crypto";
 import {copyFile, mkdir, readdir, readFile, rename, rm, unlink} from "node:fs/promises";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import path from "node:path";
+import {withGrowWriteLock} from "@/lib/grow-write-lock";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {growcastDataDir} from "@/lib/data-paths";
 import {
@@ -44,7 +46,7 @@ export type CompleteGrowInput = ArchiveCompletion & {
     expectedGrowId?: string;
 };
 
-export type CompleteGrowWarning = "media_cleanup_failed" | "reset_failed";
+export type CompleteGrowWarning = "media_cleanup_failed" | "reset_failed" | "reset_retried";
 
 export type CompleteGrowResult =
     | {ok: true; archive: ArchivedGrow; warning?: CompleteGrowWarning}
@@ -316,17 +318,47 @@ export async function completeCurrentGrow(
     sources: ArchiveMediaSources = defaultMediaSources(),
     resetLiveGrow?: ResetLiveGrow,
 ): Promise<CompleteGrowResult> {
+    return withGrowWriteLock(() => completeCurrentGrowUnlocked(input, sources, resetLiveGrow));
+}
+
+async function retryLiveReset(
+    already: ArchivedGrow,
+    grow: GrowRecord,
+    resetLiveGrow?: ResetLiveGrow,
+): Promise<CompleteGrowResult> {
+    const reset = resetLiveGrow ?? ((current: GrowRecord) => replaceCurrentGrow(buildNextGrow(current)));
+    try {
+        await reset(grow);
+    } catch {
+        return {ok: true, archive: already, warning: "reset_failed"};
+    }
+    try {
+        await resetEnergyCurrentLocked();
+    } catch {
+        logEnergy("energy_reset_failed");
+    }
+    return {ok: true, archive: already, warning: "reset_retried"};
+}
+
+async function completeCurrentGrowUnlocked(
+    input: CompleteGrowInput,
+    sources: ArchiveMediaSources,
+    resetLiveGrow?: ResetLiveGrow,
+): Promise<CompleteGrowResult> {
     const grow = await getCurrentGrow();
-    if (input.expectedGrowId && input.expectedGrowId !== grow.id) {
+    if (!input.expectedGrowId || input.expectedGrowId !== grow.id) {
         return {ok: false, error: "stale_grow"};
     }
     const already = await findArchiveForGrowId(grow.id);
     if (already) {
-        return {ok: false, error: "already_archived"};
+        return retryLiveReset(already, grow, resetLiveGrow);
     }
 
     const archiveId = await reserveArchiveId(grow.name);
-    const stagingRoot = path.join(archivesDir(), `.tmp-${archiveId}`);
+    const stagingRoot = path.join(
+        archivesDir(),
+        `.tmp-${archiveId}.${process.pid}.${randomBytes(8).toString("hex")}`,
+    );
     const destinationRoot = path.join(archivesDir(), archiveId);
 
     try {

@@ -4,6 +4,7 @@ import {
     DEFAULT_MAX_BODY_BYTES,
     MEDIA_MAX_BODY_BYTES,
     contentLengthExceedsCap,
+    isBodyMethod,
     maxBodyBytesFor,
     payloadTooLargeResponse,
 } from "../lib/request-body-limit.ts";
@@ -12,6 +13,7 @@ import {
     MAX_UPLOAD_FILES,
     MULTIPART_OVERHEAD_BYTES,
 } from "../lib/media-library.ts";
+import {readFileSync} from "node:fs";
 
 describe("maxBodyBytesFor", () => {
     it("allows the large cap only on POST /api/admin/media", () => {
@@ -36,7 +38,29 @@ describe("contentLengthExceedsCap", () => {
             contentLengthExceedsCap(String(MEDIA_MAX_BODY_BYTES), MEDIA_MAX_BODY_BYTES),
             false,
         );
-        assert.equal(contentLengthExceedsCap(null, DEFAULT_MAX_BODY_BYTES), false);
+        assert.equal(contentLengthExceedsCap("0", DEFAULT_MAX_BODY_BYTES), false);
+    });
+
+    it("rejects missing or invalid Content-Length instead of treating them as under-cap", () => {
+        assert.equal(contentLengthExceedsCap(null, DEFAULT_MAX_BODY_BYTES), true);
+        assert.equal(contentLengthExceedsCap(undefined, DEFAULT_MAX_BODY_BYTES), true);
+        assert.equal(contentLengthExceedsCap("", DEFAULT_MAX_BODY_BYTES), true);
+        assert.equal(contentLengthExceedsCap("  ", DEFAULT_MAX_BODY_BYTES), true);
+        assert.equal(contentLengthExceedsCap("1e9", DEFAULT_MAX_BODY_BYTES), true);
+        assert.equal(contentLengthExceedsCap("-1", DEFAULT_MAX_BODY_BYTES), true);
+        assert.equal(contentLengthExceedsCap("12abc", DEFAULT_MAX_BODY_BYTES), true);
+        assert.equal(isBodyMethod("POST"), true);
+        assert.equal(isBodyMethod("GET"), false);
+    });
+});
+
+describe("next proxy body clone vs media route", () => {
+    it("keeps the global clone at 1mb and excludes admin media from the proxy matcher", () => {
+        const nextConfig = readFileSync(new URL("../next.config.ts", import.meta.url), "utf8");
+        const proxy = readFileSync(new URL("../proxy.ts", import.meta.url), "utf8");
+        assert.match(nextConfig, /proxyClientMaxBodySize:\s*"1mb"/);
+        assert.match(proxy, /api\/admin\/media/);
+        assert.match(proxy, /isBodyMethod/);
     });
 });
 

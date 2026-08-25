@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import {contentLengthExceedsCap, maxBodyBytesFor, payloadTooLargeResponse} from "@/lib/request-body-limit";
+import {
+  contentLengthExceedsCap,
+  isBodyMethod,
+  maxBodyBytesFor,
+  payloadTooLargeResponse,
+} from "@/lib/request-body-limit";
 
 const REQUEST_ID_MIN_LEN = 8;
 const REQUEST_ID_MAX_LEN = 128;
@@ -31,9 +36,11 @@ function generateSpanId(): string {
 }
 
 export function proxy(request: NextRequest) {
-  const cap = maxBodyBytesFor(request.method, request.nextUrl.pathname);
-  if (contentLengthExceedsCap(request.headers.get("content-length"), cap)) {
-    return payloadTooLargeResponse(request.method, request.nextUrl.pathname);
+  if (isBodyMethod(request.method)) {
+    const cap = maxBodyBytesFor(request.method, request.nextUrl.pathname);
+    if (contentLengthExceedsCap(request.headers.get("content-length"), cap)) {
+      return payloadTooLargeResponse(request.method, request.nextUrl.pathname);
+    }
   }
 
   const incoming = request.headers.get("x-request-id");
@@ -62,6 +69,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/admin/media).*)",
   ],
 };

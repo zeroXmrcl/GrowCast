@@ -85,7 +85,10 @@ export async function completeGrowAction(formData: FormData): Promise<void> {
             redirect(withNotice("/admin", result.error === "stale_grow" ? "stale_grow" : "archive_failed"));
         }
 
-        logAdminGrowArchived({archiveId: result.archive.archiveId});
+        logAdminGrowArchived({
+            archiveId: result.archive.archiveId,
+            ...(result.warning ? {warning: result.warning} : {}),
+        });
         revalidatePath("/");
         revalidatePath("/energy");
         revalidatePath("/gallery");
