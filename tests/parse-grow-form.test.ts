@@ -116,6 +116,25 @@ describe("parseAdminSettingsForm", () => {
         assert.equal(include.grow.overlayStream, "include");
     });
 
+    it("parses overlayScalePct with 100 as the missing/junk default", () => {
+        const missing = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+            }),
+        );
+        assert.equal(missing.grow.overlayScalePct, 100);
+
+        const snapped = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                overlayScalePct: "77",
+            }),
+        );
+        assert.equal(snapped.grow.overlayScalePct, 75);
+    });
+
     it("parses showSettingsLink from the checkbox", () => {
         const unchecked = parseAdminSettingsForm(
             formFrom({

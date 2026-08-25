@@ -6,6 +6,7 @@ import {growcastDataDir} from "@/lib/data-paths";
 import {isDateOnly} from "@/lib/date-only";
 import {DEFAULT_OVERLAY_LAYOUT, parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
 import {DEFAULT_OVERLAY_STREAM, parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
+import {DEFAULT_OVERLAY_SCALE_PCT, parseOverlayScalePct} from "@/lib/overlay-scale";
 
 export type GrowDetails = {
   strain: string;
@@ -59,6 +60,7 @@ export type GrowRecord = {
   climate: Climate;
   overlayLayout: OverlayLayout;
   overlayStream: OverlayStream;
+  overlayScalePct: number;
 };
 
 export type GrowUpdateInput = {
@@ -75,6 +77,7 @@ export type GrowUpdateInput = {
   climate?: Partial<Climate>;
   overlayLayout?: OverlayLayout;
   overlayStream?: OverlayStream;
+  overlayScalePct?: number;
 };
 
 function dataDir(): string {
@@ -185,6 +188,7 @@ export const EMPTY_GROW: GrowRecord = {
 
   overlayLayout: DEFAULT_OVERLAY_LAYOUT,
   overlayStream: DEFAULT_OVERLAY_STREAM,
+  overlayScalePct: DEFAULT_OVERLAY_SCALE_PCT,
 };
 
 export function normalizeGrowRecord(raw: unknown): GrowRecord {
@@ -250,6 +254,7 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
     status,
     overlayLayout: parseOverlayLayout(parsed.overlayLayout),
     overlayStream: parseOverlayStream(parsed.overlayStream),
+    overlayScalePct: parseOverlayScalePct(parsed.overlayScalePct),
   };
 }
 
@@ -296,6 +301,9 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
     ),
     overlayStream: parseOverlayStream(
       input.overlayStream !== undefined ? input.overlayStream : current.overlayStream,
+    ),
+    overlayScalePct: parseOverlayScalePct(
+      input.overlayScalePct !== undefined ? input.overlayScalePct : current.overlayScalePct,
     ),
   };
 

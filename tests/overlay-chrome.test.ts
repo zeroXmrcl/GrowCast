@@ -45,11 +45,19 @@ describe("overlay chrome", () => {
         );
         assert.match(pageSrc, /shareCardMetadataOrigin/);
         assert.match(pageSrc, /overlayPublicUrl/);
+        const scaleSrc = readFileSync(
+            path.join(process.cwd(), "components", "overlay-scale-input.tsx"),
+            "utf8",
+        );
         assert.match(fieldsSrc, /name="overlayLayout"/);
         assert.match(fieldsSrc, /name="overlayStream"/);
+        assert.match(fieldsSrc, /OverlayScaleInput/);
+        assert.match(scaleSrc, /name="overlayScalePct"/);
         assert.match(fieldsSrc, /1920×1080/);
         assert.doesNotMatch(fieldsSrc, /[?]layout=/);
         assert.doesNotMatch(fieldsSrc, /[?]stream=/);
+        assert.doesNotMatch(fieldsSrc, /[?]scale=/);
+        assert.doesNotMatch(scaleSrc, /[?]scale=/);
     });
 
     it("does not pause overlay polls when the Browser Source is hidden", () => {
@@ -80,8 +88,10 @@ describe("overlay chrome", () => {
             "utf8",
         );
         assert.match(shellSrc, /overlayStreamEmbeds/);
+        assert.match(shellSrc, /overlayHudScaleStyle/);
         assert.match(shellSrc, /<iframe/);
         assert.match(hudSrc, /overlayStream/);
+        assert.match(hudSrc, /overlayScalePct/);
         assert.match(energySrc, /overlayEnergyGrowWindow/);
         assert.match(identitySrc, /overlayIdentityView/);
         assert.doesNotMatch(identitySrc, /health/i);

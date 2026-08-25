@@ -124,6 +124,7 @@ describe("parseOverlayGrowBody", () => {
             },
             overlayLayout: "bottom-bar",
             overlayStream: "include",
+            overlayScalePct: 75,
             streamUrl: "https://stream.0xmarcel.com/growcam/",
         });
         assert.deepEqual(parsed, {
@@ -132,6 +133,7 @@ describe("parseOverlayGrowBody", () => {
             seededAt: "2026-03-01",
             overlayLayout: "bottom-bar",
             overlayStream: "include",
+            overlayScalePct: 75,
             streamUrl: "https://stream.0xmarcel.com/growcam/",
             stage: "Seed",
             lightSchedule: "12/12",
@@ -143,6 +145,7 @@ describe("parseOverlayGrowBody", () => {
         const parsed = parseOverlayGrowBody({plant: "Basil", overlayLayout: "wide"});
         assert.equal(parsed?.overlayLayout, "left-rail");
         assert.equal(parsed?.overlayStream, "transparent");
+        assert.equal(parsed?.overlayScalePct, 100);
         assert.equal(parsed?.stage, "");
         assert.equal(parsed?.lightSchedule, "");
         assert.equal(parsed?.strain, "");

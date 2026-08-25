@@ -97,6 +97,7 @@ export default function OverlayHud(initial: OverlayGrowView) {
         <OverlayShell
             layout={layout}
             overlayStream={grow.overlayStream}
+            overlayScalePct={grow.overlayScalePct}
             streamUrl={grow.streamUrl}
         >
             <OverlayMotionItem show={true} order={OVERLAY_ORDER_IDENTITY} layout={layout}>

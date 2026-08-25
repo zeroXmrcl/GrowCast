@@ -1,5 +1,6 @@
 import type {ReactNode} from "react";
 import type {OverlayLayout} from "@/lib/overlay-layout";
+import {overlayHudScaleStyle} from "@/lib/overlay-scale";
 import {overlayStreamEmbeds, type OverlayStream} from "@/lib/overlay-stream";
 import {safeHttpUrlOrEmpty} from "@/lib/url-policy";
 
@@ -9,17 +10,20 @@ export const OVERLAY_PANEL_CLASS =
 export default function OverlayShell({
     layout,
     overlayStream,
+    overlayScalePct,
     streamUrl,
     children,
 }: {
     layout: OverlayLayout;
     overlayStream: OverlayStream;
+    overlayScalePct: number;
     streamUrl: string;
     children: ReactNode;
 }) {
     const bar = layout === "bottom-bar";
     const embed = overlayStreamEmbeds(overlayStream, streamUrl);
     const safeStream = safeHttpUrlOrEmpty(streamUrl);
+    const scaleStyle = overlayHudScaleStyle(overlayScalePct, layout);
 
     return (
         <div className="relative h-screen w-screen overflow-hidden bg-transparent">
@@ -39,6 +43,7 @@ export default function OverlayShell({
                         ? "absolute inset-x-0 bottom-0 z-10 flex flex-row items-stretch gap-3 p-6"
                         : "absolute inset-y-0 left-0 z-10 flex w-[min(22rem,32vw)] flex-col items-stretch gap-3 p-6"
                 }
+                style={scaleStyle}
             >
                 {children}
             </div>

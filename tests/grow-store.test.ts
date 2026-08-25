@@ -56,6 +56,7 @@ describe("grow JSON store", () => {
             assert.equal(grow.climate.temperatureDay, 0);
             assert.equal(grow.overlayLayout, "left-rail");
             assert.equal(grow.overlayStream, "transparent");
+            assert.equal(grow.overlayScalePct, 100);
         });
     });
 
@@ -108,6 +109,32 @@ describe("grow JSON store", () => {
                 "utf8",
             );
             assert.equal((await getCurrentGrow()).overlayStream, "transparent");
+        });
+    });
+
+    it("persists overlayScalePct and snaps junk on read", async () => {
+        await withTempDataDir(async (dir) => {
+            const file = path.join(dir, "current-grow.json");
+            await writeFile(file, JSON.stringify({name: "Scale Grow"}), "utf8");
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayScalePct, 100);
+
+            await updateCurrentGrow({
+                name: grow.name,
+                plant: grow.plant,
+                streamUrl: grow.streamUrl,
+                overlayScalePct: 150,
+            });
+            const saved = JSON.parse(await readFile(file, "utf8"));
+            assert.equal(saved.overlayScalePct, 150);
+            assert.equal((await getCurrentGrow()).overlayScalePct, 150);
+
+            await writeFile(
+                file,
+                JSON.stringify({name: "Junk Scale", overlayScalePct: 77}),
+                "utf8",
+            );
+            assert.equal((await getCurrentGrow()).overlayScalePct, 75);
         });
     });
 
