@@ -1,7 +1,10 @@
+import {headers} from "next/headers";
 import {getAdminAuthStatus, isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {energyActuatorRows, readEnergySettings} from "@/lib/energy/settings";
 import {readGgsLive} from "@/lib/ggs-live-store";
+import {overlayPublicUrl} from "@/lib/overlay-layout";
+import {shareCardMetadataOrigin} from "@/lib/share-card";
 import {getTimelapseSettings} from "@/lib/timelapse-settings";
 import {completeGrowAction, loginAction, saveGrowAction} from "@/app/admin/actions";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
@@ -35,12 +38,14 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
         );
     }
 
-    const [grow, timelapseSettings, energySettings, live] = await Promise.all([
+    const [grow, timelapseSettings, energySettings, live, headerList] = await Promise.all([
         getCurrentGrow(),
         getTimelapseSettings(),
         readEnergySettings(),
         readGgsLive(),
+        headers(),
     ]);
+    const overlayUrl = overlayPublicUrl(shareCardMetadataOrigin(headerList));
 
     return (
         <AdminChrome
@@ -54,6 +59,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                 timelapseSettings={timelapseSettings}
                 energySettings={energySettings}
                 energyActuators={energyActuatorRows(live, energySettings)}
+                overlayUrl={overlayUrl}
                 saveAction={saveGrowAction}
             />
             <MediaManager/>

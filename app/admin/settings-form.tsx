@@ -10,6 +10,7 @@ type SettingsFormProps = {
     timelapseSettings: TimelapseSettings;
     energySettings: EnergySettings;
     energyActuators: EnergyActuatorRow[];
+    overlayUrl: string;
     saveAction: (formData: FormData) => Promise<void>;
 };
 
@@ -18,6 +19,7 @@ export function AdminSettingsForm({
     timelapseSettings,
     energySettings,
     energyActuators,
+    overlayUrl,
     saveAction,
 }: SettingsFormProps) {
     return (
@@ -32,6 +34,7 @@ export function AdminSettingsForm({
                 timelapseSettings={timelapseSettings}
                 energySettings={energySettings}
                 energyActuators={energyActuators}
+                overlayUrl={overlayUrl}
             />
 
             <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">

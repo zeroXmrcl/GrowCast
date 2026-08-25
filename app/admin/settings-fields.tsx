@@ -16,6 +16,7 @@ type SettingsFieldsProps = {
     timelapseSettings: TimelapseSettings;
     energySettings: EnergySettings;
     energyActuators: EnergyActuatorRow[];
+    overlayUrl: string;
 };
 
 export function SettingsFields({
@@ -23,6 +24,7 @@ export function SettingsFields({
     timelapseSettings,
     energySettings,
     energyActuators,
+    overlayUrl,
 }: SettingsFieldsProps) {
     return (
         <div className="space-y-6">
@@ -273,6 +275,62 @@ export function SettingsFields({
                             defaultValue={grow.streamUrl}
                             placeholder="https://..."
                         />
+                    </AdminField>
+                </div>
+            </AdminPanel>
+
+            <AdminPanel
+                id="overlay"
+                title="Overlay"
+                description="Add this URL as an OBS Browser Source over the tent camera."
+            >
+                <div className="space-y-4">
+                    <div>
+                        <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
+                            Overlay layout
+                        </p>
+                        <div className="grid gap-3 md:grid-cols-2">
+                            <label className="flex items-start gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
+                                <input
+                                    type="radio"
+                                    name="overlayLayout"
+                                    value="left-rail"
+                                    defaultChecked={grow.overlayLayout !== "bottom-bar"}
+                                    className="mt-0.5 h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
+                                />
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-medium text-(--admin-text)">
+                                        Left rail
+                                    </span>
+                                    <span className="mt-1 block text-xs text-(--admin-muted)">
+                                        Stacked column inset from the left edge.
+                                    </span>
+                                </span>
+                            </label>
+                            <label className="flex items-start gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
+                                <input
+                                    type="radio"
+                                    name="overlayLayout"
+                                    value="bottom-bar"
+                                    defaultChecked={grow.overlayLayout === "bottom-bar"}
+                                    className="mt-0.5 h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
+                                />
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-medium text-(--admin-text)">
+                                        Bottom bar
+                                    </span>
+                                    <span className="mt-1 block text-xs text-(--admin-muted)">
+                                        One strip along the bottom of the frame.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <AdminField
+                        label="OBS URL"
+                        hint="Browser Source 1920×1080, transparent, keep running when not visible."
+                    >
+                        <AdminInput readOnly value={overlayUrl}/>
                     </AdminField>
                 </div>
             </AdminPanel>
