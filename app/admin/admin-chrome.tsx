@@ -13,6 +13,7 @@ export const SETTINGS_SECTION_LINKS = [
     {href: "#hardware", label: "Hardware"},
     {href: "#stream", label: "Stream"},
     {href: "#overlay", label: "Overlay"},
+    {href: "#twitch", label: "Twitch"},
     {href: "#timelapse", label: "Timelapse"},
     {href: "#socials", label: "Socials"},
     {href: "#pictures", label: "Pictures"},

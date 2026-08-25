@@ -9,6 +9,7 @@ import {saveAdminSettings} from "@/lib/admin/save-settings";
 import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
 import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
+import {hasRestreamKey, saveRestreamKey, setRestreamEnabled} from "@/lib/restream/store";
 import {loginRateLimitKey} from "@/lib/request-trust";
 import {
     logAdminGrowArchiveFailed,
@@ -67,6 +68,36 @@ export async function saveGrowAction(formData: FormData): Promise<void> {
         revalidatePath("/overlay");
         revalidatePath("/admin");
         redirect(withNotice("/admin", "saved"));
+    });
+}
+
+export async function saveTwitchKeyAction(formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin", async () => {
+        await requireAdmin();
+        await saveRestreamKey(String(formData.get("twitchKey") ?? ""));
+        revalidatePath("/admin");
+        redirect(withNotice("/admin", "twitch_key_saved"));
+    });
+}
+
+export async function startTwitchRestreamAction(_formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin", async () => {
+        await requireAdmin();
+        if (!(await hasRestreamKey())) {
+            redirect(withNotice("/admin", "twitch_need_key"));
+        }
+        await setRestreamEnabled(true);
+        revalidatePath("/admin");
+        redirect(withNotice("/admin", "twitch_started"));
+    });
+}
+
+export async function stopTwitchRestreamAction(_formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin", async () => {
+        await requireAdmin();
+        await setRestreamEnabled(false);
+        revalidatePath("/admin");
+        redirect(withNotice("/admin", "twitch_stopped"));
     });
 }
 

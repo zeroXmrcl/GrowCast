@@ -97,6 +97,23 @@ describe("overlay chrome", () => {
         assert.doesNotMatch(identitySrc, /health/i);
     });
 
+    it("paints a GrowCast watermark like the OG card, outside the scaled HUD", () => {
+        const shellSrc = readFileSync(
+            path.join(process.cwd(), "components", "overlay-shell.tsx"),
+            "utf8",
+        );
+        const markSrc = readFileSync(
+            path.join(process.cwd(), "components", "overlay-watermark.tsx"),
+            "utf8",
+        );
+        assert.match(shellSrc, /OverlayWatermark/);
+        assert.match(markSrc, /growCastLogo_green\.svg/);
+        assert.match(markSrc, /GrowCast/);
+        assert.match(markSrc, /pointer-events-none/);
+        assert.match(markSrc, /drop-shadow/);
+        assert.doesNotMatch(markSrc, /overlayHudScaleStyle/);
+    });
+
     it("omits the LIVE badge and shows humidity to one decimal", () => {
         const climateSrc = readFileSync(
             path.join(process.cwd(), "components", "overlay-climate.tsx"),

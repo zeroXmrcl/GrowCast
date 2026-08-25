@@ -6,7 +6,16 @@ import {readGgsLive} from "@/lib/ggs-live-store";
 import {overlayPublicUrl} from "@/lib/overlay-layout";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
 import {getTimelapseSettings} from "@/lib/timelapse-settings";
-import {completeGrowAction, loginAction, saveGrowAction} from "@/app/admin/actions";
+import {
+    completeGrowAction,
+    loginAction,
+    saveGrowAction,
+    saveTwitchKeyAction,
+    startTwitchRestreamAction,
+    stopTwitchRestreamAction,
+} from "@/app/admin/actions";
+import {RestreamPanel} from "@/app/admin/restream-panel";
+import {readRestreamPublicView} from "@/lib/restream/store";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {CompleteGrowPanel} from "@/app/admin/complete-grow-panel";
@@ -38,12 +47,13 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
         );
     }
 
-    const [grow, timelapseSettings, energySettings, live, headerList] = await Promise.all([
+    const [grow, timelapseSettings, energySettings, live, headerList, restream] = await Promise.all([
         getCurrentGrow(),
         getTimelapseSettings(),
         readEnergySettings(),
         readGgsLive(),
         headers(),
+        readRestreamPublicView(),
     ]);
     const overlayUrl = overlayPublicUrl(shareCardMetadataOrigin(headerList));
 
@@ -61,6 +71,12 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                 energyActuators={energyActuatorRows(live, energySettings)}
                 overlayUrl={overlayUrl}
                 saveAction={saveGrowAction}
+            />
+            <RestreamPanel
+                view={restream}
+                saveKeyAction={saveTwitchKeyAction}
+                startAction={startTwitchRestreamAction}
+                stopAction={stopTwitchRestreamAction}
             />
             <MediaManager/>
             <CompleteGrowPanel growId={grow.id} completeAction={completeGrowAction}/>
