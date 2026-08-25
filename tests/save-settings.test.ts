@@ -85,6 +85,29 @@ describe("saveAdminSettings orchestration", () => {
         });
     });
 
+    it("persists overlayStream from the settings form", async () => {
+        await withTempDataDir(async () => {
+            const live = await getCurrentGrow();
+            assert.equal(live.overlayStream, "transparent");
+
+            const parsed = parseAdminSettingsForm(
+                settingsForm({
+                    name: "Overlay Stream Save",
+                    plant: "Basil",
+                    overlayStream: "include",
+                    growId: live.id,
+                    timelapseQuality: "medium",
+                    timelapseTimezone: "UTC",
+                    timelapseLength: "8",
+                }),
+            );
+            const result = await saveAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayStream, "include");
+        });
+    });
+
     it("does not wipe estimatedHarvestDate when the date field is omitted from FormData", async () => {
         await withTempDataDir(async () => {
             const live = await updateCurrentGrow({

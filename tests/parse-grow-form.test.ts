@@ -88,6 +88,34 @@ describe("parseAdminSettingsForm", () => {
         assert.equal(bar.grow.overlayLayout, "bottom-bar");
     });
 
+    it("parses overlayStream radios with transparent as the missing/junk default", () => {
+        const missing = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+            }),
+        );
+        assert.equal(missing.grow.overlayStream, "transparent");
+
+        const junk = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                overlayStream: "iframe",
+            }),
+        );
+        assert.equal(junk.grow.overlayStream, "transparent");
+
+        const include = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+                overlayStream: "include",
+            }),
+        );
+        assert.equal(include.grow.overlayStream, "include");
+    });
+
     it("parses showSettingsLink from the checkbox", () => {
         const unchecked = parseAdminSettingsForm(
             formFrom({

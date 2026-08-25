@@ -116,20 +116,36 @@ describe("parseOverlayGrowBody", () => {
         const parsed = parseOverlayGrowBody({
             plant: "Tomatoes",
             name: "Run",
-            details: {seededAt: "2026-03-01"},
+            details: {
+                seededAt: "2026-03-01",
+                stage: "Seed",
+                lightSchedule: "12/12",
+                strain: "Godfather OG",
+            },
             overlayLayout: "bottom-bar",
+            overlayStream: "include",
+            streamUrl: "https://stream.0xmarcel.com/growcam/",
         });
         assert.deepEqual(parsed, {
             plant: "Tomatoes",
             name: "Run",
             seededAt: "2026-03-01",
             overlayLayout: "bottom-bar",
+            overlayStream: "include",
+            streamUrl: "https://stream.0xmarcel.com/growcam/",
+            stage: "Seed",
+            lightSchedule: "12/12",
+            strain: "Godfather OG",
         });
     });
 
-    it("defaults junk layout and rejects non-objects", () => {
+    it("defaults junk layout and stream mode and rejects non-objects", () => {
         const parsed = parseOverlayGrowBody({plant: "Basil", overlayLayout: "wide"});
         assert.equal(parsed?.overlayLayout, "left-rail");
+        assert.equal(parsed?.overlayStream, "transparent");
+        assert.equal(parsed?.stage, "");
+        assert.equal(parsed?.lightSchedule, "");
+        assert.equal(parsed?.strain, "");
         assert.equal(parseOverlayGrowBody(null), null);
         assert.equal(parseOverlayGrowBody("grow"), null);
     });

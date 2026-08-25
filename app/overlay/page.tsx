@@ -11,6 +11,11 @@ export default async function OverlayPage() {
             name={grow.name}
             seededAt={grow.details.seededAt}
             overlayLayout={grow.overlayLayout}
+            overlayStream={grow.overlayStream}
+            streamUrl={grow.streamUrl}
+            stage={grow.details.stage}
+            lightSchedule={grow.details.lightSchedule}
+            strain={grow.details.strain}
         />
     );
 }

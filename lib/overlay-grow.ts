@@ -1,5 +1,6 @@
 import {asString, isRecord} from "@/lib/coerce";
 import {parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
+import {parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
 
 export const OVERLAY_GROW_POLL_MS = 5_000;
 export const OVERLAY_GROW_PATH = "/api/data/current-grow";
@@ -9,6 +10,11 @@ export type OverlayGrowView = {
     name: string;
     seededAt: string;
     overlayLayout: OverlayLayout;
+    overlayStream: OverlayStream;
+    streamUrl: string;
+    stage: string;
+    lightSchedule: string;
+    strain: string;
 };
 
 export function parseOverlayGrowBody(raw: unknown): OverlayGrowView | null {
@@ -21,5 +27,10 @@ export function parseOverlayGrowBody(raw: unknown): OverlayGrowView | null {
         name: asString(raw.name),
         seededAt: asString(details.seededAt),
         overlayLayout: parseOverlayLayout(raw.overlayLayout),
+        overlayStream: parseOverlayStream(raw.overlayStream),
+        streamUrl: asString(raw.streamUrl),
+        stage: asString(details.stage),
+        lightSchedule: asString(details.lightSchedule),
+        strain: asString(details.strain),
     };
 }

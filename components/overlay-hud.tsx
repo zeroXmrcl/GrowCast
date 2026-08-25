@@ -94,12 +94,19 @@ export default function OverlayHud(initial: OverlayGrowView) {
     }, []);
 
     return (
-        <OverlayShell layout={layout}>
+        <OverlayShell
+            layout={layout}
+            overlayStream={grow.overlayStream}
+            streamUrl={grow.streamUrl}
+        >
             <OverlayMotionItem show={true} order={OVERLAY_ORDER_IDENTITY} layout={layout}>
                 <OverlayIdentity
                     plant={grow.plant}
                     name={grow.name}
                     seededAt={grow.seededAt}
+                    stage={grow.stage}
+                    lightSchedule={grow.lightSchedule}
+                    strain={grow.strain}
                 />
             </OverlayMotionItem>
             <OverlayMotionItem

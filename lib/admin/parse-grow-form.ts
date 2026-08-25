@@ -1,6 +1,7 @@
 import type {ArchiveEditInput, CompleteGrowInput} from "@/lib/archives";
 import type {GrowUpdateInput} from "@/lib/db";
 import {parseOverlayLayout} from "@/lib/overlay-layout";
+import {parseOverlayStream} from "@/lib/overlay-stream";
 import {
     DEFAULT_TIMELAPSE_SETTINGS,
     normalizeTimelapseSettings,
@@ -79,6 +80,7 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
             customWebsite: safeUrl(formData.get("customWebsite")),
         },
         overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
+        overlayStream: parseOverlayStream(formData.get("overlayStream")),
     };
 
     const timelapse = normalizeTimelapseSettings(
