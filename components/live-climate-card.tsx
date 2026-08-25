@@ -2,7 +2,7 @@ import type {GgsLivePublic} from "@/lib/ggs-live";
 import {
     climateBadge,
     climateMetrics,
-    formatHumidityPct,
+    formatHumidityPctTenths,
     formatTempC,
     formatVpd,
 } from "@/lib/live-climate-view";
@@ -41,7 +41,7 @@ export default function LiveClimateCard({snapshot, stale, nowMs}: LiveClimateCar
                 <div>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">Humidity</p>
                     <p className="mt-1 text-xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100">
-                        {formatHumidityPct(metrics.humidityPct)}
+                        {formatHumidityPctTenths(metrics.humidityPct)}
                     </p>
                 </div>
                 <div>
