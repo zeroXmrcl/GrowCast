@@ -24,8 +24,6 @@ services:
       - ./public/yourPictures:/app/public/yourPictures
 
   ggs:
-    profiles:
-      - ggs
     build:
       context: ./extensions/GrowCast-GGS
       dockerfile: Dockerfile
@@ -40,8 +38,6 @@ services:
       - growcast
 
   restream:
-    profiles:
-      - twitch
     build:
       context: ./extensions/GrowCast-Restream
       dockerfile: Dockerfile

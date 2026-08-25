@@ -237,8 +237,9 @@ describe("restream chrome", () => {
         assert.match(sidecarSrc, /SIGTERM/);
         assert.match(sidecarSrc, /redact/);
         assert.match(fieldsSrc, /id="twitch"/);
-        assert.match(composeSrc, /profiles:/);
-        assert.match(composeSrc, /twitch/);
+        assert.match(composeSrc, /^\s*ggs:\s*$/m);
+        assert.match(composeSrc, /^\s*restream:\s*$/m);
+        assert.doesNotMatch(composeSrc, /profiles:/);
         assert.doesNotMatch(captureSrc, /SiteHeader/);
     });
 });
