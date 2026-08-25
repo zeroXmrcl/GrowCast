@@ -39,28 +39,6 @@ html:has([data-overlay-root]) body {
   overflow: hidden;
 }
 
-@keyframes overlay-live-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-.overlay-live-dot {
-  animation-name: overlay-live-pulse;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .overlay-live-dot {
-    animation: none;
-  }
-}
-
 .admin-theme {
   --admin-bg: #1f1f1f;
   --admin-surface: #242424;

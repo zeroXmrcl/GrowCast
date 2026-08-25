@@ -123,6 +123,10 @@ export function formatHumidityPct(value: number | null): string {
     return value === null ? "—" : `${Math.round(value)}%`;
 }
 
+export function formatHumidityPctTenths(value: number | null): string {
+    return value === null ? "—" : `${value.toFixed(1)}%`;
+}
+
 export function formatVpd(value: number | null): string {
     return value === null ? "—" : value.toFixed(2);
 }

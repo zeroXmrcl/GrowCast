@@ -86,4 +86,15 @@ describe("overlay chrome", () => {
         assert.match(identitySrc, /overlayIdentityView/);
         assert.doesNotMatch(identitySrc, /health/i);
     });
+
+    it("omits the LIVE badge and shows humidity to one decimal", () => {
+        const climateSrc = readFileSync(
+            path.join(process.cwd(), "components", "overlay-climate.tsx"),
+            "utf8",
+        );
+        assert.doesNotMatch(climateSrc, /overlay-live-dot/);
+        assert.doesNotMatch(climateSrc, /["']LIVE["']/);
+        assert.match(climateSrc, /formatHumidityPctTenths/);
+        assert.doesNotMatch(climateSrc, /formatHumidityPct\(/);
+    });
 });
