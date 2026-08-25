@@ -1,6 +1,6 @@
 # GrowCast Twitch restream sidecar
 
-Optional Compose profile `twitch`. Captures `/overlay/capture` in Chromium and pushes RTMPS to Twitch.
+Started by default with `docker compose up`. Captures `/overlay/capture` in Chromium and pushes RTMPS to Twitch. Stays idle until Settings → Start.
 
 Needs about 1–2 CPU cores and 1 GB RAM.
 
@@ -9,5 +9,5 @@ Put `GROWCAST_RESTREAM_TOKEN` in `.env.local` (GrowCast and this sidecar both lo
 Optional `GROWCAST_RESTREAM_STREAM_URL` in the same `.env.local` so the capture overlay loads MediaMTX internally instead of the public HLS URL.
 
 ```bash
-docker compose --profile twitch up -d restream
+docker compose up --build -d
 ```

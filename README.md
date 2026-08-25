@@ -127,13 +127,13 @@ git clone https://github.com/zeroXmrcl/GrowCast-GGS.git extensions/GrowCast-GGS
 copy extensions\GrowCast-GGS\.env.example extensions\GrowCast-GGS\.env
 ```
 
-Fill `SF_MQTT_NAME`, `SF_MQTT_PWD`, `SF_SERIAL`, and the same `GROWCAST_MESH_TOKEN` as `.env.local`. Never commit `.env`. Then start the sidecar with the `ggs` profile (plain `docker compose up` does not start it):
+Fill `SF_MQTT_NAME`, `SF_MQTT_PWD`, `SF_SERIAL`, and the same `GROWCAST_MESH_TOKEN` as `.env.local`. Never commit `.env`. Then:
 
 ```bash
-docker compose --profile ggs up --build -d
+docker compose up --build -d
 ```
 
-Or set `COMPOSE_PROFILES=ggs` in the environment. Without the plugin, the homepage omits the Climate and Devices cards.
+That starts GrowCast plus the GGS and Twitch restream sidecars. Without GGS credentials the climate sidecar will exit; the homepage omits Climate and Devices. Twitch restream stays idle until you save a stream key and press Start in Settings (`GROWCAST_RESTREAM_TOKEN` in `.env.local`).
 
 The container process runs as uid 1001 (`growcast`). The entrypoint `chown`s those bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host.
 
