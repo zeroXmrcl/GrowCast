@@ -108,6 +108,29 @@ describe("saveAdminSettings orchestration", () => {
         });
     });
 
+    it("persists overlayScalePct from the settings form", async () => {
+        await withTempDataDir(async () => {
+            const live = await getCurrentGrow();
+            assert.equal(live.overlayScalePct, 100);
+
+            const parsed = parseAdminSettingsForm(
+                settingsForm({
+                    name: "Overlay Scale Save",
+                    plant: "Basil",
+                    overlayScalePct: "150",
+                    growId: live.id,
+                    timelapseQuality: "medium",
+                    timelapseTimezone: "UTC",
+                    timelapseLength: "8",
+                }),
+            );
+            const result = await saveAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayScalePct, 150);
+        });
+    });
+
     it("does not wipe estimatedHarvestDate when the date field is omitted from FormData", async () => {
         await withTempDataDir(async () => {
             const live = await updateCurrentGrow({

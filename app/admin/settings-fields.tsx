@@ -8,6 +8,7 @@ import {
     AdminTextarea,
 } from "@/components/admin/ui";
 import type {EnergyActuatorRow, EnergySettings} from "@/lib/energy/settings";
+import OverlayScaleInput from "@/components/overlay-scale-input";
 import type {GrowRecord} from "@/lib/db";
 import type {TimelapseSettings} from "@/lib/timelapse-settings";
 
@@ -367,6 +368,7 @@ export function SettingsFields({
                             </label>
                         </div>
                     </div>
+                    <OverlayScaleInput defaultValue={grow.overlayScalePct}/>
                     <AdminField
                         label="OBS URL"
                         hint="Browser Source 1920×1080, transparent, keep running when not visible."
