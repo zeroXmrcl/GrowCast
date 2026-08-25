@@ -4,7 +4,7 @@ import {
     buildShareCardCopy,
     pickShareCardStill,
     shareCardMetadataOrigin,
-    shareCardVisibleHost,
+    shareCardOgImageId,
     stillImageMime,
 } from "../lib/share-card.ts";
 
@@ -122,12 +122,6 @@ describe("shareCardMetadataOrigin", () => {
             }),
         );
     });
-
-    it("hides loopback hosts on the card", () => {
-        assert.equal(shareCardVisibleHost("grow.0xmarcel.com"), "grow.0xmarcel.com");
-        assert.equal(shareCardVisibleHost("localhost:3000"), "");
-        assert.equal(shareCardVisibleHost("127.0.0.1:3000"), "");
-    });
 });
 
 describe("rasterizeShareCardAssets logo", () => {
@@ -136,6 +130,38 @@ describe("rasterizeShareCardAssets logo", () => {
         const src = readFileSync(new URL("../lib/share-card-image.ts", import.meta.url), "utf8");
         assert.equal(/import\(["']sharp["']\)/.test(src), false);
         assert.match(src, /image\/svg\+xml/);
+    });
+});
+
+describe("shareCardOgImageId", () => {
+    it("changes when the still name or mtime changes, and is URL-safe", () => {
+        const snap = {kind: "snapshot" as const, name: "1002.webp"};
+        const first = shareCardOgImageId(snap, 1_710_000_000_000);
+        const renamed = shareCardOgImageId({kind: "snapshot", name: "1003.webp"}, 1_710_000_000_000);
+        const replaced = shareCardOgImageId(snap, 1_710_000_000_500);
+        const dashboard = shareCardOgImageId(
+            {kind: "dashboard", name: "picture 1.jpeg"},
+            100,
+        );
+        assert.equal(first, "snapshot-1002.webp-1710000000000");
+        assert.notEqual(first, renamed);
+        assert.notEqual(first, replaced);
+        assert.equal(shareCardOgImageId(null, 0), "none");
+        assert.match(dashboard, /^dashboard-picture_1.jpeg-100$/);
+        assert.equal(/[^a-zA-Z0-9._-]/.test(dashboard), false);
+    });
+});
+
+describe("opengraph-image still identity", () => {
+    it("advertises generateImageMetadata so the og:image URL follows the still", async () => {
+        const {readFile} = await import("node:fs/promises");
+        const src = await readFile(
+            new URL("../app/opengraph-image.tsx", import.meta.url),
+            "utf8",
+        );
+        assert.match(src, /export async function generateImageMetadata/);
+        assert.match(src, /shareCardOgImageId/);
+        assert.match(src, /shareCardStillMtimeMs/);
     });
 });
 

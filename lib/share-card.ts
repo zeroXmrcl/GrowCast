@@ -1,4 +1,4 @@
-import {readdir} from "node:fs/promises";
+import {readdir, stat} from "node:fs/promises";
 import path from "node:path";
 import {getCurrentGrow} from "@/lib/db";
 import {publicRequestOrigin} from "@/lib/request-trust";
@@ -79,21 +79,6 @@ export function shareCardMetadataOrigin(
     );
 }
 
-export function shareCardVisibleHost(host: string): string {
-    const value = host.trim().toLowerCase();
-    if (!value) {
-        return "";
-    }
-    if (
-        value.startsWith("localhost") ||
-        value.startsWith("127.") ||
-        /^(\d{1,3}\.){3}\d{1,3}(:\d+)?$/.test(value)
-    ) {
-        return "";
-    }
-    return host;
-}
-
 export function buildShareCardCopy(input: {
     plant: string;
     daysSince: number | null;
@@ -152,6 +137,26 @@ export function pickShareCardStill(lists: {
         return {kind: "setup", name: setup};
     }
     return null;
+}
+
+export function shareCardOgImageId(still: ShareCardStill | null, mtimeMs: number): string {
+    if (!still) {
+        return "none";
+    }
+    const safeName = still.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
+    return `${still.kind}-${safeName}-${Math.trunc(mtimeMs)}`;
+}
+
+export async function shareCardStillMtimeMs(filePath: string | null): Promise<number> {
+    if (!filePath) {
+        return 0;
+    }
+    try {
+        const info = await stat(filePath);
+        return Math.trunc(info.mtimeMs);
+    } catch {
+        return 0;
+    }
 }
 
 export function shareCardStillPath(still: ShareCardStill): string {

@@ -1,6 +1,6 @@
 import {Geist, Geist_Mono} from "next/font/google";
 import {headers} from "next/headers";
-import {loadShareCardCopy, shareCardMetadataOrigin, shareCardVisibleHost} from "@/lib/share-card";
+import {loadShareCardCopy, shareCardMetadataOrigin} from "@/lib/share-card";
 import type {Metadata} from "next";
 import React from "react";
 import "./globals.css";
@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     } catch {
         metadataBase = undefined;
     }
-    const copy = await loadShareCardCopy(shareCardVisibleHost(metadataBase?.host ?? ""));
+    const copy = await loadShareCardCopy("");
 
     return {
         title: copy.title,
