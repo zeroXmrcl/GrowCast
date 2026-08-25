@@ -236,6 +236,14 @@ describe("restream chrome", () => {
         assert.match(dockerSrc, /USER 1001/);
         assert.match(sidecarSrc, /SIGTERM/);
         assert.match(sidecarSrc, /redact/);
+        assert.match(sidecarSrc, /logging.getLogger/);
+        assert.match(sidecarSrc, /log\.info/);
+        assert.match(sidecarSrc, /starting chromium kiosk/);
+        assert.match(sidecarSrc, /starting ffmpeg ingest=/);
+        assert.match(sidecarSrc, /idle \(Settings Start not pressed\)/);
+        assert.match(sidecarSrc, /still live/);
+        assert.doesNotMatch(sidecarSrc, /log\.(?:info|warning|error)\([^)]*FFMPEG_OUTPUT/);
+        assert.doesNotMatch(sidecarSrc, /log\.info\([^)]*token=\{TOKEN\}/);
         assert.match(fieldsSrc, /id="twitch"/);
         assert.match(composeSrc, /^\s*ggs:\s*$/m);
         assert.match(composeSrc, /^\s*restream:\s*$/m);
