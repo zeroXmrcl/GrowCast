@@ -112,7 +112,7 @@ export async function resolveChannelLogin(
 ): Promise<string> {
     const typed = input.typedLogin.trim();
     const previous = input.previousLogin.trim();
-    if (typed.length > 0 && typed !== previous && isTwitchLogin(typed)) {
+    if (typed.length > 0 && isTwitchLogin(typed)) {
         return typed;
     }
     const userId = twitchUserIdFromStreamKey(input.streamKey);

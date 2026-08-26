@@ -175,7 +175,7 @@ describe("twitch helix login lookup", () => {
         assert.equal(login, "helixuser");
     });
 
-    it("lets a typed login win only when it differs from the saved login", async () => {
+    it("lets a non-empty valid typed login win over Helix", async () => {
         let calls = 0;
         const unused: typeof fetch = async () => {
             calls += 1;
@@ -189,26 +189,15 @@ describe("twitch helix login lookup", () => {
         assert.equal(login, "0xmarcel");
         assert.equal(calls, 0);
 
-        const helixFetcher: typeof fetch = async (input) => {
-            calls += 1;
-            const url = String(input);
-            if (url.includes("/oauth2/token")) {
-                return Response.json({access_token: "app-token"});
-            }
-            if (url.includes("/helix/users")) {
-                return Response.json({data: [{id: "99", login: "helixuser"}]});
-            }
-            throw new Error(`unexpected ${url}`);
-        };
         assert.equal(
             await resolveChannelLogin(
                 {typedLogin: "old", streamKey: "live_99_abc", previousLogin: "old"},
                 helixEnv,
-                helixFetcher,
+                unused,
             ),
-            "helixuser",
+            "old",
         );
-        assert.equal(calls > 0, true);
+        assert.equal(calls, 0);
     });
 
     it("ignores a typed login that is not letters, digits, and underscore", async () => {
