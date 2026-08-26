@@ -133,7 +133,7 @@ Fill `SF_MQTT_NAME`, `SF_MQTT_PWD`, `SF_SERIAL`, and the same `GROWCAST_MESH_TOK
 docker compose up --build -d
 ```
 
-That starts GrowCast plus the GGS and Twitch restream sidecars. Without GGS credentials the climate sidecar will exit; the homepage omits Climate and Devices. Twitch restream stays idle until you save a stream key and press Start in Settings (`GROWCAST_RESTREAM_TOKEN` in `.env.local`).
+That starts GrowCast plus the GGS and Twitch restream sidecars. Without GGS credentials the climate sidecar will exit; the homepage omits Climate and Devices. Twitch restream stays idle until you save a stream key and press Start on Stream (`/admin/stream`). GrowCast writes `data/restream/capture.token` on its own; `GROWCAST_RESTREAM_TOKEN` in `.env.local` is an optional override.
 
 The container process runs as uid 1001 (`growcast`). The entrypoint `chown`s those bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host.
 
@@ -233,9 +233,9 @@ Since some cameras expose RTSP, use MediaMTX to convert RTSP to HLS:
 
 1. Configure your RTSP camera (RTSP source looks somewhat like this: `rtsp://<camera-ip>:554/<path>`).
 2. Run MediaMTX and create a path that ingests RTSP.
-3. Use MediaMTX HLS output URL as the stream URL in GrowCast admin (`/admin`), for example:
+3. Use MediaMTX HLS output URL as the stream URL on Stream (`/admin/stream`), for example:
    - `http://<mediamtx-host>:8888/<path>/`
-4. Save in GrowCast settings.
+4. Save on the Stream page.
 
 ## 8. API / Backend Overview
 

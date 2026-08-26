@@ -1,4 +1,3 @@
-import {AdminOptionalTimeInput} from "@/components/admin/optional-time-input";
 import {
     AdminCheckboxRow,
     AdminField,
@@ -7,26 +6,13 @@ import {
     AdminSelect,
     AdminTextarea,
 } from "@/components/admin/ui";
-import type {EnergyActuatorRow, EnergySettings} from "@/lib/energy/settings";
-import OverlayScaleInput from "@/components/overlay-scale-input";
 import type {GrowRecord} from "@/lib/db";
-import type {TimelapseSettings} from "@/lib/timelapse-settings";
 
-type SettingsFieldsProps = {
+type GrowSettingsFieldsProps = {
     grow: GrowRecord;
-    timelapseSettings: TimelapseSettings;
-    energySettings: EnergySettings;
-    energyActuators: EnergyActuatorRow[];
-    overlayUrl: string;
 };
 
-export function SettingsFields({
-    grow,
-    timelapseSettings,
-    energySettings,
-    energyActuators,
-    overlayUrl,
-}: SettingsFieldsProps) {
+export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
     return (
         <div className="space-y-6">
             <AdminPanel id="general" title="General">
@@ -139,60 +125,6 @@ export function SettingsFields({
                 </div>
             </AdminPanel>
 
-            <AdminPanel
-                id="energy"
-                title="Energy"
-                description="Public visitors see the public tariff. A signed-in admin session uses the private tariff on the same page. Empty means unset (€ shown as —)."
-            >
-                <div className="grid gap-4 md:grid-cols-2">
-                    <AdminField label="Public €/kWh" hint="Used for anonymous visitors.">
-                        <AdminInput
-                            name="energyPublicTariff"
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            defaultValue={energySettings.publicTariffEurPerKwh ?? ""}
-                        />
-                    </AdminField>
-                    <AdminField label="Private €/kWh" hint="Used when an admin session cookie is present.">
-                        <AdminInput
-                            name="energyPrivateTariff"
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            defaultValue={energySettings.privateTariffEurPerKwh ?? ""}
-                        />
-                    </AdminField>
-                </div>
-                <div className="mt-6">
-                    <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
-                        Watts when on
-                    </p>
-                    {energyActuators.length === 0 ? (
-                        <p className="text-sm text-(--admin-muted)">
-                            Overrides appear when live devices are flowing. Outlets with no catalog
-                            row stay at 0 W until a value is set here.
-                        </p>
-                    ) : (
-                        <div className="space-y-4">
-                            {energyActuators.map((row) => (
-                                <AdminField key={row.key} label={row.label} hint={row.hint}>
-                                    <input type="hidden" name="energyOverrideKey" value={row.key}/>
-                                    <AdminInput
-                                        name="energyOverrideWatts"
-                                        type="number"
-                                        min={0}
-                                        step="0.1"
-                                        defaultValue={row.watts}
-                                        placeholder="catalog"
-                                    />
-                                </AdminField>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </AdminPanel>
-
             <AdminPanel id="status" title="Status">
                 <div className="grid gap-4 md:grid-cols-2">
                     <AdminField label="Health">
@@ -259,207 +191,6 @@ export function SettingsFields({
                             placeholder={"Tent: ...\nLight: ...\nFan: ..."}
                         />
                     </AdminField>
-                </div>
-            </AdminPanel>
-
-            <AdminPanel id="stream" title="Stream">
-                <div className="space-y-4">
-                    <AdminCheckboxRow
-                        name="showGrowName"
-                        defaultChecked={grow.showGrowName}
-                        label="Show grow name above stream"
-                        description="Displays the grow-name as header above the stream."
-                    />
-                    <AdminField label="Stream URL">
-                        <AdminInput
-                            name="streamUrl"
-                            defaultValue={grow.streamUrl}
-                            placeholder="https://..."
-                        />
-                    </AdminField>
-                </div>
-            </AdminPanel>
-
-            <AdminPanel
-                id="overlay"
-                title="Overlay"
-                description="Add this URL as an OBS Browser Source over the tent camera."
-            >
-                <div className="space-y-4">
-                    <div>
-                        <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
-                            Overlay layout
-                        </p>
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <label className="flex items-start gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
-                                <input
-                                    type="radio"
-                                    name="overlayLayout"
-                                    value="left-rail"
-                                    defaultChecked={grow.overlayLayout !== "bottom-bar"}
-                                    className="mt-0.5 h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
-                                />
-                                <span className="min-w-0">
-                                    <span className="block text-sm font-medium text-(--admin-text)">
-                                        Left rail
-                                    </span>
-                                    <span className="mt-1 block text-xs text-(--admin-muted)">
-                                        Stacked column inset from the left edge.
-                                    </span>
-                                </span>
-                            </label>
-                            <label className="flex items-start gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
-                                <input
-                                    type="radio"
-                                    name="overlayLayout"
-                                    value="bottom-bar"
-                                    defaultChecked={grow.overlayLayout === "bottom-bar"}
-                                    className="mt-0.5 h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
-                                />
-                                <span className="min-w-0">
-                                    <span className="block text-sm font-medium text-(--admin-text)">
-                                        Bottom bar
-                                    </span>
-                                    <span className="mt-1 block text-xs text-(--admin-muted)">
-                                        One strip along the bottom of the frame.
-                                    </span>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                    <div>
-                        <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
-                            Overlay stream
-                        </p>
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <label className="flex items-start gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
-                                <input
-                                    type="radio"
-                                    name="overlayStream"
-                                    value="transparent"
-                                    defaultChecked={grow.overlayStream !== "include"}
-                                    className="mt-0.5 h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
-                                />
-                                <span className="min-w-0">
-                                    <span className="block text-sm font-medium text-(--admin-text)">
-                                        Transparent
-                                    </span>
-                                    <span className="mt-1 block text-xs text-(--admin-muted)">
-                                        See-through HUD. Put the tent camera under this Browser Source in OBS.
-                                    </span>
-                                </span>
-                            </label>
-                            <label className="flex items-start gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
-                                <input
-                                    type="radio"
-                                    name="overlayStream"
-                                    value="include"
-                                    defaultChecked={grow.overlayStream === "include"}
-                                    className="mt-0.5 h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
-                                />
-                                <span className="min-w-0">
-                                    <span className="block text-sm font-medium text-(--admin-text)">
-                                        Include stream
-                                    </span>
-                                    <span className="mt-1 block text-xs text-(--admin-muted)">
-                                        Embed the Stream URL full-frame under the HUD. Needs a Stream URL.
-                                    </span>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                    <OverlayScaleInput defaultValue={grow.overlayScalePct}/>
-                    <AdminField
-                        label="OBS URL"
-                        hint="Browser Source 1920×1080, transparent, keep running when not visible."
-                    >
-                        <AdminInput readOnly value={overlayUrl}/>
-                    </AdminField>
-                </div>
-            </AdminPanel>
-
-            <AdminPanel id="timelapse" title="Timelapse">
-                <div className="space-y-4">
-                    <AdminCheckboxRow
-                        name="timelapsePaused"
-                        defaultChecked={timelapseSettings.paused}
-                        label="Pause timelapse"
-                        description="Stops the plugin from taking new snapshots until it is resumed."
-                    />
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <AdminField
-                            label="Timezone"
-                            hint="Use an IANA timezone such as UTC or Europe/Berlin."
-                        >
-                            <AdminInput
-                                name="timelapseTimezone"
-                                defaultValue={timelapseSettings.timezone}
-                                placeholder="UTC"
-                            />
-                        </AdminField>
-                        <AdminField
-                            label="Interval (minutes)"
-                            hint="Leave empty to use trigger times only."
-                        >
-                            <AdminInput
-                                name="timelapseInterval"
-                                type="number"
-                                min={1}
-                                step={1}
-                                defaultValue={timelapseSettings.intervalMinutes ?? ""}
-                            />
-                        </AdminField>
-                    </div>
-                    <div>
-                        <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
-                            Trigger Times
-                        </p>
-                        <p className="mb-3 text-xs text-(--admin-subtle)">
-                            Optional. Use any of the three, or none (interval-only). Clear a slot
-                            to turn it off.
-                        </p>
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <AdminField label="Time 1">
-                                <AdminOptionalTimeInput
-                                    name="timelapseTime1"
-                                    defaultValue={timelapseSettings.time1}
-                                />
-                            </AdminField>
-                            <AdminField label="Time 2">
-                                <AdminOptionalTimeInput
-                                    name="timelapseTime2"
-                                    defaultValue={timelapseSettings.time2}
-                                />
-                            </AdminField>
-                            <AdminField label="Time 3">
-                                <AdminOptionalTimeInput
-                                    name="timelapseTime3"
-                                    defaultValue={timelapseSettings.time3}
-                                />
-                            </AdminField>
-                        </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <AdminField label="Timelapse Length (seconds)">
-                            <AdminInput
-                                name="timelapseLength"
-                                type="number"
-                                min={1}
-                                step={1}
-                                defaultValue={timelapseSettings.timelapseLengthSeconds}
-                            />
-                        </AdminField>
-                        <AdminField label="Timelapse Quality">
-                            <AdminSelect
-                                name="timelapseQuality"
-                                defaultValue={timelapseSettings.timelapseQuality}
-                            >
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                            </AdminSelect>
-                        </AdminField>
-                    </div>
                 </div>
             </AdminPanel>
 

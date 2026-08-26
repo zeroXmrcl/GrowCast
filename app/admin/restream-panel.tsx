@@ -25,11 +25,7 @@ export function RestreamPanel({
                   : "Off";
 
     return (
-        <AdminPanel
-            id="twitch"
-            title="Twitch 24/7"
-            description="Pushes camera + overlay to Twitch from a sidecar. OBS Browser Source is unchanged."
-        >
+        <AdminPanel id="twitch" title="Twitch 24/7">
             <div className="space-y-4">
                 <p className="text-sm text-(--admin-muted)">
                     Status: <span className="font-medium text-(--admin-text)">{statusLabel}</span>

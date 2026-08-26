@@ -1,11 +1,14 @@
 import Link from "next/link";
 import {redirect} from "next/navigation";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
-import {AdminChrome} from "@/app/admin/admin-chrome";
+import {completeGrowAction} from "@/app/admin/actions";
+import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
+import {CompleteGrowPanel} from "@/app/admin/complete-grow-panel";
 import {AdminPanel} from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {listArchivedGrows} from "@/lib/archives";
+import {getCurrentGrow} from "@/lib/db";
 
 type AdminArchivesPageProps = {
     searchParams: Promise<{
@@ -20,30 +23,25 @@ export default async function AdminArchivesPage({searchParams}: AdminArchivesPag
         redirect("/admin");
     }
 
-    const archives = await listArchivedGrows();
+    const [archives, grow] = await Promise.all([listArchivedGrows(), getCurrentGrow()]);
 
     return (
         <AdminChrome
-            title="Archived Grows"
-            actions={
-                <Link href="/admin" className="text-sm text-(--admin-muted) hover:text-(--admin-text)">
-                    Back to Settings
-                </Link>
-            }
+            title="Archives"
+            sections={SETTINGS_SECTION_LINKS}
+            actions={<AdminSignOutButton/>}
         >
             <AdminFlashNotice notice={params.notice}/>
+            <CompleteGrowPanel growId={grow.id} completeAction={completeGrowAction}/>
 
             {archives.length === 0 ? (
                 <AdminPanel title="No archives yet">
                     <p className="text-sm text-(--admin-muted)">
-                        Complete a grow from the settings page to create the first archive.
+                        Complete the current grow above to create the first archive.
                     </p>
                 </AdminPanel>
             ) : (
-                <AdminPanel
-                    title="Archives"
-                    description="Select an archive to edit its details or manage its media."
-                >
+                <AdminPanel title="Archives">
                     <div className="space-y-2">
                         {archives.map((archive) => {
                             const subtitle = [archive.grow.plant, archive.grow.details.strain]

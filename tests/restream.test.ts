@@ -20,9 +20,13 @@ import {
 } from "../lib/restream/store.ts";
 import {
     captureStreamUrl,
+    ensureRestreamCaptureToken,
     getRestreamTokenFromEnv,
     isRestreamCaptureAuthorized,
+    readCaptureTokenFile,
+    resolveRestreamCaptureToken,
 } from "../lib/restream/capture.ts";
+import {restreamCaptureTokenFile} from "../lib/restream/paths.ts";
 import {mergeOverlayGrowPoll} from "../lib/overlay-grow.ts";
 import {navItemsFor, type NavFlags} from "../lib/site-nav.ts";
 
@@ -186,6 +190,57 @@ describe("restream capture gate", () => {
             "https://stream.example.com/growcam/",
         );
     });
+
+    it("creates capture.token with mode 600 when neither env nor file exist", async () => {
+        await withTempDataDir(async () => {
+            const previous = process.env.GROWCAST_RESTREAM_TOKEN;
+            delete process.env.GROWCAST_RESTREAM_TOKEN;
+            try {
+                const token = await ensureRestreamCaptureToken({});
+                assert.ok(token.length > 20);
+                const onDisk = await readFile(restreamCaptureTokenFile(), "utf8");
+                assert.equal(onDisk.trim(), token);
+                const mode = (await stat(restreamCaptureTokenFile())).mode & 0o777;
+                if (process.platform !== "win32") {
+                    assert.equal(mode, 0o600);
+                }
+                assert.equal(await readCaptureTokenFile(), token);
+                assert.equal(
+                    isRestreamCaptureAuthorized(await resolveRestreamCaptureToken({}), token),
+                    true,
+                );
+            } finally {
+                if (previous === undefined) {
+                    delete process.env.GROWCAST_RESTREAM_TOKEN;
+                } else {
+                    process.env.GROWCAST_RESTREAM_TOKEN = previous;
+                }
+            }
+        });
+    });
+
+    it("lets GROWCAST_RESTREAM_TOKEN override the capture.token file", async () => {
+        await withTempDataDir(async () => {
+            await ensureRestreamCaptureToken({});
+            const fileToken = await readCaptureTokenFile();
+            assert.ok(fileToken);
+            const env = {GROWCAST_RESTREAM_TOKEN: "env-override-token"};
+            assert.equal(await resolveRestreamCaptureToken(env), "env-override-token");
+            assert.equal(await ensureRestreamCaptureToken(env), "env-override-token");
+            assert.equal(await readCaptureTokenFile(), fileToken);
+            assert.equal(
+                isRestreamCaptureAuthorized(
+                    await resolveRestreamCaptureToken(env),
+                    "env-override-token",
+                ),
+                true,
+            );
+            assert.equal(
+                isRestreamCaptureAuthorized(await resolveRestreamCaptureToken(env), fileToken),
+                false,
+            );
+        });
+    });
 });
 
 describe("restream chrome", () => {
@@ -231,6 +286,7 @@ describe("restream chrome", () => {
         assert.match(captureSrc, /lockStream/);
         assert.match(hudSrc, /mergeOverlayGrowPoll/);
         assert.match(captureSrc, /isRestreamCaptureAuthorized/);
+        assert.match(captureSrc, /ensureRestreamCaptureToken/);
         assert.match(composeSrc, /env_file:/);
         assert.doesNotMatch(composeSrc, /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN/);
         assert.match(dockerSrc, /USER 1001/);
@@ -242,6 +298,12 @@ describe("restream chrome", () => {
         assert.match(sidecarSrc, /starting ffmpeg ingest=/);
         assert.match(sidecarSrc, /idle \(Settings Start not pressed\)/);
         assert.match(sidecarSrc, /still live/);
+        assert.match(sidecarSrc, /capture\.token/);
+        assert.match(sidecarSrc, /GROWCAST_RESTREAM_TOKEN/);
+        assert.match(sidecarSrc, /def capture_token\(/);
+        assert.match(sidecarSrc, /token=missing/);
+        assert.doesNotMatch(sidecarSrc, /random\.(?:randbytes|token_bytes|urlsafe)/);
+        assert.doesNotMatch(sidecarSrc, /TOKEN_FILE\.write/);
         assert.doesNotMatch(sidecarSrc, /log\.(?:info|warning|error)\([^)]*FFMPEG_OUTPUT/);
         assert.doesNotMatch(sidecarSrc, /log\.info\([^)]*token=\{TOKEN\}/);
         assert.match(fieldsSrc, /id="twitch"/);

@@ -1,50 +1,31 @@
 import Link from "next/link";
 import {AdminButton, AdminPanel} from "@/components/admin/ui";
-import {SettingsFields} from "@/app/admin/settings-fields";
-import type {EnergyActuatorRow, EnergySettings} from "@/lib/energy/settings";
-import type {GrowRecord} from "@/lib/db";
-import type {TimelapseSettings} from "@/lib/timelapse-settings";
+import type {ReactNode} from "react";
 
 type SettingsFormProps = {
-    grow: GrowRecord;
-    timelapseSettings: TimelapseSettings;
-    energySettings: EnergySettings;
-    energyActuators: EnergyActuatorRow[];
-    overlayUrl: string;
+    growId?: string;
     saveAction: (formData: FormData) => Promise<void>;
+    children: ReactNode;
 };
 
-export function AdminSettingsForm({
-    grow,
-    timelapseSettings,
-    energySettings,
-    energyActuators,
-    overlayUrl,
-    saveAction,
-}: SettingsFormProps) {
+export function AdminSettingsForm({growId, saveAction, children}: SettingsFormProps) {
     return (
         <form
             id="admin-settings-form"
             action={saveAction}
             className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
         >
-            <input type="hidden" name="growId" value={grow.id} />
-            <SettingsFields
-                grow={grow}
-                timelapseSettings={timelapseSettings}
-                energySettings={energySettings}
-                energyActuators={energyActuators}
-                overlayUrl={overlayUrl}
-            />
+            {growId ? <input type="hidden" name="growId" value={growId}/> : null}
+            {children}
 
             <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
-                <AdminPanel title="Apply Changes" description="Changes will be live immediately.">
+                <AdminPanel title="Apply Changes">
                     <AdminButton type="submit" tone="primary" className="w-full">
                         Save Changes
                     </AdminButton>
                 </AdminPanel>
 
-                <AdminPanel title="Quick Links" description="Jump to the most important sites.">
+                <AdminPanel title="Quick Links">
                     <div className="grid gap-2">
                         <Link
                             href="/"

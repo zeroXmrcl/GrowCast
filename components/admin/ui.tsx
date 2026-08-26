@@ -61,11 +61,23 @@ function getButtonToneClasses(tone: ButtonTone): string {
     }
 }
 
-export function NavLink({href, label}: {href: string; label: string}) {
+export function NavLink({
+    href,
+    label,
+    active = false,
+}: {
+    href: string;
+    label: string;
+    active?: boolean;
+}) {
     return (
         <Link
             href={href}
-            className="block rounded-md border border-transparent px-3 py-2 text-sm text-(--admin-muted) hover:border-(--admin-border) hover:bg-(--admin-surface-muted) hover:text-(--admin-text)"
+            className={
+                active
+                    ? "block rounded-md border border-(--admin-border) bg-(--admin-surface-muted) px-3 py-2 text-sm text-(--admin-text)"
+                    : "block rounded-md border border-transparent px-3 py-2 text-sm text-(--admin-muted) hover:border-(--admin-border) hover:bg-(--admin-surface-muted) hover:text-(--admin-text)"
+            }
         >
             {label}
         </Link>

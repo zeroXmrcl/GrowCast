@@ -3,7 +3,7 @@ import OverlayHud from "@/components/overlay-hud";
 import {getCurrentGrow} from "@/lib/db";
 import {
     captureStreamUrl,
-    getRestreamTokenFromEnv,
+    ensureRestreamCaptureToken,
     isRestreamCaptureAuthorized,
 } from "@/lib/restream/capture";
 
@@ -15,7 +15,8 @@ export default async function OverlayCapturePage({
     searchParams: Promise<{token?: string}>;
 }) {
     const params = await searchParams;
-    if (!isRestreamCaptureAuthorized(getRestreamTokenFromEnv(), params.token)) {
+    const expected = await ensureRestreamCaptureToken();
+    if (!isRestreamCaptureAuthorized(expected, params.token)) {
         notFound();
     }
 
