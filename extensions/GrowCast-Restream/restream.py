@@ -17,8 +17,8 @@ DATA = Path(os.environ.get("RESTREAM_DATA_DIR", "/data/restream"))
 CONTROL = DATA / "control.json"
 KEY = DATA / "twitch.key"
 STATUS = DATA / "status.json"
+TOKEN_FILE = DATA / "capture.token"
 GROWCAST_URL = os.environ.get("GROWCAST_URL", "http://growcast:3000").rstrip("/")
-TOKEN = os.environ.get("GROWCAST_RESTREAM_TOKEN", "").strip()
 INGEST = os.environ.get("TWITCH_INGEST", "rtmps://live.twitch.tv:443/app").rstrip("/")
 DISPLAY = os.environ.get("DISPLAY", ":99")
 
@@ -35,13 +35,24 @@ last_note = ""
 last_live_log = 0.0
 
 
-def redact(text: str, key: str = "") -> str:
+def capture_token() -> str:
+    env = os.environ.get("GROWCAST_RESTREAM_TOKEN", "").strip()
+    if env:
+        return env
+    try:
+        return TOKEN_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def redact(text: str, key: str = "", token: str = "") -> str:
     out = re.sub(r"rtmps?://\S+", "[ingest]", text, flags=re.I)
     secret = key.strip()
     if secret:
         out = out.replace(secret, "[key]")
-    if TOKEN:
-        out = out.replace(TOKEN, "[token]")
+    secret_token = token.strip()
+    if secret_token:
+        out = out.replace(secret_token, "[token]")
     return out[-400:]
 
 
@@ -64,7 +75,7 @@ def write_status(state: str, last_error: str = "", key: str = "") -> None:
     payload = {
         "state": state,
         "updatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "lastError": redact(last_error, key),
+        "lastError": redact(last_error, key, capture_token()),
     }
     STATUS.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
@@ -87,14 +98,14 @@ def stream_key() -> str:
         return ""
 
 
-def drain_stderr(proc: subprocess.Popen[bytes], name: str, key: str) -> None:
+def drain_stderr(proc: subprocess.Popen[bytes], name: str, key: str, token: str) -> None:
     level = logging.DEBUG if name in NOISY_STDERR else logging.WARNING
 
     def run() -> None:
         if proc.stderr is None:
             return
         for raw in proc.stderr:
-            line = redact(raw.decode("utf-8", "replace"), key).rstrip()
+            line = redact(raw.decode("utf-8", "replace"), key, token).rstrip()
             if line:
                 log.log(level, "%s: %s", name, line)
 
@@ -124,7 +135,7 @@ def stop_all() -> None:
         chrome_profile = ""
 
 
-def start_stack(key: str) -> None:
+def start_stack(key: str, token: str) -> None:
     global xvfb, chrome, ffmpeg, chrome_profile
     if xvfb is None or xvfb.poll() is not None:
         log.info("starting xvfb display=%s 1920x1080", DISPLAY)
@@ -133,7 +144,7 @@ def start_stack(key: str) -> None:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
         )
-        drain_stderr(xvfb, "xvfb", key)
+        drain_stderr(xvfb, "xvfb", key, token)
         time.sleep(0.4)
         if not running(xvfb):
             log.error("xvfb exited immediately")
@@ -150,13 +161,13 @@ def start_stack(key: str) -> None:
             "--kiosk",
             "--window-size=1920,1080",
             f"--user-data-dir={chrome_profile}",
-            f"{capture}?token={TOKEN}",
+            f"{capture}?token={token}",
         ],
         env={**os.environ, "DISPLAY": DISPLAY},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
     )
-    drain_stderr(chrome, "chromium", key)
+    drain_stderr(chrome, "chromium", key, token)
     time.sleep(2)
     if not running(chrome):
         log.error("chromium exited code=%s", chrome.returncode if chrome else "?")
@@ -171,7 +182,7 @@ def start_stack(key: str) -> None:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
     )
-    drain_stderr(ffmpeg, "ffmpeg", key)
+    drain_stderr(ffmpeg, "ffmpeg", key, token)
 
 
 def running(proc: subprocess.Popen[bytes] | None) -> bool:
@@ -199,7 +210,7 @@ def main() -> None:
     log.info(
         "boot growcast=%s token=%s ingest=%s data=%s",
         GROWCAST_URL,
-        "set" if TOKEN else "missing",
+        "set" if capture_token() else "missing",
         INGEST,
         DATA,
     )
@@ -207,7 +218,8 @@ def main() -> None:
     while not stopping:
         want = enabled()
         key = stream_key()
-        if not want or not key or not TOKEN:
+        token = capture_token()
+        if not want or not key or not token:
             if running(ffmpeg) or running(chrome):
                 log.info("start not requested or missing credentials, stopping encode")
                 stop_all()
@@ -215,9 +227,9 @@ def main() -> None:
             if not want:
                 note("idle (Settings Start not pressed)")
                 write_status("off", "", key)
-            elif not TOKEN:
-                note("cannot start: GROWCAST_RESTREAM_TOKEN is missing", level=logging.ERROR)
-                write_status("error", "missing GROWCAST_RESTREAM_TOKEN", key)
+            elif not token:
+                note("cannot start: token=missing", level=logging.ERROR)
+                write_status("error", "token=missing", key)
             else:
                 note("cannot start: no Twitch stream key in Settings", level=logging.ERROR)
                 write_status("error", "missing key", key)
@@ -231,7 +243,7 @@ def main() -> None:
             clear_note()
             write_status("starting", "", key)
             log.info("starting encode stack")
-            start_stack(key)
+            start_stack(key, token)
             time.sleep(1)
             if running(ffmpeg):
                 last_live_log = time.monotonic()

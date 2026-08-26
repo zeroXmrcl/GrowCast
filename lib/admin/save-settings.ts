@@ -1,23 +1,19 @@
-import {getCurrentGrow, replaceCurrentGrow, updateCurrentGrow, type GrowRecord, type GrowUpdateInput} from "@/lib/db";
+import {getCurrentGrow, updateCurrentGrow, type GrowRecord, type GrowUpdateInput} from "@/lib/db";
 import {
-    getTimelapseSettings,
     saveTimelapseSettings,
     type TimelapseSettings,
 } from "@/lib/timelapse-settings";
-import {readEnergySettings, writeEnergySettings, type EnergySettings} from "@/lib/energy/settings";
+import {writeEnergySettings, type EnergySettings} from "@/lib/energy/settings";
 
 export type SaveAdminSettingsInput = {
     grow: GrowUpdateInput;
-    timelapse: TimelapseSettings;
     expectedGrowId?: string;
-    energy?: EnergySettings;
 };
 
 export type SaveAdminSettingsResult =
-    | {ok: true; grow: GrowRecord; timelapse: TimelapseSettings}
+    | {ok: true; grow: GrowRecord}
     | {ok: false; error: string};
 
-/** Rollback exists because grow, timelapse, and energy are separate files. */
 export async function saveAdminSettings(
     input: SaveAdminSettingsInput,
 ): Promise<SaveAdminSettingsResult> {
@@ -25,47 +21,39 @@ export async function saveAdminSettings(
     if (!input.expectedGrowId || input.expectedGrowId !== previousGrow.id) {
         return {ok: false, error: "stale_grow"};
     }
-    const previousTimelapse = await getTimelapseSettings();
-    const previousEnergy = input.energy !== undefined ? await readEnergySettings() : null;
 
-    let nextGrow: GrowRecord;
     try {
-        nextGrow = await updateCurrentGrow(input.grow);
+        const nextGrow = await updateCurrentGrow(input.grow);
+        return {ok: true, grow: nextGrow};
     } catch (error) {
         return {
             ok: false,
             error: error instanceof Error ? error.message : String(error),
         };
     }
+}
 
+export async function saveTimelapseAdminSettings(
+    timelapse: TimelapseSettings,
+): Promise<{ok: true; timelapse: TimelapseSettings} | {ok: false; error: string}> {
     try {
-        const nextTimelapseRecord = await saveTimelapseSettings(input.timelapse);
-        if (input.energy !== undefined) {
-            await writeEnergySettings(input.energy);
-        }
-        return {
-            ok: true,
-            grow: nextGrow,
-            timelapse: nextTimelapseRecord.settings,
-        };
+        const record = await saveTimelapseSettings(timelapse);
+        return {ok: true, timelapse: record.settings};
     } catch (error) {
-        try {
-            await replaceCurrentGrow(previousGrow);
-            await saveTimelapseSettings(previousTimelapse);
-            if (previousEnergy) {
-                await writeEnergySettings(previousEnergy);
-            }
-        } catch (rollbackError) {
-            return {
-                ok: false,
-                error: `Save failed and rollback incomplete: ${
-                    error instanceof Error ? error.message : String(error)
-                }; rollback: ${
-                    rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
-                }`,
-            };
-        }
+        return {
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+        };
+    }
+}
 
+export async function saveEnergyAdminSettings(
+    energy: EnergySettings,
+): Promise<{ok: true} | {ok: false; error: string}> {
+    try {
+        await writeEnergySettings(energy);
+        return {ok: true};
+    } catch (error) {
         return {
             ok: false,
             error: error instanceof Error ? error.message : String(error),

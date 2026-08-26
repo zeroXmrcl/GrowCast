@@ -37,10 +37,13 @@ describe("overlay chrome", () => {
         assert.equal(navSrc.includes("/overlay"), false);
     });
 
-    it("builds the OBS URL from the public origin helper in Settings", () => {
-        const pageSrc = readFileSync(path.join(process.cwd(), "app", "admin", "page.tsx"), "utf8");
+    it("builds the OBS URL from the public origin helper on the Stream page", () => {
+        const pageSrc = readFileSync(
+            path.join(process.cwd(), "app", "admin", "stream", "page.tsx"),
+            "utf8",
+        );
         const fieldsSrc = readFileSync(
-            path.join(process.cwd(), "app", "admin", "settings-fields.tsx"),
+            path.join(process.cwd(), "app", "admin", "stream-fields.tsx"),
             "utf8",
         );
         assert.match(pageSrc, /shareCardMetadataOrigin/);

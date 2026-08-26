@@ -131,7 +131,7 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     twitch_started: {
         tone: "success",
         title: "Twitch restream requested",
-        body: "The sidecar will go live when it is running (compose profile twitch).",
+        body: "The sidecar will go live when the restream service is running.",
     },
     twitch_stopped: {
         tone: "success",

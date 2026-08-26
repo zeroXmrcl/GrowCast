@@ -1,23 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import {AdminButton, NavLink} from "@/components/admin/ui";
+import {AdminSectionNav} from "@/app/admin/admin-section-nav";
+import {AdminButton} from "@/components/admin/ui";
 import type {ReactNode} from "react";
 
 export const SETTINGS_SECTION_LINKS = [
-    {href: "#general", label: "General"},
-    {href: "#lifecycle", label: "Lifecycle"},
-    {href: "#climate", label: "Climate"},
-    {href: "#energy", label: "Energy"},
-    {href: "#status", label: "Status"},
-    {href: "#notes", label: "Notes"},
-    {href: "#hardware", label: "Hardware"},
-    {href: "#stream", label: "Stream"},
-    {href: "#overlay", label: "Overlay"},
-    {href: "#twitch", label: "Twitch"},
-    {href: "#timelapse", label: "Timelapse"},
-    {href: "#socials", label: "Socials"},
-    {href: "#pictures", label: "Pictures"},
-    {href: "#archive", label: "Archive"},
+    {href: "/admin", label: "Grow"},
+    {href: "/admin/stream", label: "Stream"},
+    {href: "/admin/timelapse", label: "Timelapse"},
+    {href: "/admin/ggs", label: "GGS"},
+    {href: "/admin/archives", label: "Archives"},
 ];
 
 export function AdminSignOutButton() {
@@ -84,14 +76,10 @@ export function AdminChrome({
                     </Link>
                 </div>
 
-                <div className="hidden space-y-6 px-3 py-4 lg:block">
+                <div className="space-y-2 px-3 py-3 lg:space-y-6 lg:py-4">
                     <div>
                         <p className="px-3 text-xs font-medium text-(--admin-subtle)">Sections</p>
-                        <nav className="mt-2 space-y-1">
-                            {sections.map((item) => (
-                                <NavLink key={item.href} href={item.href} label={item.label}/>
-                            ))}
-                        </nav>
+                        <AdminSectionNav sections={sections}/>
                     </div>
                 </div>
             </aside>

@@ -64,12 +64,12 @@ export type GrowRecord = {
 };
 
 export type GrowUpdateInput = {
-  name: string;
+  name?: string;
   showGrowName?: boolean;
   showSettingsLink?: boolean;
-  plant: string;
+  plant?: string;
   plantAmount?: number;
-  streamUrl: string;
+  streamUrl?: string;
   details?: Partial<Omit<GrowDetails, "updatedAt">>;
   growSetup?: Partial<GrowSetup>;
   status?: Partial<GrowStatus>;
@@ -126,6 +126,10 @@ function mergeGrowDetails(
   current: GrowDetails,
   updates?: GrowUpdateInput["details"],
 ): GrowDetails {
+  if (!updates) {
+    return current;
+  }
+
   const next = mergeDefined(current, updates);
 
   return {
@@ -284,13 +288,13 @@ export async function updateCurrentGrow(input: GrowUpdateInput): Promise<GrowRec
 
   const nextGrow: GrowRecord = {
     ...current,
-    name: input.name,
+    name: input.name !== undefined ? input.name : current.name,
     showGrowName: typeof input.showGrowName === "boolean" ? input.showGrowName : current.showGrowName,
     showSettingsLink:
       typeof input.showSettingsLink === "boolean" ? input.showSettingsLink : current.showSettingsLink,
-    plant: input.plant,
+    plant: input.plant !== undefined ? input.plant : current.plant,
     plantAmount: Number.isFinite(input.plantAmount) ? Number(input.plantAmount) : current.plantAmount,
-    streamUrl: input.streamUrl,
+    streamUrl: input.streamUrl !== undefined ? input.streamUrl : current.streamUrl,
     growSetup: mergeDefined(current.growSetup, input.growSetup),
     status: mergeDefined(current.status, input.status),
     socials: mergeDefined(current.socials, input.socials),

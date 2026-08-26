@@ -27,7 +27,7 @@ export default function OverlayShell({
     const scaleStyle = overlayHudScaleStyle(overlayScalePct, layout);
 
     return (
-        <div className="relative h-screen w-screen overflow-hidden bg-transparent">
+        <div className="relative h-full w-full overflow-hidden bg-transparent">
             {embed && safeStream ? (
                 <iframe
                     className="absolute inset-0 h-full w-full border-0"

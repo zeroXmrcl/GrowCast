@@ -13,22 +13,17 @@ const MEDIA_ENDPOINT = "/api/admin/media";
 type CollectionSectionProps = {
     collection: MediaCollectionId;
     title: string;
-    description: string;
     files: MediaFile[];
 };
 
 function CollectionSection({
     collection,
     title,
-    description,
     files,
 }: CollectionSectionProps) {
     return (
         <div className="space-y-4">
-            <div>
-                <p className="text-sm font-semibold text-(--admin-text)">{title}</p>
-                <p className="mt-1 text-xs text-(--admin-muted)">{description}</p>
-            </div>
+            <p className="text-sm font-semibold text-(--admin-text)">{title}</p>
 
             <form
                 action={MEDIA_ENDPOINT}
@@ -114,22 +109,16 @@ export default async function MediaManager() {
     ]);
 
     return (
-        <AdminPanel
-            id="pictures"
-            title="Pictures"
-            description="Manage the pictures shown on the public dashboard. Uploads are re-encoded to webp and stripped of metadata (including GPS)."
-        >
+        <AdminPanel id="pictures" title="Pictures">
             <div className="space-y-8">
                 <CollectionSection
                     collection="dashboard"
                     title="Dashboard Pictures"
-                    description="Shown in the picture strip on the dashboard. Moved to the archive when a grow is completed."
                     files={dashboardFiles}
                 />
                 <CollectionSection
                     collection="setup"
                     title="Setup Images"
-                    description="Shown below the setup description on the dashboard."
                     files={setupFiles}
                 />
             </div>
