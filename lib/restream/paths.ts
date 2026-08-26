@@ -20,3 +20,7 @@ export function restreamCaptureTokenFile(): string {
 export function restreamStatusFile(): string {
     return path.join(restreamDir(), "status.json");
 }
+
+export function restreamChannelFile(): string {
+    return path.join(restreamDir(), "channel.json");
+}

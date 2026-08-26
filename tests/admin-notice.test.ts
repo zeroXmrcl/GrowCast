@@ -11,6 +11,7 @@ describe("admin notice query", () => {
         assert.equal(isAdminNoticeId("media_payload_too_large"), true);
         assert.equal(isAdminNoticeId("archived_reset_warning"), true);
         assert.equal(isAdminNoticeId("archived_cleanup_warning"), true);
+        assert.equal(isAdminNoticeId("twitch_login_invalid"), true);
         assert.equal(isAdminNoticeId("not-a-notice"), false);
         assert.equal(isAdminNoticeId(""), false);
     });

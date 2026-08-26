@@ -62,6 +62,19 @@ describe("redact / logger", () => {
     assert.doesNotMatch(JSON.stringify(line), /user@example.com/);
   });
 
+  it("redacts Twitch Helix client secrets", () => {
+    const line = capturePinoLog({
+      event: "test",
+      client_secret: "helix-client-secret",
+      TWITCH_CLIENT_SECRET: "helix-env-secret",
+    });
+
+    assert.equal(line.client_secret, "[Redacted]");
+    assert.equal(line.TWITCH_CLIENT_SECRET, "[Redacted]");
+    assert.doesNotMatch(JSON.stringify(line), /helix-client-secret/);
+    assert.doesNotMatch(JSON.stringify(line), /helix-env-secret/);
+  });
+
   it("redacts authorization fields", () => {
     const line = capturePinoLog({
       event: "test",
