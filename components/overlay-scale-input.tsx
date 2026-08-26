@@ -8,7 +8,13 @@ import {
     parseOverlayScalePct,
 } from "@/lib/overlay-scale";
 
-export default function OverlayScaleInput({defaultValue}: {defaultValue: number}) {
+export default function OverlayScaleInput({
+    defaultValue,
+    form,
+}: {
+    defaultValue: number;
+    form?: string;
+}) {
     const [value, setValue] = useState(parseOverlayScalePct(defaultValue));
 
     return (
@@ -20,6 +26,7 @@ export default function OverlayScaleInput({defaultValue}: {defaultValue: number}
             <input
                 type="range"
                 name="overlayScalePct"
+                form={form}
                 min={OVERLAY_SCALE_MIN}
                 max={OVERLAY_SCALE_MAX}
                 step={OVERLAY_SCALE_STEP}
@@ -27,9 +34,6 @@ export default function OverlayScaleInput({defaultValue}: {defaultValue: number}
                 onChange={(event) => setValue(parseOverlayScalePct(event.target.value))}
                 className="h-2 w-full cursor-pointer appearance-none rounded-full bg-(--admin-border) accent-zinc-300"
             />
-            <p className="mt-2 text-xs text-(--admin-muted)">
-                Shrinks or grows the HUD. Browser Source stays 1920×1080.
-            </p>
         </div>
     );
 }

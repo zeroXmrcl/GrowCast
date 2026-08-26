@@ -68,6 +68,8 @@ describe("restream secret files", () => {
             assert.equal(await hasRestreamKey(), true);
             const view = await readRestreamPublicView();
             assert.equal(view.hasKey, true);
+            assert.equal(view.toastEnabled, false);
+            assert.equal(view.login, "");
             assert.equal("key" in view, false);
             const onDisk = await readFile(path.join(dir, "restream", "twitch.key"), "utf8");
             assert.equal(onDisk.trim(), "live_xxxxxxxx");

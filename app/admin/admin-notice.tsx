@@ -143,6 +143,11 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "No Twitch stream key",
         body: "Save a stream key before starting the 24/7 restream.",
     },
+    twitch_login_invalid: {
+        tone: "warning",
+        title: "Invalid Twitch channel",
+        body: "Use letters, digits, and underscore only.",
+    },
 };
 
 export function AdminFlashNotice({notice}: {notice?: string}) {

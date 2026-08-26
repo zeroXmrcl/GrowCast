@@ -6,7 +6,7 @@ import type {ReactNode} from "react";
 
 export const SETTINGS_SECTION_LINKS = [
     {href: "/admin", label: "Grow"},
-    {href: "/admin/stream", label: "Stream"},
+    {href: "/admin/stream", label: "Broadcast"},
     {href: "/admin/timelapse", label: "Timelapse"},
     {href: "/admin/ggs", label: "GGS"},
     {href: "/admin/archives", label: "Archives"},

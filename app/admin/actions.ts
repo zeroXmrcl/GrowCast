@@ -19,7 +19,20 @@ import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings
 import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
-import {hasRestreamKey, saveRestreamKey, setRestreamEnabled} from "@/lib/restream/store";
+import {
+    hasRestreamKey,
+    patchRestreamChannel,
+    readRestreamChannel,
+    readRestreamKey,
+    saveRestreamKey,
+    setRestreamEnabled,
+    writeRestreamChannel,
+} from "@/lib/restream/store";
+import {
+    isInvalidTypedChannelLogin,
+    resolveChannelLogin,
+    streamKeyForChannelLookup,
+} from "@/lib/restream/twitch-helix";
 import {loginRateLimitKey} from "@/lib/request-trust";
 import {
     logAdminGrowArchiveFailed,
@@ -141,9 +154,36 @@ export async function saveEnergyAction(formData: FormData): Promise<void> {
 export async function saveTwitchKeyAction(formData: FormData): Promise<void> {
     await withNextRequestLogContext("/admin/stream", async () => {
         await requireAdmin();
-        await saveRestreamKey(String(formData.get("twitchKey") ?? ""));
+        const twitchKey = String(formData.get("twitchKey") ?? "");
+        const typedLogin = String(formData.get("twitchLogin") ?? "");
+        await saveRestreamKey(twitchKey);
+        const previous = await readRestreamChannel();
+        const login = await resolveChannelLogin({
+            typedLogin,
+            streamKey: streamKeyForChannelLookup(twitchKey, await readRestreamKey()),
+            previousLogin: previous.login,
+        });
+        await writeRestreamChannel({login, toastEnabled: previous.toastEnabled});
+        revalidatePath("/");
         revalidatePath("/admin/stream");
-        redirect(withNotice("/admin/stream", "twitch_key_saved"));
+        redirect(
+            withNotice(
+                "/admin/stream",
+                isInvalidTypedChannelLogin(typedLogin, previous.login)
+                    ? "twitch_login_invalid"
+                    : "twitch_key_saved",
+            ),
+        );
+    });
+}
+
+export async function saveBroadcastToastAction(formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin/stream", async () => {
+        await requireAdmin();
+        await patchRestreamChannel({toastEnabled: formData.get("toastEnabled") === "on"});
+        revalidatePath("/");
+        revalidatePath("/admin/stream");
+        redirect("/admin/stream");
     });
 }
 
@@ -155,6 +195,7 @@ export async function startTwitchRestreamAction(_formData: FormData): Promise<vo
             redirect(withNotice("/admin/stream", "twitch_need_key"));
         }
         await setRestreamEnabled(true);
+        revalidatePath("/");
         revalidatePath("/admin/stream");
         redirect(withNotice("/admin/stream", "twitch_started"));
     });
@@ -164,6 +205,7 @@ export async function stopTwitchRestreamAction(_formData: FormData): Promise<voi
     await withNextRequestLogContext("/admin/stream", async () => {
         await requireAdmin();
         await setRestreamEnabled(false);
+        revalidatePath("/");
         revalidatePath("/admin/stream");
         redirect(withNotice("/admin/stream", "twitch_stopped"));
     });

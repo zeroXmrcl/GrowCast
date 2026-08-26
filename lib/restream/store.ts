@@ -2,6 +2,11 @@ import {chmod, readFile} from "node:fs/promises";
 import {asBoolean, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {
+    publicBroadcastPayload,
+    type PublicBroadcast,
+} from "@/lib/restream/broadcast";
+import {
+    restreamChannelFile,
     restreamControlFile,
     restreamKeyFile,
     restreamStatusFile,
@@ -19,10 +24,17 @@ export type RestreamStatus = {
     lastError: string;
 };
 
+export type RestreamChannel = {
+    login: string;
+    toastEnabled: boolean;
+};
+
 export type RestreamPublicView = {
     hasKey: boolean;
     enabled: boolean;
     status: RestreamStatus;
+    login: string;
+    toastEnabled: boolean;
 };
 
 const STATES = new Set<RestreamState>([
@@ -32,6 +44,11 @@ const STATES = new Set<RestreamState>([
     "reconnecting",
     "error",
 ]);
+
+export const EMPTY_RESTREAM_CHANNEL: RestreamChannel = {
+    login: "",
+    toastEnabled: false,
+};
 
 export const EMPTY_RESTREAM_CONTROL: RestreamControl = {enabled: false};
 
@@ -89,6 +106,16 @@ export function parseRestreamStatus(raw: unknown): RestreamStatus {
     };
 }
 
+export function parseRestreamChannel(raw: unknown): RestreamChannel {
+    if (!isRecord(raw)) {
+        return EMPTY_RESTREAM_CHANNEL;
+    }
+    return {
+        login: asString(raw.login).trim(),
+        toastEnabled: asBoolean(raw.toastEnabled, false),
+    };
+}
+
 async function readJson(filePath: string): Promise<unknown> {
     try {
         return JSON.parse(await readFile(filePath, "utf8")) as unknown;
@@ -108,13 +135,16 @@ export async function readRestreamStatus(): Promise<RestreamStatus> {
     return parseRestreamStatus(await readJson(restreamStatusFile()));
 }
 
-export async function hasRestreamKey(): Promise<boolean> {
+export async function readRestreamKey(): Promise<string> {
     try {
-        const raw = (await readFile(restreamKeyFile(), "utf8")).trim();
-        return raw.length > 0;
+        return (await readFile(restreamKeyFile(), "utf8")).trim();
     } catch {
-        return false;
+        return "";
     }
+}
+
+export async function hasRestreamKey(): Promise<boolean> {
+    return (await readRestreamKey()).length > 0;
 }
 
 export async function saveRestreamKey(value: string): Promise<void> {
@@ -130,15 +160,71 @@ export async function setRestreamEnabled(enabled: boolean): Promise<void> {
     await atomicWriteFile(restreamControlFile(), `${JSON.stringify({enabled}, null, 2)}\n`);
 }
 
+export async function readRestreamChannel(): Promise<RestreamChannel> {
+    return parseRestreamChannel(await readJson(restreamChannelFile()));
+}
+
+export async function writeRestreamChannel(channel: RestreamChannel): Promise<void> {
+    const next: RestreamChannel = {
+        login: channel.login.trim(),
+        toastEnabled: channel.toastEnabled === true,
+    };
+    await atomicWriteFile(restreamChannelFile(), `${JSON.stringify(next, null, 2)}\n`);
+    await chmod(restreamChannelFile(), 0o600);
+}
+
+export async function patchRestreamChannel(
+    patch: Partial<RestreamChannel>,
+): Promise<RestreamChannel> {
+    const current = await readRestreamChannel();
+    const next: RestreamChannel = {
+        login: patch.login !== undefined ? patch.login : current.login,
+        toastEnabled: patch.toastEnabled !== undefined ? patch.toastEnabled : current.toastEnabled,
+    };
+    await writeRestreamChannel(next);
+    return next;
+}
+
 export async function readRestreamPublicView(): Promise<RestreamPublicView> {
-    const [control, status, key] = await Promise.all([
+    const [control, status, key, channel] = await Promise.all([
         readRestreamControl(),
         readRestreamStatus(),
         hasRestreamKey(),
+        readRestreamChannel(),
     ]);
     return {
         hasKey: key,
         enabled: control.enabled,
         status: displayRestreamStatus(control, status, Date.now()),
+        login: channel.login,
+        toastEnabled: channel.toastEnabled,
     };
+}
+
+export async function readPublicBroadcast(): Promise<PublicBroadcast> {
+    const [control, status, channel] = await Promise.all([
+        readRestreamControl(),
+        readRestreamStatus(),
+        readRestreamChannel(),
+    ]);
+    const displayed = displayRestreamStatus(control, status, Date.now());
+    return publicBroadcastPayload({
+        displayState: displayed.state,
+        toastEnabled: channel.toastEnabled,
+        login: channel.login,
+    });
+}
+
+export async function broadcastGetResponse(): Promise<Response> {
+    try {
+        const body = await readPublicBroadcast();
+        return Response.json(body, {
+            headers: {"Cache-Control": "no-store, must-revalidate"},
+        });
+    } catch {
+        return Response.json(
+            {live: false},
+            {headers: {"Cache-Control": "no-store, must-revalidate"}},
+        );
+    }
 }

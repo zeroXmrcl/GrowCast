@@ -40,7 +40,7 @@ describe("admin settings split", () => {
         assert.match(chromeSrc, /href: "\/admin\/ggs"/);
         assert.match(chromeSrc, /href: "\/admin\/archives"/);
         assert.match(chromeSrc, /label: "Grow"/);
-        assert.match(chromeSrc, /label: "Stream"/);
+        assert.match(chromeSrc, /label: "Broadcast"/);
         assert.match(chromeSrc, /label: "Timelapse"/);
         assert.match(chromeSrc, /label: "GGS"/);
         assert.match(chromeSrc, /label: "Archives"/);
@@ -76,6 +76,7 @@ describe("admin settings split", () => {
         assert.match(preview, /lockStream/);
         assert.match(preview, /streamUrl=\{grow\.streamUrl\}/);
         assert.match(preview, /Save a Stream URL/);
+        assert.doesNotMatch(preview, /ON AIR/);
         assert.doesNotMatch(preview, /GROWCAST_RESTREAM_STREAM_URL/);
         assert.doesNotMatch(preview, /captureStreamUrl/);
         assert.doesNotMatch(preview, /\/overlay\/capture/);

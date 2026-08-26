@@ -1,6 +1,7 @@
 import {headers} from "next/headers";
 import {redirect} from "next/navigation";
 import {
+    saveBroadcastToastAction,
     saveStreamAction,
     saveTwitchKeyAction,
     startTwitchRestreamAction,
@@ -9,9 +10,9 @@ import {
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {RestreamPanel} from "@/app/admin/restream-panel";
-import {AdminSettingsForm} from "@/app/admin/settings-form";
 import {StreamSettingsFields} from "@/app/admin/stream-fields";
 import {StreamPreview} from "@/app/admin/stream-preview";
+import {AdminButton} from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {overlayPublicUrl} from "@/lib/overlay-layout";
@@ -42,21 +43,34 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
 
     return (
         <AdminChrome
-            title="Stream"
+            title="Broadcast"
             sections={SETTINGS_SECTION_LINKS}
             actions={<AdminSignOutButton/>}
         >
             <AdminFlashNotice notice={params.notice}/>
-            <StreamPreview grow={grow}/>
-            <AdminSettingsForm growId={grow.id} saveAction={saveStreamAction}>
-                <StreamSettingsFields grow={grow} overlayUrl={overlayUrl}/>
-            </AdminSettingsForm>
-            <RestreamPanel
-                view={restream}
-                saveKeyAction={saveTwitchKeyAction}
-                startAction={startTwitchRestreamAction}
-                stopAction={stopTwitchRestreamAction}
-            />
+            <form id="broadcast-grow" action={saveStreamAction} className="hidden">
+                <input type="hidden" name="growId" value={grow.id}/>
+            </form>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
+                <StreamPreview grow={grow}/>
+                <div className="space-y-4 lg:sticky lg:top-20">
+                    <RestreamPanel
+                        view={restream}
+                        startAction={startTwitchRestreamAction}
+                        stopAction={stopTwitchRestreamAction}
+                        saveToastAction={saveBroadcastToastAction}
+                        saveKeyAction={saveTwitchKeyAction}
+                    />
+                    <StreamSettingsFields
+                        grow={grow}
+                        overlayUrl={overlayUrl}
+                        growForm="broadcast-grow"
+                    />
+                    <AdminButton form="broadcast-grow" type="submit" tone="primary" className="w-full">
+                        Save Changes
+                    </AdminButton>
+                </div>
+            </div>
         </AdminChrome>
     );
 }
