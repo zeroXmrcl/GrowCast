@@ -163,6 +163,16 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "Invalid Twitch channel",
         body: "Use letters, digits, and underscore only.",
     },
+    audio_saved: {
+        tone: "success",
+        title: "Mix updated",
+        body: "Volume and pause were saved for the program.",
+    },
+    alert_sent: {
+        tone: "success",
+        title: "Alert sent",
+        body: "Done.",
+    },
 };
 
 export function AdminFlashNotice({notice}: {notice?: string}) {

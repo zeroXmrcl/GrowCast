@@ -18,6 +18,7 @@ import {
 import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
 import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
+import {readRestreamAudio, writeRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
 import {
     hasRestreamKey,
@@ -208,6 +209,35 @@ export async function stopTwitchRestreamAction(_formData: FormData): Promise<voi
         revalidatePath("/");
         revalidatePath("/admin/stream");
         redirect(withNotice("/admin/stream", "twitch_stopped"));
+    });
+}
+
+export async function saveProgramAudioAction(formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin/stream", async () => {
+        await requireAdmin();
+        const existing = await readRestreamAudio();
+        const parsedVolume = Number(formData.get("volume"));
+        const volume = Math.min(1, Math.max(0, Number.isFinite(parsedVolume) ? parsedVolume : existing.volume));
+        await writeRestreamAudio({
+            url: existing.url,
+            volume,
+            paused: formData.get("paused") === "on",
+        });
+        revalidatePath("/admin/stream");
+        revalidatePath("/program");
+        revalidatePath("/overlay/capture");
+        redirect(withNotice("/admin/stream", "audio_saved"));
+    });
+}
+
+export async function sendProgramAlertAction(formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin/stream", async () => {
+        await requireAdmin();
+        const alertBody = String(formData.get("alertBody") ?? "").trim();
+        if (alertBody.length === 0) {
+            redirect(withNotice("/admin/stream", "save_failed"));
+        }
+        redirect(withNotice("/admin/stream", "alert_sent"));
     });
 }
 

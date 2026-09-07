@@ -9,6 +9,7 @@ import {
 } from "@/app/admin/actions";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
+import {MixerStrip} from "@/app/admin/mixer-strip";
 import {ProgramMonitor} from "@/app/admin/program-monitor";
 import {RestreamPanel} from "@/app/admin/restream-panel";
 import {StreamSettingsFields} from "@/app/admin/stream-fields";
@@ -16,6 +17,7 @@ import {AdminButton} from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {overlayPublicUrl} from "@/lib/overlay-layout";
+import {readRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
 import {readRestreamPublicView} from "@/lib/restream/store";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
@@ -33,10 +35,11 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
         redirect("/admin");
     }
 
-    const [grow, headerList, restream] = await Promise.all([
+    const [grow, headerList, restream, audio] = await Promise.all([
         getCurrentGrow(),
         headers(),
         readRestreamPublicView(),
+        readRestreamAudio(),
         ensureRestreamCaptureToken(),
     ]);
     const overlayUrl = overlayPublicUrl(shareCardMetadataOrigin(headerList));
@@ -52,7 +55,10 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
                 <input type="hidden" name="growId" value={grow.id}/>
             </form>
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
-                <ProgramMonitor/>
+                <div>
+                    <ProgramMonitor/>
+                    <MixerStrip audio={audio}/>
+                </div>
                 <div className="space-y-4 lg:sticky lg:top-20">
                     <RestreamPanel
                         view={restream}
