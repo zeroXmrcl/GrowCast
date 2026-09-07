@@ -1,4 +1,5 @@
 import OverlayHud from "@/components/overlay-hud";
+import ProgramAudio from "@/components/program-audio";
 import type {OverlayGrowView} from "@/lib/overlay-grow";
 
 export default function ProgramScene({
@@ -11,6 +12,7 @@ export default function ProgramScene({
     stage,
     lightSchedule,
     strain,
+    captureToken,
 }: Omit<OverlayGrowView, "overlayStream"> & {captureToken?: string}) {
     return (
         <div className="relative h-full w-full">
@@ -27,6 +29,7 @@ export default function ProgramScene({
                 lightSchedule={lightSchedule}
                 strain={strain}
             />
+            <ProgramAudio captureToken={captureToken} />
         </div>
     );
 }
