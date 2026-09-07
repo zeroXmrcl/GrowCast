@@ -4,7 +4,7 @@ export const OVERLAY_ALERT_MAX_QUEUE = 15;
 export const OVERLAY_ALERT_DISPLAY_MS = 6_000;
 
 export type OverlayAlertKind = "follow" | "sub" | "raid" | "bits" | "manual";
-export type OverlayAlertPlacement = "bottom-right" | "top-center";
+export type OverlayAlertPlacement = "top-right" | "top-left";
 
 export type OverlayAlert = {
     id: string;
@@ -15,7 +15,7 @@ export type OverlayAlert = {
 };
 
 export function alertPlacement(layout: OverlayLayout): OverlayAlertPlacement {
-    return layout === "bottom-bar" ? "top-center" : "bottom-right";
+    return layout === "bottom-bar" ? "top-left" : "top-right";
 }
 
 export function enqueueOverlayAlert(

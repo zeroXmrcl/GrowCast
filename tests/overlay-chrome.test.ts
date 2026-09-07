@@ -137,7 +137,11 @@ describe("overlay chrome", () => {
         assert.match(markSrc, /GrowCast/);
         assert.match(markSrc, /pointer-events-none/);
         assert.match(markSrc, /drop-shadow/);
+        assert.match(markSrc, /absolute right-6 top-6/);
+        assert.match(markSrc, /absolute right-6 bottom-6/);
+        assert.match(markSrc, /z-10/);
         assert.doesNotMatch(markSrc, /overlayHudScaleStyle/);
+        assert.doesNotMatch(markSrc, /overlayAlertScaleStyle/);
     });
 
     it("omits the LIVE badge and shows humidity to one decimal", () => {
