@@ -60,6 +60,7 @@ describe("programAudioGetResponse", () => {
                 volume: number;
                 paused: boolean;
                 stingEnabled: boolean;
+                alertScalePct: number;
             };
             assert.equal(body.kind, "playlist");
             assert.deepEqual(body.files, ["z.mp3"]);
@@ -67,6 +68,7 @@ describe("programAudioGetResponse", () => {
             assert.equal(body.volume, 0.5);
             assert.equal(body.paused, false);
             assert.equal(body.stingEnabled, true);
+            assert.equal(body.alertScalePct, 100);
             const encoded = JSON.stringify(body);
             assert.equal(encoded.includes(dir), false);
             assert.equal(encoded.includes("restream/music"), false);
@@ -147,6 +149,33 @@ describe("programAudioGetResponse", () => {
             );
             const onBody = (await on.json()) as {stingEnabled: boolean};
             assert.equal(onBody.stingEnabled, true);
+        });
+    });
+
+    it("includes alertScalePct from alerts.json, default 100", async () => {
+        await withTempDataDir(async () => {
+            const missing = await programAudioGetResponse(
+                new Request("http://local/api/overlay/program-audio"),
+                {admin: true},
+            );
+            assert.equal(missing.status, 200);
+            const missingBody = (await missing.json()) as {alertScalePct: number};
+            assert.equal(missingBody.alertScalePct, 100);
+
+            await writeAlertsSettings({
+                follow: true,
+                sub: true,
+                raid: true,
+                bits: true,
+                stingEnabled: true,
+                alertScalePct: 150,
+            });
+            const scaled = await programAudioGetResponse(
+                new Request("http://local/api/overlay/program-audio"),
+                {admin: true},
+            );
+            const scaledBody = (await scaled.json()) as {alertScalePct: number};
+            assert.equal(scaledBody.alertScalePct, 150);
         });
     });
 });
