@@ -359,6 +359,7 @@ describe("eventsubNotificationResponse", () => {
                 raid: true,
                 bits: true,
                 stingEnabled: true,
+                alertScalePct: 100,
             });
             _resetOverlayAlertHubForTests();
             try {

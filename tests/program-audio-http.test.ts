@@ -124,6 +124,7 @@ describe("programAudioGetResponse", () => {
                 raid: true,
                 bits: true,
                 stingEnabled: false,
+                alertScalePct: 100,
             });
             const off = await programAudioGetResponse(
                 new Request("http://local/api/overlay/program-audio"),
@@ -138,6 +139,7 @@ describe("programAudioGetResponse", () => {
                 raid: true,
                 bits: true,
                 stingEnabled: true,
+                alertScalePct: 100,
             });
             const on = await programAudioGetResponse(
                 new Request("http://local/api/overlay/program-audio"),

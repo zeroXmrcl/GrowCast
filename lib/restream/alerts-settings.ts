@@ -2,6 +2,7 @@ import {chmod, readFile} from "node:fs/promises";
 import {asBoolean, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import type {OverlayAlertKind} from "@/lib/overlay-alert";
+import {parseOverlayScalePct} from "@/lib/overlay-scale";
 import {restreamAlertsFile, restreamDir} from "@/lib/restream/paths";
 
 export type AlertsSettings = {
@@ -10,6 +11,7 @@ export type AlertsSettings = {
     raid: boolean;
     bits: boolean;
     stingEnabled: boolean;
+    alertScalePct: number;
 };
 
 export const EMPTY_ALERTS_SETTINGS: AlertsSettings = {
@@ -18,6 +20,7 @@ export const EMPTY_ALERTS_SETTINGS: AlertsSettings = {
     raid: true,
     bits: true,
     stingEnabled: true,
+    alertScalePct: 100,
 };
 
 export function parseAlertsSettings(raw: unknown): AlertsSettings {
@@ -30,6 +33,7 @@ export function parseAlertsSettings(raw: unknown): AlertsSettings {
         raid: asBoolean(raw.raid, true),
         bits: asBoolean(raw.bits, true),
         stingEnabled: asBoolean(raw.stingEnabled, true),
+        alertScalePct: parseOverlayScalePct(raw.alertScalePct),
     };
 }
 
