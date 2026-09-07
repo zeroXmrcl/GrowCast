@@ -10,14 +10,27 @@ import type {AdminNoticeId} from "@/lib/admin/notice";
 export type ApplyMediaPostResult =
     | {
           ok: true;
-          notice: "uploaded" | "uploaded_partial";
+          notice: "uploaded";
           collection: MediaCollectionId;
           saved: number;
           rejected: number;
       }
     | {
           ok: true;
-          notice: "deleted" | "rotated";
+          notice: "uploaded_partial";
+          collection: MediaCollectionId;
+          saved: number;
+          rejected: number;
+      }
+    | {
+          ok: true;
+          notice: "deleted";
+          collection: MediaCollectionId;
+          filename: string;
+      }
+    | {
+          ok: true;
+          notice: "rotated";
           collection: MediaCollectionId;
           filename: string;
       }
@@ -87,9 +100,19 @@ async function applyUpload(
         };
     }
 
+    if (result.rejected.length > 0) {
+        return {
+            ok: true,
+            notice: "uploaded_partial",
+            collection,
+            saved: result.saved.length,
+            rejected: result.rejected.length,
+        };
+    }
+
     return {
         ok: true,
-        notice: result.rejected.length > 0 ? "uploaded_partial" : "uploaded",
+        notice: "uploaded",
         collection,
         saved: result.saved.length,
         rejected: result.rejected.length,

@@ -63,20 +63,29 @@ export async function POST(request: Request) {
             return seeOther(withNotice("/admin", result.notice));
         }
 
-        if (result.notice === "deleted") {
-            logAdminMediaDeleted({collection: result.collection, filename: result.filename});
-        } else if (result.notice === "rotated") {
-            logAdminMediaUploaded({
-                collection: result.collection,
-                count: 1,
-                rejected: 0,
-            });
-        } else {
-            logAdminMediaUploaded({
-                collection: result.collection,
-                count: result.saved,
-                rejected: result.rejected,
-            });
+        switch (result.notice) {
+            case "deleted":
+                logAdminMediaDeleted({collection: result.collection, filename: result.filename});
+                break;
+            case "rotated":
+                logAdminMediaUploaded({
+                    collection: result.collection,
+                    count: 1,
+                    rejected: 0,
+                });
+                break;
+            case "uploaded":
+            case "uploaded_partial":
+                logAdminMediaUploaded({
+                    collection: result.collection,
+                    count: result.saved,
+                    rejected: result.rejected,
+                });
+                break;
+            default: {
+                const _exhaustive: never = result;
+                void _exhaustive;
+            }
         }
 
         revalidatePath("/");
