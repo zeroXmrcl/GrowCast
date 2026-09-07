@@ -195,8 +195,13 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     },
     music_uploaded: {
         tone: "success",
-        title: "Track uploaded",
+        title: "Tracks uploaded",
         body: "Done.",
+    },
+    music_uploaded_partial: {
+        tone: "warning",
+        title: "Some tracks were skipped",
+        body: "Valid files were saved. Others were rejected (type, size, or the 30-file cap).",
     },
     music_deleted: {
         tone: "success",
@@ -216,7 +221,7 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     music_payload_too_large: {
         tone: "warning",
         title: "Upload too large",
-        body: "The request exceeded the 25 MB upload limit. Choose a smaller track and try again.",
+        body: "The request exceeded the 100 MB upload limit. Choose fewer or smaller tracks and try again.",
     },
 };
 

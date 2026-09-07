@@ -40,6 +40,7 @@ export const ADMIN_NOTICE_IDS = [
     "twitch_oauth_failed",
     "twitch_need_connect",
     "music_uploaded",
+    "music_uploaded_partial",
     "music_deleted",
     "music_invalid_file",
     "music_too_many_files",

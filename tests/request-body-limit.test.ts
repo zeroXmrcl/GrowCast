@@ -24,8 +24,8 @@ describe("maxBodyBytesFor", () => {
         assert.equal(maxBodyBytesFor("GET", "/api/admin/media"), DEFAULT_MAX_BODY_BYTES);
     });
 
-    it("allows the 25 MiB cap only on POST /api/admin/music", () => {
-        assert.equal(MUSIC_MAX_BODY_BYTES, 25 * 1024 * 1024);
+    it("allows the 100 MiB cap only on POST /api/admin/music", () => {
+        assert.equal(MUSIC_MAX_BODY_BYTES, 100 * 1024 * 1024);
         assert.equal(maxBodyBytesFor("POST", "/api/admin/music"), MUSIC_MAX_BODY_BYTES);
         assert.equal(maxBodyBytesFor("POST", "/api/admin/music/"), MUSIC_MAX_BODY_BYTES);
         assert.equal(maxBodyBytesFor("GET", "/api/admin/music"), DEFAULT_MAX_BODY_BYTES);
