@@ -74,7 +74,7 @@ Notes:
 - **Required for mesh/plugin API:** set `GROWCAST_MESH_TOKEN` to a long random secret. Requests without a matching `Authorization: Bearer <token>` are denied (fail-closed). Official plugins must send this header.
 - Admin passwords must be at least **12 characters** (`npm run setup:admin` enforces this). For local/dev only, use `npm run setup:admin:insecure` (or `npm run setup:admin -- --allow-insecure`).
 - Admin sessions last **24 hours**.
-- Optional, Broadcast channel lookup from a Twitch stream key (GrowCast `.env.local`, not the restream sidecar): `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`.
+- Optional, Broadcast channel lookup and Twitch EventSub alerts (GrowCast `.env.local`, not the restream sidecar): `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. EventSub webhooks also need `GROWCAST_PUBLIC_URL` (the public HTTPS origin, e.g. the Cloudflare Tunnel hostname).
 
 ### Logging
 
@@ -135,6 +135,8 @@ docker compose up --build -d
 ```
 
 That starts GrowCast plus the GGS and Twitch restream sidecars. Without GGS credentials the climate sidecar will exit; the homepage omits Climate and Devices. Twitch restream stays idle until you save a stream key and press Start on Broadcast (`/admin/stream`). GrowCast writes `data/restream/capture.token` on its own; `GROWCAST_RESTREAM_TOKEN` in `.env.local` is an optional override.
+
+Broadcast (`/admin/stream`) previews the 1920×1080 program with background music (uploaded playlist or a stream URL; URL wins while set) and on-stream alerts (manual Send alert, plus Twitch follow/sub/raid/bits after Connect Twitch). Public `/overlay` and the homepage stay silent.
 
 The container process runs as uid 1001 (`growcast`). The entrypoint `chown`s those bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host.
 

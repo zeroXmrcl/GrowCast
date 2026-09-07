@@ -57,6 +57,16 @@ describe("mixer strip", () => {
         assert.match(actions, /readAlertsSettings/);
     });
 
+    it("revalidates the program monitor after Broadcast grow save", () => {
+        const actions = src(path.join("app", "admin", "actions.ts"));
+        const start = actions.indexOf("export async function saveStreamAction");
+        const end = actions.indexOf("export async function saveTimelapseAction");
+        assert.ok(start >= 0 && end > start);
+        const body = actions.slice(start, end);
+        assert.match(body, /revalidatePath\("\/program"\)/);
+        assert.match(body, /revalidatePath\("\/overlay"\)/);
+    });
+
     it("wires AlertsPanel onto the stream racks", () => {
         const page = src(path.join("app", "admin", "stream", "page.tsx"));
         assert.match(page, /AlertsPanel/);

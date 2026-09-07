@@ -108,6 +108,8 @@ export async function saveStreamAction(formData: FormData): Promise<void> {
         logAdminGrowUpdated();
         revalidatePath("/");
         revalidatePath("/overlay");
+        revalidatePath("/overlay/capture");
+        revalidatePath("/program");
         revalidatePath("/admin/stream");
         redirect(withNotice("/admin/stream", "saved"));
     });

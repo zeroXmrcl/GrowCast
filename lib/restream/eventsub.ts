@@ -438,6 +438,40 @@ async function remainingCallbackMatches(
     );
 }
 
+function eventsubPublicOrigin(env: NodeJS.ProcessEnv): string | null {
+    const configured = (env.GROWCAST_PUBLIC_URL ?? "").trim();
+    if (!configured) {
+        return null;
+    }
+    try {
+        return new URL(configured).origin;
+    } catch {
+        return null;
+    }
+}
+
+/** Renew EventSub webhooks on Node boot when a public origin and OAuth tokens exist. */
+export async function ensureEventsubSubscriptionsOnBoot(
+    env: NodeJS.ProcessEnv = process.env,
+    fetcher: typeof fetch = fetch,
+): Promise<void> {
+    try {
+        const origin = eventsubPublicOrigin(env);
+        if (!origin) {
+            if ((env.GROWCAST_PUBLIC_URL ?? "").trim()) {
+                logEventsubFailed({reason: "invalid_origin"});
+            }
+            return;
+        }
+        if (!(await readTwitchOAuthFile())) {
+            return;
+        }
+        await ensureEventsubSubscriptions(origin, env, fetcher);
+    } catch (error) {
+        logEventsubFailed({reason: "boot_failed", err: sanitizeError(error)});
+    }
+}
+
 export async function ensureEventsubSubscriptions(
     origin: string,
     env: NodeJS.ProcessEnv = process.env,
