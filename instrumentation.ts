@@ -9,18 +9,22 @@ export async function register(): Promise<void> {
     if (process.env.NEXT_PHASE === "phase-production-build") {
       return;
     }
-    try {
-      const { ensureEventsubSubscriptionsOnBoot } = await import(
-        "@/lib/restream/eventsub"
-      );
-      await ensureEventsubSubscriptionsOnBoot();
-    } catch (error) {
-      const { childLogger, sanitizeError } = await import("@/lib/logging");
-      childLogger().warn({
-        event: "twitch.eventsub.failed",
-        reason: "boot_failed",
-        err: sanitizeError(error),
-      });
-    }
+    // Helix waits for Twitch to POST the webhook challenge; awaiting that
+    // here deadlocks because Next does not serve until register() returns.
+    void Promise.resolve().then(async () => {
+      try {
+        const { ensureEventsubSubscriptionsOnBoot } = await import(
+          "@/lib/restream/eventsub"
+        );
+        await ensureEventsubSubscriptionsOnBoot();
+      } catch (error) {
+        const { childLogger, sanitizeError } = await import("@/lib/logging");
+        childLogger().warn({
+          event: "twitch.eventsub.failed",
+          reason: "boot_failed",
+          err: sanitizeError(error),
+        });
+      }
+    });
   }
 }

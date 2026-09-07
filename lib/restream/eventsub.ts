@@ -466,7 +466,7 @@ export async function ensureEventsubSubscriptionsOnBoot(
         if (!(await readTwitchOAuthFile())) {
             return;
         }
-        await ensureEventsubSubscriptions(origin, env, fetcher);
+        await ensureEventsubSubscriptions(origin, env, fetcher, {replaceConflicts: false});
     } catch (error) {
         logEventsubFailed({reason: "boot_failed", err: sanitizeError(error)});
     }
@@ -476,7 +476,9 @@ export async function ensureEventsubSubscriptions(
     origin: string,
     env: NodeJS.ProcessEnv = process.env,
     fetcher: typeof fetch = fetch,
+    options: {replaceConflicts?: boolean} = {},
 ): Promise<void> {
+    const replaceConflicts = options.replaceConflicts !== false;
     try {
         const secret = await ensureEventsubSecretFile();
         const oauth = await readTwitchOAuthFile();
@@ -495,6 +497,16 @@ export async function ensureEventsubSubscriptions(
 
         for (const type of EVENTSUB_TYPES) {
             try {
+                if (!replaceConflicts) {
+                    const existing = await listEventsubSubscriptions(type, auth, fetcher);
+                    if (
+                        matchingSubscriptions(existing, type, oauth.userId).some(
+                            (sub) => sub.callback === callback,
+                        )
+                    ) {
+                        continue;
+                    }
+                }
                 const created = await createEventsubSubscription(
                     {type, userId: oauth.userId, callback, secret, auth},
                     fetcher,
@@ -503,6 +515,21 @@ export async function ensureEventsubSubscriptions(
                     continue;
                 }
                 if (created.status !== 409) {
+                    logEventsubFailed({reason: "subscribe_http", type, status: created.status});
+                    continue;
+                }
+                if (!replaceConflicts) {
+                    if (
+                        await remainingCallbackMatches(
+                            type,
+                            oauth.userId,
+                            callback,
+                            auth,
+                            fetcher,
+                        )
+                    ) {
+                        continue;
+                    }
                     logEventsubFailed({reason: "subscribe_http", type, status: created.status});
                     continue;
                 }
