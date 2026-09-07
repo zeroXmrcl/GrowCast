@@ -30,6 +30,18 @@ import {restreamCaptureTokenFile} from "../lib/restream/paths.ts";
 import {mergeOverlayGrowPoll} from "../lib/overlay-grow.ts";
 import {navItemsFor, type NavFlags} from "../lib/site-nav.ts";
 
+function composeServiceBlock(compose: string, name: string): string {
+    const heading = new RegExp(`^  ${name}:\\s*$`, "m");
+    const match = heading.exec(compose);
+    if (!match) {
+        return "";
+    }
+    const from = match.index;
+    const after = compose.slice(from + match[0].length);
+    const next = /^  [A-Za-z0-9_-]+:\s*$/m.exec(after);
+    return next ? compose.slice(from, from + match[0].length + next.index) : compose.slice(from);
+}
+
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-restream-"));
     const previous = process.env.GROWCAST_DATA_DIR;
@@ -293,8 +305,9 @@ describe("restream chrome", () => {
         assert.match(hudSrc, /mergeOverlayGrowPoll/);
         assert.match(captureSrc, /isRestreamCaptureAuthorized/);
         assert.match(captureSrc, /ensureRestreamCaptureToken/);
-        assert.match(composeSrc, /env_file:/);
-        assert.doesNotMatch(composeSrc, /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN/);
+        const restreamBlock = composeServiceBlock(composeSrc, "restream");
+        assert.doesNotMatch(restreamBlock, /path:\s*\.env\.local/);
+        assert.match(composeSrc, /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN:-\}/);
         assert.match(dockerSrc, /USER 1001/);
         assert.match(sidecarSrc, /SIGTERM/);
         assert.match(sidecarSrc, /redact/);
@@ -317,5 +330,44 @@ describe("restream chrome", () => {
         assert.match(composeSrc, /^\s*restream:\s*$/m);
         assert.doesNotMatch(composeSrc, /profiles:/);
         assert.doesNotMatch(captureSrc, /SiteHeader/);
+    });
+
+    it("captures pulse audio and falls back to anullsrc", () => {
+        const py = readFileSync(
+            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            "utf8",
+        );
+        const docker = readFileSync(
+            path.join(process.cwd(), "extensions", "GrowCast-Restream", "Dockerfile"),
+            "utf8",
+        );
+        assert.match(docker, /pulseaudio/);
+        assert.match(docker, /pulseaudio-utils/);
+        assert.match(py, /pulseaudio/);
+        assert.match(py, /--exit-idle-time=-1/);
+        assert.match(py, /-f pulse -i default/);
+        assert.match(py, /anullsrc/);
+        assert.match(py, /--autoplay-policy=no-user-gesture-required/);
+        assert.doesNotMatch(py, /\*\*os\.environ/);
+        assert.doesNotMatch(py, /helix/i);
+        assert.doesNotMatch(py, /TWITCH_CLIENT_SECRET/);
+    });
+
+    it("does not load GrowCast .env.local into restream", () => {
+        const compose = readFileSync(path.join(process.cwd(), "docker-compose.yml"), "utf8");
+        const sidecarSrc = readFileSync(
+            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            "utf8",
+        );
+        const restream = composeServiceBlock(compose, "restream");
+        assert.doesNotMatch(restream, /path:\s*\.env\.local/);
+        assert.doesNotMatch(restream, /env_file:/);
+        assert.equal(compose.includes("GROWCAST_URL: http://growcast:3000"), true);
+        assert.match(restream, /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN:-\}/);
+        assert.match(restream, /GROWCAST_RESTREAM_STREAM_URL:\s*\$\{GROWCAST_RESTREAM_STREAM_URL:-\}/);
+        assert.doesNotMatch(restream, /TWITCH_CLIENT_SECRET/);
+        assert.doesNotMatch(restream, /helix/i);
+        assert.doesNotMatch(sidecarSrc, /helix/i);
+        assert.doesNotMatch(sidecarSrc, /TWITCH_CLIENT_SECRET/);
     });
 });
