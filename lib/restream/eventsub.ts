@@ -12,6 +12,7 @@ import {restreamDir, restreamEventsubSecretFile} from "@/lib/restream/paths";
 import {readTwitchOAuthFile} from "@/lib/restream/twitch-oauth";
 
 const EVENTSUB_SUBSCRIPTIONS_URL = "https://api.twitch.tv/helix/eventsub/subscriptions";
+const TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const EVENTSUB_TIMEOUT_MS = 8_000;
 const SHA256_PREFIX = "sha256=";
 
@@ -230,6 +231,182 @@ function eventsubCallbackUrl(origin: string): string | null {
     }
 }
 
+function helixAuthHeaders(clientId: string, appAccessToken: string): HeadersInit {
+    return {
+        "Client-Id": clientId,
+        Authorization: `Bearer ${appAccessToken}`,
+    };
+}
+
+async function fetchEventsubAppAccessToken(
+    env: NodeJS.ProcessEnv,
+    fetcher: typeof fetch,
+): Promise<{clientId: string; accessToken: string} | null> {
+    const clientId = env.TWITCH_CLIENT_ID?.trim() ?? "";
+    const clientSecret = env.TWITCH_CLIENT_SECRET?.trim() ?? "";
+    if (!clientId || !clientSecret) {
+        logEventsubFailed({reason: "missing_credentials"});
+        return null;
+    }
+    try {
+        const tokenResponse = await fetcher(TOKEN_URL, {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                grant_type: "client_credentials",
+            }),
+            signal: AbortSignal.timeout(EVENTSUB_TIMEOUT_MS),
+        });
+        if (!tokenResponse.ok) {
+            logEventsubFailed({reason: "token_http", status: tokenResponse.status});
+            return null;
+        }
+        const tokenBody: unknown = await tokenResponse.json();
+        const accessToken = isRecord(tokenBody) ? asString(tokenBody.access_token).trim() : "";
+        if (!accessToken) {
+            logEventsubFailed({reason: "token_missing"});
+            return null;
+        }
+        return {clientId, accessToken};
+    } catch (error) {
+        logEventsubFailed({reason: "request_failed", err: sanitizeError(error)});
+        return null;
+    }
+}
+
+function conditionMatches(
+    condition: unknown,
+    type: EventsubType,
+    userId: string,
+): boolean {
+    if (!isRecord(condition)) {
+        return false;
+    }
+    const expected = eventsubCondition(type, userId);
+    for (const [key, value] of Object.entries(expected)) {
+        if (asString(condition[key]).trim() !== value) {
+            return false;
+        }
+    }
+    return true;
+}
+
+type HelixAuth = {clientId: string; accessToken: string};
+
+async function createEventsubSubscription(
+    input: {
+        type: EventsubType;
+        userId: string;
+        callback: string;
+        secret: string;
+        auth: HelixAuth;
+    },
+    fetcher: typeof fetch,
+): Promise<Response> {
+    return fetcher(EVENTSUB_SUBSCRIPTIONS_URL, {
+        method: "POST",
+        headers: {
+            ...helixAuthHeaders(input.auth.clientId, input.auth.accessToken),
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            type: input.type,
+            version: eventsubVersion(input.type),
+            condition: eventsubCondition(input.type, input.userId),
+            transport: {
+                method: "webhook",
+                callback: input.callback,
+                secret: input.secret,
+            },
+        }),
+        signal: AbortSignal.timeout(EVENTSUB_TIMEOUT_MS),
+    });
+}
+
+async function listEventsubSubscriptions(
+    type: EventsubType,
+    userId: string,
+    auth: HelixAuth,
+    fetcher: typeof fetch,
+): Promise<Array<{id: string; condition: unknown}>> {
+    const found: Array<{id: string; condition: unknown}> = [];
+    let cursor = "";
+    for (;;) {
+        const url = new URL(EVENTSUB_SUBSCRIPTIONS_URL);
+        url.searchParams.set("type", type);
+        url.searchParams.set("user_id", userId);
+        if (cursor) {
+            url.searchParams.set("after", cursor);
+        }
+        const response = await fetcher(url.toString(), {
+            method: "GET",
+            headers: helixAuthHeaders(auth.clientId, auth.accessToken),
+            signal: AbortSignal.timeout(EVENTSUB_TIMEOUT_MS),
+        });
+        if (!response.ok) {
+            logEventsubFailed({reason: "list_http", type, status: response.status});
+            break;
+        }
+        const body: unknown = await response.json();
+        if (isRecord(body) && Array.isArray(body.data)) {
+            for (const row of body.data) {
+                if (!isRecord(row)) {
+                    continue;
+                }
+                const id = asString(row.id).trim();
+                if (!id) {
+                    continue;
+                }
+                found.push({id, condition: row.condition});
+            }
+        }
+        const next =
+            isRecord(body) && isRecord(body.pagination)
+                ? asString(body.pagination.cursor).trim()
+                : "";
+        if (!next) {
+            break;
+        }
+        cursor = next;
+    }
+    return found;
+}
+
+async function deleteEventsubSubscription(
+    id: string,
+    auth: HelixAuth,
+    fetcher: typeof fetch,
+): Promise<void> {
+    const url = new URL(EVENTSUB_SUBSCRIPTIONS_URL);
+    url.searchParams.set("id", id);
+    const response = await fetcher(url.toString(), {
+        method: "DELETE",
+        headers: helixAuthHeaders(auth.clientId, auth.accessToken),
+        signal: AbortSignal.timeout(EVENTSUB_TIMEOUT_MS),
+    });
+    if (!response.ok && response.status !== 404) {
+        logEventsubFailed({reason: "delete_http", status: response.status});
+    }
+}
+
+async function replaceConflictingSubscriptions(
+    type: EventsubType,
+    userId: string,
+    auth: HelixAuth,
+    fetcher: typeof fetch,
+): Promise<void> {
+    const existing = await listEventsubSubscriptions(type, userId, auth, fetcher);
+    for (const sub of existing) {
+        if (!conditionMatches(sub.condition, type, userId)) {
+            continue;
+        }
+        // GET omits the webhook secret, so matching type+condition is always replaced.
+        await deleteEventsubSubscription(sub.id, auth, fetcher);
+    }
+}
+
 export async function ensureEventsubSubscriptions(
     origin: string,
     env: NodeJS.ProcessEnv = process.env,
@@ -241,40 +418,36 @@ export async function ensureEventsubSubscriptions(
         if (!oauth) {
             return;
         }
-        const clientId = env.TWITCH_CLIENT_ID?.trim() ?? "";
-        if (!clientId) {
-            logEventsubFailed({reason: "missing_credentials"});
-            return;
-        }
         const callback = eventsubCallbackUrl(origin);
         if (!callback) {
             logEventsubFailed({reason: "invalid_origin"});
             return;
         }
+        const auth = await fetchEventsubAppAccessToken(env, fetcher);
+        if (!auth) {
+            return;
+        }
 
         for (const type of EVENTSUB_TYPES) {
             try {
-                const response = await fetcher(EVENTSUB_SUBSCRIPTIONS_URL, {
-                    method: "POST",
-                    headers: {
-                        "Client-Id": clientId,
-                        Authorization: `Bearer ${oauth.accessToken}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        type,
-                        version: eventsubVersion(type),
-                        condition: eventsubCondition(type, oauth.userId),
-                        transport: {
-                            method: "webhook",
-                            callback,
-                            secret,
-                        },
-                    }),
-                    signal: AbortSignal.timeout(EVENTSUB_TIMEOUT_MS),
-                });
-                if (!response.ok && response.status !== 409) {
-                    logEventsubFailed({reason: "subscribe_http", type, status: response.status});
+                const created = await createEventsubSubscription(
+                    {type, userId: oauth.userId, callback, secret, auth},
+                    fetcher,
+                );
+                if (created.ok) {
+                    continue;
+                }
+                if (created.status !== 409) {
+                    logEventsubFailed({reason: "subscribe_http", type, status: created.status});
+                    continue;
+                }
+                await replaceConflictingSubscriptions(type, oauth.userId, auth, fetcher);
+                const retried = await createEventsubSubscription(
+                    {type, userId: oauth.userId, callback, secret, auth},
+                    fetcher,
+                );
+                if (!retried.ok && retried.status !== 409) {
+                    logEventsubFailed({reason: "subscribe_http", type, status: retried.status});
                 }
             } catch (error) {
                 logEventsubFailed({
