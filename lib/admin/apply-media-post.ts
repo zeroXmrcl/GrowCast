@@ -1,6 +1,7 @@
 import {
     deleteMediaFile,
     isMediaCollectionId,
+    rotateMediaFile,
     saveUploadedImages,
     type MediaCollectionId,
 } from "@/lib/media-library";
@@ -16,7 +17,7 @@ export type ApplyMediaPostResult =
       }
     | {
           ok: true;
-          notice: "deleted";
+          notice: "deleted" | "rotated";
           collection: MediaCollectionId;
           filename: string;
       }
@@ -42,6 +43,9 @@ export async function applyMediaPost(formData: FormData): Promise<ApplyMediaPost
 
     if (intent === "delete") {
         return applyDelete(collection, String(formData.get("filename") ?? ""));
+    }
+    if (intent === "rotate") {
+        return applyRotate(collection, String(formData.get("filename") ?? ""));
     }
     if (intent === "upload") {
         return applyUpload(collection, formData);
@@ -106,4 +110,20 @@ async function applyDelete(
     }
 
     return {ok: true, notice: "deleted", collection, filename};
+}
+
+async function applyRotate(
+    collection: string,
+    filename: string,
+): Promise<ApplyMediaPostResult> {
+    if (!isMediaCollectionId(collection)) {
+        return {ok: false, notice: "media_rotate_failed", reason: "invalid_collection"};
+    }
+
+    const result = await rotateMediaFile(collection, filename);
+    if (!result.ok) {
+        return {ok: false, notice: "media_rotate_failed", reason: result.error, collection, filename};
+    }
+
+    return {ok: true, notice: "rotated", collection, filename: result.filename};
 }

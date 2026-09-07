@@ -56,6 +56,11 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         body: "Files that are not valid JPEG/PNG/WebP images or exceed 15 MB were skipped. The rest were uploaded.",
     },
     deleted: {tone: "success", title: "Picture deleted", body: "Done."},
+    rotated: {
+        tone: "success",
+        title: "Picture rotated",
+        body: "Turned 90° clockwise. Click again if you need another quarter turn.",
+    },
     media_no_files: {
         tone: "warning",
         title: "No files selected",
@@ -90,6 +95,11 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         tone: "danger",
         title: "Delete failed",
         body: "Could not delete the picture. Review logs and try again.",
+    },
+    media_rotate_failed: {
+        tone: "danger",
+        title: "Rotate failed",
+        body: "Could not rotate the picture. Review logs and try again.",
     },
     archive_updated: {tone: "success", title: "Archive updated", body: "Done."},
     archive_deleted: {

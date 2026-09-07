@@ -7,6 +7,7 @@ import sharp from "sharp";
 import jpeg from "jpeg-js";
 import {
     deleteMediaFile,
+    rotateMediaFile,
     listMediaFiles,
     listMediaUrls,
     mediaCollectionDir,
@@ -270,6 +271,34 @@ describe("saveUploadedImages", () => {
                 [],
             );
             assert.equal(result.saved.length, 1);
+        });
+    });
+});
+
+describe("rotateMediaFile", () => {
+    it("rotates a stored jpeg 90 degrees clockwise", async () => {
+        await withTempDir(async (dir) => {
+            const input = await makeJpeg(200, 100);
+            const saved = await saveUploadedImages(
+                "dashboard",
+                [toFile(input, "wide.jpg", "image/jpeg")],
+                dir,
+            );
+            assert.equal(saved.ok, true);
+            if (!saved.ok) {
+                return;
+            }
+            const name = saved.saved[0];
+            const before = await sharp(await readFile(path.join(dir, name))).metadata();
+            const rotated = await rotateMediaFile("dashboard", name, dir);
+            assert.equal(rotated.ok, true);
+            if (!rotated.ok) {
+                return;
+            }
+            const after = await sharp(await readFile(path.join(dir, rotated.filename))).metadata();
+            assert.equal(after.width, before.height);
+            assert.equal(after.height, before.width);
+            assert.equal(await readdir(dir).then((names) => names.includes(name)), false);
         });
     });
 });

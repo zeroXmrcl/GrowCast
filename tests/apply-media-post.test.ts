@@ -42,6 +42,19 @@ describe("applyMediaPost", () => {
         });
     });
 
+    it("maps a rotate with a bad collection to media_rotate_failed", async () => {
+        const form = new FormData();
+        form.set("intent", "rotate");
+        form.set("collection", "not-a-collection");
+        form.set("filename", "picture.webp");
+
+        assert.deepEqual(await applyMediaPost(form), {
+            ok: false,
+            notice: "media_rotate_failed",
+            reason: "invalid_collection",
+        });
+    });
+
     it("maps a delete with a bad collection to media_delete_failed", async () => {
         const form = new FormData();
         form.set("intent", "delete");

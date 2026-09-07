@@ -1,8 +1,9 @@
 import crypto from "node:crypto";
-import {mkdir, unlink, readdir, writeFile} from "node:fs/promises";
+import {mkdir, unlink, readdir, readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {
     encodeUploadedImage,
+    rotateUploadedImage,
     type EncodeUploadOptions,
 } from "@/lib/image-encode";
 import {IMAGE_EXTENSIONS, isSafeMediaFilename} from "@/lib/safe-media-filename";
@@ -45,6 +46,10 @@ export type SaveUploadedImagesResult =
 export type DeleteMediaResult =
     | {ok: true}
     | {ok: false; error: "invalid_filename" | "not_found" | "delete_failed"};
+
+export type RotateMediaResult =
+    | {ok: true; filename: string}
+    | {ok: false; error: "invalid_filename" | "not_found" | "rotate_failed"};
 
 /** Literal path segments per collection keep Turbopack's file tracing statically scoped. */
 export function mediaCollectionDir(collection: MediaCollectionId, dirOverride?: string): string {
@@ -191,4 +196,45 @@ export async function deleteMediaFile(
         }
         return {ok: false, error: "delete_failed"};
     }
+}
+
+export async function rotateMediaFile(
+    collection: MediaCollectionId,
+    filename: string,
+    dirOverride?: string,
+    options: EncodeUploadOptions = {},
+): Promise<RotateMediaResult> {
+    if (!isSafeMediaFilename(filename)) {
+        return {ok: false, error: "invalid_filename"};
+    }
+
+    const dir = path.resolve(mediaCollectionDir(collection, dirOverride));
+    const filePath = path.resolve(dir, filename);
+    if (path.dirname(filePath) !== dir) {
+        return {ok: false, error: "invalid_filename"};
+    }
+
+    let input: Buffer;
+    try {
+        input = await readFile(filePath);
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            return {ok: false, error: "not_found"};
+        }
+        return {ok: false, error: "rotate_failed"};
+    }
+
+    const encoded = await rotateUploadedImage(input, options);
+    if (!encoded.ok) {
+        return {ok: false, error: "rotate_failed"};
+    }
+
+    const nextName = await writeWithUniqueName(
+        dir,
+        COLLECTIONS[collection].filePrefix,
+        encoded.value.data,
+        encoded.value.extension,
+    );
+    await unlink(filePath).catch(() => undefined);
+    return {ok: true, filename: nextName};
 }

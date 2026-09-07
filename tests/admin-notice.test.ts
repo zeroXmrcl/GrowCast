@@ -10,6 +10,8 @@ describe("admin notice query", () => {
         assert.equal(isAdminNoticeId("archive_not_found"), true);
         assert.equal(isAdminNoticeId("media_payload_too_large"), true);
         assert.equal(isAdminNoticeId("media_encoder_unavailable"), true);
+        assert.equal(isAdminNoticeId("rotated"), true);
+        assert.equal(isAdminNoticeId("media_rotate_failed"), true);
         assert.equal(isAdminNoticeId("archived_reset_warning"), true);
         assert.equal(isAdminNoticeId("archived_cleanup_warning"), true);
         assert.equal(isAdminNoticeId("not-a-notice"), false);
