@@ -43,12 +43,13 @@ export function MusicPanel({
                 >
                     <input type="hidden" name="intent" value="upload"/>
                     <AdminField
-                        label="Upload track"
-                        hint="mp3, ogg, wav, or m4a. Up to 20 MB each, 30 files."
+                        label="Upload tracks"
+                        hint="mp3, ogg, wav, or m4a. Select several at once. Up to 20 MB each, 30 files in the library, 100 MB per upload."
                     >
                         <input
                             type="file"
                             name="file"
+                            multiple
                             required
                             accept=".mp3,.ogg,.wav,.m4a"
                             className="block w-full text-sm text-(--admin-muted) file:mr-3 file:rounded-md file:border file:border-(--admin-border-strong) file:bg-(--admin-surface) file:px-3 file:py-2 file:text-sm file:font-medium file:text-(--admin-text) hover:file:bg-(--admin-surface-muted)"

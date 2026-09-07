@@ -7,8 +7,8 @@ export const DEFAULT_MAX_BODY_BYTES = 1 * 1024 * 1024;
 /** Admin media POST may include several 15 MiB images. */
 export const MEDIA_MAX_BODY_BYTES = 40 * 1024 * 1024;
 
-/** Admin music POST may include one 20 MiB track plus multipart overhead. */
-export const MUSIC_MAX_BODY_BYTES = 25 * 1024 * 1024;
+/** Admin music POST may include a batch of tracks (up to 30 files, 20 MiB each) plus multipart overhead. Cap matches typical Cloudflare request size. */
+export const MUSIC_MAX_BODY_BYTES = 100 * 1024 * 1024;
 
 const MEDIA_PATH = "/api/admin/media";
 const MUSIC_PATH = "/api/admin/music";

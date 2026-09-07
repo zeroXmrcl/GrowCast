@@ -84,6 +84,51 @@ describe("applyMusicPost", () => {
         });
     });
 
+    it("uploads several valid files in one post", async () => {
+        await withTempDataDir(async () => {
+            const form = new FormData();
+            form.set("intent", "upload");
+            form.append("file", mp3File("a.mp3"));
+            form.append("file", mp3File("b.mp3"));
+            form.append("file", mp3File("c.mp3"));
+
+            const result = await applyMusicPost(form);
+            assert.equal(result.ok, true);
+            if (result.ok && result.notice !== "music_deleted") {
+                assert.equal(result.notice, "music_uploaded");
+                assert.equal(result.saved, 3);
+            }
+            assert.deepEqual(await listMusicFiles(), ["a.mp3", "b.mp3", "c.mp3"]);
+        });
+    });
+
+    it("saves what fits and reports partial when the library is full", async () => {
+        await withTempDataDir(async () => {
+            for (let i = 0; i < MUSIC_MAX_FILES - 1; i++) {
+                const name = `t${String(i).padStart(2, "0")}.mp3`;
+                const saved = await saveMusicFile(name, Buffer.from("ID3"));
+                assert.equal(saved.ok, true);
+            }
+
+            const form = new FormData();
+            form.set("intent", "upload");
+            form.append("file", mp3File("keep.mp3"));
+            form.append("file", mp3File("overflow.mp3"));
+            const result = await applyMusicPost(form);
+            assert.equal(result.ok, true);
+            if (result.ok && result.notice === "music_uploaded_partial") {
+                assert.equal(result.saved, 1);
+                assert.equal(result.rejected, 1);
+            } else {
+                assert.equal(result.notice, "music_uploaded_partial");
+            }
+            const names = await listMusicFiles();
+            assert.equal(names.length, MUSIC_MAX_FILES);
+            assert.equal(names.includes("keep.mp3"), true);
+            assert.equal(names.includes("overflow.mp3"), false);
+        });
+    });
+
     it("deletes a listed file", async () => {
         await withTempDataDir(async () => {
             const upload = new FormData();
