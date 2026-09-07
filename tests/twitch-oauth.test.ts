@@ -249,7 +249,7 @@ describe("Twitch OAuth routes and panel", () => {
         assert.doesNotMatch(connect, /ensureEventsub/);
     });
 
-    it("validates callback state in constant time and never subscribes EventSub", () => {
+    it("validates callback state in constant time and subscribes EventSub after tokens", () => {
         const callback = src(path.join("app", "admin", "stream", "twitch-callback", "route.ts"));
         assert.match(callback, /isAdminAuthenticated/);
         assert.doesNotMatch(callback, /requireAdmin/);
@@ -259,10 +259,16 @@ describe("Twitch OAuth routes and panel", () => {
         assert.match(callback, /["']Cache-Control["']:\s*["']no-store["']/);
         assert.match(callback, /exchangeTwitchCode/);
         assert.match(callback, /writeTwitchOAuthFile/);
+        assert.match(callback, /ensureEventsubSubscriptions/);
+        assert.match(callback, /shareCardMetadataOrigin/);
+        assert.match(
+            callback,
+            /writeTwitchOAuthFile[\s\S]*ensureEventsubSubscriptions[\s\S]*twitch_connected/,
+        );
         assert.match(callback, /twitch_connected/);
         assert.match(callback, /twitch_oauth_failed/);
         assert.match(callback, /sanitizeError/);
-        assert.doesNotMatch(callback, /ensureEventsub|eventsub/i);
+        assert.match(callback, /twitch\.eventsub\.failed/);
         assert.doesNotMatch(callback, /console\.(log|info|debug|warn|error)/);
     });
 
