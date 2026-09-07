@@ -74,7 +74,11 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
                         saveToastAction={saveBroadcastToastAction}
                         saveKeyAction={saveTwitchKeyAction}
                     />
-                    <MusicPanel files={await listMusicFiles()} url={audio.url}/>
+                    <MusicPanel
+                        files={await listMusicFiles()}
+                        url={audio.url}
+                        waveSmoothPct={audio.waveSmoothPct}
+                    />
                     <AlertsPanel settings={alerts} twitchLogin={oauth?.login ?? ""}/>
                     <StreamSettingsFields
                         grow={grow}
