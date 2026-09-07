@@ -51,4 +51,13 @@ describe("program monitor wiring", () => {
         assert.ok(catchAll >= 0, "missing /:path* headers");
         assert.ok(program > catchAll, "/program headers must follow /:path* so they override");
     });
+
+    it("allows http media-src so LAN Icecast music URLs work", () => {
+        const config = readFileSync(
+            path.join(process.cwd(), "next.config.ts"),
+            "utf8",
+        );
+        assert.match(config, /media-src 'self' https: http: blob:/);
+        assert.match(config, /frame-src 'self' https: http:/);
+    });
 });
