@@ -14,9 +14,9 @@ function alert(id: string): OverlayAlert {
 }
 
 describe("alertPlacement", () => {
-    it("puts alerts opposite the HUD", () => {
-        assert.equal(alertPlacement("left-rail"), "bottom-right");
-        assert.equal(alertPlacement("bottom-bar"), "top-center");
+    it("puts alerts in the free corner so they never cover GrowCast", () => {
+        assert.equal(alertPlacement("left-rail"), "top-right");
+        assert.equal(alertPlacement("bottom-bar"), "top-left");
     });
 });
 
