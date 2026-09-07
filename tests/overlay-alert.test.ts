@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {
+    OVERLAY_ALERT_DISPLAY_MS,
     alertPlacement,
     enqueueOverlayAlert,
+    replayableOverlayAlerts,
     type OverlayAlert,
 } from "../lib/overlay-alert.ts";
 
@@ -40,5 +42,19 @@ describe("enqueueOverlayAlert", () => {
             createdAt: 1,
         });
         assert.deepEqual(q, []);
+    });
+});
+
+describe("replayableOverlayAlerts", () => {
+    it("keeps only alerts still within the display window", () => {
+        const fresh = alert("fresh");
+        fresh.createdAt = 10_000;
+        const stale = alert("stale");
+        stale.createdAt = 1000;
+        const now = 10_000 + OVERLAY_ALERT_DISPLAY_MS - 1;
+        assert.deepEqual(
+            replayableOverlayAlerts([stale, fresh], now).map((entry) => entry.id),
+            ["fresh"],
+        );
     });
 });

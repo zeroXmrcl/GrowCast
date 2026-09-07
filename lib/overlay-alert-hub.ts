@@ -1,4 +1,8 @@
-import {enqueueOverlayAlert, type OverlayAlert} from "@/lib/overlay-alert";
+import {
+    enqueueOverlayAlert,
+    replayableOverlayAlerts,
+    type OverlayAlert,
+} from "@/lib/overlay-alert";
 import {shouldEnqueueKind, type AlertsSettings} from "@/lib/restream/alerts-settings";
 
 /**
@@ -38,6 +42,10 @@ function getHub(): OverlayAlertHubState {
 
 export function peekOverlayAlertQueue(): OverlayAlert[] {
     return getHub().queue;
+}
+
+export function peekReplayableOverlayAlerts(nowMs = Date.now()): OverlayAlert[] {
+    return replayableOverlayAlerts(getHub().queue, nowMs);
 }
 
 export function takeNextOverlayAlert(): OverlayAlert | undefined {

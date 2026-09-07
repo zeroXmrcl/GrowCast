@@ -31,3 +31,10 @@ export function enqueueOverlayAlert(
     }
     return next.slice(next.length - OVERLAY_ALERT_MAX_QUEUE);
 }
+
+export function replayableOverlayAlerts(
+    queue: OverlayAlert[],
+    nowMs: number,
+): OverlayAlert[] {
+    return queue.filter((entry) => nowMs - entry.createdAt < OVERLAY_ALERT_DISPLAY_MS);
+}

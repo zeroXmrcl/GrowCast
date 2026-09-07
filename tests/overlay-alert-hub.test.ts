@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {enqueueOverlayAlert, type OverlayAlert} from "../lib/overlay-alert.ts";
+import {OVERLAY_ALERT_DISPLAY_MS} from "../lib/overlay-alert.ts";
 import {
     _resetOverlayAlertHubForTests,
     peekOverlayAlertQueue,
+    peekReplayableOverlayAlerts,
     publishOverlayAlert,
     takeNextOverlayAlert,
 } from "../lib/overlay-alert-hub.ts";
@@ -50,5 +52,28 @@ describe("overlay alert hub", () => {
         );
         assert.equal(peekOverlayAlertQueue().length, 1);
         assert.equal(peekOverlayAlertQueue()[0].id, "2");
+    });
+
+    it("replays only alerts still within the display window", () => {
+        _resetOverlayAlertHubForTests();
+        const now = Date.now();
+        publishOverlayAlert({
+            id: "old",
+            kind: "follow",
+            title: "Follow",
+            body: "x",
+            createdAt: now - OVERLAY_ALERT_DISPLAY_MS - 1,
+        });
+        publishOverlayAlert({
+            id: "fresh",
+            kind: "manual",
+            title: "Alert",
+            body: "hi",
+            createdAt: now,
+        });
+        assert.deepEqual(
+            peekReplayableOverlayAlerts(now).map((entry) => entry.id),
+            ["fresh"],
+        );
     });
 });

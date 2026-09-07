@@ -41,19 +41,19 @@ describe("mixer strip", () => {
         assert.match(strip, /name="volume"/);
         assert.match(strip, /name="alertBody"/);
         assert.match(strip, /saveProgramAudioAction/);
-        assert.match(strip, /sendProgramAlertAction/);
+        assert.match(strip, /\/api\/admin\/program-alert/);
+        assert.match(strip, /event.preventDefault/);
+        assert.doesNotMatch(strip, /sendProgramAlertAction/);
         const page = src(path.join("app", "admin", "stream", "page.tsx"));
         assert.match(page, /readRestreamAudio/);
         assert.match(page, /MixerStrip audio=\{audio\}/);
         const actions = src(path.join("app", "admin", "actions.ts"));
         assert.match(actions, /export async function saveProgramAudioAction/);
-        assert.match(actions, /export async function sendProgramAlertAction/);
-        assert.match(actions, /publishOverlayAlert/);
-        assert.match(actions, /crypto\.randomUUID/);
-        assert.match(actions, /kind:\s*"manual"/);
+        const applyAlert = src(path.join("lib", "admin", "apply-program-alert.ts"));
+        assert.match(applyAlert, /publishOverlayAlert/);
+        assert.match(applyAlert, /kind:\s*"manual"/);
         assert.match(actions, /writeRestreamAudio/);
         assert.match(actions, /audio_saved/);
-        assert.match(actions, /alert_sent/);
         assert.match(actions, /readAlertsSettings/);
     });
 
