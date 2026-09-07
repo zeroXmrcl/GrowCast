@@ -63,4 +63,13 @@ describe("readRestreamAudio", () => {
             assert.equal(dir.includes("current-grow"), false);
         });
     });
+
+    it("clamps volume and stores paused for the mixer", async () => {
+        await withTempDataDir(async () => {
+            await writeRestreamAudio({url: "", volume: 0.2, paused: true});
+            const audio = await readRestreamAudio();
+            assert.equal(audio.paused, true);
+            assert.equal(audio.volume, 0.2);
+        });
+    });
 });
