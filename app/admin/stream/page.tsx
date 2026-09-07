@@ -9,9 +9,9 @@ import {
 } from "@/app/admin/actions";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
+import {ProgramMonitor} from "@/app/admin/program-monitor";
 import {RestreamPanel} from "@/app/admin/restream-panel";
 import {StreamSettingsFields} from "@/app/admin/stream-fields";
-import {StreamPreview} from "@/app/admin/stream-preview";
 import {AdminButton} from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
@@ -52,7 +52,7 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
                 <input type="hidden" name="growId" value={grow.id}/>
             </form>
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
-                <StreamPreview grow={grow}/>
+                <ProgramMonitor/>
                 <div className="space-y-4 lg:sticky lg:top-20">
                     <RestreamPanel
                         view={restream}
