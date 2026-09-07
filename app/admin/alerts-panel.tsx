@@ -1,5 +1,6 @@
 import {saveAlertsSettingsAction} from "@/app/admin/actions";
 import {AdminButton, AdminCheckboxRow, AdminPanel} from "@/components/admin/ui";
+import OverlayScaleInput from "@/components/overlay-scale-input";
 import type {AlertsSettings} from "@/lib/restream/alerts-settings";
 
 export function AlertsPanel({
@@ -57,6 +58,11 @@ export function AlertsPanel({
                     name="stingEnabled"
                     label="Alert sound"
                     defaultChecked={settings.stingEnabled}
+                />
+                <OverlayScaleInput
+                    defaultValue={settings.alertScalePct}
+                    name="alertScalePct"
+                    label="Alert scale"
                 />
                 <AdminButton type="submit" tone="secondary">
                     Save

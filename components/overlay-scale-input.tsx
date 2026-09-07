@@ -11,21 +11,25 @@ import {
 export default function OverlayScaleInput({
     defaultValue,
     form,
+    name = "overlayScalePct",
+    label = "HUD scale",
 }: {
     defaultValue: number;
     form?: string;
+    name?: string;
+    label?: string;
 }) {
     const [value, setValue] = useState(parseOverlayScalePct(defaultValue));
 
     return (
         <div>
             <div className="mb-2 flex items-baseline justify-between gap-3">
-                <p className="text-xs font-semibold uppercase text-(--admin-subtle)">HUD scale</p>
+                <p className="text-xs font-semibold uppercase text-(--admin-subtle)">{label}</p>
                 <p className="text-sm tabular-nums text-(--admin-text)">{value}%</p>
             </div>
             <input
                 type="range"
-                name="overlayScalePct"
+                name={name}
                 form={form}
                 min={OVERLAY_SCALE_MIN}
                 max={OVERLAY_SCALE_MAX}
