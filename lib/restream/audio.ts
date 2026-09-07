@@ -1,6 +1,7 @@
 import {chmod, readFile} from "node:fs/promises";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
+import {parseWaveSmoothPct} from "@/lib/program-music-wave";
 import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 import {restreamAudioFile, restreamDir} from "@/lib/restream/paths";
 
@@ -8,6 +9,7 @@ export type RestreamAudio = {
     url: string;
     volume: number;
     paused: boolean;
+    waveSmoothPct: number;
 };
 
 export type AudioSourceKind = "url" | "playlist" | "silence";
@@ -16,6 +18,7 @@ export const EMPTY_RESTREAM_AUDIO: RestreamAudio = {
     url: "",
     volume: 0.7,
     paused: false,
+    waveSmoothPct: 70,
 };
 
 export function parseRestreamAudio(raw: unknown): RestreamAudio {
@@ -28,6 +31,7 @@ export function parseRestreamAudio(raw: unknown): RestreamAudio {
         url,
         volume,
         paused: asBoolean(raw.paused, false),
+        waveSmoothPct: parseWaveSmoothPct(raw.waveSmoothPct),
     };
 }
 
