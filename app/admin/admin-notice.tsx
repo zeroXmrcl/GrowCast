@@ -173,6 +173,31 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "Alert sent",
         body: "Done.",
     },
+    music_uploaded: {
+        tone: "success",
+        title: "Track uploaded",
+        body: "Done.",
+    },
+    music_deleted: {
+        tone: "success",
+        title: "Track deleted",
+        body: "Done.",
+    },
+    music_invalid_file: {
+        tone: "danger",
+        title: "Could not save the track",
+        body: "Use mp3, ogg, wav, or m4a (max 20 MB). Filenames cannot include path characters.",
+    },
+    music_too_many_files: {
+        tone: "warning",
+        title: "Too many tracks",
+        body: "Upload at most 30 files.",
+    },
+    music_payload_too_large: {
+        tone: "warning",
+        title: "Upload too large",
+        body: "The request exceeded the 25 MB upload limit. Choose a smaller track and try again.",
+    },
 };
 
 export function AdminFlashNotice({notice}: {notice?: string}) {

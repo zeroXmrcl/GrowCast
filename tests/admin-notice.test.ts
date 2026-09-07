@@ -17,6 +17,11 @@ describe("admin notice query", () => {
         assert.equal(isAdminNoticeId("twitch_login_invalid"), true);
         assert.equal(isAdminNoticeId("audio_saved"), true);
         assert.equal(isAdminNoticeId("alert_sent"), true);
+        assert.equal(isAdminNoticeId("music_uploaded"), true);
+        assert.equal(isAdminNoticeId("music_deleted"), true);
+        assert.equal(isAdminNoticeId("music_invalid_file"), true);
+        assert.equal(isAdminNoticeId("music_too_many_files"), true);
+        assert.equal(isAdminNoticeId("music_payload_too_large"), true);
         assert.equal(isAdminNoticeId("not-a-notice"), false);
         assert.equal(isAdminNoticeId(""), false);
     });

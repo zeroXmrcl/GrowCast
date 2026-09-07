@@ -3,6 +3,7 @@ import {describe, it} from "node:test";
 import {
     DEFAULT_MAX_BODY_BYTES,
     MEDIA_MAX_BODY_BYTES,
+    MUSIC_MAX_BODY_BYTES,
     contentLengthExceedsCap,
     isBodyMethod,
     maxBodyBytesFor,
@@ -21,6 +22,13 @@ describe("maxBodyBytesFor", () => {
         assert.equal(maxBodyBytesFor("POST", "/api/admin/media/"), MEDIA_MAX_BODY_BYTES);
         assert.equal(maxBodyBytesFor("POST", "/admin"), DEFAULT_MAX_BODY_BYTES);
         assert.equal(maxBodyBytesFor("GET", "/api/admin/media"), DEFAULT_MAX_BODY_BYTES);
+    });
+
+    it("allows the 25 MiB cap only on POST /api/admin/music", () => {
+        assert.equal(MUSIC_MAX_BODY_BYTES, 25 * 1024 * 1024);
+        assert.equal(maxBodyBytesFor("POST", "/api/admin/music"), MUSIC_MAX_BODY_BYTES);
+        assert.equal(maxBodyBytesFor("POST", "/api/admin/music/"), MUSIC_MAX_BODY_BYTES);
+        assert.equal(maxBodyBytesFor("GET", "/api/admin/music"), DEFAULT_MAX_BODY_BYTES);
     });
 });
 
@@ -60,6 +68,7 @@ describe("next proxy body clone vs media route", () => {
         const proxy = readFileSync(new URL("../proxy.ts", import.meta.url), "utf8");
         assert.match(nextConfig, /proxyClientMaxBodySize:\s*"1mb"/);
         assert.match(proxy, /api\/admin\/media/);
+        assert.match(proxy, /api\/admin\/music/);
         assert.match(proxy, /isBodyMethod/);
     });
 });
@@ -81,5 +90,16 @@ describe("admin media upload vs proxy cap", () => {
         const other = payloadTooLargeResponse("POST", "/api/mesh/growcast.ggs/state");
         assert.equal(other.status, 413);
         assert.equal(await other.text(), "Payload Too Large");
+    });
+
+    it("maps a music POST 413 to a stream notice 303", async () => {
+        const response = payloadTooLargeResponse("POST", "/api/admin/music");
+        assert.equal(response.status, 303);
+        assert.equal(response.headers.get("location"), "/admin/stream?notice=music_payload_too_large");
+        assert.equal(await response.text(), "");
+
+        const trailing = payloadTooLargeResponse("POST", "/api/admin/music/");
+        assert.equal(trailing.status, 303);
+        assert.equal(trailing.headers.get("location"), "/admin/stream?notice=music_payload_too_large");
     });
 });
