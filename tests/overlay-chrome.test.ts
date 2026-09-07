@@ -37,6 +37,17 @@ describe("overlay chrome", () => {
         assert.equal(navSrc.includes("/overlay"), false);
     });
 
+    it("does not load program audio or alerts on public overlay or homepage", () => {
+        const overlay = readFileSync(
+            path.join(process.cwd(), "app", "overlay", "page.tsx"),
+            "utf8",
+        );
+        const home = readFileSync(path.join(process.cwd(), "app", "(site)", "page.tsx"), "utf8");
+        assert.match(overlay, /OverlayHud/);
+        assert.doesNotMatch(overlay, /ProgramScene|ProgramAudio|OverlayAlertLayer/);
+        assert.doesNotMatch(home, /ProgramScene|ProgramAudio|OverlayAlertLayer/);
+    });
+
     it("does not add Program to public nav", () => {
         for (const pathname of ["/", "/gallery", "/energy", "/overlay", "/admin", "/program"]) {
             const items = navItemsFor(pathname, allOn);

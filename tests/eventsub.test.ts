@@ -13,6 +13,7 @@ import {writeAlertsSettings} from "../lib/restream/alerts-settings.ts";
 import {
     EVENTSUB_TYPES,
     ensureEventsubSubscriptions,
+    ensureEventsubSubscriptionsOnBoot,
     eventsubNotificationResponse,
     mapEventsubNotification,
     verifyEventsubSignature,
@@ -591,6 +592,78 @@ describe("ensureEventsubSubscriptions", () => {
     });
 });
 
+describe("ensureEventsubSubscriptionsOnBoot", () => {
+    it("skips without GROWCAST_PUBLIC_URL or oauth tokens", async () => {
+        await withTempDataDir(async () => {
+            let fetched = 0;
+            const fetcher: typeof fetch = async () => {
+                fetched += 1;
+                throw new Error("should not fetch");
+            };
+
+            await ensureEventsubSubscriptionsOnBoot({}, fetcher);
+            assert.equal(fetched, 0);
+
+            await ensureEventsubSubscriptionsOnBoot(
+                {GROWCAST_PUBLIC_URL: "https://grow.example", ...helixEnv},
+                fetcher,
+            );
+            assert.equal(fetched, 0);
+
+            await writeTwitchOAuthFile({
+                accessToken: "user-access",
+                refreshToken: "user-refresh-token",
+                userId: "1",
+                login: "0xmarcel",
+            });
+            await ensureEventsubSubscriptionsOnBoot({...helixEnv}, fetcher);
+            assert.equal(fetched, 0);
+
+            await ensureEventsubSubscriptionsOnBoot(
+                {GROWCAST_PUBLIC_URL: "not a url", ...helixEnv},
+                fetcher,
+            );
+            assert.equal(fetched, 0);
+        });
+    });
+
+    it("renews EventSub when origin and tokens exist and does not throw on Helix failure", async () => {
+        await withTempDataDir(async () => {
+            await writeTwitchOAuthFile({
+                accessToken: "user-access",
+                refreshToken: "user-refresh-token",
+                userId: "1",
+                login: "0xmarcel",
+            });
+            const types: string[] = [];
+            const fetcher: typeof fetch = async (input, init) => {
+                const url = String(input);
+                if (url === "https://id.twitch.tv/oauth2/token") {
+                    return Response.json({access_token: "app-access"});
+                }
+                const body = JSON.parse(String(init?.body ?? "{}")) as {type?: string};
+                types.push(body.type ?? "");
+                return new Response(null, {status: 202});
+            };
+            await ensureEventsubSubscriptionsOnBoot(
+                {
+                    GROWCAST_PUBLIC_URL: "https://grow.example/extra",
+                    ...helixEnv,
+                },
+                fetcher,
+            );
+            assert.deepEqual(types, [...EVENTSUB_TYPES]);
+
+            await ensureEventsubSubscriptionsOnBoot(
+                {GROWCAST_PUBLIC_URL: "https://grow.example", ...helixEnv},
+                async () => {
+                    throw new Error("helix down");
+                },
+            );
+        });
+    });
+});
+
 describe("EventSub route and files", () => {
     it("is a public HMAC webhook that reads the raw body first", () => {
         const route = src(path.join("app", "api", "twitch", "eventsub", "route.ts"));
@@ -625,5 +698,12 @@ describe("EventSub route and files", () => {
         assert.doesNotMatch(eventsub, /console\.(log|info|debug|warn|error)/);
         assert.doesNotMatch(eventsub, /current-grow|getCurrentGrow|writeGrow/);
         assert.doesNotMatch(eventsub, /childLogger\([^)]*rawBody|log\.[a-z]+\([^)]*rawBody/);
+
+        const instrumentation = src("instrumentation.ts");
+        assert.match(instrumentation, /ensureEventsubSubscriptionsOnBoot/);
+        assert.match(instrumentation, /NEXT_RUNTIME === ["']nodejs["']/);
+        assert.match(instrumentation, /phase-production-build/);
+        assert.match(instrumentation, /twitch\.eventsub\.failed/);
+        assert.match(instrumentation, /boot_failed/);
     });
 });

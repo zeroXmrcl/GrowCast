@@ -9,12 +9,16 @@ export function ProgramMonitor() {
 
     useEffect(() => {
         const box = boxRef.current;
-        if (!box) {
+        if (box === null) {
             return;
         }
 
         function update() {
-            setScale(programScale(box.clientWidth, box.clientHeight));
+            const node = boxRef.current;
+            if (node === null) {
+                return;
+            }
+            setScale(programScale(node.clientWidth, node.clientHeight));
         }
 
         update();

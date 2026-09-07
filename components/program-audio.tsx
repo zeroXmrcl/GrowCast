@@ -231,6 +231,7 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         <audio
             ref={audioRef}
             hidden
+            // @ts-expect-error React 19 AudioHTMLAttributes omit HTML referrerPolicy.
             referrerPolicy="no-referrer"
             src={src || undefined}
             loop={singleFilePlaylist}
