@@ -24,3 +24,23 @@ export function restreamStatusFile(): string {
 export function restreamChannelFile(): string {
     return path.join(restreamDir(), "channel.json");
 }
+
+export function restreamAudioFile(): string {
+    return path.join(restreamDir(), "audio.json");
+}
+
+export function restreamMusicDir(): string {
+    return path.join(restreamDir(), "music");
+}
+
+export function restreamAlertsFile(): string {
+    return path.join(restreamDir(), "alerts.json");
+}
+
+export function restreamOAuthFile(): string {
+    return path.join(restreamDir(), "twitch-oauth.json");
+}
+
+export function restreamEventsubSecretFile(): string {
+    return path.join(restreamDir(), "eventsub.secret");
+}
