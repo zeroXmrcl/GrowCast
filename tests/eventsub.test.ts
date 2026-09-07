@@ -425,10 +425,12 @@ describe("ensureEventsubSubscriptions", () => {
                 );
 
                 if (method === "GET") {
+                    const filters = ["status", "type", "user_id", "subscription_id", "conduit_id"].filter(
+                        (key) => parsed.searchParams.has(key),
+                    );
+                    assert.deepEqual(filters, ["type"]);
                     const type = parsed.searchParams.get("type") ?? "";
-                    const userId = parsed.searchParams.get("user_id") ?? "";
-                    assert.equal(userId, "141981764");
-                    const condition =
+                    const ours =
                         type === "channel.follow"
                             ? {
                                   broadcaster_user_id: "141981764",
@@ -437,12 +439,38 @@ describe("ensureEventsubSubscriptions", () => {
                             : type === "channel.raid"
                               ? {to_broadcaster_user_id: "141981764"}
                               : {broadcaster_user_id: "141981764"};
+                    const other =
+                        type === "channel.follow"
+                            ? {broadcaster_user_id: "999", moderator_user_id: "999"}
+                            : type === "channel.raid"
+                              ? {to_broadcaster_user_id: "999"}
+                              : {broadcaster_user_id: "999"};
+                    const oursRow = deleted.has(`stale-${type}`)
+                        ? {
+                              id: `kept-${type}`,
+                              type,
+                              condition: ours,
+                              transport: {
+                                  method: "webhook",
+                                  callback: "https://grow.example/api/twitch/eventsub",
+                              },
+                          }
+                        : {
+                              id: `stale-${type}`,
+                              type,
+                              condition: ours,
+                              transport: {
+                                  method: "webhook",
+                                  callback: "https://old.example/api/twitch/eventsub",
+                              },
+                          };
                     return Response.json({
                         data: [
+                            oursRow,
                             {
-                                id: `stale-${type}`,
+                                id: `other-${type}`,
                                 type,
-                                condition,
+                                condition: other,
                                 transport: {
                                     method: "webhook",
                                     callback: "https://old.example/api/twitch/eventsub",
@@ -462,11 +490,8 @@ describe("ensureEventsubSubscriptions", () => {
                 const type = String(body.type ?? "");
                 const attempt = (postAttempts.get(type) ?? 0) + 1;
                 postAttempts.set(type, attempt);
-                if (attempt === 1) {
-                    return new Response(null, {status: 409});
-                }
                 posts.push(body);
-                return new Response(null, {status: 202});
+                return new Response(null, {status: 409});
             };
 
             await ensureEventsubSubscriptions("https://grow.example/", helixEnv, fetcher);
@@ -476,13 +501,16 @@ describe("ensureEventsubSubscriptions", () => {
                 calls.some((call) => call.auth === "Bearer user-access"),
                 false,
             );
+            assert.equal(posts.length, 8);
             assert.deepEqual(
-                posts.map((post) => post.type),
+                [...new Set(posts.map((post) => post.type))],
                 [...EVENTSUB_TYPES],
             );
             for (const type of EVENTSUB_TYPES) {
                 assert.equal(postAttempts.get(type), 2);
                 assert.ok(deleted.has(`stale-${type}`));
+                assert.equal(deleted.has(`other-${type}`), false);
+                assert.equal(deleted.has(`kept-${type}`), false);
             }
             for (const post of posts) {
                 const transport = post.transport as Record<string, unknown>;
@@ -491,22 +519,26 @@ describe("ensureEventsubSubscriptions", () => {
                 assert.equal(transport.secret, "known-eventsub-secret");
             }
 
-            const follow = posts[0];
+            const follow = posts.find((post) => post.type === "channel.follow");
+            assert.ok(follow);
             assert.equal(follow.version, "2");
             assert.deepEqual(follow.condition, {
                 broadcaster_user_id: "141981764",
                 moderator_user_id: "141981764",
             });
 
-            const sub = posts[1];
+            const sub = posts.find((post) => post.type === "channel.subscribe");
+            assert.ok(sub);
             assert.equal(sub.version, "1");
             assert.deepEqual(sub.condition, {broadcaster_user_id: "141981764"});
 
-            const raid = posts[2];
+            const raid = posts.find((post) => post.type === "channel.raid");
+            assert.ok(raid);
             assert.equal(raid.version, "1");
             assert.deepEqual(raid.condition, {to_broadcaster_user_id: "141981764"});
 
-            const cheer = posts[3];
+            const cheer = posts.find((post) => post.type === "channel.cheer");
+            assert.ok(cheer);
             assert.equal(cheer.version, "1");
             assert.deepEqual(cheer.condition, {broadcaster_user_id: "141981764"});
         });
