@@ -636,11 +636,18 @@ describe("ensureEventsubSubscriptionsOnBoot", () => {
                 login: "0xmarcel",
             });
             const types: string[] = [];
+            const methods: string[] = [];
             const fetcher: typeof fetch = async (input, init) => {
                 const url = String(input);
+                const method = String(init?.method ?? "GET").toUpperCase();
+                methods.push(method);
                 if (url === "https://id.twitch.tv/oauth2/token") {
                     return Response.json({access_token: "app-access"});
                 }
+                if (method === "GET") {
+                    return Response.json({data: []});
+                }
+                assert.equal(method, "POST");
                 const body = JSON.parse(String(init?.body ?? "{}")) as {type?: string};
                 types.push(body.type ?? "");
                 return new Response(null, {status: 202});
@@ -653,6 +660,7 @@ describe("ensureEventsubSubscriptionsOnBoot", () => {
                 fetcher,
             );
             assert.deepEqual(types, [...EVENTSUB_TYPES]);
+            assert.equal(methods.includes("DELETE"), false);
 
             await ensureEventsubSubscriptionsOnBoot(
                 {GROWCAST_PUBLIC_URL: "https://grow.example", ...helixEnv},
@@ -660,6 +668,73 @@ describe("ensureEventsubSubscriptionsOnBoot", () => {
                     throw new Error("helix down");
                 },
             );
+        });
+    });
+
+    it("skips create when the callback already matches and never deletes on boot", async () => {
+        await withTempDataDir(async () => {
+            await writeTwitchOAuthFile({
+                accessToken: "user-access",
+                refreshToken: "user-refresh-token",
+                userId: "141981764",
+                login: "0xmarcel",
+            });
+            const posts: string[] = [];
+            const deleted: string[] = [];
+            const fetcher: typeof fetch = async (input, init) => {
+                const url = String(input);
+                const method = String(init?.method ?? "GET").toUpperCase();
+                if (url === "https://id.twitch.tv/oauth2/token") {
+                    return Response.json({access_token: "app-access"});
+                }
+                const parsed = new URL(url);
+                if (method === "GET") {
+                    const type = parsed.searchParams.get("type") ?? "";
+                    const condition =
+                        type === "channel.follow"
+                            ? {
+                                  broadcaster_user_id: "141981764",
+                                  moderator_user_id: "141981764",
+                              }
+                            : type === "channel.raid"
+                              ? {to_broadcaster_user_id: "141981764"}
+                              : {broadcaster_user_id: "141981764"};
+                    const ours =
+                        type === "channel.follow" || type === "channel.subscribe"
+                            ? {
+                                  id: `live-${type}`,
+                                  type,
+                                  condition,
+                                  transport: {
+                                      method: "webhook",
+                                      callback: "https://grow.example/api/twitch/eventsub",
+                                  },
+                              }
+                            : {
+                                  id: `stale-${type}`,
+                                  type,
+                                  condition,
+                                  transport: {
+                                      method: "webhook",
+                                      callback: "https://old.example/api/twitch/eventsub",
+                                  },
+                              };
+                    return Response.json({data: [ours]});
+                }
+                if (method === "DELETE") {
+                    deleted.push(parsed.searchParams.get("id") ?? "");
+                    return new Response(null, {status: 204});
+                }
+                const body = JSON.parse(String(init?.body ?? "{}")) as {type?: string};
+                posts.push(body.type ?? "");
+                return new Response(null, {status: 409});
+            };
+            await ensureEventsubSubscriptionsOnBoot(
+                {GROWCAST_PUBLIC_URL: "https://grow.example", ...helixEnv},
+                fetcher,
+            );
+            assert.deepEqual(posts.sort(), ["channel.cheer", "channel.raid"]);
+            assert.deepEqual(deleted, []);
         });
     });
 });
@@ -701,6 +776,7 @@ describe("EventSub route and files", () => {
 
         const instrumentation = src("instrumentation.ts");
         assert.match(instrumentation, /ensureEventsubSubscriptionsOnBoot/);
+        assert.match(instrumentation, /void Promise\.resolve\(\)\.then/);
         assert.match(instrumentation, /NEXT_RUNTIME === ["']nodejs["']/);
         assert.match(instrumentation, /phase-production-build/);
         assert.match(instrumentation, /twitch\.eventsub\.failed/);
