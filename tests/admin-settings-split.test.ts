@@ -70,22 +70,25 @@ describe("admin settings split", () => {
     });
 
     it("renders OverlayHud on Stream as include+lockStream using grow.streamUrl", () => {
-        const preview = src(path.join("app", "admin", "stream-preview.tsx"));
+        const programPage = src(path.join("app", "program", "page.tsx"));
+        const monitor = src(path.join("app", "admin", "program-monitor.tsx"));
         const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
-        assert.match(preview, /overlayStream="include"/);
-        assert.match(preview, /lockStream/);
-        assert.match(preview, /streamUrl=\{grow\.streamUrl\}/);
-        assert.match(preview, /Save a Stream URL/);
-        assert.doesNotMatch(preview, /ON AIR/);
-        assert.doesNotMatch(preview, /GROWCAST_RESTREAM_STREAM_URL/);
-        assert.doesNotMatch(preview, /captureStreamUrl/);
-        assert.doesNotMatch(preview, /\/overlay\/capture/);
+        assert.match(programPage, /overlayStream="include"/);
+        assert.match(programPage, /lockStream/);
+        assert.match(programPage, /streamUrl=\{grow\.streamUrl\}/);
+        assert.doesNotMatch(programPage, /ON AIR/);
+        assert.doesNotMatch(programPage, /GROWCAST_RESTREAM_STREAM_URL/);
+        assert.doesNotMatch(programPage, /captureStreamUrl/);
+        assert.doesNotMatch(programPage, /\/overlay\/capture/);
         assert.doesNotMatch(streamPage, /GROWCAST_RESTREAM_STREAM_URL/);
-        assert.doesNotMatch(streamPage, /<iframe/);
-        assert.doesNotMatch(preview, /<iframe/);
+        assert.match(streamPage, /ProgramMonitor/);
+        assert.doesNotMatch(streamPage, /StreamPreview/);
+        assert.doesNotMatch(streamPage, /capture\?token/);
+        assert.match(monitor, /src="\/program"/);
+        assert.doesNotMatch(monitor, /token=/);
         assert.doesNotMatch(streamPage, /capture\.token/);
         assert.doesNotMatch(streamPage, /GROWCAST_RESTREAM_TOKEN/);
-        assert.doesNotMatch(preview, /token/i);
+        assert.doesNotMatch(programPage, /token/i);
         assert.match(streamPage, /ensureRestreamCaptureToken/);
         assert.match(streamPage, /RestreamPanel/);
     });

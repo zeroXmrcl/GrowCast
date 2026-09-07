@@ -81,16 +81,16 @@ describe("broadcast chrome", () => {
     });
 
     it("renders OverlayHud include+lockStream on the program monitor without ON AIR", () => {
-        const preview = src(path.join("app", "admin", "stream-preview.tsx"));
+        const programPage = src(path.join("app", "program", "page.tsx"));
         const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
-        assert.match(preview, /overlayStream="include"/);
-        assert.match(preview, /lockStream/);
-        assert.match(preview, /streamUrl=\{grow\.streamUrl\}/);
-        assert.match(preview, /Save a Stream URL/);
-        assert.doesNotMatch(preview, /ON AIR/);
+        assert.match(programPage, /overlayStream="include"/);
+        assert.match(programPage, /lockStream/);
+        assert.match(programPage, /streamUrl=\{grow\.streamUrl\}/);
+        assert.doesNotMatch(programPage, /ON AIR/);
         assert.doesNotMatch(streamPage, /ON AIR/);
-        assert.doesNotMatch(preview, /\/overlay\/capture/);
-        assert.doesNotMatch(streamPage, /<iframe/);
+        assert.match(streamPage, /ProgramMonitor/);
+        assert.doesNotMatch(streamPage, /capture\?token/);
+        assert.doesNotMatch(programPage, /\/overlay\/capture/);
     });
 
     it("wires overlay and camera grow fields to the disconnected broadcast-grow form", () => {
