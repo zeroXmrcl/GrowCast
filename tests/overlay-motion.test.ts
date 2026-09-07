@@ -13,6 +13,7 @@ import {
     OVERLAY_ORDER_ENERGY,
     OVERLAY_ORDER_GEAR,
     OVERLAY_ORDER_IDENTITY,
+    OVERLAY_ORDER_MUSIC,
     OVERLAY_SLIDE_PX,
     OVERLAY_STAGGER_MS,
     overlaySlideTransform,
@@ -35,8 +36,9 @@ describe("overlay motion tokens", () => {
                 OVERLAY_ORDER_CLIMATE,
                 OVERLAY_ORDER_GEAR,
                 OVERLAY_ORDER_ENERGY,
+                OVERLAY_ORDER_MUSIC,
             ],
-            [0, 1, 2, 3],
+            [0, 1, 2, 3, 4],
         );
     });
 

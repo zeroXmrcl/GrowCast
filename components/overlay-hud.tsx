@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, type ReactNode} from "react";
 import OverlayClimate from "@/components/overlay-climate";
 import OverlayEnergy from "@/components/overlay-energy";
 import OverlayGear from "@/components/overlay-gear";
@@ -32,8 +32,9 @@ import {
 
 export default function OverlayHud({
     lockStream = false,
+    extra,
     ...initial
-}: OverlayGrowView & {lockStream?: boolean}) {
+}: OverlayGrowView & {lockStream?: boolean; extra?: ReactNode}) {
     const [grow, setGrow] = useState<OverlayGrowView>(initial);
     const [energy, setEnergy] = useState<EnergyPublicDto | null>(null);
     const [heldSnapshot, setHeldSnapshot] = useState<GgsLivePublic | null>(null);
@@ -137,6 +138,7 @@ export default function OverlayHud({
             >
                 {heldEnergy ? <OverlayEnergy dto={heldEnergy}/> : null}
             </OverlayMotionItem>
+            {extra}
         </OverlayShell>
     );
 }

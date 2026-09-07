@@ -44,8 +44,9 @@ describe("overlay chrome", () => {
         );
         const home = readFileSync(path.join(process.cwd(), "app", "(site)", "page.tsx"), "utf8");
         assert.match(overlay, /OverlayHud/);
-        assert.doesNotMatch(overlay, /ProgramScene|ProgramAudio|OverlayAlertLayer/);
-        assert.doesNotMatch(home, /ProgramScene|ProgramAudio|OverlayAlertLayer/);
+        assert.doesNotMatch(overlay, /ProgramScene|ProgramAudio|OverlayAlertLayer|OverlayMusicWave/);
+        assert.doesNotMatch(overlay, /extra=/);
+        assert.doesNotMatch(home, /ProgramScene|ProgramAudio|OverlayAlertLayer|OverlayMusicWave/);
     });
 
     it("does not add Program to public nav", () => {
@@ -120,6 +121,9 @@ describe("overlay chrome", () => {
         assert.match(shellSrc, /<iframe/);
         assert.match(hudSrc, /overlayStream/);
         assert.match(hudSrc, /overlayScalePct/);
+        assert.match(hudSrc, /extra\?:/);
+        assert.match(hudSrc, /\{extra\}/);
+        assert.doesNotMatch(hudSrc, /OVERLAY_ORDER_MUSIC/);
         assert.match(energySrc, /overlayEnergyGrowWindow/);
         assert.match(identitySrc, /overlayIdentityView/);
         assert.doesNotMatch(identitySrc, /health/i);

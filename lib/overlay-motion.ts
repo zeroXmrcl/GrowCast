@@ -13,6 +13,7 @@ export const OVERLAY_ORDER_IDENTITY = 0;
 export const OVERLAY_ORDER_CLIMATE = 1;
 export const OVERLAY_ORDER_GEAR = 2;
 export const OVERLAY_ORDER_ENERGY = 3;
+export const OVERLAY_ORDER_MUSIC = 4;
 
 export function overlayStaggerMs(order: number, reducedMotion: boolean): number {
     return reducedMotion ? 0 : order * OVERLAY_STAGGER_MS;
