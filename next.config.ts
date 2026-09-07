@@ -3,7 +3,8 @@ import type { NextConfig } from "next";
 const isStandaloneBuild = process.env.BUILD_STANDALONE === "1";
 
 /**
- * frame-src allows HTTP so LAN MediaMTX HLS iframes work. Do not set
+ * frame-src allows HTTP so LAN MediaMTX HLS iframes work. media-src
+ * allows HTTP for LAN Icecast music URLs. Do not set
  * upgrade-insecure-requests: the documented compose path is HTTP.
  */
 const CONTENT_SECURITY_POLICY = [
@@ -13,7 +14,7 @@ const CONTENT_SECURITY_POLICY = [
     "frame-ancestors 'none'",
     "object-src 'none'",
     "img-src 'self' data: https: blob:",
-    "media-src 'self' https: blob:",
+    "media-src 'self' https: http: blob:",
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",

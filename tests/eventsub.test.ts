@@ -71,6 +71,10 @@ function eventsubHeaders(input: {
     });
 }
 
+function freshTimestamp(offsetMs = 0): string {
+    return new Date(Date.now() + offsetMs).toISOString();
+}
+
 const helixEnv = {
     TWITCH_CLIENT_ID: "test-client-id",
     TWITCH_CLIENT_SECRET: "helix-secret-value",
@@ -244,7 +248,7 @@ describe("eventsubNotificationResponse", () => {
             _resetOverlayAlertHubForTests();
             try {
                 const id = "msg-follow-1";
-                const ts = "1710000000";
+                const ts = freshTimestamp();
                 const body = JSON.stringify({
                     subscription: {type: "channel.follow"},
                     event: {user_name: "Ada"},
@@ -294,7 +298,7 @@ describe("eventsubNotificationResponse", () => {
             const secret = "s3cret-eventsub";
             await writeKnownSecret(secret);
             const id = "msg-challenge-1";
-            const ts = "1710000001";
+            const ts = freshTimestamp();
             const body = JSON.stringify({challenge: "pogchamp-kappa-360noscope"});
             const response = await eventsubNotificationResponse(
                 body,
@@ -316,7 +320,7 @@ describe("eventsubNotificationResponse", () => {
         await withTempDataDir(async () => {
             const secret = "s3cret-eventsub";
             const id = "msg-revoked";
-            const ts = "1710000002";
+            const ts = freshTimestamp();
             const body = JSON.stringify({subscription: {type: "channel.follow"}});
             const missing = await eventsubNotificationResponse(
                 body,
@@ -359,7 +363,7 @@ describe("eventsubNotificationResponse", () => {
             _resetOverlayAlertHubForTests();
             try {
                 const id = "msg-follow-off";
-                const ts = "1710000003";
+                const ts = freshTimestamp();
                 const body = JSON.stringify({
                     subscription: {type: "channel.follow"},
                     event: {user_name: "Ada"},
@@ -376,6 +380,55 @@ describe("eventsubNotificationResponse", () => {
                 );
                 assert.equal(response.status, 204);
                 assert.equal(peekOverlayAlertQueue().length, 0);
+            } finally {
+                _resetOverlayAlertHubForTests();
+            }
+        });
+    });
+
+    it("returns 403 when the message timestamp is older than 10 minutes", async () => {
+        await withTempDataDir(async () => {
+            const secret = "s3cret-eventsub";
+            await writeKnownSecret(secret);
+            _resetOverlayAlertHubForTests();
+            try {
+                const body = JSON.stringify({
+                    subscription: {type: "channel.follow"},
+                    event: {user_name: "Ada"},
+                });
+                const staleId = "msg-stale-ts";
+                const staleTs = freshTimestamp(-11 * 60 * 1000);
+                const stale = await eventsubNotificationResponse(
+                    body,
+                    eventsubHeaders({
+                        id: staleId,
+                        timestamp: staleTs,
+                        signature: sign(secret, staleId, staleTs, body),
+                        type: "notification",
+                    }),
+                    {admin: false},
+                );
+                assert.equal(stale.status, 403);
+
+                const futureId = "msg-future-ts";
+                const futureTs = freshTimestamp(11 * 60 * 1000);
+                const future = await eventsubNotificationResponse(
+                    body,
+                    eventsubHeaders({
+                        id: futureId,
+                        timestamp: futureTs,
+                        signature: sign(secret, futureId, futureTs, body),
+                        type: "notification",
+                    }),
+                    {admin: false},
+                );
+                assert.equal(future.status, 403);
+                assert.equal(
+                    peekOverlayAlertQueue().some(
+                        (alert) => alert.id === staleId || alert.id === futureId,
+                    ),
+                    false,
+                );
             } finally {
                 _resetOverlayAlertHubForTests();
             }

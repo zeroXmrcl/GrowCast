@@ -14,7 +14,10 @@ import {readTwitchOAuthFile} from "@/lib/restream/twitch-oauth";
 const EVENTSUB_SUBSCRIPTIONS_URL = "https://api.twitch.tv/helix/eventsub/subscriptions";
 const TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const EVENTSUB_TIMEOUT_MS = 8_000;
+const EVENTSUB_MAX_SKEW_MS = 10 * 60 * 1000;
 const SHA256_PREFIX = "sha256=";
+const RFC3339 =
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 export const EVENTSUB_TYPES = [
     "channel.follow",
@@ -81,6 +84,17 @@ export function verifyEventsubSignature(input: {
         .update(messageId + timestamp + body)
         .digest("hex");
     return safeEqualText(provided, expected);
+}
+
+function eventsubTimestampFresh(timestamp: string, nowMs = Date.now()): boolean {
+    if (!RFC3339.test(timestamp)) {
+        return false;
+    }
+    const parsed = Date.parse(timestamp);
+    if (!Number.isFinite(parsed)) {
+        return false;
+    }
+    return Math.abs(nowMs - parsed) <= EVENTSUB_MAX_SKEW_MS;
 }
 
 export function mapEventsubNotification(
@@ -163,7 +177,8 @@ export async function eventsubNotificationResponse(
             timestamp,
             body: rawBody,
             signature,
-        })
+        }) ||
+        !eventsubTimestampFresh(timestamp)
     ) {
         return forbidden();
     }
