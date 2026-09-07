@@ -428,17 +428,19 @@ describe("homepage toast", () => {
         }
     });
 
-    it("leaves overlay/capture and compose restream token interpolation unchanged", () => {
+    it("leaves overlay/capture unchanged and interpolates empty-default restream token", () => {
         const captureSrc = src(path.join("app", "overlay", "capture", "page.tsx"));
         const scene = src(path.join("components", "program-scene.tsx"));
         const composeSrc = src("docker-compose.yml");
         const sidecarSrc = src(path.join("extensions", "GrowCast-Restream", "restream.py"));
+        const restream = composeSrc.split(/^  restream:\s*$/m)[1] ?? "";
         assert.match(scene, /overlayStream=["']include["']/);
         assert.match(scene, /lockStream/);
         assert.match(captureSrc, /isRestreamCaptureAuthorized/);
-        assert.doesNotMatch(
+        assert.doesNotMatch(restream, /path:\s*\.env\.local/);
+        assert.match(
             composeSrc,
-            /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN/,
+            /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN:-\}/,
         );
         assert.doesNotMatch(sidecarSrc, /helix/i);
         assert.doesNotMatch(sidecarSrc, /TWITCH_CLIENT_SECRET/);

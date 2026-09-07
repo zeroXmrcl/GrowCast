@@ -135,6 +135,123 @@ def stop_all() -> None:
         chrome_profile = ""
 
 
+def limited_env(**extra: str) -> dict[str, str]:
+    env: dict[str, str] = {"DISPLAY": DISPLAY}
+    for name in ("PATH", "HOME", "XDG_RUNTIME_DIR", "PULSE_SERVER", "LANG"):
+        value = os.environ.get(name)
+        if value:
+            env[name] = value
+    env.update(extra)
+    return env
+
+
+def ensure_xdg_runtime_dir() -> None:
+    runtime = os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/runtime-{os.getuid()}"
+    try:
+        Path(runtime).mkdir(parents=True, exist_ok=True)
+        os.chmod(runtime, 0o700)
+    except OSError as err:
+        log.warning("XDG_RUNTIME_DIR %s: %s", runtime, err)
+        return
+    os.environ["XDG_RUNTIME_DIR"] = runtime
+
+
+def pulse_is_running() -> bool:
+    try:
+        return (
+            subprocess.run(
+                ["pulseaudio", "--check"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=3,
+            ).returncode
+            == 0
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def _pactl(*args: str) -> None:
+    try:
+        subprocess.run(
+            ["pactl", *args],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
+def _prepare_pulse_sink() -> None:
+    _pactl("load-module", "module-always-sink")
+    try:
+        listed = subprocess.run(
+            ["pactl", "get-default-sink"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    sink = listed.stdout.strip()
+    if sink:
+        _pactl("set-default-source", f"{sink}.monitor")
+
+
+def ensure_pulse() -> bool:
+    ensure_xdg_runtime_dir()
+    if not pulse_is_running():
+        try:
+            started = subprocess.run(
+                ["pulseaudio", "--start", "--exit-idle-time=-1"],
+                capture_output=True,
+                timeout=8,
+            )
+        except FileNotFoundError:
+            log.warning("pulseaudio not installed")
+            return False
+        except (OSError, subprocess.TimeoutExpired) as err:
+            log.warning("pulseaudio not started: %s", err)
+            return False
+        if started.returncode != 0:
+            err = redact(started.stderr.decode("utf-8", "replace"))
+            log.warning("pulseaudio start failed: %s", err.strip() or started.returncode)
+            return False
+        log.info("pulseaudio started")
+    _prepare_pulse_sink()
+    if pulse_is_running():
+        return True
+    log.warning("pulseaudio daemon is not running")
+    return False
+
+
+PULSE_AUDIO = "-f pulse -i default"
+SILENT_AUDIO = "-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100"
+
+
+def ffmpeg_command(audio_input: str) -> str:
+    return (
+        "exec ffmpeg -hide_banner -loglevel error "
+        '-f x11grab -draw_mouse 0 -video_size 1920x1080 -framerate 15 -i "$DISPLAY" '
+        f"{audio_input} "
+        "-c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p -g 30 "
+        "-b:v 2500k -maxrate 2500k -bufsize 5000k -c:a aac -shortest -f flv "
+        '"$FFMPEG_OUTPUT"'
+    )
+
+
+def spawn_ffmpeg(audio_input: str, key: str, token: str) -> subprocess.Popen[bytes]:
+    proc = subprocess.Popen(
+        ["sh", "-c", ffmpeg_command(audio_input)],
+        env=limited_env(FFMPEG_OUTPUT=f"{INGEST}/{key}"),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
+    drain_stderr(proc, "ffmpeg", key, token)
+    return proc
+
+
 def start_stack(key: str, token: str) -> None:
     global xvfb, chrome, ffmpeg, chrome_profile
     if xvfb is None or xvfb.poll() is not None:
@@ -148,6 +265,7 @@ def start_stack(key: str, token: str) -> None:
         time.sleep(0.4)
         if not running(xvfb):
             log.error("xvfb exited immediately")
+    ensure_pulse()
     chrome_profile = f"/tmp/growcast-chrome-{os.getpid()}-{time.time_ns()}"
     capture = f"{GROWCAST_URL}/overlay/capture"
     log.info("starting chromium kiosk %s", capture)
@@ -163,7 +281,7 @@ def start_stack(key: str, token: str) -> None:
             f"--user-data-dir={chrome_profile}",
             f"{capture}?token={token}",
         ],
-        env={**os.environ, "DISPLAY": DISPLAY},
+        env=limited_env(),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
     )
@@ -172,17 +290,19 @@ def start_stack(key: str, token: str) -> None:
     if not running(chrome):
         log.error("chromium exited code=%s", chrome.returncode if chrome else "?")
     log.info("starting ffmpeg ingest=%s", INGEST)
-    ffmpeg = subprocess.Popen(
-        [
-            "sh",
-            "-c",
-            'exec ffmpeg -hide_banner -loglevel error -f x11grab -draw_mouse 0 -video_size 1920x1080 -framerate 15 -i "$DISPLAY" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p -g 30 -b:v 2500k -maxrate 2500k -bufsize 5000k -c:a aac -shortest -f flv "$FFMPEG_OUTPUT"',
-        ],
-        env={**os.environ, "DISPLAY": DISPLAY, "FFMPEG_OUTPUT": f"{INGEST}/{key}"},
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-    )
-    drain_stderr(ffmpeg, "ffmpeg", key, token)
+    if pulse_is_running():
+        ffmpeg = spawn_ffmpeg(PULSE_AUDIO, key, token)
+        deadline = time.monotonic() + 1.0
+        while running(ffmpeg) and time.monotonic() < deadline:
+            time.sleep(0.1)
+        if running(ffmpeg):
+            return
+        log.warning("ffmpeg pulse input failed, falling back to anullsrc")
+        stop_proc(ffmpeg, "ffmpeg")
+        ffmpeg = None
+    else:
+        log.warning("pulse missing, ffmpeg audio=anullsrc")
+    ffmpeg = spawn_ffmpeg(SILENT_AUDIO, key, token)
 
 
 def running(proc: subprocess.Popen[bytes] | None) -> bool:

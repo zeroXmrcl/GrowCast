@@ -5,6 +5,8 @@ RUN apt-get update \
         chromium \
         ffmpeg \
         fonts-liberation \
+        pulseaudio \
+        pulseaudio-utils \
         python3 \
         xvfb \
     && rm -rf /var/lib/apt/lists/* \
