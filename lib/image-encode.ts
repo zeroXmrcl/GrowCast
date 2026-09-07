@@ -5,6 +5,9 @@ export const MAX_OUTPUT_DIMENSION = 2560;
 const WEBP_QUALITY = 82;
 const JPEG_QUALITY = 82;
 const MAX_INPUT_PIXELS = 80_000_000;
+/** jpeg-js needs ~11 bytes/pixel; 24MP iPhone photos overflow the old 256 MB cap. */
+export const JPEG_DECODE_MAX_MEMORY_MB = 512;
+export const JPEG_DECODE_MAX_RESOLUTION_MP = 80;
 const ALLOWED_SHARP_FORMATS = new Set(["jpeg", "png", "webp"]);
 
 export type EncodedUpload = {
@@ -138,7 +141,10 @@ async function encodePortable(input: Buffer): Promise<EncodeUploadResult> {
     if (format === "jpeg") {
         let decoded: {data: Buffer; width: number; height: number};
         try {
-            decoded = jpeg.decode(input, {maxResolutionInMP: 80, maxMemoryUsageInMB: 256});
+            decoded = jpeg.decode(input, {
+                maxResolutionInMP: JPEG_DECODE_MAX_RESOLUTION_MP,
+                maxMemoryUsageInMB: JPEG_DECODE_MAX_MEMORY_MB,
+            });
         } catch {
             return {ok: false, reason: "invalid_image"};
         }

@@ -13,6 +13,7 @@ export const ADMIN_NOTICE_IDS = [
     "media_no_files",
     "media_too_many_files",
     "media_invalid_file",
+    "media_encoder_unavailable",
     "media_upload_failed",
     "media_payload_too_large",
     "media_delete_failed",

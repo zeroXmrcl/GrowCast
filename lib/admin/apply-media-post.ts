@@ -71,10 +71,13 @@ async function applyUpload(
     }
 
     if (result.saved.length === 0) {
+        const encoderOnly =
+            result.rejected.length > 0
+            && result.rejected.every((entry) => entry.reason === "encoder_unavailable");
         return {
             ok: false,
-            notice: "media_invalid_file",
-            reason: "all_rejected",
+            notice: encoderOnly ? "media_encoder_unavailable" : "media_invalid_file",
+            reason: encoderOnly ? "encoder_unavailable" : "all_rejected",
             collection,
             rejected: result.rejected.length,
         };

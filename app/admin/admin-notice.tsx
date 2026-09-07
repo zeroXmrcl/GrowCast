@@ -68,8 +68,13 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     },
     media_invalid_file: {
         tone: "danger",
-        title: "Upload failed",
-        body: "None of the files were valid JPEG/PNG/WebP images under 15 MB.",
+        title: "Could not decode the image",
+        body: "The file could not be decoded as JPEG, PNG, or WebP (max 15 MB each). Camera photos from iPhone are supported. If this keeps failing, export a smaller JPEG and try again.",
+    },
+    media_encoder_unavailable: {
+        tone: "danger",
+        title: "Image encoder unavailable",
+        body: "The server could not encode this picture. Check that Sharp is installed in the image, then retry.",
     },
     media_upload_failed: {
         tone: "danger",
