@@ -9,6 +9,7 @@ import {
 } from "@/app/admin/actions";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
+import {AlertsPanel} from "@/app/admin/alerts-panel";
 import {MixerStrip} from "@/app/admin/mixer-strip";
 import {MusicPanel} from "@/app/admin/music-panel";
 import {ProgramMonitor} from "@/app/admin/program-monitor";
@@ -18,6 +19,7 @@ import {AdminButton} from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {overlayPublicUrl} from "@/lib/overlay-layout";
+import {readAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
 import {listMusicFiles} from "@/lib/restream/music-files";
@@ -70,6 +72,7 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
                         saveKeyAction={saveTwitchKeyAction}
                     />
                     <MusicPanel files={await listMusicFiles()} url={audio.url}/>
+                    <AlertsPanel settings={await readAlertsSettings()}/>
                     <StreamSettingsFields
                         grow={grow}
                         overlayUrl={overlayUrl}

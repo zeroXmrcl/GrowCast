@@ -1,4 +1,5 @@
 import {enqueueOverlayAlert, type OverlayAlert} from "@/lib/overlay-alert";
+import {shouldEnqueueKind, type AlertsSettings} from "@/lib/restream/alerts-settings";
 
 /**
  * Next can evaluate this module once per bundle (Server Action vs Route
@@ -56,7 +57,10 @@ export function subscribeOverlayAlerts(listener: OverlayAlertListener): () => vo
     };
 }
 
-export function publishOverlayAlert(alert: OverlayAlert): void {
+export function publishOverlayAlert(alert: OverlayAlert, settings?: AlertsSettings): void {
+    if (settings !== undefined && !shouldEnqueueKind(settings, alert.kind)) {
+        return;
+    }
     const hub = getHub();
     const next = enqueueOverlayAlert(hub.queue, alert);
     if (next === hub.queue) {

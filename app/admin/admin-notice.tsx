@@ -173,6 +173,11 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "Alert sent",
         body: "Done.",
     },
+    alerts_saved: {
+        tone: "success",
+        title: "Alerts updated",
+        body: "Event toggles and alert sound were saved.",
+    },
     music_uploaded: {
         tone: "success",
         title: "Track uploaded",
