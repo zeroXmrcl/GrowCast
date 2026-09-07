@@ -5,6 +5,7 @@ import {safeEqualText} from "@/lib/crypto-equal";
 import {sanitizeError, withRequestLog} from "@/lib/logging";
 import {childLogger} from "@/lib/logging/logger";
 import {shouldUseSecureCookie} from "@/lib/request-trust";
+import {ensureEventsubSubscriptions} from "@/lib/restream/eventsub";
 import {exchangeTwitchCode, writeTwitchOAuthFile} from "@/lib/restream/twitch-oauth";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
 
@@ -54,9 +55,10 @@ export async function GET(request: Request) {
             return oauthFailed();
         }
 
+        const origin = shareCardMetadataOrigin(headerList);
         const redirectUri = new URL(
             "/admin/stream/twitch-callback",
-            shareCardMetadataOrigin(headerList) + "/",
+            origin + "/",
         ).toString();
 
         try {
@@ -65,7 +67,6 @@ export async function GET(request: Request) {
                 return oauthFailed();
             }
             await writeTwitchOAuthFile(tokens);
-            return found(withNotice("/admin/stream", "twitch_connected"));
         } catch (error) {
             childLogger().warn({
                 event: "twitch.oauth.failed",
@@ -74,5 +75,16 @@ export async function GET(request: Request) {
             });
             return oauthFailed();
         }
+
+        try {
+            await ensureEventsubSubscriptions(origin);
+        } catch (error) {
+            childLogger().warn({
+                event: "twitch.eventsub.failed",
+                reason: "subscribe_failed",
+                err: sanitizeError(error),
+            });
+        }
+        return found(withNotice("/admin/stream", "twitch_connected"));
     });
 }
