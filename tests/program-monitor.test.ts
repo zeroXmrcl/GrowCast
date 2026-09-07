@@ -34,4 +34,21 @@ describe("program monitor wiring", () => {
         assert.doesNotMatch(page, /StreamPreview/);
         assert.doesNotMatch(page, /capture\?token/);
     });
+
+    it("allows same-origin iframe of /program without weakening the rest of the site", () => {
+        const config = readFileSync(
+            path.join(process.cwd(), "next.config.ts"),
+            "utf8",
+        );
+        assert.match(config, /frame-ancestors 'none'/);
+        assert.match(config, /value:\s*"DENY"/);
+        assert.match(config, /source:\s*"\/program"/);
+        assert.match(config, /SAMEORIGIN/);
+        assert.match(config, /frame-ancestors 'self'/);
+        assert.doesNotMatch(config, /source:\s*"\/overlay/);
+        const catchAll = config.indexOf('source: "/:path*"');
+        const program = config.indexOf('source: "/program"');
+        assert.ok(catchAll >= 0, "missing /:path* headers");
+        assert.ok(program > catchAll, "/program headers must follow /:path* so they override");
+    });
 });
