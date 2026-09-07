@@ -71,10 +71,11 @@ describe("admin settings split", () => {
 
     it("renders OverlayHud on Stream as include+lockStream using grow.streamUrl", () => {
         const programPage = src(path.join("app", "program", "page.tsx"));
+        const scene = src(path.join("components", "program-scene.tsx"));
         const monitor = src(path.join("app", "admin", "program-monitor.tsx"));
         const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
-        assert.match(programPage, /overlayStream="include"/);
-        assert.match(programPage, /lockStream/);
+        assert.match(scene, /overlayStream="include"/);
+        assert.match(scene, /lockStream/);
         assert.match(programPage, /streamUrl=\{grow\.streamUrl\}/);
         assert.doesNotMatch(programPage, /ON AIR/);
         assert.doesNotMatch(programPage, /GROWCAST_RESTREAM_STREAM_URL/);

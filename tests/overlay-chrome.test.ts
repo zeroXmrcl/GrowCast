@@ -37,6 +37,18 @@ describe("overlay chrome", () => {
         assert.equal(navSrc.includes("/overlay"), false);
     });
 
+    it("does not add Program to public nav", () => {
+        for (const pathname of ["/", "/gallery", "/energy", "/overlay", "/admin", "/program"]) {
+            const items = navItemsFor(pathname, allOn);
+            assert.equal(
+                items.some((item) => item.href === "/program" || item.label === "Program"),
+                false,
+            );
+        }
+        const navSrc = readFileSync(path.join(process.cwd(), "lib", "site-nav.ts"), "utf8");
+        assert.equal(navSrc.includes("/program"), false);
+    });
+
     it("builds the OBS URL from the public origin helper on the Stream page", () => {
         const pageSrc = readFileSync(
             path.join(process.cwd(), "app", "admin", "stream", "page.tsx"),

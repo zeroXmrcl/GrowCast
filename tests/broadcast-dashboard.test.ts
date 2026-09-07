@@ -81,10 +81,11 @@ describe("broadcast chrome", () => {
     });
 
     it("renders OverlayHud include+lockStream on the program monitor without ON AIR", () => {
+        const scene = src(path.join("components", "program-scene.tsx"));
         const programPage = src(path.join("app", "program", "page.tsx"));
         const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
-        assert.match(programPage, /overlayStream="include"/);
-        assert.match(programPage, /lockStream/);
+        assert.match(scene, /overlayStream="include"/);
+        assert.match(scene, /lockStream/);
         assert.match(programPage, /streamUrl=\{grow\.streamUrl\}/);
         assert.doesNotMatch(programPage, /ON AIR/);
         assert.doesNotMatch(streamPage, /ON AIR/);
@@ -429,10 +430,11 @@ describe("homepage toast", () => {
 
     it("leaves overlay/capture and compose restream token interpolation unchanged", () => {
         const captureSrc = src(path.join("app", "overlay", "capture", "page.tsx"));
+        const scene = src(path.join("components", "program-scene.tsx"));
         const composeSrc = src("docker-compose.yml");
         const sidecarSrc = src(path.join("extensions", "GrowCast-Restream", "restream.py"));
-        assert.match(captureSrc, /overlayStream=["']include["']/);
-        assert.match(captureSrc, /lockStream/);
+        assert.match(scene, /overlayStream=["']include["']/);
+        assert.match(scene, /lockStream/);
         assert.match(captureSrc, /isRestreamCaptureAuthorized/);
         assert.doesNotMatch(
             composeSrc,
