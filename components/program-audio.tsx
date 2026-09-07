@@ -1,6 +1,13 @@
 "use client";
 
 import {useEffect, useRef, useState} from "react";
+import {useProgramAudioGraph} from "@/components/program-audio-graph";
+import {
+    DEFAULT_WAVE_SMOOTH_PCT,
+    parseWaveSmoothPct,
+    programMusicWaveActive,
+    waveSmoothTimeConstant,
+} from "@/lib/program-music-wave";
 
 const PROGRAM_AUDIO_POLL_MS = 2000;
 const PROGRAM_AUDIO_PATH = "/api/overlay/program-audio";
@@ -17,6 +24,7 @@ type ProgramAudioBody = {
     volume: number;
     paused: boolean;
     stingEnabled: boolean;
+    waveSmoothPct: number;
 };
 
 function isAudioKind(value: unknown): value is AudioKind {
@@ -50,6 +58,7 @@ function parseProgramAudioBody(raw: unknown): ProgramAudioBody | null {
         volume: Math.min(1, Math.max(0, body.volume)),
         paused: body.paused,
         stingEnabled: body.stingEnabled,
+        waveSmoothPct: parseWaveSmoothPct(body.waveSmoothPct),
     };
 }
 
@@ -117,6 +126,12 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
     const sourceKeyRef = useRef("");
     const bodyRef = useRef<ProgramAudioBody | null>(null);
     const duckTimerRef = useRef<number | null>(null);
+    const graphRef = useRef<{
+        context: AudioContext;
+        source: MediaElementAudioSourceNode;
+        analyser: AnalyserNode;
+    } | null>(null);
+    const {setGraph} = useProgramAudioGraph();
     const [body, setBody] = useState<ProgramAudioBody | null>(null);
     const [ducking, setDucking] = useState(false);
     const [playlistIndex, setPlaylistIndex] = useState(0);
@@ -226,6 +241,35 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         }
         void el.play().catch(() => undefined);
     }, [src, body?.paused, body?.volume, ducking]);
+
+    useEffect(() => {
+        const el = audioRef.current;
+        const playing = programMusicWaveActive({kind, paused: body?.paused ?? true, src});
+        if (!el || !playing) {
+            setGraph({active: false, analyser: graphRef.current?.analyser ?? null});
+            return;
+        }
+        if (!graphRef.current) {
+            const context = new AudioContext();
+            const source = context.createMediaElementSource(el);
+            const analyser = context.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            analyser.connect(context.destination);
+            graphRef.current = {context, source, analyser};
+        }
+        const graph = graphRef.current;
+        graph.analyser.smoothingTimeConstant = waveSmoothTimeConstant(
+            body?.waveSmoothPct ?? DEFAULT_WAVE_SMOOTH_PCT,
+        );
+        void graph.context.resume().then(() => {
+            if (graph.context.state === "running") {
+                setGraph({active: true, analyser: graph.analyser});
+                return;
+            }
+            setGraph({active: false, analyser: graph.analyser});
+        });
+    }, [kind, src, body?.paused, body?.waveSmoothPct, setGraph]);
 
     return (
         <audio
