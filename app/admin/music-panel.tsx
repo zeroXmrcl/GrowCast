@@ -1,9 +1,18 @@
 import {saveProgramAudioUrlAction} from "@/app/admin/actions";
 import {AdminButton, AdminField, AdminInput, AdminPanel} from "@/components/admin/ui";
+import WaveSmoothInput from "@/components/wave-smooth-input";
 
 const MUSIC_ENDPOINT = "/api/admin/music";
 
-export function MusicPanel({files, url}: {files: string[]; url: string}) {
+export function MusicPanel({
+    files,
+    url,
+    waveSmoothPct,
+}: {
+    files: string[];
+    url: string;
+    waveSmoothPct: number;
+}) {
     return (
         <AdminPanel id="music" title="Music">
             <div className="space-y-4">
@@ -20,6 +29,7 @@ export function MusicPanel({files, url}: {files: string[]; url: string}) {
                             placeholder="https://"
                         />
                     </AdminField>
+                    <WaveSmoothInput defaultValue={waveSmoothPct} />
                     <AdminButton type="submit" tone="secondary">
                         Save URL
                     </AdminButton>

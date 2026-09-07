@@ -30,9 +30,16 @@ describe("mixer strip", () => {
         assert.match(panel, /name="filename"/);
         assert.match(panel, /accept="\.mp3,\.ogg,\.wav,\.m4a"/);
         assert.match(panel, /URL wins while set/);
+        assert.match(page, /waveSmoothPct=\{audio\.waveSmoothPct\}/);
+        assert.match(panel, /WaveSmoothInput/);
+        const smooth = src(path.join("components", "wave-smooth-input.tsx"));
+        assert.match(smooth, /name="waveSmoothPct"/);
+        assert.match(smooth, /Wave smoothness/);
         const actions = src(path.join("app", "admin", "actions.ts"));
         assert.match(actions, /export async function saveProgramAudioUrlAction/);
         assert.match(actions, /normalizeOptionalHttpUrl/);
+        assert.match(actions, /parseWaveSmoothPct\(formData.get\("waveSmoothPct"\)\)/);
+        assert.match(actions, /waveSmoothPct: existing\.waveSmoothPct/);
     });
 
     it("wires pause, volume, and send-alert fields to program audio actions", () => {
