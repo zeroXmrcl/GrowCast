@@ -29,17 +29,28 @@ export async function resolveRestreamCaptureToken(
     return getRestreamTokenFromEnv(env) ?? (await readCaptureTokenFile());
 }
 
-export async function ensureRestreamCaptureToken(
-    env: NodeJS.ProcessEnv = process.env,
-): Promise<string> {
-    const existing = await resolveRestreamCaptureToken(env);
-    if (existing) {
-        return existing;
-    }
-    const token = randomBytes(32).toString("base64url");
+async function writeCaptureTokenFile(token: string): Promise<void> {
     const file = restreamCaptureTokenFile();
     await atomicWriteFile(file, `${token}\n`);
     await chmod(file, 0o600);
+}
+
+export async function ensureRestreamCaptureToken(
+    env: NodeJS.ProcessEnv = process.env,
+): Promise<string> {
+    const fromEnv = getRestreamTokenFromEnv(env);
+    if (fromEnv) {
+        if ((await readCaptureTokenFile()) !== fromEnv) {
+            await writeCaptureTokenFile(fromEnv);
+        }
+        return fromEnv;
+    }
+    const fromFile = await readCaptureTokenFile();
+    if (fromFile) {
+        return fromFile;
+    }
+    const token = randomBytes(32).toString("base64url");
+    await writeCaptureTokenFile(token);
     return token;
 }
 

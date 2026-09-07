@@ -428,7 +428,7 @@ describe("homepage toast", () => {
         }
     });
 
-    it("leaves overlay/capture unchanged and interpolates empty-default restream token", () => {
+    it("leaves overlay/capture unchanged and does not interpolate restream token", () => {
         const captureSrc = src(path.join("app", "overlay", "capture", "page.tsx"));
         const scene = src(path.join("components", "program-scene.tsx"));
         const composeSrc = src("docker-compose.yml");
@@ -438,9 +438,9 @@ describe("homepage toast", () => {
         assert.match(scene, /lockStream/);
         assert.match(captureSrc, /isRestreamCaptureAuthorized/);
         assert.doesNotMatch(restream, /path:\s*\.env\.local/);
-        assert.match(
-            composeSrc,
-            /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN:-\}/,
+        assert.doesNotMatch(
+            restream,
+            /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN/,
         );
         assert.doesNotMatch(sidecarSrc, /helix/i);
         assert.doesNotMatch(sidecarSrc, /TWITCH_CLIENT_SECRET/);

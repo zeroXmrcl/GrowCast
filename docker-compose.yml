@@ -47,8 +47,6 @@ services:
     environment:
       GROWCAST_URL: http://growcast:3000
       TWITCH_INGEST: ${TWITCH_INGEST:-rtmps://live.twitch.tv:443/app}
-      GROWCAST_RESTREAM_TOKEN: ${GROWCAST_RESTREAM_TOKEN:-}
-      GROWCAST_RESTREAM_STREAM_URL: ${GROWCAST_RESTREAM_STREAM_URL:-}
     volumes:
       - ./data:/data
     depends_on:
