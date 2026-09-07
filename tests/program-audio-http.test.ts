@@ -37,7 +37,7 @@ describe("programAudioGetResponse", () => {
     it("denies without auth and lists playlist when url is empty", async () => {
         await withTempDataDir(async (dir) => {
             const token = await ensureRestreamCaptureToken();
-            await writeRestreamAudio({url: "", volume: 0.5, paused: false});
+            await writeRestreamAudio({url: "", volume: 0.5, paused: false, waveSmoothPct: 70});
             await saveMusicFile("z.mp3", Buffer.from("ID3"));
             const denied = await programAudioGetResponse(
                 new Request("http://local/api/overlay/program-audio"),
@@ -87,6 +87,7 @@ describe("programAudioGetResponse", () => {
                 url: "https://radio.example/stream",
                 volume: 0.4,
                 paused: true,
+                waveSmoothPct: 70,
             });
             await saveMusicFile("a.mp3", Buffer.from("ID3"));
             const response = await programAudioGetResponse(
