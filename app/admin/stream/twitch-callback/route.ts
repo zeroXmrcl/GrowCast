@@ -4,6 +4,7 @@ import {withNotice} from "@/lib/admin/notice";
 import {safeEqualText} from "@/lib/crypto-equal";
 import {sanitizeError, withRequestLog} from "@/lib/logging";
 import {childLogger} from "@/lib/logging/logger";
+import {shouldUseSecureCookie} from "@/lib/request-trust";
 import {exchangeTwitchCode, writeTwitchOAuthFile} from "@/lib/restream/twitch-oauth";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
 
@@ -13,7 +14,10 @@ export const revalidate = 0;
 function found(location: string): Response {
     return new Response(null, {
         status: 302,
-        headers: {Location: location},
+        headers: {
+            Location: location,
+            "Cache-Control": "no-store",
+        },
     });
 }
 
@@ -27,11 +31,14 @@ export async function GET(request: Request) {
             return found("/admin");
         }
 
+        const headerList = await headers();
         const cookieStore = await cookies();
         const cookieState = cookieStore.get("growcast_twitch_oauth_state")?.value ?? "";
         cookieStore.delete({
             name: "growcast_twitch_oauth_state",
             path: "/admin/stream/twitch-callback",
+            secure: shouldUseSecureCookie(headerList),
+            sameSite: "lax",
         });
 
         const url = new URL(request.url);
@@ -49,7 +56,7 @@ export async function GET(request: Request) {
 
         const redirectUri = new URL(
             "/admin/stream/twitch-callback",
-            shareCardMetadataOrigin(await headers()) + "/",
+            shareCardMetadataOrigin(headerList) + "/",
         ).toString();
 
         try {

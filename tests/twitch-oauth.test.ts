@@ -244,6 +244,7 @@ describe("Twitch OAuth routes and panel", () => {
         assert.match(connect, /shareCardMetadataOrigin/);
         assert.match(connect, /buildTwitchAuthorizeUrl/);
         assert.match(connect, /status:\s*302/);
+        assert.match(connect, /["']Cache-Control["']:\s*["']no-store["']/);
         assert.match(connect, /twitch_oauth_failed/);
         assert.doesNotMatch(connect, /ensureEventsub/);
     });
@@ -254,6 +255,8 @@ describe("Twitch OAuth routes and panel", () => {
         assert.doesNotMatch(callback, /requireAdmin/);
         assert.match(callback, /safeEqualText/);
         assert.match(callback, /growcast_twitch_oauth_state/);
+        assert.match(callback, /cookieStore\.delete\(\{[\s\S]*path:\s*"\/admin\/stream\/twitch-callback"[\s\S]*secure:\s*shouldUseSecureCookie[\s\S]*sameSite:\s*"lax"/);
+        assert.match(callback, /["']Cache-Control["']:\s*["']no-store["']/);
         assert.match(callback, /exchangeTwitchCode/);
         assert.match(callback, /writeTwitchOAuthFile/);
         assert.match(callback, /twitch_connected/);
@@ -261,6 +264,13 @@ describe("Twitch OAuth routes and panel", () => {
         assert.match(callback, /sanitizeError/);
         assert.doesNotMatch(callback, /ensureEventsub|eventsub/i);
         assert.doesNotMatch(callback, /console\.(log|info|debug|warn|error)/);
+    });
+
+    it("uses a hard navigation for Connect Twitch so prefetch cannot rotate CSRF state", () => {
+        const panel = src(path.join("app", "admin", "alerts-panel.tsx"));
+        assert.doesNotMatch(panel, /from ["']next\/link["']/);
+        assert.doesNotMatch(panel, /<Link\b/);
+        assert.match(panel, /<a\s+href="\/admin\/stream\/twitch-connect"/);
     });
 
     it("does not log tokens and redacts camelCase token fields", () => {
