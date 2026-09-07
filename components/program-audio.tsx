@@ -4,6 +4,9 @@ import {useEffect, useRef, useState} from "react";
 
 const PROGRAM_AUDIO_POLL_MS = 2000;
 const PROGRAM_AUDIO_PATH = "/api/overlay/program-audio";
+const STING_EVENT = "growcast-alert-sting";
+const STING_DUCK_FACTOR = 0.25;
+const STING_DUCK_MS = 1500;
 
 type AudioKind = "url" | "playlist" | "silence";
 
@@ -13,6 +16,7 @@ type ProgramAudioBody = {
     files: string[];
     volume: number;
     paused: boolean;
+    stingEnabled: boolean;
 };
 
 function isAudioKind(value: unknown): value is AudioKind {
@@ -36,13 +40,25 @@ function parseProgramAudioBody(raw: unknown): ProgramAudioBody | null {
     if (typeof body.paused !== "boolean") {
         return null;
     }
+    if (typeof body.stingEnabled !== "boolean") {
+        return null;
+    }
     return {
         kind: body.kind,
         url: body.url,
         files: body.files,
         volume: Math.min(1, Math.max(0, body.volume)),
         paused: body.paused,
+        stingEnabled: body.stingEnabled,
     };
+}
+
+function applyElementVolume(
+    el: HTMLAudioElement,
+    base: number,
+    ducking: boolean,
+): void {
+    el.volume = ducking ? base * STING_DUCK_FACTOR : base;
 }
 
 function playlistFileSrc(filename: string, captureToken: string | undefined): string {
@@ -99,7 +115,10 @@ function resolveElementSrc(
 export default function ProgramAudio({captureToken}: {captureToken?: string}) {
     const audioRef = useRef<HTMLAudioElement>(null);
     const sourceKeyRef = useRef("");
+    const bodyRef = useRef<ProgramAudioBody | null>(null);
+    const duckTimerRef = useRef<number | null>(null);
     const [body, setBody] = useState<ProgramAudioBody | null>(null);
+    const [ducking, setDucking] = useState(false);
     const [playlistIndex, setPlaylistIndex] = useState(0);
     const [urlFailed, setUrlFailed] = useState(false);
     const [playbackFailed, setPlaybackFailed] = useState(false);
@@ -137,6 +156,7 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
                     setPlaybackFailed(false);
                     setPlaylistIndex(0);
                 }
+                bodyRef.current = parsed;
                 setBody(parsed);
             } catch {
                 // next interval retries
@@ -156,11 +176,41 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
     }, [captureToken]);
 
     useEffect(() => {
+        function onSting() {
+            const current = bodyRef.current;
+            if (!current?.stingEnabled) {
+                return;
+            }
+            const el = audioRef.current;
+            if (el) {
+                applyElementVolume(el, current.volume, true);
+            }
+            setDucking(true);
+            if (duckTimerRef.current !== null) {
+                window.clearTimeout(duckTimerRef.current);
+            }
+            duckTimerRef.current = window.setTimeout(() => {
+                duckTimerRef.current = null;
+                setDucking(false);
+            }, STING_DUCK_MS);
+        }
+
+        window.addEventListener(STING_EVENT, onSting);
+        return () => {
+            window.removeEventListener(STING_EVENT, onSting);
+            if (duckTimerRef.current !== null) {
+                window.clearTimeout(duckTimerRef.current);
+                duckTimerRef.current = null;
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         const el = audioRef.current;
         if (!el) {
             return;
         }
-        el.volume = body?.volume ?? 0;
+        applyElementVolume(el, body?.volume ?? 0, ducking);
         if (!src) {
             el.removeAttribute("src");
             el.load();
@@ -175,7 +225,7 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             return;
         }
         void el.play().catch(() => undefined);
-    }, [src, body?.paused, body?.volume]);
+    }, [src, body?.paused, body?.volume, ducking]);
 
     return (
         <audio

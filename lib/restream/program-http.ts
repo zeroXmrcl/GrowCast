@@ -1,5 +1,6 @@
 import path from "node:path";
 import {openMediaFile} from "@/lib/open-media-file";
+import {readAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio, resolveAudioSource} from "@/lib/restream/audio";
 import {resolveRestreamCaptureToken} from "@/lib/restream/capture";
 import {MUSIC_EXTENSIONS, listMusicFiles} from "@/lib/restream/music-files";
@@ -53,6 +54,7 @@ export async function programAudioGetResponse(
 
     const audio = await readRestreamAudio();
     const files = await listMusicFiles();
+    const alerts = await readAlertsSettings();
     const kind = resolveAudioSource(audio, files);
     return Response.json(
         {
@@ -61,6 +63,7 @@ export async function programAudioGetResponse(
             files,
             volume: audio.volume,
             paused: audio.paused,
+            stingEnabled: alerts.stingEnabled,
         },
         {
             headers: {"Cache-Control": NO_STORE},

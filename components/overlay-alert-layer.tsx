@@ -82,6 +82,7 @@ export default function OverlayAlertLayer({
         if (!current) {
             return;
         }
+        window.dispatchEvent(new CustomEvent("growcast-alert-sting"));
         const timer = window.setTimeout(() => {
             setQueue((currentQueue) =>
                 currentQueue[0]?.id === current.id ? currentQueue.slice(1) : currentQueue,

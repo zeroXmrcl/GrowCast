@@ -55,4 +55,17 @@ describe("program scene", () => {
         assert.match(hub, /enqueueOverlayAlert/);
         assert.match(hub, /globalThis/);
     });
+
+    it("dispatches growcast-alert-sting so ProgramAudio can duck", () => {
+        const layer = src(path.join("components", "overlay-alert-layer.tsx"));
+        const audio = src(path.join("components", "program-audio.tsx"));
+        assert.match(layer, /new CustomEvent\("growcast-alert-sting"\)/);
+        assert.match(layer, /dispatchEvent/);
+        assert.match(audio, /growcast-alert-sting/);
+        assert.match(audio, /addEventListener/);
+        assert.match(audio, /stingEnabled/);
+        assert.match(audio, /0\.25/);
+        assert.match(audio, /1500/);
+        assert.match(audio, /clearTimeout/);
+    });
 });
