@@ -18,6 +18,7 @@ import {
 import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
 import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
+import {parseOverlayScalePct} from "@/lib/overlay-scale";
 import {readAlertsSettings, writeAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio, writeRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
@@ -264,6 +265,7 @@ export async function saveAlertsSettingsAction(formData: FormData): Promise<void
             raid: formData.get("raid") === "on",
             bits: formData.get("bits") === "on",
             stingEnabled: formData.get("stingEnabled") === "on",
+            alertScalePct: parseOverlayScalePct(formData.get("alertScalePct")),
         });
         revalidatePath("/admin/stream");
         revalidatePath("/program");
