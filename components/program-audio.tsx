@@ -53,15 +53,37 @@ function playlistFileSrc(filename: string, captureToken: string | undefined): st
     return path;
 }
 
+function playbackKind(
+    body: ProgramAudioBody | null,
+    urlFailed: boolean,
+    playbackFailed: boolean,
+): AudioKind {
+    if (!body || playbackFailed) {
+        return "silence";
+    }
+    if (body.kind === "url" && urlFailed) {
+        return body.files.length > 0 ? "playlist" : "silence";
+    }
+    return body.kind;
+}
+
+function sourceKeyOf(body: ProgramAudioBody | null): string {
+    if (!body) {
+        return "";
+    }
+    return `${body.kind}\0${body.url}\0${body.files.join("\0")}`;
+}
+
 function resolveElementSrc(
+    kind: AudioKind,
     body: ProgramAudioBody | null,
     captureToken: string | undefined,
     playlistIndex: number,
 ): string {
-    if (!body || body.kind === "silence") {
+    if (!body || kind === "silence") {
         return "";
     }
-    if (body.kind === "url") {
+    if (kind === "url") {
         return body.url;
     }
     if (body.files.length === 0) {
@@ -76,9 +98,14 @@ function resolveElementSrc(
 
 export default function ProgramAudio({captureToken}: {captureToken?: string}) {
     const audioRef = useRef<HTMLAudioElement>(null);
+    const sourceKeyRef = useRef("");
     const [body, setBody] = useState<ProgramAudioBody | null>(null);
     const [playlistIndex, setPlaylistIndex] = useState(0);
-    const src = resolveElementSrc(body, captureToken, playlistIndex);
+    const [urlFailed, setUrlFailed] = useState(false);
+    const [playbackFailed, setPlaybackFailed] = useState(false);
+    const kind = playbackKind(body, urlFailed, playbackFailed);
+    const src = resolveElementSrc(kind, body, captureToken, playlistIndex);
+    const singleFilePlaylist = kind === "playlist" && (body?.files.length ?? 0) === 1;
 
     useEffect(() => {
         const abort = new AbortController();
@@ -102,6 +129,13 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
                 const parsed = parseProgramAudioBody(await response.json());
                 if (!parsed || cancelled) {
                     return;
+                }
+                const nextKey = sourceKeyOf(parsed);
+                if (sourceKeyRef.current !== nextKey) {
+                    sourceKeyRef.current = nextKey;
+                    setUrlFailed(false);
+                    setPlaybackFailed(false);
+                    setPlaylistIndex(0);
                 }
                 setBody(parsed);
             } catch {
@@ -147,12 +181,36 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         <audio
             ref={audioRef}
             hidden
+            referrerPolicy="no-referrer"
             src={src || undefined}
-            onEnded={() => {
-                if (body?.kind !== "playlist" || body.files.length === 0) {
+            loop={singleFilePlaylist}
+            onError={() => {
+                if (!src || !body) {
                     return;
                 }
-                setPlaylistIndex((index) => (index + 1) % body.files.length);
+                if (kind === "url" && body.files.length > 0) {
+                    setUrlFailed(true);
+                    return;
+                }
+                setPlaybackFailed(true);
+            }}
+            onEnded={() => {
+                if (kind !== "playlist" || !body || body.files.length === 0) {
+                    return;
+                }
+                const next = (playlistIndex + 1) % body.files.length;
+                // (0+1)%1 === 0 so React skips setState; restart the same file in place.
+                if (next === playlistIndex) {
+                    const el = audioRef.current;
+                    if (el) {
+                        el.currentTime = 0;
+                        if (!body.paused) {
+                            void el.play().catch(() => undefined);
+                        }
+                    }
+                    return;
+                }
+                setPlaylistIndex(next);
             }}
         />
     );
