@@ -1,5 +1,5 @@
 import type {OverlayAlert} from "@/lib/overlay-alert";
-import {subscribeOverlayAlerts} from "@/lib/overlay-alert-hub";
+import {peekReplayableOverlayAlerts, subscribeOverlayAlerts} from "@/lib/overlay-alert-hub";
 import {resolveRestreamCaptureToken} from "@/lib/restream/capture";
 import {captureTokenFromRequest, isProgramAuthorized} from "@/lib/restream/program-auth";
 
@@ -83,6 +83,9 @@ export async function programAlertsSseResponse(
                     teardown();
                 }
             };
+            for (const alert of peekReplayableOverlayAlerts()) {
+                send(encodeAlert(alert));
+            }
             unsubscribe = subscribeOverlayAlerts((alert) => {
                 send(encodeAlert(alert));
             });

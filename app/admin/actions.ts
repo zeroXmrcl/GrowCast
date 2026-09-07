@@ -18,7 +18,6 @@ import {
 import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
 import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
-import {publishOverlayAlert} from "@/lib/overlay-alert-hub";
 import {readAlertsSettings, writeAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio, writeRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
@@ -253,27 +252,6 @@ export async function saveProgramAudioUrlAction(formData: FormData): Promise<voi
         revalidatePath("/program");
         revalidatePath("/overlay/capture");
         redirect(withNotice("/admin/stream", "audio_saved"));
-    });
-}
-
-export async function sendProgramAlertAction(formData: FormData): Promise<void> {
-    await withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-        const alertBody = String(formData.get("alertBody") ?? "").trim();
-        if (alertBody.length === 0) {
-            redirect(withNotice("/admin/stream", "save_failed"));
-        }
-        publishOverlayAlert(
-            {
-                id: crypto.randomUUID(),
-                kind: "manual",
-                title: "Alert",
-                body: alertBody,
-                createdAt: Date.now(),
-            },
-            await readAlertsSettings(),
-        );
-        redirect(withNotice("/admin/stream", "alert_sent"));
     });
 }
 
