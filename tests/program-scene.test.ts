@@ -15,10 +15,44 @@ describe("program scene", () => {
         assert.match(scene, /OverlayHud/);
         assert.match(scene, /lockStream/);
         assert.match(scene, /ProgramAudio/);
+        assert.match(scene, /OverlayAlertLayer/);
+        assert.match(scene, /layout=\{overlayLayout\}/);
+        assert.match(scene, /captureToken=\{captureToken\}/);
         assert.match(capture, /ProgramScene/);
         assert.match(preview, /ProgramScene/);
         assert.match(preview, /isAdminAuthenticated/);
         assert.doesNotMatch(preview, /token/);
         assert.match(capture, /isRestreamCaptureAuthorized/);
+    });
+
+    it("keeps OverlayAlertLayer a HUD sibling and wires program alert SSE", () => {
+        const scene = src(path.join("components", "program-scene.tsx"));
+        const layer = src(path.join("components", "overlay-alert-layer.tsx"));
+        const route = src(path.join("app", "api", "overlay", "program-alerts", "route.ts"));
+        const http = src(path.join("lib", "overlay-alert-http.ts"));
+        const hub = src(path.join("lib", "overlay-alert-hub.ts"));
+
+        assert.match(scene, /<OverlayHud[\s\S]*\/>\s*<OverlayAlertLayer layout=\{overlayLayout\} captureToken=\{captureToken\} \/>/);
+        assert.match(layer, /"use client"/);
+        assert.match(layer, /EventSource/);
+        assert.match(layer, /\/api\/overlay\/program-alerts/);
+        assert.match(layer, /\?token=/);
+        assert.match(layer, /enqueueOverlayAlert/);
+        assert.match(layer, /OVERLAY_ALERT_DISPLAY_MS/);
+        assert.match(layer, /alertPlacement/);
+        assert.match(layer, /OVERLAY_PANEL_CLASS/);
+        assert.match(layer, /pointer-events-none/);
+        assert.match(layer, /absolute z-20 bottom-8 right-8/);
+        assert.match(layer, /absolute z-20 top-8 left-1\/2 -translate-x-1\/2/);
+        assert.match(route, /isAdminAuthenticated/);
+        assert.match(route, /programAlertsSseResponse/);
+        assert.doesNotMatch(http, /isAdminAuthenticated/);
+        assert.doesNotMatch(http, /next\/headers/);
+        assert.match(http, /text\/event-stream/);
+        assert.match(http, /no-store/);
+        assert.match(http, /: heartbeat/);
+        assert.match(hub, /__growcastOverlayAlertHub/);
+        assert.match(hub, /enqueueOverlayAlert/);
+        assert.match(hub, /globalThis/);
     });
 });

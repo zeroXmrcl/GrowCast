@@ -18,6 +18,7 @@ import {
 import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
 import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
+import {publishOverlayAlert} from "@/lib/overlay-alert-hub";
 import {readRestreamAudio, writeRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
 import {
@@ -259,6 +260,13 @@ export async function sendProgramAlertAction(formData: FormData): Promise<void> 
         if (alertBody.length === 0) {
             redirect(withNotice("/admin/stream", "save_failed"));
         }
+        publishOverlayAlert({
+            id: crypto.randomUUID(),
+            kind: "manual",
+            title: "Alert",
+            body: alertBody,
+            createdAt: Date.now(),
+        });
         redirect(withNotice("/admin/stream", "alert_sent"));
     });
 }
