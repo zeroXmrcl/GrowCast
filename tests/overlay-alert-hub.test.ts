@@ -7,6 +7,7 @@ import {
     publishOverlayAlert,
     takeNextOverlayAlert,
 } from "../lib/overlay-alert-hub.ts";
+import {parseAlertsSettings} from "../lib/restream/alerts-settings.ts";
 
 describe("overlay alert hub", () => {
     it("publishes FIFO and takeNext pops the current head", () => {
@@ -33,5 +34,21 @@ describe("overlay alert hub", () => {
         }
         assert.equal(peekOverlayAlertQueue().length, 15);
         assert.equal(peekOverlayAlertQueue()[0].id, "1");
+    });
+
+    it("does not enqueue a follow when follow is off; manual still enqueues", () => {
+        _resetOverlayAlertHubForTests();
+        const settings = parseAlertsSettings({follow: false});
+        publishOverlayAlert(
+            {id: "1", kind: "follow", title: "Follow", body: "x", createdAt: 1},
+            settings,
+        );
+        assert.equal(peekOverlayAlertQueue().length, 0);
+        publishOverlayAlert(
+            {id: "2", kind: "manual", title: "Alert", body: "y", createdAt: 2},
+            settings,
+        );
+        assert.equal(peekOverlayAlertQueue().length, 1);
+        assert.equal(peekOverlayAlertQueue()[0].id, "2");
     });
 });

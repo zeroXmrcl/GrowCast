@@ -54,5 +54,28 @@ describe("mixer strip", () => {
         assert.match(actions, /writeRestreamAudio/);
         assert.match(actions, /audio_saved/);
         assert.match(actions, /alert_sent/);
+        assert.match(actions, /readAlertsSettings/);
+    });
+
+    it("wires AlertsPanel onto the stream racks", () => {
+        const page = src(path.join("app", "admin", "stream", "page.tsx"));
+        assert.match(page, /AlertsPanel/);
+        assert.match(page, /readAlertsSettings/);
+        assert.match(page, /AlertsPanel settings=\{await readAlertsSettings\(\)\}/);
+        const panel = src(path.join("app", "admin", "alerts-panel.tsx"));
+        assert.match(panel, /title="Alerts"/);
+        assert.match(panel, /saveAlertsSettingsAction/);
+        assert.match(panel, /\/admin\/stream\/twitch-connect/);
+        assert.match(panel, /Connect Twitch/);
+        assert.match(panel, /name="follow"/);
+        assert.match(panel, /name="sub"/);
+        assert.match(panel, /name="raid"/);
+        assert.match(panel, /name="bits"/);
+        assert.match(panel, /name="stingEnabled"/);
+        assert.match(panel, /Alert sound/);
+        const actions = src(path.join("app", "admin", "actions.ts"));
+        assert.match(actions, /export async function saveAlertsSettingsAction/);
+        assert.match(actions, /writeAlertsSettings/);
+        assert.match(actions, /alerts_saved/);
     });
 });

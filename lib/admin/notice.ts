@@ -35,6 +35,7 @@ export const ADMIN_NOTICE_IDS = [
     "twitch_login_invalid",
     "audio_saved",
     "alert_sent",
+    "alerts_saved",
     "music_uploaded",
     "music_deleted",
     "music_invalid_file",
