@@ -1,0 +1,31 @@
+export const DEFAULT_WAVE_SMOOTH_PCT = 70;
+export const WAVE_SMOOTH_MIN = 0;
+export const WAVE_SMOOTH_MAX = 100;
+export const WAVE_SMOOTH_STEP = 5;
+export const WAVE_SMOOTH_TIME_CONSTANT_MAX = 0.95;
+
+export type ProgramMusicWaveKind = "url" | "playlist" | "silence";
+
+export function programMusicWaveActive(input: {
+    kind: ProgramMusicWaveKind;
+    paused: boolean;
+    src: string;
+}): boolean {
+    return input.kind === "playlist" && !input.paused && input.src.trim().length > 0;
+}
+
+export function parseWaveSmoothPct(value: unknown): number {
+    if (value === undefined || value === null || value === "") {
+        return DEFAULT_WAVE_SMOOTH_PCT;
+    }
+    const n = typeof value === "number" ? value : Number(String(value).trim());
+    if (!Number.isFinite(n)) {
+        return DEFAULT_WAVE_SMOOTH_PCT;
+    }
+    const clamped = Math.min(WAVE_SMOOTH_MAX, Math.max(WAVE_SMOOTH_MIN, n));
+    return Math.round(clamped / WAVE_SMOOTH_STEP) * WAVE_SMOOTH_STEP;
+}
+
+export function waveSmoothTimeConstant(pct: number): number {
+    return Math.min(WAVE_SMOOTH_TIME_CONSTANT_MAX, parseWaveSmoothPct(pct) / 100);
+}
