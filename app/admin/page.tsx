@@ -1,14 +1,12 @@
 import {getAdminAuthStatus, isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
-import {energyActuatorRows, readEnergySettings} from "@/lib/energy/settings";
-import {readGgsLive} from "@/lib/ggs-live-store";
-import {getTimelapseSettings} from "@/lib/timelapse-settings";
-import {completeGrowAction, loginAction, saveGrowAction} from "@/app/admin/actions";
+import {loginAction, saveGrowAction} from "@/app/admin/actions";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
-import {CompleteGrowPanel} from "@/app/admin/complete-grow-panel";
+import {AdminHashRedirect} from "@/app/admin/hash-redirect";
 import {AdminLoginForm} from "@/app/admin/login-form";
 import MediaManager from "@/app/admin/media-manager";
+import {GrowSettingsFields} from "@/app/admin/settings-fields";
 import {AdminSettingsForm} from "@/app/admin/settings-form";
 
 type AdminPageProps = {
@@ -35,29 +33,20 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
         );
     }
 
-    const [grow, timelapseSettings, energySettings, live] = await Promise.all([
-        getCurrentGrow(),
-        getTimelapseSettings(),
-        readEnergySettings(),
-        readGgsLive(),
-    ]);
+    const grow = await getCurrentGrow();
 
     return (
         <AdminChrome
-            title="Settings"
+            title="Grow"
             sections={SETTINGS_SECTION_LINKS}
             actions={<AdminSignOutButton/>}
         >
+            <AdminHashRedirect/>
             <AdminFlashNotice notice={params.notice}/>
-            <AdminSettingsForm
-                grow={grow}
-                timelapseSettings={timelapseSettings}
-                energySettings={energySettings}
-                energyActuators={energyActuatorRows(live, energySettings)}
-                saveAction={saveGrowAction}
-            />
+            <AdminSettingsForm growId={grow.id} saveAction={saveGrowAction}>
+                <GrowSettingsFields grow={grow}/>
+            </AdminSettingsForm>
             <MediaManager/>
-            <CompleteGrowPanel growId={grow.id} completeAction={completeGrowAction}/>
         </AdminChrome>
     );
 }

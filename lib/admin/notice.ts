@@ -28,6 +28,11 @@ export const ADMIN_NOTICE_IDS = [
     "archive_none_selected",
     "archive_delete_not_confirmed",
     "archive_delete_failed",
+    "twitch_key_saved",
+    "twitch_started",
+    "twitch_stopped",
+    "twitch_need_key",
+    "twitch_login_invalid",
 ] as const;
 
 export type AdminNoticeId = (typeof ADMIN_NOTICE_IDS)[number];

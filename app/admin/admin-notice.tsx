@@ -138,6 +138,31 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "Delete failed",
         body: "Could not delete the archive. Review logs and try again.",
     },
+    twitch_key_saved: {
+        tone: "success",
+        title: "Twitch key saved",
+        body: "The stream key is stored on the server and is not shown again.",
+    },
+    twitch_started: {
+        tone: "success",
+        title: "Twitch restream requested",
+        body: "The sidecar will go live when the restream service is running.",
+    },
+    twitch_stopped: {
+        tone: "success",
+        title: "Twitch restream stop requested",
+        body: "The sidecar will end the Twitch push.",
+    },
+    twitch_need_key: {
+        tone: "warning",
+        title: "No Twitch stream key",
+        body: "Save a stream key before starting the 24/7 restream.",
+    },
+    twitch_login_invalid: {
+        tone: "warning",
+        title: "Invalid Twitch channel",
+        body: "Use letters, digits, and underscore only.",
+    },
 };
 
 export function AdminFlashNotice({notice}: {notice?: string}) {

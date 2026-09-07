@@ -5,7 +5,7 @@ import {
     deleteArchiveMediaAction,
     updateArchiveAction,
 } from "@/app/admin/archives/actions";
-import {AdminChrome} from "@/app/admin/admin-chrome";
+import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {
     AdminButton,
@@ -37,11 +37,10 @@ type MediaDeleteGridProps = {
     archiveId: string;
     kind: ArchiveMediaKind;
     title: string;
-    description: string;
     files: Array<{name: string; url: string}>;
 };
 
-function MediaDeleteGrid({archiveId, kind, title, description, files}: MediaDeleteGridProps) {
+function MediaDeleteGrid({archiveId, kind, title, files}: MediaDeleteGridProps) {
     if (files.length === 0) {
         return null;
     }
@@ -50,7 +49,6 @@ function MediaDeleteGrid({archiveId, kind, title, description, files}: MediaDele
         <form action={deleteArchiveMediaAction}>
             <AdminPanel
                 title={`${title} (${files.length})`}
-                description={description}
                 actions={
                     <AdminButton type="submit" tone="danger">
                         Delete selected
@@ -126,6 +124,7 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
     return (
         <AdminChrome
             title={grow.name}
+            sections={SETTINGS_SECTION_LINKS}
             eyebrow={
                 <Link
                     href="/admin/archives"
@@ -135,13 +134,16 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                 </Link>
             }
             actions={
-                <Link
-                    href={`/grows/${archiveId}`}
-                    target="_blank"
-                    className="shrink-0 text-sm text-(--admin-muted) hover:text-(--admin-text)"
-                >
-                    View public page
-                </Link>
+                <div className="flex items-center gap-3">
+                    <Link
+                        href={`/grows/${archiveId}`}
+                        target="_blank"
+                        className="shrink-0 text-sm text-(--admin-muted) hover:text-(--admin-text)"
+                    >
+                        View public page
+                    </Link>
+                    <AdminSignOutButton/>
+                </div>
             }
         >
             <AdminFlashNotice notice={query.notice}/>
@@ -149,7 +151,6 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
             <form action={updateArchiveAction}>
                     <AdminPanel
                         title="Details"
-                        description="Fix the archived grow's display information. The archive URL stays the same."
                         actions={
                             <AdminButton type="submit" tone="primary">
                                 Save Changes
@@ -207,7 +208,6 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                     archiveId={archiveId}
                     kind="snapshots"
                     title="Snapshots"
-                    description="Tick snapshots to remove them from the archive, then delete."
                     files={snapshots}
                 />
 
@@ -215,7 +215,6 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                     archiveId={archiveId}
                     kind="pictures"
                     title="Pictures"
-                    description="Tick pictures to remove them from the archive, then delete."
                     files={pictures}
                 />
 

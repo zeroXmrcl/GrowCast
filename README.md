@@ -74,6 +74,7 @@ Notes:
 - **Required for mesh/plugin API:** set `GROWCAST_MESH_TOKEN` to a long random secret. Requests without a matching `Authorization: Bearer <token>` are denied (fail-closed). Official plugins must send this header.
 - Admin passwords must be at least **12 characters** (`npm run setup:admin` enforces this). For local/dev only, use `npm run setup:admin:insecure` (or `npm run setup:admin -- --allow-insecure`).
 - Admin sessions last **24 hours**.
+- Optional, Broadcast channel lookup from a Twitch stream key (GrowCast `.env.local`, not the restream sidecar): `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`.
 
 ### Logging
 
@@ -127,13 +128,13 @@ git clone https://github.com/zeroXmrcl/GrowCast-GGS.git extensions/GrowCast-GGS
 copy extensions\GrowCast-GGS\.env.example extensions\GrowCast-GGS\.env
 ```
 
-Fill `SF_MQTT_NAME`, `SF_MQTT_PWD`, `SF_SERIAL`, and the same `GROWCAST_MESH_TOKEN` as `.env.local`. Never commit `.env`. Then start the sidecar with the `ggs` profile (plain `docker compose up` does not start it):
+Fill `SF_MQTT_NAME`, `SF_MQTT_PWD`, `SF_SERIAL`, and the same `GROWCAST_MESH_TOKEN` as `.env.local`. Never commit `.env`. Then:
 
 ```bash
-docker compose --profile ggs up --build -d
+docker compose up --build -d
 ```
 
-Or set `COMPOSE_PROFILES=ggs` in the environment. Without the plugin, the homepage omits the Climate and Devices cards.
+That starts GrowCast plus the GGS and Twitch restream sidecars. Without GGS credentials the climate sidecar will exit; the homepage omits Climate and Devices. Twitch restream stays idle until you save a stream key and press Start on Broadcast (`/admin/stream`). GrowCast writes `data/restream/capture.token` on its own; `GROWCAST_RESTREAM_TOKEN` in `.env.local` is an optional override.
 
 The container process runs as uid 1001 (`growcast`). The entrypoint `chown`s those bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host.
 
@@ -233,9 +234,9 @@ Since some cameras expose RTSP, use MediaMTX to convert RTSP to HLS:
 
 1. Configure your RTSP camera (RTSP source looks somewhat like this: `rtsp://<camera-ip>:554/<path>`).
 2. Run MediaMTX and create a path that ingests RTSP.
-3. Use MediaMTX HLS output URL as the stream URL in GrowCast admin (`/admin`), for example:
+3. Use MediaMTX HLS output URL as the stream URL on Broadcast (`/admin/stream`), for example:
    - `http://<mediamtx-host>:8888/<path>/`
-4. Save in GrowCast settings.
+4. Save on the Broadcast page.
 
 ## 8. API / Backend Overview
 
@@ -257,6 +258,9 @@ This app uses Next.js route handlers and local filesystem storage.
 - `GET /api/data/live-climate`
   - Public latest GGS climate JSON (no credentials)
   - `Cache-Control: no-store`
+- `GET /api/data/broadcast`
+  - `{ "live": true, "login" }` while the homepage Twitch toast may show; otherwise `{ "live": false }`
+  - `Cache-Control: no-store, must-revalidate`
 - `GET /api/data/live-climate/stream`
   - Public SSE; snapshot on change + heartbeat every 15s
   - Reverse proxy must not buffer this path
