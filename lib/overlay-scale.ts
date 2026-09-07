@@ -27,3 +27,14 @@ export function overlayHudScaleStyle(
         transformOrigin: layout === "bottom-bar" ? "bottom left" : "top left",
     };
 }
+
+export function overlayAlertScaleStyle(
+    scalePct: number,
+    layout: OverlayLayout,
+): {transform: string; transformOrigin: string} {
+    const pct = parseOverlayScalePct(scalePct);
+    return {
+        transform: pct === DEFAULT_OVERLAY_SCALE_PCT ? "none" : `scale(${pct / 100})`,
+        transformOrigin: layout === "bottom-bar" ? "top left" : "top right",
+    };
+}
