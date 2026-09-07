@@ -178,6 +178,21 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "Alerts updated",
         body: "Event toggles and alert sound were saved.",
     },
+    twitch_connected: {
+        tone: "success",
+        title: "Twitch connected",
+        body: "Follow, sub, raid, and bits alerts can use this account.",
+    },
+    twitch_oauth_failed: {
+        tone: "danger",
+        title: "Twitch connect failed",
+        body: "Could not connect Twitch. Check the client id and secret, then try again.",
+    },
+    twitch_need_connect: {
+        tone: "warning",
+        title: "Connect Twitch",
+        body: "Connect Twitch to enable follow, sub, raid, and bits alerts.",
+    },
     music_uploaded: {
         tone: "success",
         title: "Track uploaded",

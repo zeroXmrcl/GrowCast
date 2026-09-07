@@ -24,6 +24,7 @@ import {readRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
 import {listMusicFiles} from "@/lib/restream/music-files";
 import {readRestreamPublicView} from "@/lib/restream/store";
+import {readTwitchOAuthFile} from "@/lib/restream/twitch-oauth";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
 
 type StreamPageProps = {
@@ -39,11 +40,13 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
         redirect("/admin");
     }
 
-    const [grow, headerList, restream, audio] = await Promise.all([
+    const [grow, headerList, restream, audio, alerts, oauth] = await Promise.all([
         getCurrentGrow(),
         headers(),
         readRestreamPublicView(),
         readRestreamAudio(),
+        readAlertsSettings(),
+        readTwitchOAuthFile(),
         ensureRestreamCaptureToken(),
     ]);
     const overlayUrl = overlayPublicUrl(shareCardMetadataOrigin(headerList));
@@ -72,7 +75,7 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
                         saveKeyAction={saveTwitchKeyAction}
                     />
                     <MusicPanel files={await listMusicFiles()} url={audio.url}/>
-                    <AlertsPanel settings={await readAlertsSettings()}/>
+                    <AlertsPanel settings={alerts} twitchLogin={oauth?.login ?? ""}/>
                     <StreamSettingsFields
                         grow={grow}
                         overlayUrl={overlayUrl}
