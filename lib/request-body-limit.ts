@@ -7,7 +7,11 @@ export const DEFAULT_MAX_BODY_BYTES = 1 * 1024 * 1024;
 /** Admin media POST may include several 15 MiB images. */
 export const MEDIA_MAX_BODY_BYTES = 40 * 1024 * 1024;
 
+/** Admin music POST may include one 20 MiB track plus multipart overhead. */
+export const MUSIC_MAX_BODY_BYTES = 25 * 1024 * 1024;
+
 const MEDIA_PATH = "/api/admin/media";
+const MUSIC_PATH = "/api/admin/music";
 
 function normalizePathname(pathname: string): string {
     if (pathname.length > 1 && pathname.endsWith("/")) {
@@ -22,8 +26,14 @@ export function isBodyMethod(method: string): boolean {
 }
 
 export function maxBodyBytesFor(method: string, pathname: string): number {
-    if (method.toUpperCase() === "POST" && normalizePathname(pathname) === MEDIA_PATH) {
-        return MEDIA_MAX_BODY_BYTES;
+    if (method.toUpperCase() === "POST") {
+        const path = normalizePathname(pathname);
+        if (path === MEDIA_PATH) {
+            return MEDIA_MAX_BODY_BYTES;
+        }
+        if (path === MUSIC_PATH) {
+            return MUSIC_MAX_BODY_BYTES;
+        }
     }
     return DEFAULT_MAX_BODY_BYTES;
 }
@@ -45,8 +55,14 @@ export function contentLengthExceedsCap(
 }
 
 export function payloadTooLargeResponse(method: string, pathname: string): Response {
-    if (method.toUpperCase() === "POST" && normalizePathname(pathname) === MEDIA_PATH) {
-        return seeOther(withNotice("/admin", "media_payload_too_large"));
+    if (method.toUpperCase() === "POST") {
+        const path = normalizePathname(pathname);
+        if (path === MEDIA_PATH) {
+            return seeOther(withNotice("/admin", "media_payload_too_large"));
+        }
+        if (path === MUSIC_PATH) {
+            return seeOther(withNotice("/admin/stream", "music_payload_too_large"));
+        }
     }
     return new Response("Payload Too Large", {
         status: 413,

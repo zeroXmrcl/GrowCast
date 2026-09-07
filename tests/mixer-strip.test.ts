@@ -12,8 +12,27 @@ describe("mixer strip", () => {
         const page = src(path.join("app", "admin", "stream", "page.tsx"));
         assert.match(page, /ProgramMonitor/);
         assert.match(page, /MixerStrip/);
+        assert.match(page, /MusicPanel/);
         const twitch = src(path.join("app", "admin", "restream-panel.tsx"));
         assert.doesNotMatch(twitch, /MixerStrip/);
+    });
+
+    it("wires MusicPanel files and URL save onto the stream racks", () => {
+        const page = src(path.join("app", "admin", "stream", "page.tsx"));
+        assert.match(page, /listMusicFiles/);
+        assert.match(page, /MusicPanel/);
+        const panel = src(path.join("app", "admin", "music-panel.tsx"));
+        assert.match(panel, /title="Music"/);
+        assert.match(panel, /saveProgramAudioUrlAction/);
+        assert.match(panel, /\/api\/admin\/music/);
+        assert.match(panel, /name="url"/);
+        assert.match(panel, /name="file"/);
+        assert.match(panel, /name="filename"/);
+        assert.match(panel, /accept="\.mp3,\.ogg,\.wav,\.m4a"/);
+        assert.match(panel, /URL wins while set/);
+        const actions = src(path.join("app", "admin", "actions.ts"));
+        assert.match(actions, /export async function saveProgramAudioUrlAction/);
+        assert.match(actions, /normalizeOptionalHttpUrl/);
     });
 
     it("wires pause, volume, and send-alert fields to program audio actions", () => {

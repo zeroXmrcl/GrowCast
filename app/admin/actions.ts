@@ -35,6 +35,7 @@ import {
     streamKeyForChannelLookup,
 } from "@/lib/restream/twitch-helix";
 import {loginRateLimitKey} from "@/lib/request-trust";
+import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 import {
     logAdminGrowArchiveFailed,
     logAdminGrowArchived,
@@ -222,6 +223,27 @@ export async function saveProgramAudioAction(formData: FormData): Promise<void> 
             url: existing.url,
             volume,
             paused: formData.get("paused") === "on",
+        });
+        revalidatePath("/admin/stream");
+        revalidatePath("/program");
+        revalidatePath("/overlay/capture");
+        redirect(withNotice("/admin/stream", "audio_saved"));
+    });
+}
+
+export async function saveProgramAudioUrlAction(formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin/stream", async () => {
+        await requireAdmin();
+        const existing = await readRestreamAudio();
+        const raw = String(formData.get("url") ?? formData.get("streamUrl") ?? formData.get("musicUrl") ?? "");
+        const url = normalizeOptionalHttpUrl(raw);
+        if (url === null) {
+            redirect(withNotice("/admin/stream", "save_failed"));
+        }
+        await writeRestreamAudio({
+            url,
+            volume: existing.volume,
+            paused: existing.paused,
         });
         revalidatePath("/admin/stream");
         revalidatePath("/program");

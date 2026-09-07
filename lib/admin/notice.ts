@@ -35,6 +35,11 @@ export const ADMIN_NOTICE_IDS = [
     "twitch_login_invalid",
     "audio_saved",
     "alert_sent",
+    "music_uploaded",
+    "music_deleted",
+    "music_invalid_file",
+    "music_too_many_files",
+    "music_payload_too_large",
 ] as const;
 
 export type AdminNoticeId = (typeof ADMIN_NOTICE_IDS)[number];
