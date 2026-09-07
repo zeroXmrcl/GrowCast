@@ -14,6 +14,7 @@ describe("program scene", () => {
         const preview = src(path.join("app", "program", "page.tsx"));
         assert.match(scene, /OverlayHud/);
         assert.match(scene, /lockStream/);
+        assert.match(scene, /ProgramAudio/);
         assert.match(capture, /ProgramScene/);
         assert.match(preview, /ProgramScene/);
         assert.match(preview, /isAdminAuthenticated/);
