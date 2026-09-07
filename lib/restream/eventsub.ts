@@ -325,18 +325,23 @@ async function createEventsubSubscription(
     });
 }
 
+type ListedSubscription = {
+    id: string;
+    type: string;
+    callback: string;
+    condition: unknown;
+};
+
 async function listEventsubSubscriptions(
     type: EventsubType,
-    userId: string,
     auth: HelixAuth,
     fetcher: typeof fetch,
-): Promise<Array<{id: string; condition: unknown}>> {
-    const found: Array<{id: string; condition: unknown}> = [];
+): Promise<ListedSubscription[]> {
+    const found: ListedSubscription[] = [];
     let cursor = "";
     for (;;) {
         const url = new URL(EVENTSUB_SUBSCRIPTIONS_URL);
         url.searchParams.set("type", type);
-        url.searchParams.set("user_id", userId);
         if (cursor) {
             url.searchParams.set("after", cursor);
         }
@@ -359,7 +364,13 @@ async function listEventsubSubscriptions(
                 if (!id) {
                     continue;
                 }
-                found.push({id, condition: row.condition});
+                const transport = isRecord(row.transport) ? row.transport : null;
+                found.push({
+                    id,
+                    type: asString(row.type).trim(),
+                    callback: transport ? asString(transport.callback).trim() : "",
+                    condition: row.condition,
+                });
             }
         }
         const next =
@@ -372,6 +383,16 @@ async function listEventsubSubscriptions(
         cursor = next;
     }
     return found;
+}
+
+function matchingSubscriptions(
+    existing: ListedSubscription[],
+    type: EventsubType,
+    userId: string,
+): ListedSubscription[] {
+    return existing.filter(
+        (sub) => sub.type === type && conditionMatches(sub.condition, type, userId),
+    );
 }
 
 async function deleteEventsubSubscription(
@@ -397,14 +418,24 @@ async function replaceConflictingSubscriptions(
     auth: HelixAuth,
     fetcher: typeof fetch,
 ): Promise<void> {
-    const existing = await listEventsubSubscriptions(type, userId, auth, fetcher);
-    for (const sub of existing) {
-        if (!conditionMatches(sub.condition, type, userId)) {
-            continue;
-        }
+    const existing = await listEventsubSubscriptions(type, auth, fetcher);
+    for (const sub of matchingSubscriptions(existing, type, userId)) {
         // GET omits the webhook secret, so matching type+condition is always replaced.
         await deleteEventsubSubscription(sub.id, auth, fetcher);
     }
+}
+
+async function remainingCallbackMatches(
+    type: EventsubType,
+    userId: string,
+    callback: string,
+    auth: HelixAuth,
+    fetcher: typeof fetch,
+): Promise<boolean> {
+    const existing = await listEventsubSubscriptions(type, auth, fetcher);
+    return matchingSubscriptions(existing, type, userId).some(
+        (sub) => sub.callback === callback,
+    );
 }
 
 export async function ensureEventsubSubscriptions(
@@ -446,9 +477,22 @@ export async function ensureEventsubSubscriptions(
                     {type, userId: oauth.userId, callback, secret, auth},
                     fetcher,
                 );
-                if (!retried.ok && retried.status !== 409) {
-                    logEventsubFailed({reason: "subscribe_http", type, status: retried.status});
+                if (retried.ok) {
+                    continue;
                 }
+                if (
+                    retried.status === 409 &&
+                    (await remainingCallbackMatches(
+                        type,
+                        oauth.userId,
+                        callback,
+                        auth,
+                        fetcher,
+                    ))
+                ) {
+                    continue;
+                }
+                logEventsubFailed({reason: "subscribe_http", type, status: retried.status});
             } catch (error) {
                 logEventsubFailed({
                     reason: "request_failed",
