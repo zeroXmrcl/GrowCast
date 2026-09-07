@@ -48,6 +48,9 @@ describe("mixer strip", () => {
         const actions = src(path.join("app", "admin", "actions.ts"));
         assert.match(actions, /export async function saveProgramAudioAction/);
         assert.match(actions, /export async function sendProgramAlertAction/);
+        assert.match(actions, /publishOverlayAlert/);
+        assert.match(actions, /crypto\.randomUUID/);
+        assert.match(actions, /kind:\s*"manual"/);
         assert.match(actions, /writeRestreamAudio/);
         assert.match(actions, /audio_saved/);
         assert.match(actions, /alert_sent/);

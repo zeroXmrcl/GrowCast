@@ -1,3 +1,4 @@
+import OverlayAlertLayer from "@/components/overlay-alert-layer";
 import OverlayHud from "@/components/overlay-hud";
 import ProgramAudio from "@/components/program-audio";
 import type {OverlayGrowView} from "@/lib/overlay-grow";
@@ -29,6 +30,7 @@ export default function ProgramScene({
                 lightSchedule={lightSchedule}
                 strain={strain}
             />
+            <OverlayAlertLayer layout={overlayLayout} captureToken={captureToken} />
             <ProgramAudio captureToken={captureToken} />
         </div>
     );
