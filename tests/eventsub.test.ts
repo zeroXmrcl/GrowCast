@@ -383,65 +383,130 @@ describe("eventsubNotificationResponse", () => {
 });
 
 describe("ensureEventsubSubscriptions", () => {
-    it("posts Helix webhooks for follow v2 raid to_broadcaster and ignores 409", async () => {
+    it("posts Helix webhooks with an app access token and replaces 409 subscriptions", async () => {
         await withTempDataDir(async () => {
             await writeTwitchOAuthFile({
-                accessToken: "user-access-token",
+                accessToken: "user-access",
                 refreshToken: "user-refresh-token",
                 userId: "141981764",
                 login: "0xmarcel",
             });
             await writeKnownSecret("known-eventsub-secret");
 
-            const posts: Array<{
-                url: string;
-                method: string;
-                headers: Headers;
-                body: Record<string, unknown>;
-            }> = [];
+            const calls: Array<{url: string; method: string; auth: string | null}> = [];
+            const posts: Array<Record<string, unknown>> = [];
+            const deleted = new Set<string>();
+            const postAttempts = new Map<string, number>();
+
             const fetcher: typeof fetch = async (input, init) => {
-                posts.push({
-                    url: String(input),
-                    method: String(init?.method ?? "GET"),
-                    headers: new Headers(init?.headers),
-                    body: JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>,
-                });
-                return new Response(null, {status: 409});
+                const url = String(input);
+                const method = String(init?.method ?? "GET").toUpperCase();
+                const headers = new Headers(init?.headers);
+                const auth = headers.get("Authorization");
+                calls.push({url, method, auth});
+
+                if (url === "https://id.twitch.tv/oauth2/token") {
+                    assert.equal(method, "POST");
+                    const params = new URLSearchParams(String(init?.body ?? ""));
+                    assert.equal(params.get("grant_type"), "client_credentials");
+                    assert.equal(params.get("client_id"), "test-client-id");
+                    assert.equal(params.get("client_secret"), "helix-secret-value");
+                    return Response.json({access_token: "app-access"});
+                }
+
+                assert.equal(auth, "Bearer app-access");
+                assert.notEqual(auth, "Bearer user-access");
+                assert.equal(headers.get("Client-Id"), "test-client-id");
+
+                const parsed = new URL(url);
+                assert.equal(
+                    `${parsed.origin}${parsed.pathname}`,
+                    "https://api.twitch.tv/helix/eventsub/subscriptions",
+                );
+
+                if (method === "GET") {
+                    const type = parsed.searchParams.get("type") ?? "";
+                    const userId = parsed.searchParams.get("user_id") ?? "";
+                    assert.equal(userId, "141981764");
+                    const condition =
+                        type === "channel.follow"
+                            ? {
+                                  broadcaster_user_id: "141981764",
+                                  moderator_user_id: "141981764",
+                              }
+                            : type === "channel.raid"
+                              ? {to_broadcaster_user_id: "141981764"}
+                              : {broadcaster_user_id: "141981764"};
+                    return Response.json({
+                        data: [
+                            {
+                                id: `stale-${type}`,
+                                type,
+                                condition,
+                                transport: {
+                                    method: "webhook",
+                                    callback: "https://old.example/api/twitch/eventsub",
+                                },
+                            },
+                        ],
+                    });
+                }
+
+                if (method === "DELETE") {
+                    deleted.add(parsed.searchParams.get("id") ?? "");
+                    return new Response(null, {status: 204});
+                }
+
+                assert.equal(method, "POST");
+                const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+                const type = String(body.type ?? "");
+                const attempt = (postAttempts.get(type) ?? 0) + 1;
+                postAttempts.set(type, attempt);
+                if (attempt === 1) {
+                    return new Response(null, {status: 409});
+                }
+                posts.push(body);
+                return new Response(null, {status: 202});
             };
 
             await ensureEventsubSubscriptions("https://grow.example/", helixEnv, fetcher);
-            assert.equal(posts.length, 4);
+
+            assert.equal(calls[0]?.url, "https://id.twitch.tv/oauth2/token");
+            assert.equal(
+                calls.some((call) => call.auth === "Bearer user-access"),
+                false,
+            );
             assert.deepEqual(
-                posts.map((post) => post.body.type),
+                posts.map((post) => post.type),
                 [...EVENTSUB_TYPES],
             );
+            for (const type of EVENTSUB_TYPES) {
+                assert.equal(postAttempts.get(type), 2);
+                assert.ok(deleted.has(`stale-${type}`));
+            }
             for (const post of posts) {
-                assert.equal(post.url, "https://api.twitch.tv/helix/eventsub/subscriptions");
-                assert.equal(post.method, "POST");
-                assert.equal(post.headers.get("Authorization"), "Bearer user-access-token");
-                assert.equal(post.headers.get("Client-Id"), "test-client-id");
-                const transport = post.body.transport as Record<string, unknown>;
+                const transport = post.transport as Record<string, unknown>;
                 assert.equal(transport.method, "webhook");
                 assert.equal(transport.callback, "https://grow.example/api/twitch/eventsub");
                 assert.equal(transport.secret, "known-eventsub-secret");
             }
 
-            const follow = posts[0].body;
+            const follow = posts[0];
             assert.equal(follow.version, "2");
             assert.deepEqual(follow.condition, {
                 broadcaster_user_id: "141981764",
                 moderator_user_id: "141981764",
             });
 
-            const sub = posts[1].body;
+            const sub = posts[1];
             assert.equal(sub.version, "1");
             assert.deepEqual(sub.condition, {broadcaster_user_id: "141981764"});
 
-            const raid = posts[2].body;
+            const raid = posts[2];
             assert.equal(raid.version, "1");
             assert.deepEqual(raid.condition, {to_broadcaster_user_id: "141981764"});
 
-            const cheer = posts[3].body;
+            const cheer = posts[3];
             assert.equal(cheer.version, "1");
             assert.deepEqual(cheer.condition, {broadcaster_user_id: "141981764"});
         });
@@ -467,13 +532,20 @@ describe("ensureEventsubSubscriptions", () => {
             }
 
             await writeTwitchOAuthFile({
-                accessToken: "user-access-token",
+                accessToken: "user-access",
                 refreshToken: "user-refresh-token",
                 userId: "1",
                 login: "0xmarcel",
             });
             const reused: string[] = [];
-            const fetcher: typeof fetch = async (_input, init) => {
+            const fetcher: typeof fetch = async (input, init) => {
+                const url = String(input);
+                if (url === "https://id.twitch.tv/oauth2/token") {
+                    return Response.json({access_token: "app-access"});
+                }
+                const headers = new Headers(init?.headers);
+                assert.equal(headers.get("Authorization"), "Bearer app-access");
+                assert.notEqual(headers.get("Authorization"), "Bearer user-access");
                 const body = JSON.parse(String(init?.body ?? "{}")) as {
                     transport?: {secret?: string};
                 };
@@ -509,7 +581,11 @@ describe("EventSub route and files", () => {
         assert.match(eventsub, /to_broadcaster_user_id/);
         assert.match(eventsub, /moderator_user_id/);
         assert.match(eventsub, /helix\/eventsub\/subscriptions/);
+        assert.match(eventsub, /client_credentials/);
+        assert.match(eventsub, /oauth2\/token/);
         assert.match(eventsub, /status !== 409|status === 409/);
+        assert.match(eventsub, /method:\s*"DELETE"/);
+        assert.doesNotMatch(eventsub, /Bearer \$\{oauth\.accessToken\}/);
         assert.match(eventsub, /readAlertsSettings/);
         assert.match(eventsub, /publishOverlayAlert/);
         assert.match(eventsub, /text\/plain/);
