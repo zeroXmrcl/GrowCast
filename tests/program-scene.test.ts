@@ -23,6 +23,27 @@ describe("program scene", () => {
         assert.match(preview, /isAdminAuthenticated/);
         assert.doesNotMatch(preview, /token/);
         assert.match(capture, /isRestreamCaptureAuthorized/);
+        assert.match(scene, /ProgramAudioGraphProvider/);
+        assert.match(scene, /OverlayMusicWave/);
+        assert.match(scene, /extra=\{/);
+        const wave = src(path.join("components", "overlay-music-wave.tsx"));
+        assert.match(wave, /OVERLAY_PANEL_CLASS/);
+        assert.match(wave, />Music</);
+        assert.match(wave, /getByteFrequencyData/);
+        assert.match(wave, /#22c55e/);
+        assert.match(wave, /rgba\(74, 222, 128, 0\.55\)/);
+        assert.match(wave, /OVERLAY_ORDER_MUSIC/);
+        const audio = src(path.join("components", "program-audio.tsx"));
+        assert.match(audio, /createMediaElementSource/);
+        assert.match(audio, /createAnalyser/);
+        assert.match(audio, /destination/);
+        assert.match(audio, /smoothingTimeConstant/);
+        assert.match(audio, /programMusicWaveActive/);
+        assert.match(audio, /fftSize/);
+        assert.match(audio, /256/);
+        const overlayPage = src(path.join("app", "overlay", "page.tsx"));
+        assert.doesNotMatch(overlayPage, /OverlayMusicWave/);
+        assert.doesNotMatch(overlayPage, /extra=/);
     });
 
     it("keeps OverlayAlertLayer a HUD sibling and wires program alert SSE", () => {

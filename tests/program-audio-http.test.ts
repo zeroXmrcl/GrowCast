@@ -337,6 +337,8 @@ describe("program audio wiring", () => {
         assert.match(client, /paused/);
         assert.match(client, /volume/);
         assert.match(client, /stingEnabled/);
+        assert.match(client, /waveSmoothPct/);
+        assert.match(client, /createMediaElementSource/);
         assert.match(client, /growcast-alert-sting/);
         assert.match(client, /0\.25/);
         assert.match(client, /loop=/);
