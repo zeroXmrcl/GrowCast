@@ -4,6 +4,7 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
+import {writeAlertsSettings} from "../lib/restream/alerts-settings.ts";
 import {writeRestreamAudio} from "../lib/restream/audio.ts";
 import {ensureRestreamCaptureToken} from "../lib/restream/capture.ts";
 import {saveMusicFile} from "../lib/restream/music-files.ts";
@@ -58,12 +59,14 @@ describe("programAudioGetResponse", () => {
                 files: string[];
                 volume: number;
                 paused: boolean;
+                stingEnabled: boolean;
             };
             assert.equal(body.kind, "playlist");
             assert.deepEqual(body.files, ["z.mp3"]);
             assert.equal(body.url, "");
             assert.equal(body.volume, 0.5);
             assert.equal(body.paused, false);
+            assert.equal(body.stingEnabled, true);
             const encoded = JSON.stringify(body);
             assert.equal(encoded.includes(dir), false);
             assert.equal(encoded.includes("restream/music"), false);
@@ -101,6 +104,47 @@ describe("programAudioGetResponse", () => {
             assert.deepEqual(body.files, ["a.mp3"]);
             assert.equal(body.volume, 0.4);
             assert.equal(body.paused, true);
+            assert.equal(body.stingEnabled, true);
+        });
+    });
+
+    it("includes stingEnabled from alerts.json, default true", async () => {
+        await withTempDataDir(async () => {
+            const missing = await programAudioGetResponse(
+                new Request("http://local/api/overlay/program-audio"),
+                {admin: true},
+            );
+            assert.equal(missing.status, 200);
+            const missingBody = (await missing.json()) as {stingEnabled: boolean};
+            assert.equal(missingBody.stingEnabled, true);
+
+            await writeAlertsSettings({
+                follow: true,
+                sub: true,
+                raid: true,
+                bits: true,
+                stingEnabled: false,
+            });
+            const off = await programAudioGetResponse(
+                new Request("http://local/api/overlay/program-audio"),
+                {admin: true},
+            );
+            const offBody = (await off.json()) as {stingEnabled: boolean};
+            assert.equal(offBody.stingEnabled, false);
+
+            await writeAlertsSettings({
+                follow: true,
+                sub: true,
+                raid: true,
+                bits: true,
+                stingEnabled: true,
+            });
+            const on = await programAudioGetResponse(
+                new Request("http://local/api/overlay/program-audio"),
+                {admin: true},
+            );
+            const onBody = (await on.json()) as {stingEnabled: boolean};
+            assert.equal(onBody.stingEnabled, true);
         });
     });
 });
@@ -234,6 +278,9 @@ describe("program audio wiring", () => {
         assert.match(client, /onError/);
         assert.match(client, /paused/);
         assert.match(client, /volume/);
+        assert.match(client, /stingEnabled/);
+        assert.match(client, /growcast-alert-sting/);
+        assert.match(client, /0\.25/);
         assert.match(client, /loop=/);
         assert.match(client, /currentTime/);
         assert.match(client, /referrerPolicy="no-referrer"/);
@@ -243,6 +290,8 @@ describe("program audio wiring", () => {
         assert.match(audioRoute, /withRequestLog/);
         assert.match(audioRoute, /isAdminAuthenticated/);
         assert.match(audioRoute, /programAudioGetResponse/);
+        assert.match(http, /readAlertsSettings/);
+        assert.match(http, /stingEnabled/);
         assert.match(musicRoute, /withRequestLog/);
         assert.match(musicRoute, /isAdminAuthenticated/);
         assert.match(musicRoute, /programMusicGetResponse/);
