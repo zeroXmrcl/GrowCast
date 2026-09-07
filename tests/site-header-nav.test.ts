@@ -52,6 +52,15 @@ describe("navItemsFor", () => {
         );
     });
 
+    it("never includes Overlay in the public header", () => {
+        const hrefs = navItemsFor("/", allOn).map((item) => item.href);
+        assert.equal(hrefs.includes("/overlay"), false);
+        assert.equal(
+            navItemsFor("/overlay", allOn).some((item) => item.label === "Overlay"),
+            false,
+        );
+    });
+
     it("omits Gallery when the timelapse plugin is not installed", () => {
         assert.deepEqual(
             navItemsFor("/", {...allOn, showGallery: false, showSettingsLink: false}).map(

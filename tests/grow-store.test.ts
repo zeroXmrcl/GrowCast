@@ -54,6 +54,87 @@ describe("grow JSON store", () => {
             assert.equal(grow.details.strain, "");
             assert.equal(grow.status.estimatedHarvestDate, "");
             assert.equal(grow.climate.temperatureDay, 0);
+            assert.equal(grow.overlayLayout, "left-rail");
+            assert.equal(grow.overlayStream, "transparent");
+            assert.equal(grow.overlayScalePct, 100);
+        });
+    });
+
+    it("persists overlayLayout bottom-bar and rejects junk on read", async () => {
+        await withTempDataDir(async (dir) => {
+            const file = path.join(dir, "current-grow.json");
+            await writeFile(file, JSON.stringify({name: "Rail Grow"}), "utf8");
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayLayout, "left-rail");
+
+            await updateCurrentGrow({
+                name: grow.name,
+                plant: grow.plant,
+                streamUrl: grow.streamUrl,
+                overlayLayout: "bottom-bar",
+            });
+            const saved = JSON.parse(await readFile(file, "utf8"));
+            assert.equal(saved.overlayLayout, "bottom-bar");
+            assert.equal((await getCurrentGrow()).overlayLayout, "bottom-bar");
+
+            await writeFile(
+                file,
+                JSON.stringify({name: "Junk Layout", overlayLayout: "wide"}),
+                "utf8",
+            );
+            assert.equal((await getCurrentGrow()).overlayLayout, "left-rail");
+        });
+    });
+
+    it("persists overlayStream include and rejects junk on read", async () => {
+        await withTempDataDir(async (dir) => {
+            const file = path.join(dir, "current-grow.json");
+            await writeFile(file, JSON.stringify({name: "Stream Grow"}), "utf8");
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayStream, "transparent");
+
+            await updateCurrentGrow({
+                name: grow.name,
+                plant: grow.plant,
+                streamUrl: grow.streamUrl,
+                overlayStream: "include",
+            });
+            const saved = JSON.parse(await readFile(file, "utf8"));
+            assert.equal(saved.overlayStream, "include");
+            assert.equal((await getCurrentGrow()).overlayStream, "include");
+
+            await writeFile(
+                file,
+                JSON.stringify({name: "Junk Stream", overlayStream: "iframe"}),
+                "utf8",
+            );
+            assert.equal((await getCurrentGrow()).overlayStream, "transparent");
+        });
+    });
+
+    it("persists overlayScalePct and snaps junk on read", async () => {
+        await withTempDataDir(async (dir) => {
+            const file = path.join(dir, "current-grow.json");
+            await writeFile(file, JSON.stringify({name: "Scale Grow"}), "utf8");
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayScalePct, 100);
+
+            await updateCurrentGrow({
+                name: grow.name,
+                plant: grow.plant,
+                streamUrl: grow.streamUrl,
+                overlayScalePct: 150,
+            });
+            const saved = JSON.parse(await readFile(file, "utf8"));
+            assert.equal(saved.overlayScalePct, 150);
+            assert.equal((await getCurrentGrow()).overlayScalePct, 150);
+
+            await writeFile(
+                file,
+                JSON.stringify({name: "Junk Scale", overlayScalePct: 77}),
+                "utf8",
+            );
+            assert.equal((await getCurrentGrow()).overlayScalePct, 75);
         });
     });
 

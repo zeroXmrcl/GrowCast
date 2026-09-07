@@ -1,4 +1,3 @@
-import {AdminOptionalTimeInput} from "@/components/admin/optional-time-input";
 import {
     AdminCheckboxRow,
     AdminField,
@@ -7,23 +6,13 @@ import {
     AdminSelect,
     AdminTextarea,
 } from "@/components/admin/ui";
-import type {EnergyActuatorRow, EnergySettings} from "@/lib/energy/settings";
 import type {GrowRecord} from "@/lib/db";
-import type {TimelapseSettings} from "@/lib/timelapse-settings";
 
-type SettingsFieldsProps = {
+type GrowSettingsFieldsProps = {
     grow: GrowRecord;
-    timelapseSettings: TimelapseSettings;
-    energySettings: EnergySettings;
-    energyActuators: EnergyActuatorRow[];
 };
 
-export function SettingsFields({
-    grow,
-    timelapseSettings,
-    energySettings,
-    energyActuators,
-}: SettingsFieldsProps) {
+export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
     return (
         <div className="space-y-6">
             <AdminPanel id="general" title="General">
@@ -136,60 +125,6 @@ export function SettingsFields({
                 </div>
             </AdminPanel>
 
-            <AdminPanel
-                id="energy"
-                title="Energy"
-                description="Public visitors see the public tariff. A signed-in admin session uses the private tariff on the same page. Empty means unset (€ shown as —)."
-            >
-                <div className="grid gap-4 md:grid-cols-2">
-                    <AdminField label="Public €/kWh" hint="Used for anonymous visitors.">
-                        <AdminInput
-                            name="energyPublicTariff"
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            defaultValue={energySettings.publicTariffEurPerKwh ?? ""}
-                        />
-                    </AdminField>
-                    <AdminField label="Private €/kWh" hint="Used when an admin session cookie is present.">
-                        <AdminInput
-                            name="energyPrivateTariff"
-                            type="number"
-                            min={0}
-                            step="0.01"
-                            defaultValue={energySettings.privateTariffEurPerKwh ?? ""}
-                        />
-                    </AdminField>
-                </div>
-                <div className="mt-6">
-                    <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
-                        Watts when on
-                    </p>
-                    {energyActuators.length === 0 ? (
-                        <p className="text-sm text-(--admin-muted)">
-                            Overrides appear when live devices are flowing. Outlets with no catalog
-                            row stay at 0 W until a value is set here.
-                        </p>
-                    ) : (
-                        <div className="space-y-4">
-                            {energyActuators.map((row) => (
-                                <AdminField key={row.key} label={row.label} hint={row.hint}>
-                                    <input type="hidden" name="energyOverrideKey" value={row.key}/>
-                                    <AdminInput
-                                        name="energyOverrideWatts"
-                                        type="number"
-                                        min={0}
-                                        step="0.1"
-                                        defaultValue={row.watts}
-                                        placeholder="catalog"
-                                    />
-                                </AdminField>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </AdminPanel>
-
             <AdminPanel id="status" title="Status">
                 <div className="grid gap-4 md:grid-cols-2">
                     <AdminField label="Health">
@@ -256,109 +191,6 @@ export function SettingsFields({
                             placeholder={"Tent: ...\nLight: ...\nFan: ..."}
                         />
                     </AdminField>
-                </div>
-            </AdminPanel>
-
-            <AdminPanel id="stream" title="Stream">
-                <div className="space-y-4">
-                    <AdminCheckboxRow
-                        name="showGrowName"
-                        defaultChecked={grow.showGrowName}
-                        label="Show grow name above stream"
-                        description="Displays the grow-name as header above the stream."
-                    />
-                    <AdminField label="Stream URL">
-                        <AdminInput
-                            name="streamUrl"
-                            defaultValue={grow.streamUrl}
-                            placeholder="https://..."
-                        />
-                    </AdminField>
-                </div>
-            </AdminPanel>
-
-            <AdminPanel id="timelapse" title="Timelapse">
-                <div className="space-y-4">
-                    <AdminCheckboxRow
-                        name="timelapsePaused"
-                        defaultChecked={timelapseSettings.paused}
-                        label="Pause timelapse"
-                        description="Stops the plugin from taking new snapshots until it is resumed."
-                    />
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <AdminField
-                            label="Timezone"
-                            hint="Use an IANA timezone such as UTC or Europe/Berlin."
-                        >
-                            <AdminInput
-                                name="timelapseTimezone"
-                                defaultValue={timelapseSettings.timezone}
-                                placeholder="UTC"
-                            />
-                        </AdminField>
-                        <AdminField
-                            label="Interval (minutes)"
-                            hint="Leave empty to use trigger times only."
-                        >
-                            <AdminInput
-                                name="timelapseInterval"
-                                type="number"
-                                min={1}
-                                step={1}
-                                defaultValue={timelapseSettings.intervalMinutes ?? ""}
-                            />
-                        </AdminField>
-                    </div>
-                    <div>
-                        <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
-                            Trigger Times
-                        </p>
-                        <p className="mb-3 text-xs text-(--admin-subtle)">
-                            Optional. Use any of the three, or none (interval-only). Clear a slot
-                            to turn it off.
-                        </p>
-                        <div className="grid gap-4 md:grid-cols-3">
-                            <AdminField label="Time 1">
-                                <AdminOptionalTimeInput
-                                    name="timelapseTime1"
-                                    defaultValue={timelapseSettings.time1}
-                                />
-                            </AdminField>
-                            <AdminField label="Time 2">
-                                <AdminOptionalTimeInput
-                                    name="timelapseTime2"
-                                    defaultValue={timelapseSettings.time2}
-                                />
-                            </AdminField>
-                            <AdminField label="Time 3">
-                                <AdminOptionalTimeInput
-                                    name="timelapseTime3"
-                                    defaultValue={timelapseSettings.time3}
-                                />
-                            </AdminField>
-                        </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <AdminField label="Timelapse Length (seconds)">
-                            <AdminInput
-                                name="timelapseLength"
-                                type="number"
-                                min={1}
-                                step={1}
-                                defaultValue={timelapseSettings.timelapseLengthSeconds}
-                            />
-                        </AdminField>
-                        <AdminField label="Timelapse Quality">
-                            <AdminSelect
-                                name="timelapseQuality"
-                                defaultValue={timelapseSettings.timelapseQuality}
-                            >
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                            </AdminSelect>
-                        </AdminField>
-                    </div>
                 </div>
             </AdminPanel>
 

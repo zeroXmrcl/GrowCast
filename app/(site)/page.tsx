@@ -5,6 +5,7 @@ import {formatDateDisplay} from "@/app/(site)/grows/format";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
 import {listMediaUrls} from "@/lib/media-library";
+import {BroadcastToast} from "@/components/broadcast-toast";
 import SiteFooter from "@/components/site-footer";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
@@ -290,6 +291,7 @@ export default async function Home() {
                 </section>
             )}
             <SiteFooter/>
+            <BroadcastToast/>
         </main>
     );
 }

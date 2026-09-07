@@ -4,6 +4,9 @@ import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
 import {isDateOnly} from "@/lib/date-only";
+import {DEFAULT_OVERLAY_LAYOUT, parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
+import {DEFAULT_OVERLAY_STREAM, parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
+import {DEFAULT_OVERLAY_SCALE_PCT, parseOverlayScalePct} from "@/lib/overlay-scale";
 
 export type GrowDetails = {
   strain: string;
@@ -55,20 +58,26 @@ export type GrowRecord = {
   status: GrowStatus;
   socials: Socials;
   climate: Climate;
+  overlayLayout: OverlayLayout;
+  overlayStream: OverlayStream;
+  overlayScalePct: number;
 };
 
 export type GrowUpdateInput = {
-  name: string;
+  name?: string;
   showGrowName?: boolean;
   showSettingsLink?: boolean;
-  plant: string;
+  plant?: string;
   plantAmount?: number;
-  streamUrl: string;
+  streamUrl?: string;
   details?: Partial<Omit<GrowDetails, "updatedAt">>;
   growSetup?: Partial<GrowSetup>;
   status?: Partial<GrowStatus>;
   socials?: Partial<Socials>;
   climate?: Partial<Climate>;
+  overlayLayout?: OverlayLayout;
+  overlayStream?: OverlayStream;
+  overlayScalePct?: number;
 };
 
 function dataDir(): string {
@@ -117,6 +126,10 @@ function mergeGrowDetails(
   current: GrowDetails,
   updates?: GrowUpdateInput["details"],
 ): GrowDetails {
+  if (!updates) {
+    return current;
+  }
+
   const next = mergeDefined(current, updates);
 
   return {
@@ -176,6 +189,10 @@ export const EMPTY_GROW: GrowRecord = {
     discordInvite: "",
     customWebsite: "",
   },
+
+  overlayLayout: DEFAULT_OVERLAY_LAYOUT,
+  overlayStream: DEFAULT_OVERLAY_STREAM,
+  overlayScalePct: DEFAULT_OVERLAY_SCALE_PCT,
 };
 
 export function normalizeGrowRecord(raw: unknown): GrowRecord {
@@ -239,6 +256,9 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
     socials,
     growSetup,
     status,
+    overlayLayout: parseOverlayLayout(parsed.overlayLayout),
+    overlayStream: parseOverlayStream(parsed.overlayStream),
+    overlayScalePct: parseOverlayScalePct(parsed.overlayScalePct),
   };
 }
 
@@ -274,18 +294,27 @@ export async function updateCurrentGrow(
 
   const nextGrow: GrowRecord = {
     ...current,
-    name: input.name,
+    name: input.name !== undefined ? input.name : current.name,
     showGrowName: typeof input.showGrowName === "boolean" ? input.showGrowName : current.showGrowName,
     showSettingsLink:
       typeof input.showSettingsLink === "boolean" ? input.showSettingsLink : current.showSettingsLink,
-    plant: input.plant,
+    plant: input.plant !== undefined ? input.plant : current.plant,
     plantAmount: Number.isFinite(input.plantAmount) ? Number(input.plantAmount) : current.plantAmount,
-    streamUrl: input.streamUrl,
+    streamUrl: input.streamUrl !== undefined ? input.streamUrl : current.streamUrl,
     growSetup: mergeDefined(current.growSetup, input.growSetup),
     status: mergeDefined(current.status, input.status),
     socials: mergeDefined(current.socials, input.socials),
     details: mergeGrowDetails(current.details, input.details),
     climate: mergeDefined(current.climate, input.climate),
+    overlayLayout: parseOverlayLayout(
+      input.overlayLayout !== undefined ? input.overlayLayout : current.overlayLayout,
+    ),
+    overlayStream: parseOverlayStream(
+      input.overlayStream !== undefined ? input.overlayStream : current.overlayStream,
+    ),
+    overlayScalePct: parseOverlayScalePct(
+      input.overlayScalePct !== undefined ? input.overlayScalePct : current.overlayScalePct,
+    ),
   };
 
   await saveCurrentGrow(nextGrow);

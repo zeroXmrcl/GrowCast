@@ -1,14 +1,24 @@
 import assert from "node:assert/strict";
-import {mkdir, mkdtemp, rm} from "node:fs/promises";
+import {mkdir, mkdtemp, readFile, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {parseAdminSettingsForm} from "../lib/admin/parse-grow-form.ts";
-import {saveAdminSettings} from "../lib/admin/save-settings.ts";
+import {
+    parseAdminSettingsForm,
+    parseStreamSettingsForm,
+    parseTimelapseSettingsForm,
+} from "../lib/admin/parse-grow-form.ts";
+import {
+    saveAdminSettings,
+    saveEnergyAdminSettings,
+    saveTimelapseAdminSettings,
+} from "../lib/admin/save-settings.ts";
 import {completeCurrentGrow, listArchivedGrows} from "../lib/archives.ts";
-import {getTimelapseSettings} from "../lib/timelapse-settings.ts";
 import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
+import {energySettingsFile} from "../lib/energy/paths.ts";
+import {readEnergySettings, writeEnergySettings} from "../lib/energy/settings.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
+import {getTimelapseSettings} from "../lib/timelapse-settings.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-save-"));
@@ -37,16 +47,20 @@ function settingsForm(entries: Record<string, string>): FormData {
 }
 
 describe("saveAdminSettings orchestration", () => {
-    it("returns a structured result shape for a successful dual write path", async () => {
+    it("writes grow JSON only from the grow form", async () => {
         await withTempDataDir(async () => {
-            const live = await getCurrentGrow();
+            const live = await updateCurrentGrow({
+                name: "Keep Stream",
+                plant: "Basil",
+                streamUrl: "https://example.com/live/",
+                overlayLayout: "bottom-bar",
+            });
             const form = settingsForm({
                 name: "Atomic Save Probe",
                 plant: "Tomato",
                 streamUrl: "https://example.com/stream/",
+                overlayLayout: "left-rail",
                 timelapseQuality: "low",
-                timelapseTimezone: "UTC",
-                timelapseLength: "8",
                 growId: live.id,
             });
 
@@ -54,12 +68,66 @@ describe("saveAdminSettings orchestration", () => {
             const result = await saveAdminSettings(parsed);
 
             assert.equal(result.ok, true);
-            if (result.ok) {
-                assert.equal(result.grow.name, "Atomic Save Probe");
-                assert.equal(result.grow.streamUrl, "https://example.com/stream/");
-                assert.equal(result.timelapse.timelapseQuality, "low");
-                assert.equal(result.timelapse.timelapseLengthSeconds, 8);
-            }
+            const grow = await getCurrentGrow();
+            assert.equal(grow.name, "Atomic Save Probe");
+            assert.equal(grow.plant, "Tomato");
+            assert.equal(grow.streamUrl, "https://example.com/live/");
+            assert.equal(grow.overlayLayout, "bottom-bar");
+        });
+    });
+
+    it("persists overlayLayout from the stream form", async () => {
+        await withTempDataDir(async () => {
+            const live = await getCurrentGrow();
+            assert.equal(live.overlayLayout, "left-rail");
+
+            const parsed = parseStreamSettingsForm(
+                settingsForm({
+                    overlayLayout: "bottom-bar",
+                    growId: live.id,
+                }),
+            );
+            const result = await saveAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayLayout, "bottom-bar");
+            assert.equal(grow.name, live.name);
+        });
+    });
+
+    it("persists overlayStream from the stream form", async () => {
+        await withTempDataDir(async () => {
+            const live = await getCurrentGrow();
+            assert.equal(live.overlayStream, "transparent");
+
+            const parsed = parseStreamSettingsForm(
+                settingsForm({
+                    overlayStream: "include",
+                    growId: live.id,
+                }),
+            );
+            const result = await saveAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayStream, "include");
+        });
+    });
+
+    it("persists overlayScalePct from the stream form", async () => {
+        await withTempDataDir(async () => {
+            const live = await getCurrentGrow();
+            assert.equal(live.overlayScalePct, 100);
+
+            const parsed = parseStreamSettingsForm(
+                settingsForm({
+                    overlayScalePct: "150",
+                    growId: live.id,
+                }),
+            );
+            const result = await saveAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            const grow = await getCurrentGrow();
+            assert.equal(grow.overlayScalePct, 150);
         });
     });
 
@@ -142,9 +210,6 @@ describe("saveAdminSettings orchestration", () => {
                 strain: "Old Notes",
                 notes: "revived content",
                 growId: live.id,
-                timelapseQuality: "medium",
-                timelapseTimezone: "UTC",
-                timelapseLength: "8",
             });
 
             const completed = await completeCurrentGrow(
@@ -174,36 +239,76 @@ describe("saveAdminSettings orchestration", () => {
         });
     });
 
-    it("rolls back showSettingsLink when the timelapse write fails", async () => {
+    it("grow save does not write energy settings", async () => {
+        await withTempDataDir(async () => {
+            await writeEnergySettings({
+                publicTariffEurPerKwh: 0.31,
+                privateTariffEurPerKwh: 0.4,
+                overrides: [],
+            });
+            const live = await getCurrentGrow();
+            const parsed = parseAdminSettingsForm(
+                settingsForm({
+                    name: "No Energy",
+                    plant: "Basil",
+                    energyPublicTariff: "9.99",
+                    growId: live.id,
+                }),
+            );
+            const result = await saveAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            const energy = await readEnergySettings();
+            assert.equal(energy.publicTariffEurPerKwh, 0.31);
+            assert.equal(energy.privateTariffEurPerKwh, 0.4);
+        });
+    });
+
+    it("energy save does not write grow JSON", async () => {
         await withTempDataDir(async (dir) => {
             const live = await updateCurrentGrow({
-                name: "Link Rollback",
+                name: "Leave Me",
+                plant: "Basil",
+                streamUrl: "https://example.com/cam/",
+            });
+            const growPath = path.join(dir, "current-grow.json");
+            const before = await readFile(growPath, "utf8");
+
+            const result = await saveEnergyAdminSettings({
+                publicTariffEurPerKwh: 0.22,
+                privateTariffEurPerKwh: null,
+                overrides: [],
+            });
+            assert.equal(result.ok, true);
+            assert.equal(await readFile(growPath, "utf8"), before);
+            assert.equal((await getCurrentGrow()).id, live.id);
+            assert.equal((await getCurrentGrow()).name, "Leave Me");
+            assert.equal((await readEnergySettings()).publicTariffEurPerKwh, 0.22);
+            assert.equal(energySettingsFile().includes(dir), true);
+        });
+    });
+
+    it("timelapse save does not write grow JSON", async () => {
+        await withTempDataDir(async (dir) => {
+            await updateCurrentGrow({
+                name: "Leave Me",
                 plant: "Basil",
                 streamUrl: "",
-                showSettingsLink: false,
             });
-            assert.equal(live.showSettingsLink, false);
-            await getTimelapseSettings();
-
-            const settingsPath = path.join(dir, "mesh", "growcast.timelapse.json");
-            await rm(settingsPath);
-            await mkdir(settingsPath);
-
-            const form = settingsForm({
-                name: "Link Rollback",
-                plant: "Basil",
-                showSettingsLink: "on",
-                growId: live.id,
-                timelapseQuality: "medium",
-                timelapseTimezone: "UTC",
-                timelapseLength: "8",
-            });
-            const parsed = parseAdminSettingsForm(form);
-            const result = await saveAdminSettings(parsed);
-            assert.equal(result.ok, false);
-            const grow = await getCurrentGrow();
-            assert.equal(grow.showSettingsLink, false);
-            assert.equal(grow.name, "Link Rollback");
+            const growPath = path.join(dir, "current-grow.json");
+            const before = await readFile(growPath, "utf8");
+            const parsed = parseTimelapseSettingsForm(
+                settingsForm({
+                    timelapseQuality: "low",
+                    timelapseTimezone: "UTC",
+                    timelapseLength: "8",
+                    name: "Hijack",
+                }),
+            );
+            const result = await saveTimelapseAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            assert.equal(await readFile(growPath, "utf8"), before);
+            assert.equal((await getTimelapseSettings()).timelapseQuality, "low");
+            assert.equal((await getCurrentGrow()).name, "Leave Me");
         });
     });
 });

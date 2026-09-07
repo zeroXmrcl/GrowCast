@@ -1,5 +1,8 @@
 import type {ArchiveEditInput, CompleteGrowInput} from "@/lib/archives";
 import type {GrowUpdateInput} from "@/lib/db";
+import {parseOverlayLayout} from "@/lib/overlay-layout";
+import {parseOverlayStream} from "@/lib/overlay-stream";
+import {parseOverlayScalePct} from "@/lib/overlay-scale";
 import {
     DEFAULT_TIMELAPSE_SETTINGS,
     normalizeTimelapseSettings,
@@ -9,7 +12,6 @@ import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 
 export type AdminSettingsFormResult = {
     grow: GrowUpdateInput;
-    timelapse: TimelapseSettings;
     expectedGrowId?: string;
 };
 
@@ -36,14 +38,17 @@ function safeUrl(raw: FormDataEntryValue | null): string {
     return normalized ?? "";
 }
 
+function expectedGrowIdFrom(formData: FormData): Pick<AdminSettingsFormResult, "expectedGrowId"> {
+    const expectedGrowId = fieldString(formData, "growId").trim();
+    return expectedGrowId.length > 0 ? {expectedGrowId} : {};
+}
+
 export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormResult {
     const grow: GrowUpdateInput = {
         name: fieldString(formData, "name"),
-        showGrowName: formData.get("showGrowName") === "on",
         showSettingsLink: formData.get("showSettingsLink") === "on",
         plant: fieldString(formData, "plant"),
         plantAmount: toNumber(formData.get("plantAmount"), 0),
-        streamUrl: safeUrl(formData.get("streamUrl")),
         details: {
             strain: fieldString(formData, "strain"),
             stage: fieldString(formData, "stage"),
@@ -79,7 +84,27 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
         },
     };
 
-    const timelapse = normalizeTimelapseSettings(
+    return {
+        grow,
+        ...expectedGrowIdFrom(formData),
+    };
+}
+
+export function parseStreamSettingsForm(formData: FormData): AdminSettingsFormResult {
+    return {
+        grow: {
+            showGrowName: formData.get("showGrowName") === "on",
+            streamUrl: safeUrl(formData.get("streamUrl")),
+            overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
+            overlayStream: parseOverlayStream(formData.get("overlayStream")),
+            overlayScalePct: parseOverlayScalePct(formData.get("overlayScalePct")),
+        },
+        ...expectedGrowIdFrom(formData),
+    };
+}
+
+export function parseTimelapseSettingsForm(formData: FormData): TimelapseSettings {
+    return normalizeTimelapseSettings(
         {
             paused: formData.get("timelapsePaused") === "on",
             timezone: fieldString(
@@ -103,13 +128,6 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
         },
         DEFAULT_TIMELAPSE_SETTINGS,
     );
-
-    const expectedGrowId = fieldString(formData, "growId").trim();
-    return {
-        grow,
-        timelapse,
-        ...(expectedGrowId.length > 0 ? {expectedGrowId} : {}),
-    };
 }
 
 export function parseCompleteGrowForm(formData: FormData): CompleteGrowInput {
