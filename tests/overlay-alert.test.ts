@@ -3,6 +3,7 @@ import {describe, it} from "node:test";
 import {
     OVERLAY_ALERT_DISPLAY_MS,
     alertPlacement,
+    alertToastCopy,
     enqueueOverlayAlert,
     replayableOverlayAlerts,
     type OverlayAlert,
@@ -42,6 +43,61 @@ describe("enqueueOverlayAlert", () => {
             createdAt: 1,
         });
         assert.deepEqual(q, []);
+    });
+});
+
+describe("alertToastCopy", () => {
+    it("uses kind for the chip and body for the headline", () => {
+        assert.deepEqual(
+            alertToastCopy({
+                id: "1",
+                kind: "follow",
+                title: "Follow",
+                body: "marcel",
+                createdAt: 1,
+            }),
+            {chip: "Follow", headline: "marcel"},
+        );
+        assert.deepEqual(
+            alertToastCopy({
+                id: "2",
+                kind: "sub",
+                title: "Sub",
+                body: "ada",
+                createdAt: 1,
+            }),
+            {chip: "Sub", headline: "ada"},
+        );
+        assert.deepEqual(
+            alertToastCopy({
+                id: "3",
+                kind: "raid",
+                title: "Raid",
+                body: "Ada · 12",
+                createdAt: 1,
+            }),
+            {chip: "Raid", headline: "Ada · 12"},
+        );
+        assert.deepEqual(
+            alertToastCopy({
+                id: "4",
+                kind: "bits",
+                title: "Bits",
+                body: "Ada 100",
+                createdAt: 1,
+            }),
+            {chip: "Bits", headline: "Ada 100"},
+        );
+        assert.deepEqual(
+            alertToastCopy({
+                id: "5",
+                kind: "manual",
+                title: "Alert",
+                body: "Lights just came on",
+                createdAt: 1,
+            }),
+            {chip: "Alert", headline: "Lights just came on"},
+        );
     });
 });
 

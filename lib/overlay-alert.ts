@@ -32,6 +32,18 @@ export function enqueueOverlayAlert(
     return next.slice(next.length - OVERLAY_ALERT_MAX_QUEUE);
 }
 
+const ALERT_TOAST_CHIP: Record<OverlayAlertKind, string> = {
+    follow: "Follow",
+    sub: "Sub",
+    raid: "Raid",
+    bits: "Bits",
+    manual: "Alert",
+};
+
+export function alertToastCopy(alert: OverlayAlert): {chip: string; headline: string} {
+    return {chip: ALERT_TOAST_CHIP[alert.kind], headline: alert.body};
+}
+
 export function replayableOverlayAlerts(
     queue: OverlayAlert[],
     nowMs: number,
