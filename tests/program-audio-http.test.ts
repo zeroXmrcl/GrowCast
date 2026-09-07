@@ -61,6 +61,7 @@ describe("programAudioGetResponse", () => {
                 paused: boolean;
                 stingEnabled: boolean;
                 alertScalePct: number;
+                waveSmoothPct: number;
             };
             assert.equal(body.kind, "playlist");
             assert.deepEqual(body.files, ["z.mp3"]);
@@ -69,6 +70,7 @@ describe("programAudioGetResponse", () => {
             assert.equal(body.paused, false);
             assert.equal(body.stingEnabled, true);
             assert.equal(body.alertScalePct, 100);
+            assert.equal(body.waveSmoothPct, 70);
             const encoded = JSON.stringify(body);
             assert.equal(encoded.includes(dir), false);
             assert.equal(encoded.includes("restream/music"), false);
@@ -177,6 +179,30 @@ describe("programAudioGetResponse", () => {
             );
             const scaledBody = (await scaled.json()) as {alertScalePct: number};
             assert.equal(scaledBody.alertScalePct, 150);
+        });
+    });
+
+    it("includes waveSmoothPct from audio.json, default 70", async () => {
+        await withTempDataDir(async () => {
+            const missing = await programAudioGetResponse(
+                new Request("http://local/api/overlay/program-audio"),
+                {admin: true},
+            );
+            const missingBody = (await missing.json()) as {waveSmoothPct: number};
+            assert.equal(missingBody.waveSmoothPct, 70);
+
+            await writeRestreamAudio({
+                url: "",
+                volume: 0.5,
+                paused: false,
+                waveSmoothPct: 40,
+            });
+            const scaled = await programAudioGetResponse(
+                new Request("http://local/api/overlay/program-audio"),
+                {admin: true},
+            );
+            const scaledBody = (await scaled.json()) as {waveSmoothPct: number};
+            assert.equal(scaledBody.waveSmoothPct, 40);
         });
     });
 });

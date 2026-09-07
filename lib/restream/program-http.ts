@@ -65,6 +65,7 @@ export async function programAudioGetResponse(
             paused: audio.paused,
             stingEnabled: alerts.stingEnabled,
             alertScalePct: alerts.alertScalePct,
+            waveSmoothPct: audio.waveSmoothPct,
         },
         {
             headers: {"Cache-Control": NO_STORE},
