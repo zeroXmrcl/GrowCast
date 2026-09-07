@@ -6,6 +6,7 @@ import {
     OVERLAY_SCALE_MAX,
     OVERLAY_SCALE_MIN,
     OVERLAY_SCALE_STEP,
+    overlayAlertScaleStyle,
     overlayHudScaleStyle,
     parseOverlayScalePct,
 } from "../lib/overlay-scale.ts";
@@ -48,6 +49,27 @@ describe("overlayHudScaleStyle", () => {
         assert.deepEqual(overlayHudScaleStyle(125, "bottom-bar"), {
             transform: "scale(1.25)",
             transformOrigin: "bottom left",
+        });
+    });
+});
+
+describe("overlayAlertScaleStyle", () => {
+    it("scales from the free corner and uses none at 100%", () => {
+        assert.deepEqual(overlayAlertScaleStyle(100, "left-rail"), {
+            transform: "none",
+            transformOrigin: "top right",
+        });
+        assert.deepEqual(overlayAlertScaleStyle(75, "left-rail"), {
+            transform: "scale(0.75)",
+            transformOrigin: "top right",
+        });
+        assert.deepEqual(overlayAlertScaleStyle(150, "bottom-bar"), {
+            transform: "scale(1.5)",
+            transformOrigin: "top left",
+        });
+        assert.deepEqual(overlayAlertScaleStyle(77, "bottom-bar"), {
+            transform: "scale(0.75)",
+            transformOrigin: "top left",
         });
     });
 });
