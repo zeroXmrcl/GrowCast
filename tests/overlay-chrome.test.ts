@@ -78,7 +78,9 @@ describe("overlay chrome", () => {
         assert.match(fieldsSrc, /name="overlayLayout"/);
         assert.match(fieldsSrc, /name="overlayStream"/);
         assert.match(fieldsSrc, /OverlayScaleInput/);
-        assert.match(scaleSrc, /name="overlayScalePct"/);
+        assert.match(scaleSrc, /name = "overlayScalePct"/);
+        assert.match(scaleSrc, /name=\{name\}/);
+        assert.doesNotMatch(fieldsSrc, /alertScalePct/);
         assert.match(fieldsSrc, /1920x1080/);
         assert.doesNotMatch(fieldsSrc, /[?]layout=/);
         assert.doesNotMatch(fieldsSrc, /[?]stream=/);

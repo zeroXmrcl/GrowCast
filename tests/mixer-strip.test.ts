@@ -86,9 +86,12 @@ describe("mixer strip", () => {
         assert.match(panel, /name="stingEnabled"/);
         assert.match(panel, /Alert sound/);
         assert.match(panel, /disabled=\{!connected\}/);
+        assert.match(panel, /name="alertScalePct"/);
+        assert.match(panel, /Alert scale/);
         const actions = src(path.join("app", "admin", "actions.ts"));
         assert.match(actions, /export async function saveAlertsSettingsAction/);
         assert.match(actions, /writeAlertsSettings/);
         assert.match(actions, /alerts_saved/);
+        assert.match(actions, /parseOverlayScalePct\(formData.get\("alertScalePct"\)\)/);
     });
 });
