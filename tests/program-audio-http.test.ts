@@ -184,6 +184,31 @@ describe("programMusicGetResponse", () => {
             assert.equal(missing.status, 404);
         });
     });
+
+    it("authorizes music GET from the token query string", async () => {
+        await withTempDataDir(async () => {
+            const token = await ensureRestreamCaptureToken();
+            const bytes = Buffer.from("ID3-query");
+            await saveMusicFile("loop.mp3", bytes);
+
+            const missing = await programMusicGetResponse(
+                new Request("http://local/api/overlay/music/loop.mp3"),
+                "loop.mp3",
+                {admin: false},
+            );
+            assert.equal(missing.status, 404);
+
+            const withQuery = await programMusicGetResponse(
+                new Request(
+                    `http://local/api/overlay/music/loop.mp3?token=${encodeURIComponent(token)}`,
+                ),
+                "loop.mp3",
+                {admin: false},
+            );
+            assert.equal(withQuery.status, 200);
+            assert.deepEqual(Buffer.from(await withQuery.arrayBuffer()), bytes);
+        });
+    });
 });
 
 describe("program audio wiring", () => {
@@ -206,8 +231,13 @@ describe("program audio wiring", () => {
         assert.match(client, /<audio/);
         assert.match(client, /hidden/);
         assert.match(client, /onEnded/);
+        assert.match(client, /onError/);
         assert.match(client, /paused/);
         assert.match(client, /volume/);
+        assert.match(client, /loop=/);
+        assert.match(client, /currentTime/);
+        assert.match(client, /referrerPolicy="no-referrer"/);
+        assert.doesNotMatch(client, /Date\.now\(\)/);
         assert.match(scene, /ProgramAudio/);
 
         assert.match(audioRoute, /withRequestLog/);
