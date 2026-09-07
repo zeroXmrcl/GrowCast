@@ -233,15 +233,20 @@ describe("restream capture gate", () => {
         });
     });
 
-    it("lets GROWCAST_RESTREAM_TOKEN override the capture.token file", async () => {
+    it("persists GROWCAST_RESTREAM_TOKEN to capture.token so the sidecar shares it", async () => {
         await withTempDataDir(async () => {
             await ensureRestreamCaptureToken({});
-            const fileToken = await readCaptureTokenFile();
-            assert.ok(fileToken);
+            const generated = await readCaptureTokenFile();
+            assert.ok(generated);
             const env = {GROWCAST_RESTREAM_TOKEN: "env-override-token"};
             assert.equal(await resolveRestreamCaptureToken(env), "env-override-token");
             assert.equal(await ensureRestreamCaptureToken(env), "env-override-token");
-            assert.equal(await readCaptureTokenFile(), fileToken);
+            assert.equal(await readCaptureTokenFile(), "env-override-token");
+            const mode = (await stat(restreamCaptureTokenFile())).mode & 0o777;
+            if (process.platform !== "win32") {
+                assert.equal(mode, 0o600);
+            }
+            assert.notEqual(generated, "env-override-token");
             assert.equal(
                 isRestreamCaptureAuthorized(
                     await resolveRestreamCaptureToken(env),
@@ -249,10 +254,18 @@ describe("restream capture gate", () => {
                 ),
                 true,
             );
-            assert.equal(
-                isRestreamCaptureAuthorized(await resolveRestreamCaptureToken(env), fileToken),
-                false,
-            );
+        });
+    });
+
+    it("writes env token to capture.token when the file is missing", async () => {
+        await withTempDataDir(async () => {
+            const env = {GROWCAST_RESTREAM_TOKEN: "env-only-token"};
+            assert.equal(await ensureRestreamCaptureToken(env), "env-only-token");
+            assert.equal(await readCaptureTokenFile(), "env-only-token");
+            const mode = (await stat(restreamCaptureTokenFile())).mode & 0o777;
+            if (process.platform !== "win32") {
+                assert.equal(mode, 0o600);
+            }
         });
     });
 });
@@ -307,7 +320,11 @@ describe("restream chrome", () => {
         assert.match(captureSrc, /ensureRestreamCaptureToken/);
         const restreamBlock = composeServiceBlock(composeSrc, "restream");
         assert.doesNotMatch(restreamBlock, /path:\s*\.env\.local/);
-        assert.match(composeSrc, /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN:-\}/);
+        assert.doesNotMatch(restreamBlock, /env_file:/);
+        assert.doesNotMatch(
+            restreamBlock,
+            /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN/,
+        );
         assert.match(dockerSrc, /USER 1001/);
         assert.match(sidecarSrc, /SIGTERM/);
         assert.match(sidecarSrc, /redact/);
@@ -363,8 +380,11 @@ describe("restream chrome", () => {
         assert.doesNotMatch(restream, /path:\s*\.env\.local/);
         assert.doesNotMatch(restream, /env_file:/);
         assert.equal(compose.includes("GROWCAST_URL: http://growcast:3000"), true);
-        assert.match(restream, /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN:-\}/);
-        assert.match(restream, /GROWCAST_RESTREAM_STREAM_URL:\s*\$\{GROWCAST_RESTREAM_STREAM_URL:-\}/);
+        assert.doesNotMatch(
+            restream,
+            /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN/,
+        );
+        assert.doesNotMatch(restream, /GROWCAST_RESTREAM_STREAM_URL/);
         assert.doesNotMatch(restream, /TWITCH_CLIENT_SECRET/);
         assert.doesNotMatch(restream, /helix/i);
         assert.doesNotMatch(sidecarSrc, /helix/i);

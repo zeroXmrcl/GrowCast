@@ -118,13 +118,14 @@ describe("admin settings split", () => {
         assert.doesNotMatch(streamPage, /AdminHashRedirect/);
     });
 
-    it("interpolates empty-default GROWCAST_RESTREAM_TOKEN and does not load .env.local into restream", () => {
+    it("does not interpolate GROWCAST_RESTREAM_TOKEN into restream environment", () => {
         const composeSrc = src("docker-compose.yml");
         const restream = composeSrc.split(/^  restream:\s*$/m)[1] ?? "";
         assert.doesNotMatch(restream, /path:\s*\.env\.local/);
-        assert.match(
-            composeSrc,
-            /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN:-\}/,
+        assert.doesNotMatch(restream, /env_file:/);
+        assert.doesNotMatch(
+            restream,
+            /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN/,
         );
     });
 
