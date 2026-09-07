@@ -58,6 +58,142 @@ function pngDimensions(input: Buffer): {width: number; height: number} | null {
     return {width, height};
 }
 
+function jpegExifOrientation(input: Buffer): number {
+    let offset = 2;
+    while (offset + 4 <= input.length) {
+        if (input[offset] !== 0xff) {
+            break;
+        }
+        const marker = input[offset + 1];
+        if (marker === 0xda || marker === 0xd9) {
+            break;
+        }
+        const size = input.readUInt16BE(offset + 2);
+        if (size < 2 || offset + 2 + size > input.length) {
+            break;
+        }
+        if (marker === 0xe1) {
+            const payload = offset + 4;
+            if (
+                payload + 6 <= input.length
+                && input.toString("ascii", payload, payload + 4) === "Exif"
+                && input[payload + 4] === 0
+                && input[payload + 5] === 0
+            ) {
+                const value = readTiffOrientation(input, payload + 6);
+                if (value !== null) {
+                    return value;
+                }
+            }
+        }
+        offset += 2 + size;
+    }
+    return 1;
+}
+
+function readTiffOrientation(buffer: Buffer, tiffStart: number): number | null {
+    if (tiffStart + 8 > buffer.length) {
+        return null;
+    }
+    const order = buffer.toString("ascii", tiffStart, tiffStart + 2);
+    const little = order === "II";
+    if (!little && order !== "MM") {
+        return null;
+    }
+    const u16 = (at: number) =>
+        little ? buffer.readUInt16LE(at) : buffer.readUInt16BE(at);
+    const u32 = (at: number) =>
+        little ? buffer.readUInt32LE(at) : buffer.readUInt32BE(at);
+    if (u16(tiffStart + 2) !== 42) {
+        return null;
+    }
+    const ifd = tiffStart + u32(tiffStart + 4);
+    if (ifd + 2 > buffer.length) {
+        return null;
+    }
+    const count = u16(ifd);
+    for (let i = 0; i < count; i += 1) {
+        const entry = ifd + 2 + i * 12;
+        if (entry + 12 > buffer.length) {
+            return null;
+        }
+        if (u16(entry) !== 0x0112) {
+            continue;
+        }
+        const type = u16(entry + 2);
+        const n = u32(entry + 4);
+        if (n !== 1) {
+            return 1;
+        }
+        const value = type === 3 ? u16(entry + 8) : u32(entry + 8);
+        if (value >= 1 && value <= 8) {
+            return value;
+        }
+        return 1;
+    }
+    return 1;
+}
+
+function applyJpegOrientation(
+    src: Uint8Array | Uint8ClampedArray | Buffer,
+    width: number,
+    height: number,
+    orientation: number,
+): {data: Buffer; width: number; height: number} {
+    if (orientation <= 1 || orientation > 8) {
+        return {data: Buffer.from(src), width, height};
+    }
+    const swap = orientation >= 5;
+    const destWidth = swap ? height : width;
+    const destHeight = swap ? width : height;
+    const dest = Buffer.alloc(destWidth * destHeight * 4);
+    for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+            let dx = x;
+            let dy = y;
+            switch (orientation) {
+                case 2:
+                    dx = width - 1 - x;
+                    dy = y;
+                    break;
+                case 3:
+                    dx = width - 1 - x;
+                    dy = height - 1 - y;
+                    break;
+                case 4:
+                    dx = x;
+                    dy = height - 1 - y;
+                    break;
+                case 5:
+                    dx = y;
+                    dy = x;
+                    break;
+                case 6:
+                    dx = height - 1 - y;
+                    dy = x;
+                    break;
+                case 7:
+                    dx = height - 1 - y;
+                    dy = width - 1 - x;
+                    break;
+                case 8:
+                    dx = y;
+                    dy = width - 1 - x;
+                    break;
+                default:
+                    break;
+            }
+            const si = (y * width + x) * 4;
+            const di = (dy * destWidth + dx) * 4;
+            dest[di] = src[si] ?? 0;
+            dest[di + 1] = src[si + 1] ?? 0;
+            dest[di + 2] = src[si + 2] ?? 0;
+            dest[di + 3] = src[si + 3] ?? 255;
+        }
+    }
+    return {data: dest, width: destWidth, height: destHeight};
+}
+
 function fitInside(width: number, height: number, max: number): {width: number; height: number} {
     if (width <= max && height <= max) {
         return {width, height};
@@ -151,14 +287,20 @@ async function encodePortable(input: Buffer): Promise<EncodeUploadResult> {
         if (!decoded.width || !decoded.height || decoded.width * decoded.height > MAX_INPUT_PIXELS) {
             return {ok: false, reason: "invalid_image"};
         }
-        const fitted = fitInside(decoded.width, decoded.height, MAX_OUTPUT_DIMENSION);
+        const oriented = applyJpegOrientation(
+            decoded.data,
+            decoded.width,
+            decoded.height,
+            jpegExifOrientation(input),
+        );
+        const fitted = fitInside(oriented.width, oriented.height, MAX_OUTPUT_DIMENSION);
         const rgba =
-            fitted.width === decoded.width && fitted.height === decoded.height
-                ? decoded.data
+            fitted.width === oriented.width && fitted.height === oriented.height
+                ? oriented.data
                 : resizeRgba(
-                    decoded.data,
-                    decoded.width,
-                    decoded.height,
+                    oriented.data,
+                    oriented.width,
+                    oriented.height,
                     fitted.width,
                     fitted.height,
                 );
@@ -198,4 +340,81 @@ export async function encodeUploadedImage(
         }
     }
     return encodePortable(input);
+}
+
+export async function rotateUploadedImage(
+    input: Buffer,
+    options: EncodeUploadOptions = {},
+): Promise<EncodeUploadResult> {
+    if (options.allowSharp !== false) {
+        try {
+            const sharp = (await import("sharp")).default;
+            const data = await sharp(input, {limitInputPixels: MAX_INPUT_PIXELS})
+                .rotate(90)
+                .resize({
+                    width: MAX_OUTPUT_DIMENSION,
+                    height: MAX_OUTPUT_DIMENSION,
+                    fit: "inside",
+                    withoutEnlargement: true,
+                })
+                .webp({quality: WEBP_QUALITY})
+                .toBuffer();
+            return {ok: true, value: {data, extension: "webp"}};
+        } catch {
+            /* Sharp unavailable */
+        }
+    }
+
+    const format = sniffFormat(input);
+    if (format === "png" || format === null) {
+        return {ok: false, reason: format === "png" ? "encoder_unavailable" : "invalid_image"};
+    }
+
+    let width: number;
+    let height: number;
+    let pixels: Buffer;
+    if (format === "jpeg") {
+        let decoded: {data: Buffer; width: number; height: number};
+        try {
+            decoded = jpeg.decode(input, {
+                maxResolutionInMP: JPEG_DECODE_MAX_RESOLUTION_MP,
+                maxMemoryUsageInMB: JPEG_DECODE_MAX_MEMORY_MB,
+            });
+        } catch {
+            return {ok: false, reason: "invalid_image"};
+        }
+        const oriented = applyJpegOrientation(
+            decoded.data,
+            decoded.width,
+            decoded.height,
+            jpegExifOrientation(input),
+        );
+        width = oriented.width;
+        height = oriented.height;
+        pixels = oriented.data;
+    } else {
+        let image;
+        try {
+            image = await decodeWebpRgba(input);
+        } catch {
+            return {ok: false, reason: "encoder_unavailable"};
+        }
+        width = image.width;
+        height = image.height;
+        pixels = Buffer.from(image.data);
+    }
+
+    const turned = applyJpegOrientation(pixels, width, height, 6);
+    const fitted = fitInside(turned.width, turned.height, MAX_OUTPUT_DIMENSION);
+    const rgba =
+        fitted.width === turned.width && fitted.height === turned.height
+            ? turned.data
+            : resizeRgba(
+                turned.data,
+                turned.width,
+                turned.height,
+                fitted.width,
+                fitted.height,
+            );
+    return encodeJpegRgba(rgba, fitted.width, fitted.height);
 }

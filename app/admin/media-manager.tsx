@@ -87,17 +87,30 @@ function CollectionSection({
                                 >
                                     {file.name}
                                 </span>
-                                <form action={MEDIA_ENDPOINT} method="post" className="shrink-0">
-                                    <input type="hidden" name="intent" value="delete"/>
-                                    <input type="hidden" name="collection" value={collection}/>
-                                    <input type="hidden" name="filename" value={file.name}/>
-                                    <button
-                                        type="submit"
-                                        className="rounded border border-red-900/60 bg-red-950/40 px-2 py-1 text-xs font-medium text-red-200 hover:bg-red-900/50"
-                                    >
-                                        Delete
-                                    </button>
-                                </form>
+                                <div className="flex shrink-0 gap-1">
+                                    <form action={MEDIA_ENDPOINT} method="post">
+                                        <input type="hidden" name="intent" value="rotate"/>
+                                        <input type="hidden" name="collection" value={collection}/>
+                                        <input type="hidden" name="filename" value={file.name}/>
+                                        <button
+                                            type="submit"
+                                            className="rounded border border-(--admin-border-strong) bg-(--admin-surface) px-2 py-1 text-xs font-medium text-(--admin-text) hover:bg-(--admin-surface-muted)"
+                                        >
+                                            Rotate
+                                        </button>
+                                    </form>
+                                    <form action={MEDIA_ENDPOINT} method="post">
+                                        <input type="hidden" name="intent" value="delete"/>
+                                        <input type="hidden" name="collection" value={collection}/>
+                                        <input type="hidden" name="filename" value={file.name}/>
+                                        <button
+                                            type="submit"
+                                            className="rounded border border-red-900/60 bg-red-950/40 px-2 py-1 text-xs font-medium text-red-200 hover:bg-red-900/50"
+                                        >
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     ))}

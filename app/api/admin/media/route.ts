@@ -65,6 +65,12 @@ export async function POST(request: Request) {
 
         if (result.notice === "deleted") {
             logAdminMediaDeleted({collection: result.collection, filename: result.filename});
+        } else if (result.notice === "rotated") {
+            logAdminMediaUploaded({
+                collection: result.collection,
+                count: 1,
+                rejected: 0,
+            });
         } else {
             logAdminMediaUploaded({
                 collection: result.collection,
