@@ -13,7 +13,10 @@ export const revalidate = 0;
 function found(location: string): Response {
     return new Response(null, {
         status: 302,
-        headers: {Location: location},
+        headers: {
+            Location: location,
+            "Cache-Control": "no-store",
+        },
     });
 }
 
