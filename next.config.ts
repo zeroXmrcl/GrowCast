@@ -21,6 +21,22 @@ const CONTENT_SECURITY_POLICY = [
     "frame-src 'self' https: http:",
 ].join("; ");
 
+const PROGRAM_CONTENT_SECURITY_POLICY = CONTENT_SECURITY_POLICY.replace(
+    "frame-ancestors 'none'",
+    "frame-ancestors 'self'",
+);
+
+const PROGRAM_FRAME_HEADERS = [
+    {
+        key: "X-Frame-Options",
+        value: "SAMEORIGIN",
+    },
+    {
+        key: "Content-Security-Policy",
+        value: PROGRAM_CONTENT_SECURITY_POLICY,
+    },
+];
+
 const nextConfig: NextConfig = {
     output: isStandaloneBuild ? "standalone" : undefined,
     serverExternalPackages: ["sharp"],
@@ -69,6 +85,15 @@ const nextConfig: NextConfig = {
                         value: "camera=(), microphone=(), geolocation=(), payment=()",
                     },
                 ],
+            },
+            // Last matching header key wins; these must follow /:path*.
+            {
+                source: "/program",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
+            {
+                source: "/program/:path*",
+                headers: PROGRAM_FRAME_HEADERS,
             },
         ];
     },
