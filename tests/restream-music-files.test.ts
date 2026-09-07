@@ -7,6 +7,7 @@ import {
     MUSIC_EXTENSIONS,
     MUSIC_MAX_BYTES,
     MUSIC_MAX_FILES,
+    deleteMusicFile,
     listMusicFiles,
     saveMusicFile,
 } from "../lib/restream/music-files.ts";
@@ -67,6 +68,27 @@ describe("saveMusicFile", () => {
                 assert.equal(extra.error, "too_many");
             }
             assert.equal((await listMusicFiles()).length, MUSIC_MAX_FILES);
+        });
+    });
+});
+
+describe("deleteMusicFile", () => {
+    it("rejects traversal and removes listed files", async () => {
+        await withTempDataDir(async () => {
+            const bad = await deleteMusicFile("../x.mp3");
+            assert.equal(bad.ok, false);
+            if (!bad.ok) {
+                assert.equal(bad.error, "invalid_name");
+            }
+
+            await saveMusicFile("loop.mp3", Buffer.from("ID3"));
+            assert.deepEqual(await listMusicFiles(), ["loop.mp3"]);
+            const removed = await deleteMusicFile("loop.mp3");
+            assert.equal(removed.ok, true);
+            assert.deepEqual(await listMusicFiles(), []);
+
+            const missing = await deleteMusicFile("gone.mp3");
+            assert.equal(missing.ok, true);
         });
     });
 });
