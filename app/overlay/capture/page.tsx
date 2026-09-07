@@ -1,5 +1,5 @@
 import {notFound} from "next/navigation";
-import OverlayHud from "@/components/overlay-hud";
+import ProgramScene from "@/components/program-scene";
 import {getCurrentGrow} from "@/lib/db";
 import {
     captureStreamUrl,
@@ -22,18 +22,17 @@ export default async function OverlayCapturePage({
 
     const grow = await getCurrentGrow();
     return (
-        <OverlayHud
+        <ProgramScene
             plant={grow.plant}
             name={grow.name}
             seededAt={grow.details.seededAt}
             overlayLayout={grow.overlayLayout}
-            overlayStream="include"
-            lockStream
             overlayScalePct={grow.overlayScalePct}
             streamUrl={captureStreamUrl(grow.streamUrl)}
             stage={grow.details.stage}
             lightSchedule={grow.details.lightSchedule}
             strain={grow.details.strain}
+            captureToken={params.token}
         />
     );
 }

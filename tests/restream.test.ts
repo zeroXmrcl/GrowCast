@@ -267,6 +267,10 @@ describe("restream chrome", () => {
             path.join(process.cwd(), "app", "overlay", "capture", "page.tsx"),
             "utf8",
         );
+        const sceneSrc = readFileSync(
+            path.join(process.cwd(), "components", "program-scene.tsx"),
+            "utf8",
+        );
         const fieldsSrc = readFileSync(
             path.join(process.cwd(), "app", "admin", "restream-panel.tsx"),
             "utf8",
@@ -284,8 +288,8 @@ describe("restream chrome", () => {
             path.join(process.cwd(), "extensions", "GrowCast-Restream", "Dockerfile"),
             "utf8",
         );
-        assert.match(captureSrc, /overlayStream=["']include["']/);
-        assert.match(captureSrc, /lockStream/);
+        assert.match(sceneSrc, /overlayStream=["']include["']/);
+        assert.match(sceneSrc, /lockStream/);
         assert.match(hudSrc, /mergeOverlayGrowPoll/);
         assert.match(captureSrc, /isRestreamCaptureAuthorized/);
         assert.match(captureSrc, /ensureRestreamCaptureToken/);
