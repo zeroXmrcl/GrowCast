@@ -50,3 +50,18 @@ html:has([data-overlay-root]) body {
   --admin-subtle: #8a8a91;
   color-scheme: dark;
 }
+
+@keyframes growcast-cover-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.growcast-cover-breathe {
+  animation: growcast-cover-breathe 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-cover-breathe {
+    animation: none;
+  }
+}

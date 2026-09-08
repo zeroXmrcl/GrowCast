@@ -13,6 +13,7 @@
     "test": "node --experimental-strip-types --import ./tests/register.mjs --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
+    "hls.js": "^1.7.2",
     "jpeg-js": "^0.4.4",
     "next": "^16.2.12",
     "pino": "^10.3.1",

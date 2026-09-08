@@ -191,4 +191,31 @@ describe("overlay chrome", () => {
         assert.match(climateSrc, /formatHumidityPctTenths/);
         assert.doesNotMatch(climateSrc, /formatHumidityPct\(/);
     });
+
+    it("plays HLS in OverlayCamera with the GrowCast reconnect cover", () => {
+        const cam = readFileSync(
+            path.join(process.cwd(), "components", "overlay-camera.tsx"),
+            "utf8",
+        );
+        const css = readFileSync(path.join(process.cwd(), "app", "globals.css"), "utf8");
+        assert.match(cam, /"use client"/);
+        assert.match(cam, /from "hls\.js"/);
+        assert.match(cam, /hlsPlaylistUrl/);
+        assert.match(cam, /coverShouldHide/);
+        assert.match(cam, /COVER_MIN_MS/);
+        assert.match(cam, /COVER_FADE_MS/);
+        assert.match(cam, /growCastLogo_green\.svg/);
+        assert.match(cam, />GrowCast</);
+        assert.match(cam, />Reconnecting</);
+        assert.match(cam, /blur\(14px\)/);
+        assert.match(cam, /<video/);
+        assert.match(cam, /muted/);
+        assert.match(cam, /playsInline/);
+        assert.match(cam, /cameraLookFilterCss/);
+        assert.match(cam, /Hls\.isSupported/);
+        assert.match(cam, /loadSource/);
+        assert.match(cam, /drawImage/);
+        assert.match(css, /growcast-cover-breathe/);
+        assert.match(css, /prefers-reduced-motion/);
+    });
 });
