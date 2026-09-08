@@ -210,6 +210,8 @@ describe("overlay chrome", () => {
         assert.match(cam, /muted/);
         assert.match(cam, /playsInline/);
         assert.match(cam, /cameraLookFilterCss/);
+        assert.match(cam, /cameraLookTemperatureStyle/);
+        assert.match(cam, /filter:/);
         assert.match(cam, /Hls\.isSupported/);
         assert.match(cam, /loadSource/);
         assert.match(cam, /drawImage/);
