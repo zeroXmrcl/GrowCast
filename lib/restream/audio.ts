@@ -1,7 +1,12 @@
 import {chmod, readFile} from "node:fs/promises";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
-import {parseWaveSmoothPct} from "@/lib/program-music-wave";
+import {
+    parseMusicLook,
+    parseWaveBars,
+    parseWaveSmoothPct,
+    type MusicLook,
+} from "@/lib/program-music-wave";
 import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 import {restreamAudioFile, restreamDir} from "@/lib/restream/paths";
 
@@ -10,6 +15,8 @@ export type RestreamAudio = {
     volume: number;
     paused: boolean;
     waveSmoothPct: number;
+    musicLook: MusicLook;
+    waveBars: number;
 };
 
 export type AudioSourceKind = "url" | "playlist" | "silence";
@@ -19,6 +26,8 @@ export const EMPTY_RESTREAM_AUDIO: RestreamAudio = {
     volume: 0.7,
     paused: false,
     waveSmoothPct: 70,
+    musicLook: "player",
+    waveBars: 24,
 };
 
 export function parseRestreamAudio(raw: unknown): RestreamAudio {
@@ -32,6 +41,8 @@ export function parseRestreamAudio(raw: unknown): RestreamAudio {
         volume,
         paused: asBoolean(raw.paused, false),
         waveSmoothPct: parseWaveSmoothPct(raw.waveSmoothPct),
+        musicLook: parseMusicLook(raw.musicLook),
+        waveBars: parseWaveBars(raw.waveBars),
     };
 }
 

@@ -31,8 +31,15 @@ describe("parseRestreamAudio", () => {
     it("defaults missing audio to paused silence", () => {
         assert.deepEqual(parseRestreamAudio(null), EMPTY_RESTREAM_AUDIO);
         assert.equal(EMPTY_RESTREAM_AUDIO.waveSmoothPct, 70);
+        assert.equal(EMPTY_RESTREAM_AUDIO.musicLook, "player");
+        assert.equal(EMPTY_RESTREAM_AUDIO.waveBars, 24);
         assert.equal(parseRestreamAudio(null).waveSmoothPct, 70);
+        assert.equal(parseRestreamAudio(null).musicLook, "player");
         assert.equal(parseRestreamAudio({waveSmoothPct: 77}).waveSmoothPct, 75);
+        assert.equal(parseRestreamAudio({musicLook: "wave"}).musicLook, "wave");
+        assert.equal(parseRestreamAudio({musicLook: "eq"}).musicLook, "player");
+        assert.equal(parseRestreamAudio({waveBars: 25}).waveBars, 24);
+        assert.equal(parseRestreamAudio({waveBars: 7}).waveBars, 8);
         assert.equal(parseRestreamAudio({url: "https://x.example/a.mp3", volume: 0.5, paused: false}).url, "https://x.example/a.mp3");
         assert.equal(parseRestreamAudio({volume: 9}).volume, 1);
         assert.equal(parseRestreamAudio({volume: -1}).volume, 0);
@@ -97,6 +104,32 @@ describe("readRestreamAudio", () => {
             assert.equal(next.volume, 0.2);
             assert.equal(next.waveSmoothPct, 40);
             assert.equal(next.url, "https://radio.example/stream");
+        });
+    });
+
+    it("keeps musicLook and waveBars when rewriting pause and volume", async () => {
+        await withTempDataDir(async () => {
+            await writeRestreamAudio({
+                url: "https://radio.example/stream",
+                volume: 0.4,
+                paused: false,
+                waveSmoothPct: 40,
+                musicLook: "wave",
+                waveBars: 32,
+            });
+            const existing = await readRestreamAudio();
+            await writeRestreamAudio({
+                url: existing.url,
+                volume: 0.2,
+                paused: true,
+                waveSmoothPct: existing.waveSmoothPct,
+                musicLook: existing.musicLook,
+                waveBars: existing.waveBars,
+            });
+            const next = await readRestreamAudio();
+            assert.equal(next.musicLook, "wave");
+            assert.equal(next.waveBars, 32);
+            assert.equal(next.waveSmoothPct, 40);
         });
     });
 });
