@@ -1,6 +1,8 @@
 import {saveProgramAudioUrlAction} from "@/app/admin/actions";
 import {AdminButton, AdminField, AdminInput, AdminPanel} from "@/components/admin/ui";
+import WaveBarsInput from "@/components/wave-bars-input";
 import WaveSmoothInput from "@/components/wave-smooth-input";
+import type {MusicLook} from "@/lib/program-music-wave";
 
 const MUSIC_ENDPOINT = "/api/admin/music";
 
@@ -8,10 +10,14 @@ export function MusicPanel({
     files,
     url,
     waveSmoothPct,
+    musicLook,
+    waveBars,
 }: {
     files: string[];
     url: string;
     waveSmoothPct: number;
+    musicLook: MusicLook;
+    waveBars: number;
 }) {
     return (
         <AdminPanel id="music" title="Music">
@@ -29,6 +35,32 @@ export function MusicPanel({
                             placeholder="https://"
                         />
                     </AdminField>
+                    <div>
+                        <p className="mb-2 text-xs font-semibold uppercase text-(--admin-subtle)">Look</p>
+                        <div className="grid gap-2">
+                            <label className="flex items-center gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-2">
+                                <input
+                                    type="radio"
+                                    name="musicLook"
+                                    value="wave"
+                                    defaultChecked={musicLook === "wave"}
+                                    className="h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
+                                />
+                                <span className="text-sm font-medium text-(--admin-text)">Wave</span>
+                            </label>
+                            <label className="flex items-center gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-2">
+                                <input
+                                    type="radio"
+                                    name="musicLook"
+                                    value="player"
+                                    defaultChecked={musicLook !== "wave"}
+                                    className="h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
+                                />
+                                <span className="text-sm font-medium text-(--admin-text)">Player</span>
+                            </label>
+                        </div>
+                    </div>
+                    <WaveBarsInput defaultValue={waveBars} />
                     <WaveSmoothInput defaultValue={waveSmoothPct} />
                     <AdminButton type="submit" tone="secondary">
                         Save URL
