@@ -8,6 +8,7 @@ RUN apt-get update \
         pulseaudio \
         pulseaudio-utils \
         python3 \
+        xdotool \
         xvfb \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -g 1001 growcast \

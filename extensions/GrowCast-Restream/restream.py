@@ -282,6 +282,39 @@ def ffmpeg_command(audio_input: str) -> str:
     )
 
 
+def place_chromium_window() -> None:
+    for cls in ("Chromium", "chromium", "chromium-browser"):
+        try:
+            placed = subprocess.run(
+                [
+                    "xdotool",
+                    "search",
+                    "--onlyvisible",
+                    "--class",
+                    cls,
+                    "windowmove",
+                    "0",
+                    "0",
+                    "windowsize",
+                    "1920",
+                    "1080",
+                ],
+                env=limited_env(),
+                capture_output=True,
+                timeout=5,
+            )
+        except FileNotFoundError:
+            log.warning("xdotool not installed")
+            return
+        except (OSError, subprocess.TimeoutExpired) as err:
+            log.warning("xdotool: %s", err)
+            return
+        if placed.returncode == 0:
+            log.info("placed chromium class=%s at 0,0 1920x1080", cls)
+            return
+    log.warning("xdotool did not find a chromium window")
+
+
 def spawn_ffmpeg(audio_input: str, key: str, token: str) -> subprocess.Popen[bytes]:
     proc = subprocess.Popen(
         ["sh", "-c", ffmpeg_command(audio_input)],
@@ -318,7 +351,10 @@ def start_stack(key: str, token: str) -> None:
             "--disable-dev-shm-usage",
             "--autoplay-policy=no-user-gesture-required",
             "--kiosk",
+            "--start-fullscreen",
+            "--window-position=0,0",
             "--window-size=1920,1080",
+            "--force-device-scale-factor=1",
             f"--user-data-dir={chrome_profile}",
             f"{capture}?token={token}",
         ],
@@ -330,6 +366,7 @@ def start_stack(key: str, token: str) -> None:
     time.sleep(2)
     if not running(chrome):
         log.error("chromium exited code=%s", chrome.returncode if chrome else "?")
+    place_chromium_window()
     log.info("pulse sink-inputs=%s", _pactl_out("list", "short", "sink-inputs") or "none")
     log.info("starting ffmpeg ingest=%s", INGEST)
     if pulse_is_running():
