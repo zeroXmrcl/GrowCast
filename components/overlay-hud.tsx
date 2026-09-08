@@ -29,12 +29,14 @@ import {
     overlayClimateGearVisible,
     overlayEnergyVisible,
 } from "@/lib/overlay-presence";
+import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/lib/restream/camera-look";
 
 export default function OverlayHud({
     lockStream = false,
     extra,
+    look = EMPTY_CAMERA_LOOK,
     ...initial
-}: OverlayGrowView & {lockStream?: boolean; extra?: ReactNode}) {
+}: OverlayGrowView & {lockStream?: boolean; extra?: ReactNode; look?: CameraLook}) {
     const [grow, setGrow] = useState<OverlayGrowView>(initial);
     const [energy, setEnergy] = useState<EnergyPublicDto | null>(null);
     const [heldSnapshot, setHeldSnapshot] = useState<GgsLivePublic | null>(null);
@@ -104,6 +106,7 @@ export default function OverlayHud({
             overlayStream={grow.overlayStream}
             overlayScalePct={grow.overlayScalePct}
             streamUrl={grow.streamUrl}
+            look={look}
         >
             <OverlayMotionItem show={true} order={OVERLAY_ORDER_IDENTITY} layout={layout}>
                 <OverlayIdentity
