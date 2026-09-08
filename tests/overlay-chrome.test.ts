@@ -118,13 +118,10 @@ describe("overlay chrome", () => {
         );
         assert.match(shellSrc, /overlayStreamEmbeds/);
         assert.match(shellSrc, /overlayHudScaleStyle/);
-        assert.match(shellSrc, /<iframe/);
-        assert.match(shellSrc, /cameraLookFilterCss/);
-        assert.match(shellSrc, /cameraLookTemperatureStyle/);
+        assert.match(shellSrc, /OverlayCamera/);
+        assert.doesNotMatch(shellSrc, /<iframe/);
         assert.match(shellSrc, /look\??:/);
         assert.match(shellSrc, /absolute inset-0 z-0/);
-        assert.match(shellSrc, /pointer-events-none absolute inset-0/);
-        assert.match(shellSrc, /filter:/);
         assert.match(hudSrc, /overlayStream/);
         assert.match(hudSrc, /overlayScalePct/);
         assert.match(hudSrc, /extra\?:/);
@@ -158,19 +155,20 @@ describe("overlay chrome", () => {
         assert.doesNotMatch(markSrc, /overlayAlertScaleStyle/);
     });
 
-    it("grades the cam iframe, not the HUD or watermark", () => {
+    it("grades the cam wrap, not the HUD or watermark", () => {
         const shellSrc = readFileSync(
             path.join(process.cwd(), "components", "overlay-shell.tsx"),
             "utf8",
         );
-        const iframe = shellSrc.indexOf("<iframe");
+        const cam = shellSrc.indexOf("<OverlayCamera");
         const hud = shellSrc.indexOf("style={scaleStyle}");
         const mark = shellSrc.indexOf("<OverlayWatermark");
         const wrap = shellSrc.indexOf("z-0");
-        assert.ok(wrap >= 0 && iframe > wrap);
-        assert.ok(hud > iframe);
+        assert.ok(wrap >= 0 && cam > wrap);
+        assert.ok(hud > cam);
         assert.ok(mark > hud);
         assert.match(shellSrc, /EMPTY_CAMERA_LOOK/);
+        assert.match(shellSrc, /look=\{look\}/);
     });
 
     it("public overlay SSR-feeds saved look, not a draft listener", () => {
