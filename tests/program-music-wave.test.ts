@@ -1,13 +1,22 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {
+    DEFAULT_MUSIC_LOOK,
+    DEFAULT_WAVE_BARS,
     DEFAULT_WAVE_SMOOTH_PCT,
+    WAVE_BARS_MAX,
+    WAVE_BARS_MIN,
+    WAVE_BARS_STEP,
     WAVE_SMOOTH_MAX,
     WAVE_SMOOTH_MIN,
     WAVE_SMOOTH_STEP,
+    foldFrequencyBins,
     nextPlaylistIndex,
+    parseMusicLook,
+    parseWaveBars,
     parseWaveSmoothPct,
     pickPlaylistStartIndex,
+    playlistTrackTitle,
     programAudioMediaErrorAction,
     programMusicWaveActive,
     shouldAttachMediaElementSource,
@@ -118,5 +127,59 @@ describe("waveSmoothTimeConstant", () => {
         assert.equal(waveSmoothTimeConstant(70), 0.7);
         assert.equal(waveSmoothTimeConstant(0), 0);
         assert.equal(waveSmoothTimeConstant(100), 0.95);
+    });
+});
+
+describe("parseMusicLook", () => {
+    it("defaults to player and only accepts wave or player", () => {
+        assert.equal(DEFAULT_MUSIC_LOOK, "player");
+        assert.equal(parseMusicLook(undefined), "player");
+        assert.equal(parseMusicLook("wave"), "wave");
+        assert.equal(parseMusicLook("player"), "player");
+        assert.equal(parseMusicLook("eq"), "player");
+        assert.equal(parseMusicLook(""), "player");
+    });
+});
+
+describe("parseWaveBars", () => {
+    it("defaults to 24, snaps to 4, clamps 8–48", () => {
+        assert.equal(DEFAULT_WAVE_BARS, 24);
+        assert.equal(WAVE_BARS_MIN, 8);
+        assert.equal(WAVE_BARS_MAX, 48);
+        assert.equal(WAVE_BARS_STEP, 4);
+        assert.equal(parseWaveBars(undefined), 24);
+        assert.equal(parseWaveBars(null), 24);
+        assert.equal(parseWaveBars("wide"), 24);
+        assert.equal(parseWaveBars(25), 24);
+        assert.equal(parseWaveBars(7), 8);
+        assert.equal(parseWaveBars(99), 48);
+        assert.equal(parseWaveBars("32"), 32);
+    });
+});
+
+describe("foldFrequencyBins", () => {
+    it("puts left-heavy energy in the middle with symmetric wings", () => {
+        const bins = new Uint8Array(16);
+        bins[0] = 255;
+        bins[1] = 200;
+        bins[2] = 40;
+        const out = foldFrequencyBins(bins, 8);
+        assert.equal(out.length, 8);
+        assert.ok(out[3] >= out[0]);
+        assert.ok(out[4] >= out[7]);
+        assert.equal(out[0], out[7]);
+        assert.equal(out[1], out[6]);
+        assert.deepEqual(foldFrequencyBins(new Uint8Array(), 8), [0, 0, 0, 0, 0, 0, 0, 0]);
+    });
+});
+
+describe("playlistTrackTitle", () => {
+    it("strips path, extension, and a leading track number", () => {
+        assert.equal(playlistTrackTitle("01. Ambrosia Cascade.m4a"), "Ambrosia Cascade");
+        assert.equal(playlistTrackTitle("12 - Bed.mp3"), "Bed");
+        assert.equal(playlistTrackTitle("bed.ogg"), "bed");
+        assert.equal(playlistTrackTitle("folder/01. Track.wav"), "Track");
+        assert.equal(playlistTrackTitle("../x.mp3"), "x");
+        assert.equal(playlistTrackTitle(""), "");
     });
 });
