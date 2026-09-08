@@ -87,13 +87,13 @@ export default function OverlayCamera({
             setHasFrame(true);
         };
 
-        const markPlaying = () => {
-            const ready = video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
-            setPlaying(ready && !video.paused);
-            if (ready) {
-                setFatal(false);
-                snapshot();
-            }
+        const onPlaying = () => {
+            setPlaying(true);
+            setFatal(false);
+            snapshot();
+        };
+        const onPauseOrWaiting = () => {
+            setPlaying(video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !video.paused);
         };
 
         const fail = () => {
@@ -129,6 +129,8 @@ export default function OverlayCamera({
             nativeOnError = () => {
                 fail();
                 retry = window.setTimeout(() => {
+                    video.removeAttribute("src");
+                    video.load();
                     video.src = playlist;
                     void video.play().catch(() => undefined);
                 }, RETRY_MS);
@@ -136,9 +138,9 @@ export default function OverlayCamera({
             video.addEventListener("error", nativeOnError);
         };
 
-        video.addEventListener("playing", markPlaying);
-        video.addEventListener("pause", markPlaying);
-        video.addEventListener("waiting", markPlaying);
+        video.addEventListener("playing", onPlaying);
+        video.addEventListener("pause", onPauseOrWaiting);
+        video.addEventListener("waiting", onPauseOrWaiting);
         video.addEventListener("timeupdate", snapshot);
         attach();
         void video.play().catch(() => undefined);
@@ -148,9 +150,9 @@ export default function OverlayCamera({
             if (retry !== null) {
                 window.clearTimeout(retry);
             }
-            video.removeEventListener("playing", markPlaying);
-            video.removeEventListener("pause", markPlaying);
-            video.removeEventListener("waiting", markPlaying);
+            video.removeEventListener("playing", onPlaying);
+            video.removeEventListener("pause", onPauseOrWaiting);
+            video.removeEventListener("waiting", onPauseOrWaiting);
             video.removeEventListener("timeupdate", snapshot);
             if (nativeOnError) {
                 video.removeEventListener("error", nativeOnError);
@@ -185,12 +187,18 @@ export default function OverlayCamera({
                         opacity: showCover && hasFrame ? 1 : 0,
                         filter: "blur(14px)",
                         transform: "scale(1.06)",
+                        transitionProperty: "opacity",
+                        transitionDuration: `${COVER_FADE_MS}ms`,
                     }}
                     aria-hidden="true"
                 />
                 <div
                     className="pointer-events-none absolute inset-0 bg-zinc-950"
-                    style={{opacity: showCover && !hasFrame ? 1 : 0}}
+                    style={{
+                        opacity: showCover && !hasFrame ? 1 : 0,
+                        transitionProperty: "opacity",
+                        transitionDuration: `${COVER_FADE_MS}ms`,
+                    }}
                     aria-hidden="true"
                 />
                 <div

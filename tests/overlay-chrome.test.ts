@@ -215,6 +215,8 @@ describe("overlay chrome", () => {
         assert.match(cam, /Hls\.isSupported/);
         assert.match(cam, /loadSource/);
         assert.match(cam, /drawImage/);
+        assert.match(cam, /removeAttribute\("src"\)/);
+        assert.match(cam, /transitionDuration/);
         assert.match(css, /growcast-cover-breathe/);
         assert.match(css, /prefers-reduced-motion/);
     });
