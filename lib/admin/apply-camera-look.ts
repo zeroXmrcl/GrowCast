@@ -1,5 +1,6 @@
 import {isRecord} from "@/lib/coerce";
-import {parseCameraLook, writeCameraLook} from "@/lib/restream/camera-look";
+import {parseCameraLook} from "@/lib/restream/camera-look";
+import {writeCameraLook} from "@/lib/restream/camera-look-store";
 
 export type ApplyCameraLookResult =
     | {ok: true}

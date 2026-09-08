@@ -22,7 +22,7 @@ import {getCurrentGrow} from "@/lib/db";
 import {overlayPublicUrl} from "@/lib/overlay-layout";
 import {readAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio} from "@/lib/restream/audio";
-import {readCameraLook} from "@/lib/restream/camera-look";
+import {readCameraLook} from "@/lib/restream/camera-look-store";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
 import {listMusicFiles} from "@/lib/restream/music-files";
 import {readRestreamPublicView} from "@/lib/restream/store";

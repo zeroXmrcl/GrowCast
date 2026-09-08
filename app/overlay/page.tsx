@@ -1,6 +1,6 @@
 import OverlayHud from "@/components/overlay-hud";
 import {getCurrentGrow} from "@/lib/db";
-import {readCameraLook} from "@/lib/restream/camera-look";
+import {readCameraLook} from "@/lib/restream/camera-look-store";
 
 export const dynamic = "force-dynamic";
 

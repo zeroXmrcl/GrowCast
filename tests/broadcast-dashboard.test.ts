@@ -82,9 +82,11 @@ describe("broadcast chrome", () => {
 
     it("renders OverlayHud include+lockStream on the program monitor without ON AIR", () => {
         const scene = src(path.join("components", "program-scene.tsx"));
+        const lookHud = src(path.join("components", "program-camera-look.tsx"));
         const programPage = src(path.join("app", "program", "page.tsx"));
         const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
-        assert.match(scene, /overlayStream="include"/);
+        assert.match(lookHud, /overlayStream="include"/);
+        assert.match(scene, /ProgramCameraLook/);
         assert.match(scene, /lockStream/);
         assert.match(programPage, /streamUrl=\{grow\.streamUrl\}/);
         assert.doesNotMatch(programPage, /ON AIR/);
@@ -431,10 +433,12 @@ describe("homepage toast", () => {
     it("leaves overlay/capture unchanged and does not interpolate restream token", () => {
         const captureSrc = src(path.join("app", "overlay", "capture", "page.tsx"));
         const scene = src(path.join("components", "program-scene.tsx"));
+        const lookHud = src(path.join("components", "program-camera-look.tsx"));
         const composeSrc = src("docker-compose.yml");
         const sidecarSrc = src(path.join("extensions", "GrowCast-Restream", "restream.py"));
         const restream = composeSrc.split(/^  restream:\s*$/m)[1] ?? "";
-        assert.match(scene, /overlayStream=["']include["']/);
+        assert.match(lookHud, /overlayStream=["']include["']/);
+        assert.match(scene, /ProgramCameraLook/);
         assert.match(scene, /lockStream/);
         assert.match(captureSrc, /isRestreamCaptureAuthorized/);
         assert.doesNotMatch(restream, /path:\s*\.env\.local/);

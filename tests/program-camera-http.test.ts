@@ -4,7 +4,7 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {writeCameraLook} from "../lib/restream/camera-look.ts";
+import {writeCameraLook} from "../lib/restream/camera-look-store.ts";
 import {ensureRestreamCaptureToken} from "../lib/restream/capture.ts";
 import {programCameraGetResponse} from "../lib/restream/program-http.ts";
 
