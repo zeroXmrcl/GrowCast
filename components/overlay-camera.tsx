@@ -67,6 +67,19 @@ export default function OverlayCamera({
         let hls: Hls | null = null;
         let retry: number | null = null;
         let nativeOnError: (() => void) | null = null;
+        let resettingNative = false;
+
+        const scheduleRetry = (fn: () => void) => {
+            if (retry !== null) {
+                window.clearTimeout(retry);
+            }
+            retry = window.setTimeout(() => {
+                retry = null;
+                if (!cancelled) {
+                    fn();
+                }
+            }, RETRY_MS);
+        };
 
         const snapshot = () => {
             const canvas = canvasRef.current;
@@ -83,8 +96,12 @@ export default function OverlayCamera({
             if (!ctx) {
                 return;
             }
-            ctx.drawImage(video, 0, 0, width, height);
-            setHasFrame(true);
+            try {
+                ctx.drawImage(video, 0, 0, width, height);
+                setHasFrame(true);
+            } catch {
+                // Cross-origin native HLS can taint the canvas.
+            }
         };
 
         const onPlaying = () => {
@@ -108,8 +125,10 @@ export default function OverlayCamera({
             if (cancelled) {
                 return;
             }
+            hls?.destroy();
+            hls = null;
             if (Hls.isSupported()) {
-                hls = new Hls({enableWorker: true});
+                hls = new Hls({enableWorker: false, backBufferLength: 30});
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     void video.play().catch(() => undefined);
@@ -119,23 +138,35 @@ export default function OverlayCamera({
                         hls?.destroy();
                         hls = null;
                         fail();
-                        retry = window.setTimeout(attach, RETRY_MS);
+                        scheduleRetry(attach);
                     }
                 });
                 hls.loadSource(playlist);
                 return;
             }
+            if (!nativeOnError) {
+                nativeOnError = () => {
+                    if (cancelled || resettingNative) {
+                        return;
+                    }
+                    fail();
+                    scheduleRetry(() => {
+                        if (cancelled || !nativeOnError) {
+                            return;
+                        }
+                        resettingNative = true;
+                        video.removeEventListener("error", nativeOnError);
+                        video.removeAttribute("src");
+                        video.load();
+                        video.addEventListener("error", nativeOnError);
+                        resettingNative = false;
+                        video.src = playlist;
+                        void video.play().catch(() => undefined);
+                    });
+                };
+                video.addEventListener("error", nativeOnError);
+            }
             video.src = playlist;
-            nativeOnError = () => {
-                fail();
-                retry = window.setTimeout(() => {
-                    video.removeAttribute("src");
-                    video.load();
-                    video.src = playlist;
-                    void video.play().catch(() => undefined);
-                }, RETRY_MS);
-            };
-            video.addEventListener("error", nativeOnError);
         };
 
         video.addEventListener("playing", onPlaying);
