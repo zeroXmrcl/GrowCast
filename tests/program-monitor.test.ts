@@ -29,6 +29,8 @@ describe("program monitor wiring", () => {
         assert.match(monitor, /src="\/program"/);
         assert.match(monitor, /1920/);
         assert.match(monitor, /1080/);
+        assert.match(monitor, /allow="autoplay"/);
+        assert.match(monitor, /unlockPreviewAudio/);
         assert.doesNotMatch(monitor, /token=/);
         assert.match(page, /ProgramMonitor/);
         assert.doesNotMatch(page, /StreamPreview/);

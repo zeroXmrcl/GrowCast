@@ -7,8 +7,10 @@ import {
     WAVE_SMOOTH_STEP,
     nextPlaylistIndex,
     parseWaveSmoothPct,
+    pickPlaylistStartIndex,
     programAudioMediaErrorAction,
     programMusicWaveActive,
+    shouldAttachMediaElementSource,
     waveSmoothTimeConstant,
 } from "../lib/program-music-wave.ts";
 
@@ -61,6 +63,24 @@ describe("nextPlaylistIndex", () => {
         assert.equal(nextPlaylistIndex(2, 3), 0);
         assert.equal(nextPlaylistIndex(0, 1), 0);
         assert.equal(nextPlaylistIndex(0, 0), 0);
+    });
+});
+
+describe("pickPlaylistStartIndex", () => {
+    it("picks a random offset into the playlist", () => {
+        assert.equal(pickPlaylistStartIndex(0, () => 0.9), 0);
+        assert.equal(pickPlaylistStartIndex(1, () => 0.9), 0);
+        assert.equal(pickPlaylistStartIndex(4, () => 0), 0);
+        assert.equal(pickPlaylistStartIndex(4, () => 0.25), 1);
+        assert.equal(pickPlaylistStartIndex(4, () => 0.999), 3);
+    });
+});
+
+describe("shouldAttachMediaElementSource", () => {
+    it("waits until the audio context is running so native playback is not muted", () => {
+        assert.equal(shouldAttachMediaElementSource("running"), true);
+        assert.equal(shouldAttachMediaElementSource("suspended"), false);
+        assert.equal(shouldAttachMediaElementSource("closed"), false);
     });
 });
 

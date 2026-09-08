@@ -21,6 +21,17 @@ export function nextPlaylistIndex(index: number, length: number): number {
     return (index + 1) % length;
 }
 
+export function pickPlaylistStartIndex(length: number, random: () => number = Math.random): number {
+    if (length <= 0) {
+        return 0;
+    }
+    return Math.min(length - 1, Math.floor(random() * length));
+}
+
+export function shouldAttachMediaElementSource(state: string): boolean {
+    return state === "running";
+}
+
 export type ProgramAudioMediaErrorAction = "retry" | "next" | "url_fallback" | "silence";
 
 export function programAudioMediaErrorAction(input: {
