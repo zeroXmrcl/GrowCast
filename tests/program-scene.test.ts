@@ -33,6 +33,14 @@ describe("program scene", () => {
         assert.match(wave, /#22c55e/);
         assert.match(wave, /rgba\(74, 222, 128, 0\.55\)/);
         assert.match(wave, /OVERLAY_ORDER_MUSIC/);
+        assert.match(wave, /foldFrequencyBins/);
+        assert.match(wave, /musicLook/);
+        assert.match(wave, /waveBars/);
+        assert.match(wave, /#4ade80/);
+        assert.match(wave, /rgba\(161, 161, 170, 0\.35\)/);
+        assert.match(wave, /currentTime/);
+        assert.match(wave, /duration/);
+        assert.doesNotMatch(wave, /drawMirroredWave\(canvas, bins\)/);
         const audio = src(path.join("components", "program-audio.tsx"));
         assert.match(audio, /createMediaElementSource/);
         assert.match(audio, /createAnalyser/);
