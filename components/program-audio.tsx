@@ -5,8 +5,11 @@ import {useProgramAudioGraph} from "@/components/program-audio-graph";
 import {
     DEFAULT_WAVE_SMOOTH_PCT,
     nextPlaylistIndex,
+    parseMusicLook,
+    parseWaveBars,
     parseWaveSmoothPct,
     pickPlaylistStartIndex,
+    type MusicLook,
     programAudioMediaErrorAction,
     programMusicWaveActive,
     shouldAttachMediaElementSource,
@@ -29,6 +32,8 @@ type ProgramAudioBody = {
     paused: boolean;
     stingEnabled: boolean;
     waveSmoothPct: number;
+    musicLook: MusicLook;
+    waveBars: number;
 };
 
 function isAudioKind(value: unknown): value is AudioKind {
@@ -63,6 +68,8 @@ function parseProgramAudioBody(raw: unknown): ProgramAudioBody | null {
         paused: body.paused,
         stingEnabled: body.stingEnabled,
         waveSmoothPct: parseWaveSmoothPct(body.waveSmoothPct),
+        musicLook: parseMusicLook(body.musicLook),
+        waveBars: parseWaveBars(body.waveBars),
     };
 }
 
