@@ -1,8 +1,8 @@
 import OverlayAlertLayer from "@/components/overlay-alert-layer";
-import OverlayHud from "@/components/overlay-hud";
 import OverlayMusicWave from "@/components/overlay-music-wave";
 import ProgramAudio from "@/components/program-audio";
 import {ProgramAudioGraphProvider} from "@/components/program-audio-graph";
+import ProgramCameraLook from "@/components/program-camera-look";
 import type {OverlayGrowView} from "@/lib/overlay-grow";
 
 export default function ProgramScene({
@@ -20,12 +20,11 @@ export default function ProgramScene({
     return (
         <ProgramAudioGraphProvider>
             <div className="relative h-full w-full">
-                <OverlayHud
+                <ProgramCameraLook
                     plant={plant}
                     name={name}
                     seededAt={seededAt}
                     overlayLayout={overlayLayout}
-                    overlayStream="include"
                     lockStream
                     overlayScalePct={overlayScalePct}
                     streamUrl={streamUrl}
@@ -33,6 +32,7 @@ export default function ProgramScene({
                     lightSchedule={lightSchedule}
                     strain={strain}
                     extra={<OverlayMusicWave layout={overlayLayout} />}
+                    captureToken={captureToken}
                 />
                 <OverlayAlertLayer layout={overlayLayout} captureToken={captureToken} />
                 <ProgramAudio captureToken={captureToken} />
