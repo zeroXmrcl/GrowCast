@@ -229,6 +229,8 @@ export async function saveProgramAudioAction(formData: FormData): Promise<void> 
             volume,
             paused: formData.get("paused") === "on",
             waveSmoothPct: existing.waveSmoothPct,
+            musicLook: existing.musicLook,
+            waveBars: existing.waveBars,
         });
         revalidatePath("/admin/stream");
         revalidatePath("/program");
@@ -251,6 +253,8 @@ export async function saveProgramAudioUrlAction(formData: FormData): Promise<voi
             volume: existing.volume,
             paused: existing.paused,
             waveSmoothPct: parseWaveSmoothPct(formData.get("waveSmoothPct")),
+            musicLook: existing.musicLook,
+            waveBars: existing.waveBars,
         });
         revalidatePath("/admin/stream");
         revalidatePath("/program");
