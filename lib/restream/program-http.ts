@@ -2,6 +2,7 @@ import path from "node:path";
 import {openMediaFile} from "@/lib/open-media-file";
 import {readAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio, resolveAudioSource} from "@/lib/restream/audio";
+import {readCameraLook} from "@/lib/restream/camera-look";
 import {resolveRestreamCaptureToken} from "@/lib/restream/capture";
 import {MUSIC_EXTENSIONS, listMusicFiles} from "@/lib/restream/music-files";
 import {restreamMusicDir} from "@/lib/restream/paths";
@@ -42,6 +43,19 @@ function musicContentType(filename: string, fallback: string): string {
         return "audio/mp4";
     }
     return fallback;
+}
+
+export async function programCameraGetResponse(
+    request: Request,
+    options: {admin: boolean},
+): Promise<Response> {
+    if (!(await authorizeProgramRequest(request, options.admin))) {
+        return notFound();
+    }
+    const look = await readCameraLook();
+    return Response.json(look, {
+        headers: {"Cache-Control": NO_STORE},
+    });
 }
 
 export async function programAudioGetResponse(
