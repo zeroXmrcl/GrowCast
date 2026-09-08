@@ -28,7 +28,6 @@ describe("program scene", () => {
         assert.match(scene, /extra=\{/);
         const wave = src(path.join("components", "overlay-music-wave.tsx"));
         assert.match(wave, /OVERLAY_PANEL_CLASS/);
-        assert.match(wave, />Music</);
         assert.match(wave, /getByteFrequencyData/);
         assert.match(wave, /#22c55e/);
         assert.match(wave, /rgba\(74, 222, 128, 0\.55\)/);
@@ -82,6 +81,17 @@ describe("program scene", () => {
         const overlayPage = src(path.join("app", "overlay", "page.tsx"));
         assert.doesNotMatch(overlayPage, /OverlayMusicWave/);
         assert.doesNotMatch(overlayPage, /extra=/);
+    });
+
+    it("shows the Music header only on the wave look", () => {
+        const wave = src(path.join("components", "overlay-music-wave.tsx"));
+        assert.match(wave, /musicLook === "wave"/);
+        assert.match(wave, />Music</);
+        assert.match(wave, /musicLook === "wave"[\s\S]{0,240}>Music</);
+        assert.doesNotMatch(
+            wave,
+            /<p className="text-\[11px\] font-medium uppercase tracking-wide text-zinc-400">Music<\/p>\s*\{musicLook === "player"/,
+        );
     });
 
     it("keeps OverlayAlertLayer a HUD sibling and wires program alert SSE", () => {

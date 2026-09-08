@@ -121,9 +121,11 @@ export default function OverlayMusicWave({layout}: {layout: OverlayLayout}) {
     return (
         <OverlayMotionItem show={active} order={OVERLAY_ORDER_MUSIC} layout={layout}>
             <section className={OVERLAY_PANEL_CLASS}>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Music</p>
+                {musicLook === "wave" ? (
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">Music</p>
+                ) : null}
                 {musicLook === "player" && title ? (
-                    <p className="mt-1 truncate text-sm font-semibold tracking-tight text-zinc-50">{title}</p>
+                    <p className="truncate text-sm font-semibold tracking-tight text-zinc-50">{title}</p>
                 ) : null}
                 {musicLook === "player" && duration > 0 ? (
                     <p className="mt-1 text-xs tabular-nums text-zinc-300">
