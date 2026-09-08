@@ -129,6 +129,8 @@ describe("overlay chrome", () => {
         assert.match(hudSrc, /overlayScalePct/);
         assert.match(hudSrc, /extra\?:/);
         assert.match(hudSrc, /\{extra\}/);
+        assert.match(hudSrc, /look\??:/);
+        assert.match(hudSrc, /look=\{look/);
         assert.doesNotMatch(hudSrc, /OVERLAY_ORDER_MUSIC/);
         assert.match(energySrc, /overlayEnergyGrowWindow/);
         assert.match(identitySrc, /overlayIdentityView/);
@@ -169,6 +171,14 @@ describe("overlay chrome", () => {
         assert.ok(hud > iframe);
         assert.ok(mark > hud);
         assert.match(shellSrc, /EMPTY_CAMERA_LOOK/);
+    });
+
+    it("public overlay SSR-feeds saved look, not a draft listener", () => {
+        const page = readFileSync(path.join(process.cwd(), "app", "overlay", "page.tsx"), "utf8");
+        assert.match(page, /readCameraLook/);
+        assert.match(page, /look=\{/);
+        assert.doesNotMatch(page, /growcast-camera-look/);
+        assert.doesNotMatch(page, /addEventListener\("message"/);
     });
 
     it("omits the LIVE badge and shows humidity to one decimal", () => {
