@@ -35,6 +35,29 @@ describe("program monitor wiring", () => {
         assert.match(page, /ProgramMonitor/);
         assert.doesNotMatch(page, /StreamPreview/);
         assert.doesNotMatch(page, /capture\?token/);
+        assert.match(monitor, /CAMERA_LOOK_DRAFT_EVENT/);
+        assert.match(monitor, /CAMERA_LOOK_MESSAGE_TYPE/);
+        assert.match(monitor, /postMessage/);
+        assert.match(monitor, /iframeRef/);
+        assert.match(page, /CameraLookPanel/);
+        const panel = readFileSync(
+            path.join(process.cwd(), "app", "admin", "camera-look-panel.tsx"),
+            "utf8",
+        );
+        assert.match(panel, /name="brightness"/);
+        assert.match(panel, /name="contrast"/);
+        assert.match(panel, /name="saturation"/);
+        assert.match(panel, /name="temperature"/);
+        assert.match(panel, /CAMERA_LOOK_MIN/);
+        assert.match(panel, /CAMERA_LOOK_MAX/);
+        assert.match(panel, /\/api\/admin\/camera-look/);
+        assert.match(panel, /CAMERA_LOOK_DRAFT_EVENT/);
+        assert.match(panel, /Reset/);
+        assert.match(panel, /Apply/);
+        assert.doesNotMatch(panel, /redirect/);
+        const cameraIdx = page.indexOf("CameraLookPanel");
+        const musicIdx = page.indexOf("MusicPanel");
+        assert.ok(cameraIdx >= 0 && musicIdx > cameraIdx);
     });
 
     it("allows same-origin iframe of /program without weakening the rest of the site", () => {

@@ -10,6 +10,7 @@ import {
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {AlertsPanel} from "@/app/admin/alerts-panel";
+import {CameraLookPanel} from "@/app/admin/camera-look-panel";
 import {MixerStrip} from "@/app/admin/mixer-strip";
 import {MusicPanel} from "@/app/admin/music-panel";
 import {ProgramMonitor} from "@/app/admin/program-monitor";
@@ -21,6 +22,7 @@ import {getCurrentGrow} from "@/lib/db";
 import {overlayPublicUrl} from "@/lib/overlay-layout";
 import {readAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio} from "@/lib/restream/audio";
+import {readCameraLook} from "@/lib/restream/camera-look";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
 import {listMusicFiles} from "@/lib/restream/music-files";
 import {readRestreamPublicView} from "@/lib/restream/store";
@@ -40,13 +42,14 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
         redirect("/admin");
     }
 
-    const [grow, headerList, restream, audio, alerts, oauth] = await Promise.all([
+    const [grow, headerList, restream, audio, alerts, oauth, look] = await Promise.all([
         getCurrentGrow(),
         headers(),
         readRestreamPublicView(),
         readRestreamAudio(),
         readAlertsSettings(),
         readTwitchOAuthFile(),
+        readCameraLook(),
         ensureRestreamCaptureToken(),
     ]);
     const overlayUrl = overlayPublicUrl(shareCardMetadataOrigin(headerList));
@@ -74,6 +77,7 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
                         saveToastAction={saveBroadcastToastAction}
                         saveKeyAction={saveTwitchKeyAction}
                     />
+                    <CameraLookPanel look={look}/>
                     <MusicPanel
                         files={await listMusicFiles()}
                         url={audio.url}
