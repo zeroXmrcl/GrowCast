@@ -100,7 +100,7 @@ export default function OverlayCamera({
             if (!cancelled) {
                 setFatal(true);
                 setPlaying(false);
-                setShownAtMs(Date.now());
+                setShownAtMs((prev) => prev ?? Date.now());
             }
         };
 
