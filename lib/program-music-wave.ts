@@ -14,6 +14,35 @@ export function programMusicWaveActive(input: {
     return input.kind === "playlist" && !input.paused && input.src.trim().length > 0;
 }
 
+export function nextPlaylistIndex(index: number, length: number): number {
+    if (length <= 0) {
+        return 0;
+    }
+    return (index + 1) % length;
+}
+
+export type ProgramAudioMediaErrorAction = "retry" | "next" | "url_fallback" | "silence";
+
+export function programAudioMediaErrorAction(input: {
+    kind: ProgramMusicWaveKind;
+    filesLength: number;
+    retries: number;
+}): ProgramAudioMediaErrorAction {
+    if (input.kind === "url") {
+        return input.filesLength > 0 ? "url_fallback" : "silence";
+    }
+    if (input.kind !== "playlist") {
+        return "silence";
+    }
+    if (input.retries < 1) {
+        return "retry";
+    }
+    if (input.filesLength > 1) {
+        return "next";
+    }
+    return "retry";
+}
+
 export function parseWaveSmoothPct(value: unknown): number {
     if (value === undefined || value === null || value === "") {
         return DEFAULT_WAVE_SMOOTH_PCT;

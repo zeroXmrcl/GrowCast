@@ -4,7 +4,9 @@ import {useEffect, useRef, useState} from "react";
 import {useProgramAudioGraph} from "@/components/program-audio-graph";
 import {
     DEFAULT_WAVE_SMOOTH_PCT,
+    nextPlaylistIndex,
     parseWaveSmoothPct,
+    programAudioMediaErrorAction,
     programMusicWaveActive,
     waveSmoothTimeConstant,
 } from "@/lib/program-music-wave";
@@ -78,12 +80,8 @@ function playlistFileSrc(filename: string, captureToken: string | undefined): st
     return path;
 }
 
-function playbackKind(
-    body: ProgramAudioBody | null,
-    urlFailed: boolean,
-    playbackFailed: boolean,
-): AudioKind {
-    if (!body || playbackFailed) {
+function playbackKind(body: ProgramAudioBody | null, urlFailed: boolean): AudioKind {
+    if (!body) {
         return "silence";
     }
     if (body.kind === "url" && urlFailed) {
@@ -96,7 +94,7 @@ function sourceKeyOf(body: ProgramAudioBody | null): string {
     if (!body) {
         return "";
     }
-    return `${body.kind}\0${body.url}\0${body.files.join("\0")}`;
+    return `${body.kind}\0${body.url}`;
 }
 
 function resolveElementSrc(
@@ -132,12 +130,12 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         analyser: AnalyserNode;
     } | null>(null);
     const {setGraph} = useProgramAudioGraph();
+    const errorRetriesRef = useRef(0);
     const [body, setBody] = useState<ProgramAudioBody | null>(null);
     const [ducking, setDucking] = useState(false);
     const [playlistIndex, setPlaylistIndex] = useState(0);
     const [urlFailed, setUrlFailed] = useState(false);
-    const [playbackFailed, setPlaybackFailed] = useState(false);
-    const kind = playbackKind(body, urlFailed, playbackFailed);
+    const kind = playbackKind(body, urlFailed);
     const src = resolveElementSrc(kind, body, captureToken, playlistIndex);
     const singleFilePlaylist = kind === "playlist" && (body?.files.length ?? 0) === 1;
 
@@ -167,8 +165,8 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
                 const nextKey = sourceKeyOf(parsed);
                 if (sourceKeyRef.current !== nextKey) {
                     sourceKeyRef.current = nextKey;
+                    errorRetriesRef.current = 0;
                     setUrlFailed(false);
-                    setPlaybackFailed(false);
                     setPlaylistIndex(0);
                 }
                 bodyRef.current = parsed;
@@ -226,16 +224,7 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             return;
         }
         applyElementVolume(el, body?.volume ?? 0, ducking);
-        if (!src) {
-            el.removeAttribute("src");
-            el.load();
-            el.pause();
-            return;
-        }
-        if (el.getAttribute("src") !== src) {
-            el.src = src;
-        }
-        if (body?.paused) {
+        if (!src || body?.paused) {
             el.pause();
             return;
         }
@@ -262,13 +251,22 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         graph.analyser.smoothingTimeConstant = waveSmoothTimeConstant(
             body?.waveSmoothPct ?? DEFAULT_WAVE_SMOOTH_PCT,
         );
-        void graph.context.resume().then(() => {
-            if (graph.context.state === "running") {
-                setGraph({active: true, analyser: graph.analyser});
-                return;
-            }
-            setGraph({active: false, analyser: graph.analyser});
-        });
+        let cancelled = false;
+        const keepAlive = () => {
+            void graph.context.resume().finally(() => {
+                if (!cancelled) {
+                    setGraph({active: true, analyser: graph.analyser});
+                }
+            });
+        };
+        keepAlive();
+        graph.context.onstatechange = keepAlive;
+        const timer = window.setInterval(keepAlive, PROGRAM_AUDIO_POLL_MS);
+        return () => {
+            cancelled = true;
+            graph.context.onstatechange = null;
+            window.clearInterval(timer);
+        };
     }, [kind, src, body?.paused, body?.waveSmoothPct, setGraph]);
 
     return (
@@ -279,33 +277,53 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             referrerPolicy="no-referrer"
             src={src || undefined}
             loop={singleFilePlaylist}
+            onPlaying={() => {
+                errorRetriesRef.current = 0;
+            }}
             onError={() => {
                 if (!src || !body) {
                     return;
                 }
-                if (kind === "url" && body.files.length > 0) {
-                    setUrlFailed(true);
+                const action = programAudioMediaErrorAction({
+                    kind,
+                    filesLength: body.files.length,
+                    retries: errorRetriesRef.current,
+                });
+                if (action === "retry") {
+                    errorRetriesRef.current += 1;
+                    const el = audioRef.current;
+                    if (el && !body.paused) {
+                        void el.play().catch(() => undefined);
+                    }
                     return;
                 }
-                setPlaybackFailed(true);
+                if (action === "next") {
+                    errorRetriesRef.current = 0;
+                    setPlaylistIndex((index) => nextPlaylistIndex(index, body.files.length));
+                    return;
+                }
+                if (action === "url_fallback") {
+                    setUrlFailed(true);
+                }
             }}
             onEnded={() => {
                 if (kind !== "playlist" || !body || body.files.length === 0) {
                     return;
                 }
-                const next = (playlistIndex + 1) % body.files.length;
-                // (0+1)%1 === 0 so React skips setState; restart the same file in place.
-                if (next === playlistIndex) {
-                    const el = audioRef.current;
-                    if (el) {
-                        el.currentTime = 0;
-                        if (!body.paused) {
-                            void el.play().catch(() => undefined);
+                errorRetriesRef.current = 0;
+                setPlaylistIndex((index) => {
+                    const next = nextPlaylistIndex(index, body.files.length);
+                    if (next === index) {
+                        const el = audioRef.current;
+                        if (el) {
+                            el.currentTime = 0;
+                            if (!body.paused) {
+                                void el.play().catch(() => undefined);
+                            }
                         }
                     }
-                    return;
-                }
-                setPlaylistIndex(next);
+                    return next;
+                });
             }}
         />
     );
