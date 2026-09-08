@@ -218,4 +218,16 @@ describe("overlay chrome", () => {
         assert.match(css, /growcast-cover-breathe/);
         assert.match(css, /prefers-reduced-motion/);
     });
+
+    it("embeds OverlayCamera on the homepage, not a MediaMTX iframe", () => {
+        const home = readFileSync(
+            path.join(process.cwd(), "app", "(site)", "page.tsx"),
+            "utf8",
+        );
+        assert.match(home, /OverlayCamera/);
+        assert.match(home, /streamUrl=\{streamUrl\}/);
+        assert.doesNotMatch(home, /<iframe/);
+        assert.match(home, /No Stream configured/);
+        assert.doesNotMatch(home, /look=/);
+    });
 });
