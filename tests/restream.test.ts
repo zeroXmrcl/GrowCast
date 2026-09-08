@@ -381,6 +381,24 @@ describe("restream chrome", () => {
         assert.doesNotMatch(py, /TWITCH_CLIENT_SECRET/);
     });
 
+    it("starts Pulse without PULSE_SERVER so the daemon can autospawn", () => {
+        const py = readFileSync(
+            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            "utf8",
+        );
+        const ensureStart = py.indexOf("def ensure_pulse()");
+        const ensureEnd = py.indexOf("\ndef ffmpeg_command");
+        assert.ok(ensureStart >= 0 && ensureEnd > ensureStart);
+        const ensure = py.slice(ensureStart, ensureEnd);
+        const popAt = ensure.indexOf('os.environ.pop("PULSE_SERVER"');
+        const startAt = ensure.indexOf("--start");
+        const setAt = ensure.lastIndexOf('os.environ["PULSE_SERVER"] = pulse_socket()');
+        assert.ok(popAt >= 0, "ensure_pulse must unset PULSE_SERVER before spawn");
+        assert.ok(startAt > popAt, "PULSE_SERVER must be unset before pulseaudio --start");
+        assert.ok(setAt > startAt, "PULSE_SERVER is for Chromium/ffmpeg after the daemon is up");
+        assert.equal(ensure.indexOf('os.environ["PULSE_SERVER"] = pulse_socket()'), setAt);
+    });
+
     it("does not load GrowCast .env.local into restream", () => {
         const compose = readFileSync(path.join(process.cwd(), "docker-compose.yml"), "utf8");
         const sidecarSrc = readFileSync(

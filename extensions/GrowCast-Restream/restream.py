@@ -239,7 +239,7 @@ def pulse_audio_input() -> str:
 
 def ensure_pulse() -> bool:
     ensure_xdg_runtime_dir()
-    os.environ["PULSE_SERVER"] = pulse_socket()
+    os.environ.pop("PULSE_SERVER", None)
     if not pulse_is_running():
         try:
             started = subprocess.run(
@@ -263,6 +263,7 @@ def ensure_pulse() -> bool:
         if pulse_record_source() != "default":
             break
         time.sleep(0.2)
+    os.environ["PULSE_SERVER"] = pulse_socket()
     log.info("pulse source=%s server=%s", pulse_record_source(), os.environ.get("PULSE_SERVER", ""))
     if pulse_is_running():
         return True
