@@ -399,6 +399,24 @@ describe("restream chrome", () => {
         assert.equal(ensure.indexOf('os.environ["PULSE_SERVER"] = pulse_socket()'), setAt);
     });
 
+    it("pins capture Chromium to the Xvfb origin so x11grab has no black gutter", () => {
+        const py = readFileSync(
+            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            "utf8",
+        );
+        const docker = readFileSync(
+            path.join(process.cwd(), "extensions", "GrowCast-Restream", "Dockerfile"),
+            "utf8",
+        );
+        assert.match(py, /--window-position=0,0/);
+        assert.match(py, /--start-fullscreen/);
+        assert.match(py, /--force-device-scale-factor=1/);
+        assert.match(py, /xdotool/);
+        assert.match(py, /windowmove/);
+        assert.match(py, /windowsize/);
+        assert.match(docker, /xdotool/);
+    });
+
     it("does not load GrowCast .env.local into restream", () => {
         const compose = readFileSync(path.join(process.cwd(), "docker-compose.yml"), "utf8");
         const sidecarSrc = readFileSync(
