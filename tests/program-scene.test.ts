@@ -12,7 +12,7 @@ describe("program scene", () => {
         const scene = src(path.join("components", "program-scene.tsx"));
         const capture = src(path.join("app", "overlay", "capture", "page.tsx"));
         const preview = src(path.join("app", "program", "page.tsx"));
-        assert.match(scene, /OverlayHud/);
+        assert.match(scene, /ProgramCameraLook/);
         assert.match(scene, /lockStream/);
         assert.match(scene, /ProgramAudio/);
         assert.match(scene, /OverlayAlertLayer/);
@@ -50,6 +50,19 @@ describe("program scene", () => {
         assert.doesNotMatch(audio, /playbackFailed/);
         assert.match(audio, /fftSize/);
         assert.match(audio, /256/);
+        const lookHud = src(path.join("components", "program-camera-look.tsx"));
+        assert.match(scene, /ProgramCameraLook/);
+        assert.match(lookHud, /\/api\/overlay\/program-camera/);
+        assert.match(lookHud, /PROGRAM_CAMERA_POLL_MS/);
+        assert.match(lookHud, /x-growcast-capture/);
+        assert.match(lookHud, /isCameraLookMessage/);
+        assert.match(lookHud, /draftRef/);
+        assert.match(lookHud, /addEventListener\("message"/);
+        assert.match(lookHud, /event\.origin/);
+        assert.match(lookHud, /captureToken/);
+        assert.match(lookHud, /look=\{look\}/);
+        assert.doesNotMatch(capture, /CAMERA_LOOK_DRAFT_EVENT/);
+        assert.doesNotMatch(capture, /postMessage/);
         const overlayPage = src(path.join("app", "overlay", "page.tsx"));
         assert.doesNotMatch(overlayPage, /OverlayMusicWave/);
         assert.doesNotMatch(overlayPage, /extra=/);
@@ -62,7 +75,7 @@ describe("program scene", () => {
         const http = src(path.join("lib", "overlay-alert-http.ts"));
         const hub = src(path.join("lib", "overlay-alert-hub.ts"));
 
-        assert.match(scene, /<OverlayHud[\s\S]*\/>\s*<OverlayAlertLayer layout=\{overlayLayout\} captureToken=\{captureToken\} \/>/);
+        assert.match(scene, /<ProgramCameraLook[\s\S]*\/>\s*<OverlayAlertLayer layout=\{overlayLayout\} captureToken=\{captureToken\} \/>/);
         assert.match(layer, /"use client"/);
         assert.match(layer, /EventSource/);
         assert.match(layer, /\/api\/overlay\/program-alerts/);
