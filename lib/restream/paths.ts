@@ -37,6 +37,10 @@ export function restreamAlertsFile(): string {
     return path.join(restreamDir(), "alerts.json");
 }
 
+export function restreamCameraLookFile(): string {
+    return path.join(restreamDir(), "camera-look.json");
+}
+
 export function restreamOAuthFile(): string {
     return path.join(restreamDir(), "twitch-oauth.json");
 }

@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import {mkdtemp, readFile, rm} from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import {describe, it} from "node:test";
 import {
     CAMERA_LOOK_DRAFT_EVENT,
@@ -11,7 +14,26 @@ import {
     isCameraLookMessage,
     parseCameraLook,
     parseCameraLookPct,
+    readCameraLook,
+    writeCameraLook,
 } from "../lib/restream/camera-look.ts";
+import {restreamCameraLookFile} from "../lib/restream/paths.ts";
+
+async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
+    const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-look-"));
+    const previous = process.env.GROWCAST_DATA_DIR;
+    process.env.GROWCAST_DATA_DIR = dir;
+    try {
+        return await fn();
+    } finally {
+        if (previous === undefined) {
+            delete process.env.GROWCAST_DATA_DIR;
+        } else {
+            process.env.GROWCAST_DATA_DIR = previous;
+        }
+        await rm(dir, {recursive: true, force: true});
+    }
+}
 
 describe("parseCameraLookPct", () => {
     it("rounds, clamps −100…100, and treats junk as 0", () => {
@@ -94,5 +116,34 @@ describe("isCameraLookMessage", () => {
         );
         assert.equal(isCameraLookMessage({type: "growcast-alert-sting"}), false);
         assert.equal(isCameraLookMessage(null), false);
+    });
+});
+
+describe("readCameraLook / writeCameraLook", () => {
+    it("round-trips clamped JSON off grow JSON and missing file is zeros", async () => {
+        await withTempDataDir(async () => {
+            assert.deepEqual(await readCameraLook(), EMPTY_CAMERA_LOOK);
+            await writeCameraLook({
+                brightness: 12.4,
+                contrast: 200,
+                saturation: -9,
+                temperature: 8,
+            });
+            const disk = JSON.parse(await readFile(restreamCameraLookFile(), "utf8")) as {
+                brightness: number;
+                contrast: number;
+                saturation: number;
+                temperature: number;
+            };
+            assert.deepEqual(disk, {
+                brightness: 12,
+                contrast: 100,
+                saturation: -9,
+                temperature: 8,
+            });
+            assert.equal(restreamCameraLookFile().includes("camera-look.json"), true);
+            assert.equal(restreamCameraLookFile().includes("current-grow"), false);
+            assert.deepEqual(await readCameraLook(), disk);
+        });
     });
 });
