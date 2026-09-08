@@ -69,3 +69,48 @@ export function parseWaveSmoothPct(value: unknown): number {
 export function waveSmoothTimeConstant(pct: number): number {
     return Math.min(WAVE_SMOOTH_TIME_CONSTANT_MAX, parseWaveSmoothPct(pct) / 100);
 }
+
+export type MusicLook = "wave" | "player";
+export const DEFAULT_MUSIC_LOOK: MusicLook = "player";
+export const DEFAULT_WAVE_BARS = 24;
+export const WAVE_BARS_MIN = 8;
+export const WAVE_BARS_MAX = 48;
+export const WAVE_BARS_STEP = 4;
+
+export function parseMusicLook(value: unknown): MusicLook {
+    return value === "wave" ? "wave" : DEFAULT_MUSIC_LOOK;
+}
+
+export function parseWaveBars(value: unknown): number {
+    if (value === undefined || value === null || value === "") {
+        return DEFAULT_WAVE_BARS;
+    }
+    const n = typeof value === "number" ? value : Number(String(value).trim());
+    if (!Number.isFinite(n)) {
+        return DEFAULT_WAVE_BARS;
+    }
+    const clamped = Math.min(WAVE_BARS_MAX, Math.max(WAVE_BARS_MIN, n));
+    return Math.round(clamped / WAVE_BARS_STEP) * WAVE_BARS_STEP;
+}
+
+export function foldFrequencyBins(bins: Uint8Array, barCount: number): number[] {
+    const n = parseWaveBars(barCount);
+    const out = new Array<number>(n).fill(0);
+    if (bins.length === 0) {
+        return out;
+    }
+    const useful = Math.max(1, Math.floor(bins.length / 2));
+    const mid = (n - 1) / 2;
+    for (let i = 0; i < n; i++) {
+        const dist = mid === 0 ? 0 : Math.abs(i - mid) / mid;
+        const src = Math.min(useful - 1, Math.floor(dist * useful));
+        out[i] = bins[src] ?? 0;
+    }
+    return out;
+}
+
+export function playlistTrackTitle(filename: string): string {
+    const base = filename.replace(/^.*[/\\]/, "");
+    const noExt = base.replace(/\.(mp3|ogg|wav|m4a)$/i, "");
+    return noExt.replace(/^\d+\s*[.\-]\s*/, "").trim();
+}
