@@ -41,7 +41,11 @@ describe("mixer strip", () => {
         assert.match(actions, /export async function saveProgramAudioUrlAction/);
         assert.match(actions, /normalizeOptionalHttpUrl/);
         assert.match(actions, /parseWaveSmoothPct\(formData.get\("waveSmoothPct"\)\)/);
+        assert.match(actions, /parseMusicLook\(formData.get\("musicLook"\)\)/);
+        assert.match(actions, /parseWaveBars\(formData.get\("waveBars"\)\)/);
         assert.match(actions, /waveSmoothPct: existing\.waveSmoothPct/);
+        assert.match(actions, /musicLook: existing\.musicLook/);
+        assert.match(actions, /waveBars: existing\.waveBars/);
     });
 
     it("wires pause, volume, and send-alert fields to program audio actions", () => {

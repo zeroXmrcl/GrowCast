@@ -19,7 +19,7 @@ import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings
 import {withNotice} from "@/lib/admin/notice";
 import {completeCurrentGrow} from "@/lib/archives";
 import {parseOverlayScalePct} from "@/lib/overlay-scale";
-import {parseWaveSmoothPct} from "@/lib/program-music-wave";
+import {parseMusicLook, parseWaveBars, parseWaveSmoothPct} from "@/lib/program-music-wave";
 import {readAlertsSettings, writeAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio, writeRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
@@ -253,8 +253,8 @@ export async function saveProgramAudioUrlAction(formData: FormData): Promise<voi
             volume: existing.volume,
             paused: existing.paused,
             waveSmoothPct: parseWaveSmoothPct(formData.get("waveSmoothPct")),
-            musicLook: existing.musicLook,
-            waveBars: existing.waveBars,
+            musicLook: parseMusicLook(formData.get("musicLook")),
+            waveBars: parseWaveBars(formData.get("waveBars")),
         });
         revalidatePath("/admin/stream");
         revalidatePath("/program");

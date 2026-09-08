@@ -80,6 +80,8 @@ export async function programAudioGetResponse(
             stingEnabled: alerts.stingEnabled,
             alertScalePct: alerts.alertScalePct,
             waveSmoothPct: audio.waveSmoothPct,
+            musicLook: audio.musicLook,
+            waveBars: audio.waveBars,
         },
         {
             headers: {"Cache-Control": NO_STORE},
