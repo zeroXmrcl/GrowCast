@@ -39,6 +39,10 @@ describe("program scene", () => {
         assert.match(audio, /destination/);
         assert.match(audio, /smoothingTimeConstant/);
         assert.match(audio, /programMusicWaveActive/);
+        assert.match(audio, /programAudioMediaErrorAction/);
+        assert.match(audio, /nextPlaylistIndex/);
+        assert.match(audio, /onstatechange/);
+        assert.doesNotMatch(audio, /playbackFailed/);
         assert.match(audio, /fftSize/);
         assert.match(audio, /256/);
         const overlayPage = src(path.join("app", "overlay", "page.tsx"));

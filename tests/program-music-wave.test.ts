@@ -5,7 +5,9 @@ import {
     WAVE_SMOOTH_MAX,
     WAVE_SMOOTH_MIN,
     WAVE_SMOOTH_STEP,
+    nextPlaylistIndex,
     parseWaveSmoothPct,
+    programAudioMediaErrorAction,
     programMusicWaveActive,
     waveSmoothTimeConstant,
 } from "../lib/program-music-wave.ts";
@@ -49,6 +51,45 @@ describe("parseWaveSmoothPct", () => {
         assert.equal(parseWaveSmoothPct(-1), 0);
         assert.equal(parseWaveSmoothPct(999), 100);
         assert.equal(parseWaveSmoothPct(70), 70);
+    });
+});
+
+describe("nextPlaylistIndex", () => {
+    it("advances and wraps to the start after the last track", () => {
+        assert.equal(nextPlaylistIndex(0, 3), 1);
+        assert.equal(nextPlaylistIndex(1, 3), 2);
+        assert.equal(nextPlaylistIndex(2, 3), 0);
+        assert.equal(nextPlaylistIndex(0, 1), 0);
+        assert.equal(nextPlaylistIndex(0, 0), 0);
+    });
+});
+
+describe("programAudioMediaErrorAction", () => {
+    it("does not latch a playlist into silence", () => {
+        assert.equal(
+            programAudioMediaErrorAction({kind: "playlist", filesLength: 3, retries: 0}),
+            "retry",
+        );
+        assert.equal(
+            programAudioMediaErrorAction({kind: "playlist", filesLength: 3, retries: 1}),
+            "next",
+        );
+        assert.equal(
+            programAudioMediaErrorAction({kind: "playlist", filesLength: 1, retries: 4}),
+            "retry",
+        );
+        assert.equal(
+            programAudioMediaErrorAction({kind: "url", filesLength: 2, retries: 0}),
+            "url_fallback",
+        );
+        assert.equal(
+            programAudioMediaErrorAction({kind: "url", filesLength: 0, retries: 0}),
+            "silence",
+        );
+        assert.equal(
+            programAudioMediaErrorAction({kind: "silence", filesLength: 0, retries: 0}),
+            "silence",
+        );
     });
 });
 
