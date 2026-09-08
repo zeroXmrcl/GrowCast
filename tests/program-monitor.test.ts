@@ -85,4 +85,14 @@ describe("program monitor wiring", () => {
         assert.match(config, /media-src 'self' https: http: blob:/);
         assert.match(config, /frame-src 'self' https: http:/);
     });
+
+    it("allows http connect-src so LAN HLS playlists load", () => {
+        const config = readFileSync(
+            path.join(process.cwd(), "next.config.ts"),
+            "utf8",
+        );
+        assert.match(config, /connect-src 'self' https: http:/);
+        const readme = readFileSync(path.join(process.cwd(), "README.md"), "utf8");
+        assert.match(readme, /hlsAllowOrigin:\s*'\*'/);
+    });
 });
