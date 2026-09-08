@@ -135,12 +135,23 @@ def stop_all() -> None:
         chrome_profile = ""
 
 
+PULSE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
+SILENT_AUDIO = "-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100"
+
+
+def pulse_socket() -> str:
+    runtime = os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/runtime-{os.getuid()}"
+    return f"unix:{runtime}/pulse/native"
+
+
 def limited_env(**extra: str) -> dict[str, str]:
     env: dict[str, str] = {"DISPLAY": DISPLAY}
     for name in ("PATH", "HOME", "XDG_RUNTIME_DIR", "PULSE_SERVER", "LANG"):
         value = os.environ.get(name)
         if value:
             env[name] = value
+    env.setdefault("XDG_RUNTIME_DIR", f"/tmp/runtime-{os.getuid()}")
+    env.setdefault("PULSE_SERVER", pulse_socket())
     env.update(extra)
     return env
 
@@ -183,28 +194,56 @@ def _pactl(*args: str) -> None:
         pass
 
 
-def _prepare_pulse_sink() -> None:
-    _pactl("load-module", "module-always-sink")
+def _pactl_out(*args: str) -> str:
     try:
         listed = subprocess.run(
-            ["pactl", "get-default-sink"],
+            ["pactl", *args],
             capture_output=True,
             text=True,
             timeout=5,
         )
     except (OSError, subprocess.TimeoutExpired):
-        return
-    sink = listed.stdout.strip()
+        return ""
+    if listed.returncode != 0:
+        return ""
+    return listed.stdout.strip()
+
+
+def _safe_pulse_name(value: str) -> str:
+    name = value.strip().splitlines()[0] if value.strip() else ""
+    if PULSE_NAME.fullmatch(name):
+        return name
+    return ""
+
+
+def _prepare_pulse_sink() -> None:
+    _pactl("load-module", "module-always-sink")
+    sink = _safe_pulse_name(_pactl_out("get-default-sink"))
     if sink:
         _pactl("set-default-source", f"{sink}.monitor")
 
 
+def pulse_record_source() -> str:
+    source = _safe_pulse_name(_pactl_out("get-default-source"))
+    if source:
+        return source
+    sink = _safe_pulse_name(_pactl_out("get-default-sink"))
+    if sink:
+        return f"{sink}.monitor"
+    return "default"
+
+
+def pulse_audio_input() -> str:
+    return f"-f pulse -i {pulse_record_source()}"
+
+
 def ensure_pulse() -> bool:
     ensure_xdg_runtime_dir()
+    os.environ["PULSE_SERVER"] = pulse_socket()
     if not pulse_is_running():
         try:
             started = subprocess.run(
-                ["pulseaudio", "--start", "--exit-idle-time=-1"],
+                ["pulseaudio", "--start", "--exit-idle-time=-1", "--disable-shm"],
                 capture_output=True,
                 timeout=8,
             )
@@ -219,15 +258,16 @@ def ensure_pulse() -> bool:
             log.warning("pulseaudio start failed: %s", err.strip() or started.returncode)
             return False
         log.info("pulseaudio started")
-    _prepare_pulse_sink()
+    for _ in range(10):
+        _prepare_pulse_sink()
+        if pulse_record_source() != "default":
+            break
+        time.sleep(0.2)
+    log.info("pulse source=%s server=%s", pulse_record_source(), os.environ.get("PULSE_SERVER", ""))
     if pulse_is_running():
         return True
     log.warning("pulseaudio daemon is not running")
     return False
-
-
-PULSE_AUDIO = "-f pulse -i default"
-SILENT_AUDIO = "-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100"
 
 
 def ffmpeg_command(audio_input: str) -> str:
@@ -236,7 +276,7 @@ def ffmpeg_command(audio_input: str) -> str:
         '-f x11grab -draw_mouse 0 -video_size 1920x1080 -framerate 15 -i "$DISPLAY" '
         f"{audio_input} "
         "-c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p -g 30 "
-        "-b:v 2500k -maxrate 2500k -bufsize 5000k -c:a aac -shortest -f flv "
+        "-b:v 2500k -maxrate 2500k -bufsize 5000k -c:a aac -f flv "
         '"$FFMPEG_OUTPUT"'
     )
 
@@ -289,13 +329,16 @@ def start_stack(key: str, token: str) -> None:
     time.sleep(2)
     if not running(chrome):
         log.error("chromium exited code=%s", chrome.returncode if chrome else "?")
+    log.info("pulse sink-inputs=%s", _pactl_out("list", "short", "sink-inputs") or "none")
     log.info("starting ffmpeg ingest=%s", INGEST)
     if pulse_is_running():
-        ffmpeg = spawn_ffmpeg(PULSE_AUDIO, key, token)
+        source = pulse_record_source()
+        ffmpeg = spawn_ffmpeg(pulse_audio_input(), key, token)
         deadline = time.monotonic() + 1.0
         while running(ffmpeg) and time.monotonic() < deadline:
             time.sleep(0.1)
         if running(ffmpeg):
+            log.info("ffmpeg audio=pulse source=%s", source)
             return
         log.warning("ffmpeg pulse input failed, falling back to anullsrc")
         stop_proc(ffmpeg, "ffmpeg")
@@ -303,6 +346,7 @@ def start_stack(key: str, token: str) -> None:
     else:
         log.warning("pulse missing, ffmpeg audio=anullsrc")
     ffmpeg = spawn_ffmpeg(SILENT_AUDIO, key, token)
+    log.info("ffmpeg audio=anullsrc")
 
 
 def running(proc: subprocess.Popen[bytes] | None) -> bool:

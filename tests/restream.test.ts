@@ -367,9 +367,15 @@ describe("restream chrome", () => {
         assert.match(docker, /pulseaudio-utils/);
         assert.match(py, /pulseaudio/);
         assert.match(py, /--exit-idle-time=-1/);
-        assert.match(py, /-f pulse -i default/);
+        assert.match(py, /--disable-shm/);
+        assert.match(py, /PULSE_SERVER/);
+        assert.match(py, /pulse\/native/);
+        assert.match(py, /get-default-source/);
+        assert.match(py, /-f pulse -i/);
         assert.match(py, /anullsrc/);
+        assert.match(py, /ffmpeg audio=/);
         assert.match(py, /--autoplay-policy=no-user-gesture-required/);
+        assert.doesNotMatch(py, /-shortest/);
         assert.doesNotMatch(py, /\*\*os\.environ/);
         assert.doesNotMatch(py, /helix/i);
         assert.doesNotMatch(py, /TWITCH_CLIENT_SECRET/);
