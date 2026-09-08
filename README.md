@@ -218,6 +218,7 @@ hlsPartDuration: 200ms
 hlsSegmentMaxSize: 50M
 hlsDirectory: ''
 hlsMuxerCloseAfter: 60s
+hlsAllowOrigin: '*'
 
 paths:
    growcam:
