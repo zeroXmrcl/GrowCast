@@ -50,6 +50,14 @@ describe("program scene", () => {
         assert.doesNotMatch(audio, /playbackFailed/);
         assert.match(audio, /fftSize/);
         assert.match(audio, /256/);
+        const graph = src(path.join("components", "program-audio-graph.tsx"));
+        assert.match(graph, /title:/);
+        assert.match(graph, /currentTime:/);
+        assert.match(graph, /duration:/);
+        assert.match(graph, /musicLook:/);
+        assert.match(graph, /waveBars:/);
+        assert.match(audio, /playlistTrackTitle/);
+        assert.match(audio, /currentTime/);
         const lookHud = src(path.join("components", "program-camera-look.tsx"));
         assert.match(scene, /ProgramCameraLook/);
         assert.match(lookHud, /\/api\/overlay\/program-camera/);
