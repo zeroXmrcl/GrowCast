@@ -2,7 +2,7 @@
 
 Started by default with `docker compose up`. Captures `/overlay/capture` in Chromium and pushes RTMPS to Twitch. Stays idle until Broadcast (`/admin/stream`) → Start.
 
-Needs about 1–2 CPU cores and 1 GB RAM.
+Needs about 1–2 CPU cores and 1 GB RAM. Encode is 1080p10, 2500 kbps, two x264 threads.
 
 GrowCast auto-creates `data/restream/capture.token` (Broadcast page load, Twitch Start, or capture authorize). Optional `GROWCAST_RESTREAM_TOKEN` in `.env.local` overrides that file. Put the Twitch stream key on Broadcast; it is stored under `data/restream/`, not in the public grow JSON.
 
