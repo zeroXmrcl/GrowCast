@@ -2,10 +2,24 @@
 
 import {useEffect, useRef, useState} from "react";
 import {PROGRAM_HEIGHT, PROGRAM_WIDTH, programScale} from "@/lib/program-monitor";
+import {
+    CAMERA_LOOK_DRAFT_EVENT,
+    CAMERA_LOOK_MESSAGE_TYPE,
+    parseCameraLook,
+    type CameraLook,
+} from "@/lib/restream/camera-look";
+
+function postCameraLook(iframe: HTMLIFrameElement | null, look: CameraLook): void {
+    iframe?.contentWindow?.postMessage(
+        {type: CAMERA_LOOK_MESSAGE_TYPE, ...look},
+        window.location.origin,
+    );
+}
 
 export function ProgramMonitor() {
     const boxRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const draftRef = useRef<CameraLook | null>(null);
     const [scale, setScale] = useState(0);
 
     useEffect(() => {
@@ -43,6 +57,16 @@ export function ProgramMonitor() {
         };
     }, []);
 
+    useEffect(() => {
+        function onDraft(event: Event) {
+            const look = parseCameraLook((event as CustomEvent).detail);
+            draftRef.current = look;
+            postCameraLook(iframeRef.current, look);
+        }
+        window.addEventListener(CAMERA_LOOK_DRAFT_EVENT, onDraft);
+        return () => window.removeEventListener(CAMERA_LOOK_DRAFT_EVENT, onDraft);
+    }, []);
+
     return (
         <div
             ref={boxRef}
@@ -63,6 +87,11 @@ export function ProgramMonitor() {
                     allow="autoplay"
                     title="Program"
                     className="block border-0"
+                    onLoad={() => {
+                        if (draftRef.current) {
+                            postCameraLook(iframeRef.current, draftRef.current);
+                        }
+                    }}
                     style={{
                         transform: `scale(${scale})`,
                         transformOrigin: "top left",
