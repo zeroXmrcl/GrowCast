@@ -41,7 +41,12 @@ describe("program scene", () => {
         assert.match(audio, /programMusicWaveActive/);
         assert.match(audio, /programAudioMediaErrorAction/);
         assert.match(audio, /nextPlaylistIndex/);
+        assert.match(audio, /pickPlaylistStartIndex/);
+        assert.match(audio, /shouldAttachMediaElementSource/);
         assert.match(audio, /onstatechange/);
+        assert.match(audio, /autoPlay/);
+        assert.match(audio, /pointerdown/);
+        assert.match(audio, /setInterval\(tryPlay/);
         assert.doesNotMatch(audio, /playbackFailed/);
         assert.match(audio, /fftSize/);
         assert.match(audio, /256/);

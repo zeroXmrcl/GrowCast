@@ -5,6 +5,7 @@ import {PROGRAM_HEIGHT, PROGRAM_WIDTH, programScale} from "@/lib/program-monitor
 
 export function ProgramMonitor() {
     const boxRef = useRef<HTMLDivElement>(null);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
     const [scale, setScale] = useState(0);
 
     useEffect(() => {
@@ -27,6 +28,21 @@ export function ProgramMonitor() {
         return () => observer.disconnect();
     }, []);
 
+    useEffect(() => {
+        function unlockPreviewAudio() {
+            const audio = iframeRef.current?.contentDocument?.querySelector("audio");
+            if (audio) {
+                void audio.play().catch(() => undefined);
+            }
+        }
+        window.addEventListener("pointerdown", unlockPreviewAudio);
+        window.addEventListener("keydown", unlockPreviewAudio);
+        return () => {
+            window.removeEventListener("pointerdown", unlockPreviewAudio);
+            window.removeEventListener("keydown", unlockPreviewAudio);
+        };
+    }, []);
+
     return (
         <div
             ref={boxRef}
@@ -40,6 +56,7 @@ export function ProgramMonitor() {
                 }}
             >
                 <iframe
+                    ref={iframeRef}
                     src="/program"
                     width={1920}
                     height={1080}

@@ -6,8 +6,10 @@ import {
     DEFAULT_WAVE_SMOOTH_PCT,
     nextPlaylistIndex,
     parseWaveSmoothPct,
+    pickPlaylistStartIndex,
     programAudioMediaErrorAction,
     programMusicWaveActive,
+    shouldAttachMediaElementSource,
     waveSmoothTimeConstant,
 } from "@/lib/program-music-wave";
 
@@ -129,6 +131,7 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         source: MediaElementAudioSourceNode;
         analyser: AnalyserNode;
     } | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
     const {setGraph} = useProgramAudioGraph();
     const errorRetriesRef = useRef(0);
     const [body, setBody] = useState<ProgramAudioBody | null>(null);
@@ -167,7 +170,11 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
                     sourceKeyRef.current = nextKey;
                     errorRetriesRef.current = 0;
                     setUrlFailed(false);
-                    setPlaylistIndex(0);
+                    setPlaylistIndex(
+                        parsed.kind === "playlist"
+                            ? pickPlaylistStartIndex(parsed.files.length)
+                            : 0,
+                    );
                 }
                 bodyRef.current = parsed;
                 setBody(parsed);
@@ -228,7 +235,18 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             el.pause();
             return;
         }
-        void el.play().catch(() => undefined);
+        const tryPlay = () => {
+            void el.play().catch(() => undefined);
+        };
+        tryPlay();
+        const timer = window.setInterval(tryPlay, PROGRAM_AUDIO_POLL_MS);
+        window.addEventListener("pointerdown", tryPlay);
+        window.addEventListener("keydown", tryPlay);
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener("pointerdown", tryPlay);
+            window.removeEventListener("keydown", tryPlay);
+        };
     }, [src, body?.paused, body?.volume, ducking]);
 
     useEffect(() => {
@@ -238,34 +256,44 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             setGraph({active: false, analyser: graphRef.current?.analyser ?? null});
             return;
         }
-        if (!graphRef.current) {
-            const context = new AudioContext();
-            const source = context.createMediaElementSource(el);
-            const analyser = context.createAnalyser();
-            analyser.fftSize = 256;
-            source.connect(analyser);
-            analyser.connect(context.destination);
-            graphRef.current = {context, source, analyser};
+        let context = audioContextRef.current;
+        if (!context || context.state === "closed") {
+            context = new AudioContext();
+            audioContextRef.current = context;
         }
-        const graph = graphRef.current;
-        graph.analyser.smoothingTimeConstant = waveSmoothTimeConstant(
-            body?.waveSmoothPct ?? DEFAULT_WAVE_SMOOTH_PCT,
-        );
         let cancelled = false;
+        const attachIfRunning = () => {
+            if (cancelled || !shouldAttachMediaElementSource(context.state)) {
+                return;
+            }
+            if (!graphRef.current) {
+                const source = context.createMediaElementSource(el);
+                const analyser = context.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                analyser.connect(context.destination);
+                graphRef.current = {context, source, analyser};
+            }
+            const graph = graphRef.current;
+            graph.analyser.smoothingTimeConstant = waveSmoothTimeConstant(
+                body?.waveSmoothPct ?? DEFAULT_WAVE_SMOOTH_PCT,
+            );
+            setGraph({active: true, analyser: graph.analyser});
+        };
         const keepAlive = () => {
-            void graph.context.resume().finally(() => {
-                if (!cancelled) {
-                    setGraph({active: true, analyser: graph.analyser});
-                }
-            });
+            void context.resume().then(attachIfRunning, attachIfRunning);
         };
         keepAlive();
-        graph.context.onstatechange = keepAlive;
+        context.onstatechange = keepAlive;
         const timer = window.setInterval(keepAlive, PROGRAM_AUDIO_POLL_MS);
+        window.addEventListener("pointerdown", keepAlive);
+        window.addEventListener("keydown", keepAlive);
         return () => {
             cancelled = true;
-            graph.context.onstatechange = null;
+            context.onstatechange = null;
             window.clearInterval(timer);
+            window.removeEventListener("pointerdown", keepAlive);
+            window.removeEventListener("keydown", keepAlive);
         };
     }, [kind, src, body?.paused, body?.waveSmoothPct, setGraph]);
 
@@ -273,6 +301,8 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         <audio
             ref={audioRef}
             hidden
+            autoPlay
+            playsInline
             // @ts-expect-error React 19 AudioHTMLAttributes omit HTML referrerPolicy.
             referrerPolicy="no-referrer"
             src={src || undefined}
