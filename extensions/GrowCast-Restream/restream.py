@@ -274,10 +274,10 @@ def ensure_pulse() -> bool:
 def ffmpeg_command(audio_input: str) -> str:
     return (
         "exec ffmpeg -hide_banner -loglevel error "
-        '-f x11grab -draw_mouse 0 -video_size 1920x1080 -framerate 15 -i "$DISPLAY" '
+        '-f x11grab -draw_mouse 0 -video_size 1920x1080 -framerate 10 -i "$DISPLAY" '
         f"{audio_input} "
-        "-c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p -g 30 "
-        "-b:v 2500k -maxrate 2500k -bufsize 5000k -c:a aac -f flv "
+        "-c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p -g 20 "
+        "-threads 2 -b:v 2500k -maxrate 2500k -bufsize 5000k -c:a aac -f flv "
         '"$FFMPEG_OUTPUT"'
     )
 

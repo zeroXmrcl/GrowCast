@@ -399,6 +399,25 @@ describe("restream chrome", () => {
         assert.equal(ensure.indexOf('os.environ["PULSE_SERVER"] = pulse_socket()'), setAt);
     });
 
+    it("encodes 1080p10 with two x264 threads and a 2s GOP", () => {
+        const py = readFileSync(
+            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            "utf8",
+        );
+        const start = py.indexOf("def ffmpeg_command");
+        const end = py.indexOf("\ndef place_chromium_window");
+        assert.ok(start >= 0 && end > start);
+        const cmd = py.slice(start, end);
+        assert.match(cmd, /-video_size 1920x1080/);
+        assert.match(cmd, /-framerate 10 /);
+        assert.doesNotMatch(cmd, /-framerate 15/);
+        assert.match(cmd, /-g 20 /);
+        assert.doesNotMatch(cmd, /-g 30/);
+        assert.match(cmd, /-threads 2 /);
+        assert.match(cmd, /-b:v 2500k/);
+        assert.match(cmd, /preset veryfast/);
+    });
+
     it("pins capture Chromium to the Xvfb origin so x11grab has no black gutter", () => {
         const py = readFileSync(
             path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
