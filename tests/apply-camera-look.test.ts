@@ -5,7 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {applyCameraLook} from "../lib/admin/apply-camera-look.ts";
-import {EMPTY_CAMERA_LOOK, readCameraLook} from "../lib/restream/camera-look.ts";
+import {EMPTY_CAMERA_LOOK} from "../lib/restream/camera-look.ts";
+import {readCameraLook} from "../lib/restream/camera-look-store.ts";
 
 async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-look-post-"));

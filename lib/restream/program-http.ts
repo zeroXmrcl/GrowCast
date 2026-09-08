@@ -2,7 +2,7 @@ import path from "node:path";
 import {openMediaFile} from "@/lib/open-media-file";
 import {readAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio, resolveAudioSource} from "@/lib/restream/audio";
-import {readCameraLook} from "@/lib/restream/camera-look";
+import {readCameraLook} from "@/lib/restream/camera-look-store";
 import {resolveRestreamCaptureToken} from "@/lib/restream/capture";
 import {MUSIC_EXTENSIONS, listMusicFiles} from "@/lib/restream/music-files";
 import {restreamMusicDir} from "@/lib/restream/paths";

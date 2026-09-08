@@ -1,7 +1,4 @@
-import {chmod, readFile} from "node:fs/promises";
-import {atomicWriteFile} from "@/lib/atomic-file";
 import {asNumber, isRecord} from "@/lib/coerce";
-import {restreamCameraLookFile, restreamDir} from "@/lib/restream/paths";
 
 export const CAMERA_LOOK_MIN = -100;
 export const CAMERA_LOOK_MAX = 100;
@@ -79,19 +76,4 @@ export function isCameraLookMessage(raw: unknown): raw is CameraLook & {type: st
         return false;
     }
     return true;
-}
-
-export async function readCameraLook(): Promise<CameraLook> {
-    try {
-        return parseCameraLook(JSON.parse(await readFile(restreamCameraLookFile(), "utf8")));
-    } catch {
-        return EMPTY_CAMERA_LOOK;
-    }
-}
-
-export async function writeCameraLook(look: CameraLook): Promise<void> {
-    const parsed = parseCameraLook(look);
-    await atomicWriteFile(restreamCameraLookFile(), `${JSON.stringify(parsed, null, 2)}\n`);
-    await chmod(restreamDir(), 0o700).catch(() => undefined);
-    await chmod(restreamCameraLookFile(), 0o600);
 }

@@ -14,9 +14,8 @@ import {
     isCameraLookMessage,
     parseCameraLook,
     parseCameraLookPct,
-    readCameraLook,
-    writeCameraLook,
 } from "../lib/restream/camera-look.ts";
+import {readCameraLook, writeCameraLook} from "../lib/restream/camera-look-store.ts";
 import {restreamCameraLookFile} from "../lib/restream/paths.ts";
 
 async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
