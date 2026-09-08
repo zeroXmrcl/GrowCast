@@ -33,7 +33,17 @@ describe("mixer strip", () => {
         assert.match(panel, /accept="\.mp3,\.ogg,\.wav,\.m4a"/);
         assert.match(panel, /URL wins while set/);
         assert.match(page, /waveSmoothPct=\{audio\.waveSmoothPct\}/);
+        assert.match(page, /musicLook=\{audio\.musicLook\}/);
+        assert.match(page, /waveBars=\{audio\.waveBars\}/);
         assert.match(panel, /WaveSmoothInput/);
+        assert.match(panel, /name="musicLook"/);
+        assert.match(panel, /value="wave"/);
+        assert.match(panel, /value="player"/);
+        assert.match(panel, /WaveBarsInput/);
+        const bars = src(path.join("components", "wave-bars-input.tsx"));
+        assert.match(bars, /name="waveBars"/);
+        assert.match(bars, /WAVE_BARS_MIN/);
+        assert.match(bars, /Bars/);
         const smooth = src(path.join("components", "wave-smooth-input.tsx"));
         assert.match(smooth, /name="waveSmoothPct"/);
         assert.match(smooth, /Wave smoothness/);
