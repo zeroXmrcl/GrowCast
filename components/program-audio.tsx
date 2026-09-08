@@ -3,12 +3,15 @@
 import {useEffect, useRef, useState} from "react";
 import {useProgramAudioGraph} from "@/components/program-audio-graph";
 import {
+    DEFAULT_MUSIC_LOOK,
+    DEFAULT_WAVE_BARS,
     DEFAULT_WAVE_SMOOTH_PCT,
     nextPlaylistIndex,
     parseMusicLook,
     parseWaveBars,
     parseWaveSmoothPct,
     pickPlaylistStartIndex,
+    playlistTrackTitle,
     type MusicLook,
     programAudioMediaErrorAction,
     programMusicWaveActive,
@@ -259,8 +262,21 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
     useEffect(() => {
         const el = audioRef.current;
         const playing = programMusicWaveActive({kind, paused: body?.paused ?? true, src});
+        const look = body?.musicLook ?? DEFAULT_MUSIC_LOOK;
+        const bars = body?.waveBars ?? DEFAULT_WAVE_BARS;
+        const file = body && body.files.length > 0
+            ? body.files[playlistIndex % body.files.length] ?? ""
+            : "";
         if (!el || !playing) {
-            setGraph({active: false, analyser: graphRef.current?.analyser ?? null});
+            setGraph({
+                active: false,
+                analyser: graphRef.current?.analyser ?? null,
+                title: "",
+                currentTime: 0,
+                duration: 0,
+                musicLook: look,
+                waveBars: bars,
+            });
             return;
         }
         let context = audioContextRef.current;
@@ -269,6 +285,17 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             audioContextRef.current = context;
         }
         let cancelled = false;
+        const publish = (analyser: AnalyserNode) => {
+            setGraph({
+                active: true,
+                analyser,
+                title: playlistTrackTitle(file),
+                currentTime: el.currentTime,
+                duration: Number.isFinite(el.duration) ? el.duration : 0,
+                musicLook: look,
+                waveBars: bars,
+            });
+        };
         const attachIfRunning = () => {
             if (cancelled || !shouldAttachMediaElementSource(context.state)) {
                 return;
@@ -285,7 +312,7 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             graph.analyser.smoothingTimeConstant = waveSmoothTimeConstant(
                 body?.waveSmoothPct ?? DEFAULT_WAVE_SMOOTH_PCT,
             );
-            setGraph({active: true, analyser: graph.analyser});
+            publish(graph.analyser);
         };
         const keepAlive = () => {
             void context.resume().then(attachIfRunning, attachIfRunning);
@@ -293,16 +320,23 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         keepAlive();
         context.onstatechange = keepAlive;
         const timer = window.setInterval(keepAlive, PROGRAM_AUDIO_POLL_MS);
+        const clock = window.setInterval(() => {
+            const analyser = graphRef.current?.analyser;
+            if (analyser) {
+                publish(analyser);
+            }
+        }, 250);
         window.addEventListener("pointerdown", keepAlive);
         window.addEventListener("keydown", keepAlive);
         return () => {
             cancelled = true;
             context.onstatechange = null;
             window.clearInterval(timer);
+            window.clearInterval(clock);
             window.removeEventListener("pointerdown", keepAlive);
             window.removeEventListener("keydown", keepAlive);
         };
-    }, [kind, src, body?.paused, body?.waveSmoothPct, setGraph]);
+    }, [kind, src, body?.paused, body?.waveSmoothPct, body?.musicLook, body?.waveBars, body?.files, playlistIndex, setGraph]);
 
     return (
         <audio
