@@ -10,6 +10,7 @@ import SiteFooter from "@/components/site-footer";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
 import {markdownUrlTransform, safeHttpUrlOrEmpty} from "@/lib/url-policy";
+import OverlayCamera from "@/components/overlay-camera";
 
 export const dynamic = "force-dynamic";
 
@@ -113,13 +114,7 @@ export default async function Home() {
                         ) : null}
                         <div className="aspect-video w-full">
                             {streamUrl ? (
-                                <iframe
-                                    className="h-full w-full"
-                                    src={streamUrl}
-                                    allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    referrerPolicy="strict-origin-when-cross-origin"
-                                    allowFullScreen
-                                />
+                                <OverlayCamera streamUrl={streamUrl} />
                             ) : (
                                 <div
                                     className="flex h-full w-full items-center justify-center bg-zinc-800 text-zinc-100">
