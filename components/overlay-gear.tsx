@@ -12,14 +12,17 @@ export default function OverlayGear({snapshot}: {snapshot: GgsLivePublic}) {
             {tiles.length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
                     {tiles.map((tile) => {
-                        const running = tile.running;
+                        const alerting = tile.alerting;
+                        const running = tile.running && !alerting;
                         return (
                             <li key={tile.id}>
                                 <div
                                     className={`flex min-w-[3.5rem] flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${
-                                        running
-                                            ? "bg-orange-500/20 text-orange-200"
-                                            : "bg-zinc-800/80 text-zinc-400"
+                                        alerting
+                                            ? "growcast-alert-pulse bg-red-500/20 text-red-200"
+                                            : running
+                                              ? "bg-orange-500/20 text-orange-200"
+                                              : "bg-zinc-800/80 text-zinc-400"
                                     }`}
                                     style={{transitionDuration: `${OVERLAY_CHIP_COLOR_MS}ms`}}
                                     role="img"
@@ -28,7 +31,13 @@ export default function OverlayGear({snapshot}: {snapshot: GgsLivePublic}) {
                                 >
                                     <DeviceIcon
                                         kind={tile.kind}
-                                        className={running ? "text-orange-300" : "text-zinc-500"}
+                                        className={
+                                            alerting
+                                                ? "text-red-400"
+                                                : running
+                                                  ? "text-orange-300"
+                                                  : "text-zinc-500"
+                                        }
                                     />
                                     <span className="text-center text-[10px] leading-tight">
                                         {tile.label}

@@ -6,6 +6,7 @@ import {airVpdKPa} from "../lib/air-vpd.ts";
 import {EMPTY_LIVE_PUBLIC, GGS_PLUGIN_ID, GGS_STALE_AFTER_MS, type GgsLivePublic} from "../lib/ggs-live.ts";
 import {
     climateBadge,
+    climateMetricAlerts,
     climateMetrics,
     formatHumidityPct,
     formatHumidityPctTenths,
@@ -73,7 +74,15 @@ describe("homepage live-climate gate", () => {
         const src = readFileSync(path.join(process.cwd(), "app", "(site)", "page.tsx"), "utf8");
         assert.match(src, /hasGgsLiveUi\(/);
         assert.match(src, /showLiveClimate\s*\?\s*<LiveTentRow/);
-        assert.equal(/^\s*<LiveTentRow\s*\/>/m.test(src), false);
+        assert.doesNotMatch(src, /LiveTentRow climate=/);
+        const card = readFileSync(
+            path.join(process.cwd(), "components", "live-climate-card.tsx"),
+            "utf8",
+        );
+        assert.match(card, /growcast-alert-pulse/);
+        assert.match(card, /climateMetricAlerts/);
+        assert.match(card, /text-emerald-600/);
+        assert.doesNotMatch(card, /badge\.kind === "live"[\s\S]*growcast-alert-pulse/);
     });
 });
 
@@ -271,6 +280,51 @@ describe("mapDeviceTiles", () => {
         assert.equal(tiles[6].levelText, "25%");
         assert.equal(tiles[7].levelText, "11%");
     });
+
+    it("overrides running copy with EMPTY when the humidifier tank alarm is set", () => {
+        const tiles = mapDeviceTiles(snapshot({
+            devices: [
+                {
+                    ...snapshot().devices[0],
+                    actuators: [
+                        {id: "humidifier", label: "Humidifier", kind: "humidifier", on: true, level: 2, alarm: 4},
+                        {id: "fan", label: "Fan", kind: "fan", on: true, level: 1},
+                    ],
+                },
+            ],
+        }));
+        assert.equal(tiles[0].alerting, true);
+        assert.equal(tiles[0].running, true);
+        assert.equal(tiles[0].levelText, "EMPTY");
+        assert.equal(tiles[0].accessibleName, "Humidifier: empty tank");
+        assert.equal(tiles[1].alerting, false);
+        assert.equal(tiles[1].levelText, "10%");
+    });
+
+    it("maps dehumidifier FULL, light HOT, alarm 3 OFFLINE, and other codes to ALARM", () => {
+        const tiles = mapDeviceTiles(snapshot({
+            devices: [
+                {
+                    ...snapshot().devices[0],
+                    actuators: [
+                        {id: "dehumidifier", label: "Dehumidifier", kind: "dehumidifier", on: true, level: 2, alarm: 5},
+                        {id: "light", label: "Light", kind: "light", on: true, level: 80, alarm: 6},
+                        {id: "fan", label: "Fan", kind: "fan", on: false, level: 0, alarm: 3},
+                        {id: "heater", label: "Heater", kind: "heater", on: true, level: 1, alarm: 9},
+                    ],
+                },
+            ],
+        }));
+        assert.equal(tiles[0].levelText, "FULL");
+        assert.equal(tiles[0].accessibleName, "Dehumidifier: tank full");
+        assert.equal(tiles[1].levelText, "HOT");
+        assert.equal(tiles[1].accessibleName, "Light: over temperature");
+        assert.equal(tiles[2].levelText, "OFFLINE");
+        assert.equal(tiles[2].accessibleName, "Fan: offline");
+        assert.equal(tiles[3].levelText, "ALARM");
+        assert.equal(tiles[3].accessibleName, "Heater: alarm");
+        assert.equal(tiles.every((tile) => tile.alerting), true);
+    });
 });
 
 describe("climate freshness", () => {
@@ -317,5 +371,46 @@ describe("climate freshness", () => {
             ),
             false,
         );
+    });
+});
+
+describe("climateMetricAlerts", () => {
+    it("stays quiet when GGS has not raised a climate threshold alarm", () => {
+        assert.deepEqual(climateMetricAlerts(snapshot()), {
+            temp: false,
+            humidity: false,
+            vpd: false,
+        });
+        assert.deepEqual(
+            climateMetricAlerts(snapshot({
+                devices: [{...snapshot().devices[0], alarmLast: {devType: 27, alarmType: 4}}],
+            })),
+            {temp: false, humidity: false, vpd: false},
+        );
+        assert.deepEqual(
+            climateMetricAlerts(snapshot({
+                devices: [{...snapshot().devices[0], alarmLast: {devType: 2, alarmType: null}}],
+            })),
+            {temp: false, humidity: false, vpd: false},
+        );
+    });
+
+    it("pulses only the metric GGS last raised above or below threshold", () => {
+        const humidity = climateMetricAlerts(snapshot({
+            devices: [{...snapshot().devices[0], alarmLast: {devType: 2, alarmType: 2}}],
+        }));
+        assert.equal(humidity.temp, false);
+        assert.equal(humidity.humidity, true);
+        assert.equal(humidity.vpd, false);
+        const temp = climateMetricAlerts(snapshot({
+            devices: [{...snapshot().devices[0], alarmLast: {devType: 1, alarmType: 1}}],
+        }));
+        assert.equal(temp.temp, true);
+        assert.equal(temp.humidity, false);
+        const vpd = climateMetricAlerts(snapshot({
+            devices: [{...snapshot().devices[0], alarmLast: {devType: 3, alarmType: 1}}],
+        }));
+        assert.equal(vpd.vpd, true);
+        assert.equal(vpd.humidity, false);
     });
 });

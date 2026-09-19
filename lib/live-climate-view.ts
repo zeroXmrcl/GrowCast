@@ -18,8 +18,15 @@ export type LiveDeviceTile = {
     kind: GgsActuatorKind;
     label: string;
     running: boolean;
+    alerting: boolean;
     levelText: string;
     accessibleName: string;
+};
+
+export type ClimateMetricAlerts = {
+    temp: boolean;
+    humidity: boolean;
+    vpd: boolean;
 };
 
 export type ClimateBadge =
@@ -199,6 +206,10 @@ function displayPercent(kind: GgsActuatorKind, level: number): number {
 }
 
 function tileLevelText(actuator: GgsActuator): string {
+    const alarmText = alarmLevelText(actuator.kind, actuator.alarm);
+    if (alarmText) {
+        return alarmText;
+    }
     if (!actuator.on) {
         return "OFF";
     }
@@ -224,6 +235,10 @@ function tileLevelText(actuator: GgsActuator): string {
 }
 
 function tileAccessibleName(label: string, actuator: GgsActuator): string {
+    const alarmDetail = alarmAccessibleDetail(actuator.kind, actuator.alarm);
+    if (alarmDetail) {
+        return `${label}: ${alarmDetail}`;
+    }
     const caption = tileLevelText(actuator);
     if (caption === "OFF") {
         return `${label}: OFF`;
@@ -249,8 +264,58 @@ export function mapDeviceTiles(snapshot: GgsLivePublic): LiveDeviceTile[] {
             kind: actuator.kind,
             label,
             running: actuator.on,
+            alerting: alarmLevelText(actuator.kind, actuator.alarm) !== null,
             levelText: tileLevelText(actuator),
             accessibleName: tileAccessibleName(label, actuator),
         };
     });
 }
+
+export function climateMetricAlerts(snapshot: GgsLivePublic): ClimateMetricAlerts {
+    const last = pickClimateDevice(snapshot)?.alarmLast;
+    if (!last || (last.alarmType !== 1 && last.alarmType !== 2)) {
+        return {temp: false, humidity: false, vpd: false};
+    }
+    return {
+        temp: last.devType === 1,
+        humidity: last.devType === 2,
+        vpd: last.devType === 3,
+    };
+}
+
+export function alarmLevelText(kind: GgsActuatorKind, alarm: number | null | undefined): string | null {
+    if (alarm == null || alarm <= 0) {
+        return null;
+    }
+    if (kind === "humidifier" && alarm === 4) {
+        return "EMPTY";
+    }
+    if (kind === "dehumidifier" && alarm === 5) {
+        return "FULL";
+    }
+    if (kind === "light" && alarm === 6) {
+        return "HOT";
+    }
+    if (alarm === 3) {
+        return "OFFLINE";
+    }
+    return "ALARM";
+}
+
+export function alarmAccessibleDetail(kind: GgsActuatorKind, alarm: number | null | undefined): string | null {
+    switch (alarmLevelText(kind, alarm)) {
+        case "EMPTY":
+            return "empty tank";
+        case "FULL":
+            return "tank full";
+        case "HOT":
+            return "over temperature";
+        case "OFFLINE":
+            return "offline";
+        case "ALARM":
+            return "alarm";
+        default:
+            return null;
+    }
+}
+

@@ -51,6 +51,52 @@ describe("ggs live parse", () => {
         assert.equal(parsed.ok, true);
         if (parsed.ok) {
             assert.equal(parsed.value.devices[0].sensor.tempC, 25.4);
+            assert.equal(parsed.value.devices[0].actuators[0].alarm, null);
+        }
+    });
+
+    it("keeps humidifier tank alarm 4", () => {
+        const body = validBody();
+        body.devices[0].actuators.push({
+            id: "humidifier",
+            label: "Humidifier",
+            kind: "humidifier",
+            on: true,
+            level: 2,
+            alarm: 4,
+        });
+        const parsed = parseIngestBody(body);
+        assert.equal(parsed.ok, true);
+        if (parsed.ok) {
+            const humidifier = parsed.value.devices[0].actuators.find((item) => item.id === "humidifier");
+            assert.equal(humidifier?.alarm, 4);
+        }
+    });
+
+    it("keeps alarmLast climate threshold raise", () => {
+        const body = validBody();
+        (body.devices[0] as Record<string, unknown>).alarmLast = {devType: 2, alarmType: 2};
+        const parsed = parseIngestBody(body);
+        assert.equal(parsed.ok, true);
+        if (parsed.ok) {
+            assert.deepEqual(parsed.value.devices[0].alarmLast, {devType: 2, alarmType: 2});
+        }
+    });
+
+    it("keeps isDay from the sensor and treats junk as unknown", () => {
+        const withDay = validBody();
+        (withDay.devices[0].sensor as Record<string, unknown>).isDay = true;
+        const parsed = parseIngestBody(withDay);
+        assert.equal(parsed.ok, true);
+        if (parsed.ok) {
+            assert.equal(parsed.value.devices[0].sensor.isDay, true);
+        }
+        const junk = validBody();
+        (junk.devices[0].sensor as Record<string, unknown>).isDay = "daytime";
+        const parsedJunk = parseIngestBody(junk);
+        assert.equal(parsedJunk.ok, true);
+        if (parsedJunk.ok) {
+            assert.equal(parsedJunk.value.devices[0].sensor.isDay, null);
         }
     });
 

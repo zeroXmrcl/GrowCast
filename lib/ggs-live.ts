@@ -24,6 +24,7 @@ export type GgsActuator = {
     kind: GgsActuatorKind;
     on: boolean;
     level: number | null;
+    alarm?: number | null;
 };
 
 export type GgsSensor = {
@@ -35,6 +36,12 @@ export type GgsSensor = {
     tempSoilC: number | null;
     humiditySoilPct: number | null;
     ecSoil: number | null;
+    isDay?: boolean | null;
+};
+
+export type GgsAlarmLast = {
+    devType: number;
+    alarmType: number | null;
 };
 
 export type GgsPrefix = "CB" | "PS" | "LC";
@@ -47,6 +54,7 @@ export type GgsDeviceSnapshot = {
     online: boolean;
     sensor: GgsSensor;
     actuators: GgsActuator[];
+    alarmLast?: GgsAlarmLast | null;
 };
 
 export type GgsLiveIngest = {
@@ -115,6 +123,30 @@ function optionalFinite(value: unknown): number | null | undefined {
     return undefined;
 }
 
+function parseOptionalDay(value: unknown): boolean | null {
+    if (value === true || value === 1 || value === "1") {
+        return true;
+    }
+    if (value === false || value === 0 || value === "0") {
+        return false;
+    }
+    return null;
+}
+
+function parseOptionalAlarm(value: unknown): number | null | undefined {
+    if (value === undefined || value === null || value === "") {
+        return null;
+    }
+    const n = optionalFinite(value);
+    if (n === undefined || n === null) {
+        return n === null ? null : undefined;
+    }
+    if (!Number.isInteger(n) || n < 0 || n > 99) {
+        return undefined;
+    }
+    return n === 0 ? null : n;
+}
+
 function parseSensor(raw: unknown): GgsSensor | null {
     if (!isRecord(raw)) {
         return null;
@@ -127,6 +159,7 @@ function parseSensor(raw: unknown): GgsSensor | null {
     const tempSoilC = optionalFinite(raw.tempSoilC);
     const humiditySoilPct = optionalFinite(raw.humiditySoilPct);
     const ecSoil = optionalFinite(raw.ecSoil);
+    const isDay = parseOptionalDay(raw.isDay);
     if (
         tempC === undefined ||
         humidityPct === undefined ||
@@ -139,7 +172,25 @@ function parseSensor(raw: unknown): GgsSensor | null {
     ) {
         return null;
     }
-    return {tempC, humidityPct, vpd, co2, ppfd, tempSoilC, humiditySoilPct, ecSoil};
+    return {tempC, humidityPct, vpd, co2, ppfd, tempSoilC, humiditySoilPct, ecSoil, isDay};
+}
+
+function parseAlarmLast(value: unknown): GgsAlarmLast | null {
+    if (value === undefined || value === null || value === "") {
+        return null;
+    }
+    if (!isRecord(value)) {
+        return null;
+    }
+    const devType = optionalFinite(value.devType);
+    if (devType === undefined || devType === null || !Number.isInteger(devType) || devType < 0 || devType > 99) {
+        return null;
+    }
+    const alarmType = parseOptionalAlarm(value.alarmType);
+    if (alarmType === undefined) {
+        return null;
+    }
+    return {devType, alarmType};
 }
 
 function parseActuator(raw: unknown): GgsActuator | null {
@@ -156,7 +207,11 @@ function parseActuator(raw: unknown): GgsActuator | null {
     if (level === undefined) {
         return null;
     }
-    return {id, label, kind, on: asBoolean(raw.on, false), level};
+    const alarm = parseOptionalAlarm(raw.alarm);
+    if (alarm === undefined) {
+        return null;
+    }
+    return {id, label, kind, on: asBoolean(raw.on, false), level, alarm};
 }
 
 function parseDevice(raw: unknown): GgsDeviceSnapshot | null {
@@ -201,6 +256,7 @@ function parseDevice(raw: unknown): GgsDeviceSnapshot | null {
         online: asBoolean(raw.online, false),
         sensor,
         actuators,
+        alarmLast: parseAlarmLast(raw.alarmLast),
     };
 }
 

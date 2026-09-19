@@ -16,6 +16,7 @@ function tile(id: string, label: string): LiveDeviceTile {
         kind: "fan",
         label,
         running: false,
+        alerting: false,
         levelText: "OFF",
         accessibleName: `${label}: OFF`,
     };
@@ -92,6 +93,8 @@ describe("live devices card wiring", () => {
         assert.match(src, /w-full min-w-0/);
         assert.match(src, /max-w-full/);
         assert.doesNotMatch(src, /flex-wrap gap-4/);
+        assert.match(src, /growcast-alert-pulse/);
+        assert.match(src, /tile\.alerting/);
     });
 
     it("does not change overlay gear wrapping", () => {
@@ -102,5 +105,20 @@ describe("live devices card wiring", () => {
         assert.match(src, /flex flex-wrap gap-2/);
         assert.equal(src.includes("lg:flex-nowrap"), false);
         assert.equal(src.includes("liveDeviceRowItems"), false);
+        assert.match(src, /growcast-alert-pulse/);
+        assert.match(src, /tile\.alerting/);
+    });
+});
+
+describe("alert pulse CSS", () => {
+    it("pulses at 1.1s and stays solid red when motion is reduced", () => {
+        const src = readFileSync(
+            path.join(process.cwd(), "app", "globals.css"),
+            "utf8",
+        );
+        assert.match(src, /@keyframes growcast-alert-pulse/);
+        assert.match(src, /animation: growcast-alert-pulse 1\.1s ease-in-out infinite/);
+        assert.match(src, /prefers-reduced-motion: reduce/);
+        assert.match(src, /animation: none/);
     });
 });

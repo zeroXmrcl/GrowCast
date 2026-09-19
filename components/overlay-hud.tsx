@@ -120,7 +120,11 @@ export default function OverlayHud({
                 layout={layout}
             >
                 {heldSnapshot ? (
-                    <OverlayClimate snapshot={heldSnapshot} stale={stale} nowMs={nowMs}/>
+                    <OverlayClimate
+                        snapshot={heldSnapshot}
+                        stale={stale}
+                        nowMs={nowMs}
+                    />
                 ) : null}
             </OverlayMotionItem>
             <OverlayMotionItem
