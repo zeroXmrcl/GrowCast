@@ -251,6 +251,8 @@ describe("energy series", () => {
             assert.equal("series" in archive.dto, false);
             assert.equal(archive.dto.flow, undefined);
             assert.equal("flow" in archive.dto, false);
+            assert.equal(archive.dto.water, undefined);
+            assert.equal("water" in archive.dto, false);
             assert.equal(JSON.stringify(archive.dto).includes("serial"), false);
         });
     });

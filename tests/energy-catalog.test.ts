@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {
     blowerWatts,
+    catalogHumidifierMlPerHour,
     catalogWatts,
     lightWatts,
     lookupWatts,
@@ -35,6 +36,11 @@ describe("energy catalog", () => {
         assert.equal(catalogWatts("heater", "heater", "10", true), 540);
         assert.equal(catalogWatts("humidifier", "humidifier", "2", true), 22);
         assert.equal(catalogWatts("humidifier", "humidifier", "4", true), 30);
+        assert.equal(catalogHumidifierMlPerHour("1"), 180);
+        assert.equal(catalogHumidifierMlPerHour("2"), 270);
+        assert.equal(catalogHumidifierMlPerHour("3"), 360);
+        assert.equal(catalogHumidifierMlPerHour("4"), 450);
+        assert.equal(catalogHumidifierMlPerHour("5"), 0);
         assert.equal(catalogWatts("dehumidifier", "dehumidifier", "1", true), 215);
         assert.equal(catalogWatts("dehumidifier", "dehumidifier", "2", true), 230);
         assert.equal(catalogWatts("outlet", "outlet-1", "1", true), 0);

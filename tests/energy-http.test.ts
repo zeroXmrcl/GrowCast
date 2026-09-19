@@ -153,6 +153,8 @@ describe("GET /api/data/energy", () => {
             assert.equal("series" in body, false);
             assert.equal(body.flow, undefined);
             assert.equal("flow" in body, false);
+            assert.equal(body.water, undefined);
+            assert.equal("water" in body, false);
             assert.equal(JSON.stringify(body).includes("serial"), false);
         });
     });

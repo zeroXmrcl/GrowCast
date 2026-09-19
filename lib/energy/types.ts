@@ -81,6 +81,25 @@ export type EnergyFlowView = {
     rows: EnergyFlowRow[];
 };
 
+export type EnergyWaterCell = {
+    liters: number;
+    empty: boolean;
+};
+
+export type EnergyWaterView = {
+    kind: "hour" | "slot6h" | "day";
+    liters: number;
+    columns: {t: string; hour: number}[];
+    cells: EnergyWaterCell[];
+};
+
+export type EnergyWaterWindows = {
+    today: EnergyWaterView;
+    "7d": EnergyWaterView;
+    "30d": EnergyWaterView;
+    grow: EnergyWaterView;
+};
+
 export type EnergyPublicDto = {
     grow: string;
     estimated: true;
@@ -98,6 +117,7 @@ export type EnergyPublicDto = {
     } | null;
     series?: EnergySeriesWindows;
     flow?: EnergyFlowView;
+    water?: EnergyWaterWindows;
     kWh: number;
     costEur: number | null;
     devices: EnergyDeviceRow[];

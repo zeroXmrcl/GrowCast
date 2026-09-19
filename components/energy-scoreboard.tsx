@@ -1,10 +1,11 @@
 "use client";
 
-import {useEffect, useState, type PointerEvent} from "react";
+import {useEffect, useState} from "react";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/lib/energy/berlin";
 import {ENERGY_POLL_MS, fetchEnergyDto, shouldPollEnergy} from "@/lib/energy/poll";
 import EnergyFlowmap from "@/components/energy-flowmap";
+import EnergyWater from "@/components/energy-water";
 import {
     formatEur,
     formatHoursOn,
@@ -20,6 +21,41 @@ import type {
 } from "@/lib/energy/types";
 
 type WindowKey = keyof EnergySeriesWindows;
+
+const WINDOW_KEYS: WindowKey[] = ["today", "7d", "30d", "grow"];
+const GRAPH_WINDOW_SLOT = "growcast.energy.graphWindow";
+const WATER_WINDOW_SLOT = "growcast.energy.waterWindow";
+
+function parseWindowKey(value: string | null): WindowKey | null {
+    return WINDOW_KEYS.find((key) => key === value) ?? null;
+}
+
+function persistWindowKey(slot: string, key: WindowKey): void {
+    try {
+        sessionStorage.setItem(slot, key);
+    } catch {
+        // private mode
+    }
+}
+
+function usePersistedWindowKey(slot: string): [WindowKey, (key: WindowKey) => void] {
+    const [windowKey, setWindowKey] = useState<WindowKey>("today");
+    useEffect(() => {
+        try {
+            const saved = parseWindowKey(sessionStorage.getItem(slot));
+            if (saved) {
+                setWindowKey(saved);
+            }
+        } catch {
+            // private mode
+        }
+    }, [slot]);
+    function onWindowKey(key: WindowKey) {
+        setWindowKey(key);
+        persistWindowKey(slot, key);
+    }
+    return [windowKey, onWindowKey];
+}
 
 const CHIPS: {key: WindowKey; label: string}[] = [
     {key: "today", label: "24h"},
@@ -235,7 +271,6 @@ function strokePath(run: LaidOut[], prevY: number | null): string {
 }
 
 function EnergyWattsPlot({series}: {series: EnergySeries}) {
-    const [hover, setHover] = useState<number | null>(null);
     const points = series.points;
     const peak = points.reduce((max, point) => Math.max(max, point.watts), 0);
     const yMax = Math.max(peak, 1);
@@ -244,37 +279,6 @@ function EnergyWattsPlot({series}: {series: EnergySeries}) {
     const labels = axisLabels(series);
     const peakLabel = String(Math.round(yMax));
     const midLabel = String(Math.round(yMax / 2));
-    const hoverBucket = hover !== null ? layout[hover] : undefined;
-    const hoverX = hoverBucket ? (hoverBucket.x0 + hoverBucket.x1) / 2 : 0;
-
-    function bucketAt(event: PointerEvent<SVGSVGElement>): number | null {
-        if (points.length === 0) {
-            return null;
-        }
-        const rect = event.currentTarget.getBoundingClientRect();
-        const vx = ((event.clientX - rect.left) / rect.width) * PLOT_W;
-        if (vx < 0 || vx > PLOT_W) {
-            return null;
-        }
-        return Math.min(
-            points.length - 1,
-            Math.max(0, Math.floor((vx / PLOT_W) * points.length)),
-        );
-    }
-
-    function onPointerMove(event: PointerEvent<SVGSVGElement>) {
-        setHover(bucketAt(event));
-    }
-
-    function onPointerDown(event: PointerEvent<SVGSVGElement>) {
-        setHover(bucketAt(event));
-    }
-
-    function onPointerLeave(event: PointerEvent<SVGSVGElement>) {
-        if (event.pointerType === "mouse") {
-            setHover(null);
-        }
-    }
 
     return (
         <div>
@@ -287,16 +291,12 @@ function EnergyWattsPlot({series}: {series: EnergySeries}) {
                     <span>{midLabel}</span>
                     <span>0 W</span>
                 </div>
-                <div className="relative min-w-0 flex-1">
+                <div className="relative min-w-0 flex-1" style={{height: PLOT_H}}>
                     <svg
                         aria-hidden="true"
-                        className="w-full"
-                        height={PLOT_H}
+                        className="pointer-events-none absolute inset-0 h-full w-full"
                         viewBox={`0 0 ${PLOT_W} ${PLOT_H}`}
                         preserveAspectRatio="none"
-                        onPointerDown={onPointerDown}
-                        onPointerLeave={onPointerLeave}
-                        onPointerMove={onPointerMove}
                     >
                         <line
                             x1={0}
@@ -354,30 +354,25 @@ function EnergyWattsPlot({series}: {series: EnergySeries}) {
                                 />
                             );
                         })}
-                        {hoverBucket ? (
-                            <line
-                                x1={hoverX}
-                                x2={hoverX}
-                                y1={0}
-                                y2={PLOT_H}
-                                className="stroke-zinc-900/40 dark:stroke-zinc-100/40"
-                                strokeWidth={1}
-                                vectorEffect="nonScalingStroke"
-                            />
-                        ) : null}
                     </svg>
-                    {hover !== null && hoverBucket ? (
-                        <div
-                            className="pointer-events-none absolute z-10 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs tabular-nums text-white dark:bg-zinc-100 dark:text-zinc-900"
-                            style={{
-                                left: `${(hoverX / PLOT_W) * 100}%`,
-                                top: 8,
-                                transform: "translateX(-50%)",
-                            }}
-                        >
-                            {tooltipLabel(series, hover)}
-                        </div>
-                    ) : null}
+                    <div className="absolute inset-0 flex">
+                        {points.map((point, index) => {
+                            const label = tooltipLabel(series, index);
+                            return (
+                                <button
+                                    key={point.t ?? index}
+                                    type="button"
+                                    aria-label={label}
+                                    className="group relative z-[1] h-full min-w-0 flex-1 border-0 bg-transparent p-0 outline-none"
+                                >
+                                    <span className="pointer-events-none absolute inset-y-0 left-1/2 hidden w-px -translate-x-1/2 bg-zinc-900/40 group-hover:block group-focus:block dark:bg-zinc-100/40"/>
+                                    <span className="pointer-events-none absolute left-1/2 top-1 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs tabular-nums text-white group-hover:block group-focus:block dark:bg-zinc-100 dark:text-zinc-900">
+                                        {label}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
             <div className="mt-1 flex justify-between pl-9 text-[10px] leading-none text-zinc-400">
@@ -389,13 +384,20 @@ function EnergyWattsPlot({series}: {series: EnergySeries}) {
     );
 }
 
-function EnergyGraphCard({series}: {series: EnergySeriesWindows}) {
-    const [windowKey, setWindowKey] = useState<WindowKey>("today");
-    const selected = series[windowKey];
+function EnergyGraphCard({
+    series,
+    windowKey,
+    onWindowKey,
+}: {
+    series: EnergySeriesWindows;
+    windowKey: WindowKey;
+    onWindowKey: (key: WindowKey) => void;
+}) {
+    const selected = series[windowKey] ?? series.today;
 
     return (
         <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="relative z-10 mb-4 flex flex-wrap gap-2">
                 {CHIPS.map((chip) => {
                     const pressed = chip.key === windowKey;
                     return (
@@ -403,7 +405,11 @@ function EnergyGraphCard({series}: {series: EnergySeriesWindows}) {
                             key={chip.key}
                             type="button"
                             aria-pressed={pressed}
-                            onClick={() => setWindowKey(chip.key)}
+                            onPointerDown={(event) => {
+                                event.preventDefault();
+                                onWindowKey(chip.key);
+                            }}
+                            onClick={() => onWindowKey(chip.key)}
                             className={
                                 pressed
                                     ? "rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -415,7 +421,7 @@ function EnergyGraphCard({series}: {series: EnergySeriesWindows}) {
                     );
                 })}
             </div>
-            <EnergyWattsPlot key={windowKey} series={selected}/>
+            <EnergyWattsPlot series={selected}/>
         </section>
     );
 }
@@ -456,6 +462,8 @@ function usePolledEnergyDto(initial: EnergyPublicDto): EnergyPublicDto {
 
 export default function EnergyScoreboard({dto: initial}: {dto: EnergyPublicDto}) {
     const dto = usePolledEnergyDto(initial);
+    const [graphWindow, setGraphWindow] = usePersistedWindowKey(GRAPH_WINDOW_SLOT);
+    const [waterWindow, setWaterWindow] = usePersistedWindowKey(WATER_WINDOW_SLOT);
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
@@ -486,8 +494,21 @@ export default function EnergyScoreboard({dto: initial}: {dto: EnergyPublicDto})
                         <WindowTile title="30 days" window={dto.windows["30d"]}/>
                         <WindowTile title="This grow" window={dto.windows.grow}/>
                     </section>
-                    {dto.series ? <EnergyGraphCard series={dto.series}/> : null}
+                    {dto.series ? (
+                        <EnergyGraphCard
+                            series={dto.series}
+                            windowKey={graphWindow}
+                            onWindowKey={setGraphWindow}
+                        />
+                    ) : null}
                     {dto.flow ? <EnergyFlowmap flow={dto.flow}/> : null}
+                    {dto.water ? (
+                        <EnergyWater
+                            water={dto.water}
+                            windowKey={waterWindow}
+                            onWindowKey={setWaterWindow}
+                        />
+                    ) : null}
                     <DeviceTable dto={dto}/>
                 </>
             ) : (

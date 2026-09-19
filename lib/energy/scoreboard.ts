@@ -10,6 +10,7 @@ import {costEur, round1, round2, totalsForDays, totalsForHourRange} from "@/lib/
 import {readArchiveEnergy} from "@/lib/energy/archive";
 import {buildEnergySeries} from "@/lib/energy/series";
 import {buildEnergyFlowView} from "@/lib/energy/flow-view";
+import {buildEnergyWaterView} from "@/lib/energy/water-view";
 import {readAllCurrentDays, readEnergyCursor} from "@/lib/energy/store";
 import {readEnergySettings, viewerTariff} from "@/lib/energy/settings";
 import type {
@@ -204,6 +205,13 @@ export async function buildEnergyDto(options: {
     const empty = !live && !hasBuckets && !activeCursor;
 
     const growCost = costEur(growTotals.kWh, tariff);
+    const water = buildEnergyWaterView({
+        days: activeDays,
+        refs,
+        liveDevices: live?.devices,
+        startedAt: activeCursor?.startedAt ?? null,
+        nowMs,
+    });
 
     const dto: EnergyPublicDto = {
         grow: "current",
@@ -233,6 +241,7 @@ export async function buildEnergyDto(options: {
             liveDevices: live?.devices,
             nowMs,
         }),
+        ...(water ? {water} : {}),
         kWh: round1(growTotals.kWh),
         costEur: growCost === null ? null : round2(growCost),
         devices: deviceRows(growTotals.kWh, tariff, refs, growTotals.devices),

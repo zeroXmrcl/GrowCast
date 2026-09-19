@@ -37,6 +37,14 @@ export const HUMIDIFIER_GEAR_WATTS: Readonly<Record<string, number>> = {
     "4": 30,
 };
 
+/** SF-Humidifier5 manual: gears 1–4 span 180–450 ml/h. L2/L3 are equal steps. */
+export const HUMIDIFIER_GEAR_ML_PER_HOUR: Readonly<Record<string, number>> = {
+    "1": 180,
+    "2": 270,
+    "3": 360,
+    "4": 450,
+};
+
 /** GGS dehumidifier 1 = LOW, 2 = HIGH. */
 export const DEHUMIDIFIER_WATTS: Readonly<Record<string, number>> = {
     "1": 215,
@@ -134,6 +142,10 @@ export function catalogWatts(
         default:
             return 0;
     }
+}
+
+export function catalogHumidifierMlPerHour(level: string): number {
+    return finiteLevelWatts(HUMIDIFIER_GEAR_ML_PER_HOUR, level) ?? 0;
 }
 
 function overrideLevelWatts(override: EnergyOverride | undefined, level: string): number | null {
