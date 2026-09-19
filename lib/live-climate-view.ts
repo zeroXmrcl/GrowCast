@@ -292,7 +292,12 @@ export function actuatorCountsTowardEnergy(
     return alarmLevelText(actuator.kind, actuator.alarm) === null;
 }
 
-export function alarmLevelText(kind: GgsActuatorKind, alarm: number | null | undefined): string | null {
+export type ActuatorAlarmMark = "EMPTY" | "FULL" | "HOT" | "OFFLINE" | "ALARM";
+
+export function alarmLevelText(
+    kind: GgsActuatorKind,
+    alarm: number | null | undefined,
+): ActuatorAlarmMark | null {
     if (alarm == null || alarm <= 0) {
         return null;
     }
