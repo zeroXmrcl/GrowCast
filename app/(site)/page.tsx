@@ -179,7 +179,7 @@ export default async function Home() {
                 </aside>
             </div>
 
-            {showLiveClimate ? <LiveTentRow /> : null}
+            {showLiveClimate ? <LiveTentRow climateTick={grow.climateTick} /> : null}
 
             <section className="grid gap-6 lg:grid-cols-2">
                 <article

@@ -80,6 +80,8 @@ describe("overlay picker wiring", () => {
         const growFields = src(path.join("app", "admin", "settings-fields.tsx"));
         const css = src(path.join("app", "globals.css"));
         const homeCard = src(path.join("components", "live-climate-card.tsx"));
+        const homeRow = src(path.join("components", "live-tent-row.tsx"));
+        const homePage = src(path.join("app", "(site)", "page.tsx"));
         const overlayPage = src(path.join("app", "overlay", "page.tsx"));
         const programPage = src(path.join("app", "program", "page.tsx"));
         const capturePage = src(path.join("app", "overlay", "capture", "page.tsx"));
@@ -116,7 +118,11 @@ describe("overlay picker wiring", () => {
 
         assert.match(css, /growcast-climate-wheel/);
         assert.match(css, /growcast-climate-wheel-strip/);
-        assert.doesNotMatch(homeCard, /ClimatePickerValue/);
-        assert.doesNotMatch(homeCard, /climateTick/);
+        assert.match(css, /growcast-climate-wheel-dash/);
+        assert.match(homeCard, /ClimatePickerValue/);
+        assert.match(homeCard, /climateTick === "picker"/);
+        assert.match(homeCard, /size="dash"/);
+        assert.match(homeRow, /climateTick=\{climateTick\}/);
+        assert.match(homePage, /LiveTentRow climateTick=\{grow\.climateTick\}/);
     });
 });

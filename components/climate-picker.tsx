@@ -36,15 +36,18 @@ function usePrefersReducedMotion(): boolean {
 export default function ClimatePickerValue({
     kind,
     value,
+    size = "overlay",
 }: {
     kind: ClimateTickKind;
     value: number | null;
+    size?: "overlay" | "dash";
 }) {
     const reduced = usePrefersReducedMotion();
     const wheelRef = useRef<HTMLDivElement>(null);
     const stripRef = useRef<HTMLDivElement>(null);
     const lastIndex = useRef<number | null>(null);
     const labels = climateTickLabels(kind);
+    const dash = size === "dash";
 
     useLayoutEffect(() => {
         const wheel = wheelRef.current;
@@ -67,11 +70,19 @@ export default function ClimatePickerValue({
     }, [kind, reduced, value]);
 
     if (value === null) {
-        return <p className="mt-0.5 text-lg font-semibold tabular-nums">—</p>;
+        return (
+            <p className={dash ? "mt-1 text-xl font-semibold tabular-nums" : "mt-0.5 text-lg font-semibold tabular-nums"}>
+                —
+            </p>
+        );
     }
 
     return (
-        <div ref={wheelRef} className="growcast-climate-wheel" aria-hidden="true">
+        <div
+            ref={wheelRef}
+            className={dash ? "growcast-climate-wheel growcast-climate-wheel-dash" : "growcast-climate-wheel"}
+            aria-hidden="true"
+        >
             <div ref={stripRef} className="growcast-climate-wheel-strip">
                 {labels.map((label) => (
                     <div className="growcast-climate-wheel-row" key={label}>

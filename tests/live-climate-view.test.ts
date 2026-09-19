@@ -75,17 +75,25 @@ describe("homepage live-climate gate", () => {
         const src = readFileSync(path.join(process.cwd(), "app", "(site)", "page.tsx"), "utf8");
         assert.match(src, /hasGgsLiveUi\(/);
         assert.match(src, /showLiveClimate\s*\?\s*<LiveTentRow/);
-        assert.doesNotMatch(src, /LiveTentRow climate=/);
+        assert.match(src, /LiveTentRow climateTick=\{grow\.climateTick\}/);
+        assert.doesNotMatch(src, /LiveTentRow climate=\{/);
         const card = readFileSync(
             path.join(process.cwd(), "components", "live-climate-card.tsx"),
+            "utf8",
+        );
+        const row = readFileSync(
+            path.join(process.cwd(), "components", "live-tent-row.tsx"),
             "utf8",
         );
         assert.match(card, /growcast-alert-pulse/);
         assert.match(card, /climateMetricAlerts/);
         assert.match(card, /text-emerald-600/);
         assert.doesNotMatch(card, /badge\.kind === "live"[\s\S]*growcast-alert-pulse/);
-        assert.doesNotMatch(card, /ClimatePickerValue/);
-        assert.doesNotMatch(card, /climateTick/);
+        assert.match(card, /ClimatePickerValue/);
+        assert.match(card, /climateTick === "picker"/);
+        assert.match(card, /size="dash"/);
+        assert.match(row, /climateTick=\{climateTick\}/);
+        assert.match(row, /OVERLAY_GROW_POLL_MS/);
     });
 
     it("shows humidity tenths on the dashboard card and whole percents on the OG card", () => {

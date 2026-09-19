@@ -136,6 +136,26 @@ html:has([data-overlay-root]) body {
   white-space: nowrap;
 }
 
+.growcast-climate-wheel-dash {
+  --row: 2rem;
+}
+
+.growcast-climate-wheel-dash .growcast-climate-wheel-row {
+  font-size: 1.25rem;
+}
+
+.growcast-climate-wheel-dash::before,
+.growcast-climate-wheel-dash::after {
+  background: rgb(24 24 27 / 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .growcast-climate-wheel-dash::before,
+  .growcast-climate-wheel-dash::after {
+    background: rgb(255 255 255 / 0.14);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .growcast-climate-wheel-strip {
     transition-duration: 0ms !important;
