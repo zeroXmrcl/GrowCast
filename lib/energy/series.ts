@@ -5,6 +5,7 @@ import {
     berlinDayLengthSeconds,
     berlinDayStartMs,
     berlinHour,
+    berlinHourStartAtOrBefore,
     nextBerlinHourBoundary,
     shiftDateOnly,
     splitBerlinHours,
@@ -202,20 +203,6 @@ function growStartDate(
         }
     }
     return first ?? today;
-}
-
-function berlinHourStartAtOrBefore(ms: number): number {
-    let t = berlinDayStartMs(berlinDateOnly(ms));
-    let guard = 0;
-    while (guard < 30) {
-        guard += 1;
-        const boundary = nextBerlinHourBoundary(t);
-        if (boundary > ms) {
-            return t;
-        }
-        t = boundary;
-    }
-    return t;
 }
 
 function todayHourSeries(

@@ -9,6 +9,7 @@ export type EnergyDayHours = Record<string, EnergyActuatorHours>;
 export type EnergyDayFile = {
     date: string;
     hours: EnergyDayHours;
+    alerts?: EnergyDayHours;
 };
 
 export type EnergyCursor = {
@@ -23,7 +24,7 @@ export type EnergyArchiveFile = {
     growId: string;
     startedAt: string;
     endedAt: string;
-    days: Record<string, {hours: EnergyDayHours}>;
+    days: Record<string, {hours: EnergyDayHours; alerts?: EnergyDayHours}>;
     devices?: GgsDeviceSnapshot[];
 };
 
@@ -59,6 +60,27 @@ export type EnergySeriesWindows = {
     grow: EnergySeries;
 };
 
+export type EnergyFlowMark = "EMPTY" | "FULL" | "HOT" | "OFFLINE" | "ALARM";
+
+export type EnergyFlowCell = {
+    duty: number;
+    alert: number;
+    mark: EnergyFlowMark | null;
+};
+
+export type EnergyFlowRow = {
+    id: string;
+    label: string;
+    name: string;
+    kind: GgsActuatorKind;
+    cells: EnergyFlowCell[];
+};
+
+export type EnergyFlowView = {
+    columns: {t: string; hour: number}[];
+    rows: EnergyFlowRow[];
+};
+
 export type EnergyPublicDto = {
     grow: string;
     estimated: true;
@@ -75,6 +97,7 @@ export type EnergyPublicDto = {
         grow: EnergyWindow;
     } | null;
     series?: EnergySeriesWindows;
+    flow?: EnergyFlowView;
     kWh: number;
     costEur: number | null;
     devices: EnergyDeviceRow[];

@@ -2,13 +2,14 @@ import {withStale, type GgsDeviceSnapshot, type GgsLiveIngest} from "@/lib/ggs-l
 import {getArchivedGrow} from "@/lib/archives";
 import {getCurrentGrow} from "@/lib/db";
 import {readGgsLive} from "@/lib/ggs-live-store";
-import {actuatorLabel} from "@/lib/live-climate-view";
+import {actuatorCountsTowardEnergy, actuatorLabel} from "@/lib/live-climate-view";
 import {previewPendingAccrue} from "@/lib/energy/accrue";
 import {actuatorKey, kindFromActuatorId, lookupWatts} from "@/lib/energy/catalog";
-import {berlinDateOnly, berlinDateWindow} from "@/lib/energy/berlin";
-import {costEur, round1, round2, totalsForDays} from "@/lib/energy/math";
+import {berlinDateOnly, berlinDateWindow, berlinHourStartAtOrBefore} from "@/lib/energy/berlin";
+import {costEur, round1, round2, totalsForDays, totalsForHourRange} from "@/lib/energy/math";
 import {readArchiveEnergy} from "@/lib/energy/archive";
 import {buildEnergySeries} from "@/lib/energy/series";
+import {buildEnergyFlowView} from "@/lib/energy/flow-view";
 import {readAllCurrentDays, readEnergyCursor} from "@/lib/energy/store";
 import {readEnergySettings, viewerTariff} from "@/lib/energy/settings";
 import type {
@@ -66,7 +67,7 @@ export function nowWattsFromSnapshot(
     let watts = 0;
     for (const device of live.devices) {
         for (const actuator of device.actuators) {
-            if (!actuator.on || actuator.level === null) {
+            if (!actuatorCountsTowardEnergy(actuator)) {
                 continue;
             }
             watts += lookupWatts({
@@ -174,9 +175,11 @@ export async function buildEnergyDto(options: {
     const refs = collectRefs([live?.devices, activeCursor?.devices]);
     const today = berlinDateOnly(nowMs);
     const growTotals = totalsForDays(activeDays.values(), null, refs, settings.overrides);
-    const todayTotals = totalsForDays(
-        [...activeDays.values()].filter((day) => day.date === today),
-        new Set([today]),
+    const last24StartMs = berlinHourStartAtOrBefore(nowMs - 24 * 60 * 60 * 1000);
+    const last24Totals = totalsForHourRange(
+        activeDays,
+        last24StartMs,
+        nowMs,
         refs,
         settings.overrides,
     );
@@ -212,7 +215,7 @@ export async function buildEnergyDto(options: {
         nowWatts: nowWatts === null ? null : Math.round(nowWatts),
         nowWattsStale: publicLive ? publicLive.stale : nowWatts === null ? null : true,
         windows: {
-            today: toWindow(todayTotals.kWh, tariff),
+            today: toWindow(last24Totals.kWh, tariff),
             "7d": toWindow(d7Totals.kWh, tariff),
             "30d": toWindow(d30Totals.kWh, tariff),
             grow: toWindow(growTotals.kWh, tariff),
@@ -222,6 +225,12 @@ export async function buildEnergyDto(options: {
             refs,
             overrides: settings.overrides,
             startedAt: activeCursor?.startedAt ?? null,
+            nowMs,
+        }),
+        flow: buildEnergyFlowView({
+            days: activeDays,
+            refs,
+            liveDevices: live?.devices,
             nowMs,
         }),
         kWh: round1(growTotals.kWh),

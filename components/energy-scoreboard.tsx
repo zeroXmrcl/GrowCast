@@ -4,6 +4,7 @@ import {useEffect, useState, type PointerEvent} from "react";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/lib/energy/berlin";
 import {ENERGY_POLL_MS, fetchEnergyDto, shouldPollEnergy} from "@/lib/energy/poll";
+import EnergyFlowmap from "@/components/energy-flowmap";
 import {
     formatEur,
     formatHoursOn,
@@ -21,7 +22,7 @@ import type {
 type WindowKey = keyof EnergySeriesWindows;
 
 const CHIPS: {key: WindowKey; label: string}[] = [
-    {key: "today", label: "Today"},
+    {key: "today", label: "24h"},
     {key: "7d", label: "7 days"},
     {key: "30d", label: "30 days"},
     {key: "grow", label: "This grow"},
@@ -480,12 +481,13 @@ export default function EnergyScoreboard({dto: initial}: {dto: EnergyPublicDto})
                                 {dto.nowWatts === null ? "—" : `${formatWatts(dto.nowWatts)} W`}
                             </p>
                         </div>
-                        <WindowTile title="Today" window={dto.windows.today}/>
+                        <WindowTile title="24h" window={dto.windows.today}/>
                         <WindowTile title="7 days" window={dto.windows["7d"]}/>
                         <WindowTile title="30 days" window={dto.windows["30d"]}/>
                         <WindowTile title="This grow" window={dto.windows.grow}/>
                     </section>
                     {dto.series ? <EnergyGraphCard series={dto.series}/> : null}
+                    {dto.flow ? <EnergyFlowmap flow={dto.flow}/> : null}
                     <DeviceTable dto={dto}/>
                 </>
             ) : (

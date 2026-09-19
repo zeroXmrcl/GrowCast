@@ -130,6 +130,8 @@ describe("overlay chrome", () => {
         assert.match(hudSrc, /look=\{look/);
         assert.doesNotMatch(hudSrc, /OVERLAY_ORDER_MUSIC/);
         assert.match(energySrc, /overlayEnergyGrowWindow/);
+        assert.match(energySrc, /label="24h"/);
+        assert.doesNotMatch(energySrc, /Today/);
         assert.match(identitySrc, /overlayIdentityView/);
         assert.doesNotMatch(identitySrc, /health/i);
     });

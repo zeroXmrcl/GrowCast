@@ -1,4 +1,5 @@
 import {GGS_FUTURE_SKEW_MS, type GgsDeviceSnapshot, type GgsLiveIngest} from "@/lib/ggs-live";
+import {actuatorCountsTowardEnergy, alarmLevelText} from "@/lib/live-climate-view";
 import {getCurrentGrow} from "@/lib/db";
 import {readGgsLive} from "@/lib/ggs-live-store";
 import {actuatorKey} from "@/lib/energy/catalog";
@@ -6,6 +7,7 @@ import {splitBerlinHours} from "@/lib/energy/berlin";
 import {logEnergy} from "@/lib/energy/log";
 import {
     inspectEnergyDay,
+    mergeDayAlerts,
     mergeDaySeconds,
     readEnergyCursor,
     resetEnergyCurrent,
@@ -26,6 +28,7 @@ export type AccrueAddition = {
     key: string;
     level: string;
     seconds: number;
+    bucket: "hours" | "alerts";
 };
 
 export type AccruePlan =
@@ -75,10 +78,29 @@ function additionsFromPrevious(
     const additions: AccrueAddition[] = [];
     for (const device of devices) {
         for (const actuator of device.actuators) {
-            if (!actuator.on || actuator.level === null) {
+            const key = actuatorKey(device.serial, actuator.id);
+            const alerting = alarmLevelText(actuator.kind, actuator.alarm) !== null;
+            if (alerting) {
+                const alarm = actuator.alarm;
+                if (alarm == null) {
+                    continue;
+                }
+                const code = String(alarm);
+                for (const slice of slices) {
+                    additions.push({
+                        date: slice.date,
+                        hour: slice.hour,
+                        key,
+                        level: code,
+                        seconds: slice.seconds,
+                        bucket: "alerts",
+                    });
+                }
                 continue;
             }
-            const key = actuatorKey(device.serial, actuator.id);
+            if (!actuatorCountsTowardEnergy(actuator)) {
+                continue;
+            }
             const level = String(actuator.level);
             for (const slice of slices) {
                 additions.push({
@@ -87,6 +109,7 @@ function additionsFromPrevious(
                     key,
                     level,
                     seconds: slice.seconds,
+                    bucket: "hours",
                 });
             }
         }
@@ -158,7 +181,9 @@ export function applyAccruePlanInMemory(
         const existing = next.get(addition.date) ?? {date: addition.date, hours: {}};
         next.set(
             addition.date,
-            mergeDaySeconds(existing, addition.hour, addition.key, addition.level, addition.seconds),
+            addition.bucket === "alerts"
+                ? mergeDayAlerts(existing, addition.hour, addition.key, addition.level, addition.seconds)
+                : mergeDaySeconds(existing, addition.hour, addition.key, addition.level, addition.seconds),
         );
     }
     return next;
@@ -226,7 +251,10 @@ async function persistAdditions(additions: AccrueAddition[]): Promise<EnergyDayW
             previousRaw: inspected.status === "ok" ? inspected.raw : null,
         });
         for (const addition of list) {
-            day = mergeDaySeconds(day, addition.hour, addition.key, addition.level, addition.seconds);
+            day =
+                addition.bucket === "alerts"
+                    ? mergeDayAlerts(day, addition.hour, addition.key, addition.level, addition.seconds)
+                    : mergeDaySeconds(day, addition.hour, addition.key, addition.level, addition.seconds);
         }
         merged.push(day);
     }

@@ -33,6 +33,8 @@ import {
 } from "../lib/ggs-live-http.ts";
 import {_resetMeshAuthThrottleForTests} from "../lib/mesh-throttle.ts";
 import {berlinHour, splitBerlinHours} from "../lib/energy/berlin.ts";
+import {nowWattsFromSnapshot} from "../lib/energy/scoreboard.ts";
+import {readFileSync} from "node:fs";
 import type {GgsDeviceSnapshot} from "../lib/ggs-live.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
@@ -174,6 +176,102 @@ describe("planAccrue", () => {
         }
     });
 
+    it("does not accrue a humidifier while the empty-tank alarm is set", () => {
+        const humidifier = {
+            ...heaterDevice(true, 2),
+            actuators: [{
+                id: "humidifier",
+                label: "Humidifier",
+                kind: "humidifier" as const,
+                on: true,
+                level: 2,
+                alarm: 4,
+            }],
+        };
+        const plan = planAccrue({
+            cursor: {
+                growId: "grow-001",
+                startedAt: new Date(t1).toISOString(),
+                lastAccruedAt: new Date(t1).toISOString(),
+                devices: [humidifier],
+            },
+            currentGrowId: "grow-001",
+            eventTimeMs: t2,
+            newDevices: [humidifier],
+        });
+        assert.equal(plan.kind, "advance");
+        if (plan.kind === "advance") {
+            assert.ok(plan.additions.length > 0);
+            assert.ok(plan.additions.every((item) => item.bucket === "alerts"));
+            assert.ok(plan.additions.every((item) => item.level === "4"));
+            assert.ok(plan.additions.every((item) => item.key === "90E5B1B87088:humidifier"));
+            const seconds = plan.additions.reduce((sum, item) => sum + item.seconds, 0);
+            assert.equal(seconds, 60);
+        }
+    });
+
+    it("still records alert time when the empty humidifier is off", () => {
+        const humidifier = {
+            ...heaterDevice(false, 0),
+            actuators: [{
+                id: "humidifier",
+                label: "Humidifier",
+                kind: "humidifier" as const,
+                on: false,
+                level: 0,
+                alarm: 4,
+            }],
+        };
+        const plan = planAccrue({
+            cursor: {
+                growId: "grow-001",
+                startedAt: new Date(t1).toISOString(),
+                lastAccruedAt: new Date(t1).toISOString(),
+                devices: [humidifier],
+            },
+            currentGrowId: "grow-001",
+            eventTimeMs: t2,
+            newDevices: [humidifier],
+        });
+        assert.equal(plan.kind, "advance");
+        if (plan.kind === "advance") {
+            assert.ok(plan.additions.every((item) => item.bucket === "alerts"));
+            const seconds = plan.additions.reduce((sum, item) => sum + item.seconds, 0);
+            assert.equal(seconds, 60);
+        }
+    });
+
+    it("still accrues a humidifier that is on without an alarm", () => {
+        const humidifier = {
+            ...heaterDevice(true, 2),
+            actuators: [{
+                id: "humidifier",
+                label: "Humidifier",
+                kind: "humidifier" as const,
+                on: true,
+                level: 2,
+                alarm: null,
+            }],
+        };
+        const plan = planAccrue({
+            cursor: {
+                growId: "grow-001",
+                startedAt: new Date(t1).toISOString(),
+                lastAccruedAt: new Date(t1).toISOString(),
+                devices: [humidifier],
+            },
+            currentGrowId: "grow-001",
+            eventTimeMs: t2,
+            newDevices: [humidifier],
+        });
+        assert.equal(plan.kind, "advance");
+        if (plan.kind === "advance") {
+            const seconds = plan.additions.reduce((sum, item) => sum + item.seconds, 0);
+            assert.equal(seconds, 60);
+            assert.ok(plan.additions.every((item) => item.bucket === "hours"));
+        }
+    });
+
     it("skips a missing level instead of inventing a mode", () => {
         const plan = planAccrue({
             cursor: {
@@ -226,6 +324,54 @@ describe("planAccrue", () => {
             newDevices: [heaterDevice(true, 1)],
         });
         assert.equal(plan.kind, "skip");
+    });
+});
+
+describe("nowWattsFromSnapshot", () => {
+    it("drops alerting actuators from Now W", () => {
+        const live = {
+            pluginId: GGS_PLUGIN_ID,
+            source: "ggs-cloud" as const,
+            updatedAt: "2026-08-23T10:00:00.000Z",
+            online: true,
+            devices: [{
+                ...heaterDevice(true, 1),
+                actuators: [
+                    {
+                        id: "humidifier",
+                        label: "Humidifier",
+                        kind: "humidifier" as const,
+                        on: true,
+                        level: 2,
+                        alarm: 4,
+                    },
+                    {
+                        id: "heater",
+                        label: "Heater",
+                        kind: "heater" as const,
+                        on: true,
+                        level: 1,
+                        alarm: null,
+                    },
+                ],
+            }],
+        };
+        const withEmpty = nowWattsFromSnapshot(live, []);
+        const heaterOnly = nowWattsFromSnapshot({
+            ...live,
+            devices: [heaterDevice(true, 1)],
+        }, []);
+        assert.equal(withEmpty, heaterOnly);
+        assert.ok((heaterOnly ?? 0) > 0);
+    });
+
+    it("wires accrue, now watts, and the energy cursor through the alert skip", () => {
+        const accrue = readFileSync(path.join(process.cwd(), "lib", "energy", "accrue.ts"), "utf8");
+        const scoreboard = readFileSync(path.join(process.cwd(), "lib", "energy", "scoreboard.ts"), "utf8");
+        const store = readFileSync(path.join(process.cwd(), "lib", "energy", "store.ts"), "utf8");
+        assert.match(accrue, /actuatorCountsTowardEnergy/);
+        assert.match(scoreboard, /actuatorCountsTowardEnergy/);
+        assert.match(store, /alarm: parseCursorAlarm\(raw\.alarm\)/);
     });
 });
 
@@ -356,6 +502,41 @@ describe("persistAccruePlan", () => {
             const day = await readEnergyDay("2026-08-23");
             assert.ok(day);
             assert.equal(day.hours[String(berlinHour(t1))]["90E5B1B87088:heater"]["1"], 600);
+        });
+    });
+
+    it("writes empty-tank seconds into alerts instead of hours", async () => {
+        await withTempDataDir(async () => {
+            const t1 = Date.parse("2026-08-23T10:00:00.000Z");
+            const t2 = t1 + 600_000;
+            const humidifier = {
+                ...heaterDevice(true, 2),
+                actuators: [{
+                    id: "humidifier",
+                    label: "Humidifier",
+                    kind: "humidifier" as const,
+                    on: true,
+                    level: 2,
+                    alarm: 4,
+                }],
+            };
+            const plan = planAccrue({
+                cursor: {
+                    growId: "grow-001",
+                    startedAt: new Date(t1).toISOString(),
+                    lastAccruedAt: new Date(t1).toISOString(),
+                    devices: [humidifier],
+                },
+                currentGrowId: "grow-001",
+                eventTimeMs: t2,
+                newDevices: [humidifier],
+            });
+            await persistAccruePlan(plan);
+            const day = await readEnergyDay("2026-08-23");
+            const hour = String(berlinHour(t1));
+            assert.ok(day);
+            assert.equal(day.alerts?.[hour]?.["90E5B1B87088:humidifier"]?.["4"], 600);
+            assert.equal(day.hours[hour]?.["90E5B1B87088:humidifier"], undefined);
         });
     });
 

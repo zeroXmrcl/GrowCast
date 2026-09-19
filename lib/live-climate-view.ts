@@ -283,6 +283,15 @@ export function climateMetricAlerts(snapshot: GgsLivePublic): ClimateMetricAlert
     };
 }
 
+export function actuatorCountsTowardEnergy(
+    actuator: Pick<GgsActuator, "on" | "level" | "kind" | "alarm">,
+): boolean {
+    if (!actuator.on || finiteNumber(actuator.level) === null) {
+        return false;
+    }
+    return alarmLevelText(actuator.kind, actuator.alarm) === null;
+}
+
 export function alarmLevelText(kind: GgsActuatorKind, alarm: number | null | undefined): string | null {
     if (alarm == null || alarm <= 0) {
         return null;

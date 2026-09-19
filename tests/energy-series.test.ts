@@ -95,7 +95,7 @@ describe("energy series", () => {
         assert.equal(hour13.held, true);
     });
 
-    it("stops Today at now rather than the end of the current hour", () => {
+    it("stops the 24h series at now rather than the end of the current hour", () => {
         const series = seriesAt(NOW_MS, [lightDay("2026-08-23", {"14": 1200})]);
         const last = series.today.points.at(-1);
         assert.ok(last);
@@ -149,7 +149,7 @@ describe("energy series", () => {
         assert.equal(fallPoint.watts, 305 / 25);
     });
 
-    it("averages Today fall-back hour 2 over the ~2h civil shelf", () => {
+    it("averages 24h fall-back hour 2 over the ~2h civil shelf", () => {
         const nowMs = Date.parse("2026-10-25T12:00:00.000Z");
         const series = seriesAt(nowMs, [lightDay("2026-10-25", {"2": 3600})], "2026-10-25T00:00:00.000Z");
         const hour2 = series.today.points.find((point) => berlinHour(Date.parse(point.t)) === 2);
@@ -177,6 +177,7 @@ describe("energy series", () => {
                 lastAccruedAt: "2026-08-23T10:00:00.000Z",
                 devices: [],
             });
+            await writeEnergyDay(lightDay("2026-08-22", {"10": 3600, "20": 3600}));
             await writeEnergyDay(lightDay("2026-08-23", {"12": 1800, "14": 1200}));
 
             const current = await buildEnergyDto({
@@ -189,13 +190,18 @@ describe("energy series", () => {
                 return;
             }
             assert.ok(current.dto.series);
+            assert.ok(current.dto.flow);
+            assert.equal(current.dto.windows?.today.kWh, 0.6);
             assert.equal(current.dto.series.today.kind, "hour");
             assert.equal(current.dto.series["7d"].kind, "slot6h");
             assert.equal(current.dto.series["7d"].points.length, 27);
             const seriesText = JSON.stringify(current.dto.series);
+            const flowText = JSON.stringify(current.dto.flow);
             const dtoText = JSON.stringify(current.dto);
             assert.equal(seriesText.includes("90E5B1B87088"), false);
             assert.equal(seriesText.includes("serial"), false);
+            assert.equal(flowText.includes("90E5B1B87088"), false);
+            assert.equal(flowText.includes("serial"), false);
             assert.equal(dtoText.includes("90E5B1B87088"), false);
             assert.equal(dtoText.includes("serial"), false);
 
@@ -243,6 +249,8 @@ describe("energy series", () => {
             }
             assert.equal(archive.dto.series, undefined);
             assert.equal("series" in archive.dto, false);
+            assert.equal(archive.dto.flow, undefined);
+            assert.equal("flow" in archive.dto, false);
             assert.equal(JSON.stringify(archive.dto).includes("serial"), false);
         });
     });

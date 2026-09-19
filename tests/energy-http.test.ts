@@ -99,6 +99,9 @@ describe("GET /api/data/energy", () => {
             assert.ok(series["7d"].points.length >= 25 && series["7d"].points.length <= 28);
             assert.equal(series["30d"].points.length, 30);
             assert.ok(series.grow.points.length >= 1);
+            const flow = publicBody.flow as {rows: unknown[]; columns: unknown[]};
+            assert.ok(Array.isArray(flow.columns));
+            assert.ok(Array.isArray(flow.rows));
 
             const privateResponse = await energyGetResponse(requestFor("current"), "private");
             const privateBody = (await privateResponse.json()) as Record<string, unknown>;
@@ -148,6 +151,8 @@ describe("GET /api/data/energy", () => {
             assert.equal(body.nowWatts, null);
             assert.equal(body.series, undefined);
             assert.equal("series" in body, false);
+            assert.equal(body.flow, undefined);
+            assert.equal("flow" in body, false);
             assert.equal(JSON.stringify(body).includes("serial"), false);
         });
     });

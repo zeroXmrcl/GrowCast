@@ -31,14 +31,16 @@ export function parseEnergyArchive(raw: unknown): EnergyArchiveFile | null {
     const startedAt = asString(raw.startedAt, "");
     const endedAt = asString(raw.endedAt, "");
     const daysIn = isRecord(raw.days) ? raw.days : {};
-    const days: Record<string, {hours: EnergyDayHours}> = {};
+    const days: Record<string, {hours: EnergyDayHours; alerts?: EnergyDayHours}> = {};
     for (const [date, value] of Object.entries(daysIn)) {
         const parsed = parseEnergyDayFile(
-            isRecord(value) ? {date, hours: value.hours} : value,
+            isRecord(value) ? {date, hours: value.hours, alerts: value.alerts} : value,
             date,
         );
         if (parsed) {
-            days[parsed.date] = {hours: parsed.hours};
+            days[parsed.date] = parsed.alerts
+                ? {hours: parsed.hours, alerts: parsed.alerts}
+                : {hours: parsed.hours};
         }
     }
     return {
@@ -102,14 +104,16 @@ export async function buildEnergyArchivePayload(
             devices: [],
         };
     }
-    const days: Record<string, {hours: EnergyDayHours}> = {};
+    const days: Record<string, {hours: EnergyDayHours; alerts?: EnergyDayHours}> = {};
     for (const date of dates) {
         const inspected = await inspectEnergyDay(date);
         if (inspected.status === "corrupt") {
             throw new EnergyCopyError();
         }
         if (inspected.status === "ok") {
-            days[date] = {hours: inspected.day.hours};
+            days[date] = inspected.day.alerts
+                ? {hours: inspected.day.hours, alerts: inspected.day.alerts}
+                : {hours: inspected.day.hours};
         }
     }
     return {

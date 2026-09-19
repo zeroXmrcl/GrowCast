@@ -66,6 +66,20 @@ export type BerlinHourSlice = {
     seconds: number;
 };
 
+export function berlinHourStartAtOrBefore(ms: number): number {
+    let t = berlinDayStartMs(berlinDateOnly(ms));
+    let guard = 0;
+    while (guard < 30) {
+        guard += 1;
+        const boundary = nextBerlinHourBoundary(t);
+        if (boundary > ms) {
+            return t;
+        }
+        t = boundary;
+    }
+    return t;
+}
+
 export function nextBerlinHourBoundary(ms: number): number {
     // Fall-back repeats a civil hour for ~2h; search until date/hour actually change.
     const date = berlinDateOnly(ms);

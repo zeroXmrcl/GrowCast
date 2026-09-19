@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {lookupWatts} from "../lib/energy/catalog.ts";
-import {costEur, round1, round2, secondsToKwh, totalsForDays} from "../lib/energy/math.ts";
+import {berlinHourStartAtOrBefore} from "../lib/energy/berlin.ts";
+import {costEur, round1, round2, secondsToKwh, totalsForDays, totalsForHourRange} from "../lib/energy/math.ts";
 import type {EnergyActuatorRef, EnergyDayFile} from "../lib/energy/types.ts";
 
 const heaterRef: EnergyActuatorRef = {
@@ -82,5 +83,43 @@ describe("energy math", () => {
         ];
         const light = totalsForDays(lightDays, null, new Map(), []);
         assert.ok(Math.abs(light.kWh - 0.124) < 1e-9);
+    });
+
+    it("sums rolling Berlin hours and skips buckets before the window", () => {
+        const days = new Map<string, EnergyDayFile>([
+            [
+                "2026-08-22",
+                {
+                    date: "2026-08-22",
+                    hours: {
+                        "10": {[heaterRef.key]: {"1": 3600}},
+                        "20": {[heaterRef.key]: {"1": 3600}},
+                    },
+                },
+            ],
+            [
+                "2026-08-23",
+                {
+                    date: "2026-08-23",
+                    hours: {
+                        "10": {[heaterRef.key]: {"1": 3600}},
+                        "14": {[heaterRef.key]: {"1": 1800}},
+                    },
+                },
+            ],
+        ]);
+        const refs = new Map([[heaterRef.key, heaterRef]]);
+        const nowMs = Date.parse("2026-08-23T12:20:00.000Z");
+        const startMs = berlinHourStartAtOrBefore(nowMs - 24 * 60 * 60 * 1000);
+        const rolling = totalsForHourRange(days, startMs, nowMs, refs, []);
+        assert.ok(Math.abs(rolling.kWh - 0.1025) < 1e-9);
+
+        const civil = totalsForDays(
+            [...days.values()].filter((day) => day.date === "2026-08-23"),
+            new Set(["2026-08-23"]),
+            refs,
+            [],
+        );
+        assert.ok(Math.abs(civil.kWh - 0.0615) < 1e-9);
     });
 });

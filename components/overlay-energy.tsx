@@ -50,7 +50,7 @@ export default function OverlayEnergy({dto}: {dto: EnergyPublicDto}) {
                         {watts}
                     </p>
                 </div>
-                <WindowColumn label="Today" kwh={todayKwh} costEur={todayCost}/>
+                <WindowColumn label="24h" kwh={todayKwh} costEur={todayCost}/>
                 {grow ? (
                     <WindowColumn label="Grow" kwh={growKwh} costEur={growCost}/>
                 ) : null}

@@ -47,7 +47,25 @@ function parseCursorActuator(raw: unknown): GgsActuator | null {
     if (level === undefined) {
         return null;
     }
-    return {id, label, kind, on: asBoolean(raw.on, false), level};
+    return {
+        id,
+        label,
+        kind,
+        on: asBoolean(raw.on, false),
+        level,
+        alarm: parseCursorAlarm(raw.alarm),
+    };
+}
+
+function parseCursorAlarm(value: unknown): number | null {
+    if (value === undefined || value === null || value === "") {
+        return null;
+    }
+    const n = optionalFinite(value);
+    if (n === undefined || n === null || !Number.isInteger(n) || n < 0 || n > 99) {
+        return null;
+    }
+    return n === 0 ? null : n;
 }
 
 export function parseCursorDevices(raw: unknown): GgsDeviceSnapshot[] {
@@ -179,7 +197,12 @@ export function parseEnergyDayFile(raw: unknown, fallbackDate: string): EnergyDa
     if (!DAY_FILE_NAME.test(`${date}.json`)) {
         return null;
     }
-    return {date, hours: parseDayHours(raw.hours)};
+    const hours = parseDayHours(raw.hours);
+    const alerts = raw.alerts === undefined ? undefined : parseDayHours(raw.alerts);
+    if (alerts && Object.keys(alerts).length > 0) {
+        return {date, hours, alerts};
+    }
+    return {date, hours};
 }
 
 export async function readEnergyCursor(): Promise<EnergyCursor | null> {
@@ -359,7 +382,24 @@ export function mergeDaySeconds(
     levels[level] = (levels[level] ?? 0) + seconds;
     slot[key] = levels;
     hours[hourKey] = slot;
-    return {date: day.date, hours};
+    return day.alerts ? {date: day.date, hours, alerts: day.alerts} : {date: day.date, hours};
+}
+
+export function mergeDayAlerts(
+    day: EnergyDayFile,
+    hour: number,
+    key: string,
+    alarm: string,
+    seconds: number,
+): EnergyDayFile {
+    const hourKey = String(hour);
+    const alerts = {...(day.alerts ?? {})};
+    const slot = {...(alerts[hourKey] ?? {})};
+    const codes = {...(slot[key] ?? {})};
+    codes[alarm] = (codes[alarm] ?? 0) + seconds;
+    slot[key] = codes;
+    alerts[hourKey] = slot;
+    return {date: day.date, hours: day.hours, alerts};
 }
 
 export async function resetEnergyCurrent(): Promise<void> {

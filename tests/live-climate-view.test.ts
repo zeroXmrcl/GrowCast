@@ -17,6 +17,7 @@ import {
     mapDeviceTiles,
     preferLiveSnapshot,
     shouldShowLiveRow,
+    actuatorCountsTowardEnergy,
 } from "../lib/live-climate-view.ts";
 
 function snapshot(overrides: Partial<GgsLivePublic> = {}): GgsLivePublic {
@@ -336,6 +337,43 @@ describe("mapDeviceTiles", () => {
         assert.equal(tiles[3].levelText, "ALARM");
         assert.equal(tiles[3].accessibleName, "Heater: alarm");
         assert.equal(tiles.every((tile) => tile.alerting), true);
+    });
+});
+
+describe("actuatorCountsTowardEnergy", () => {
+    it("counts a running humidifier and skips EMPTY", () => {
+        assert.equal(
+            actuatorCountsTowardEnergy({
+                id: "humidifier",
+                label: "Humidifier",
+                kind: "humidifier",
+                on: true,
+                level: 2,
+            }),
+            true,
+        );
+        assert.equal(
+            actuatorCountsTowardEnergy({
+                id: "humidifier",
+                label: "Humidifier",
+                kind: "humidifier",
+                on: true,
+                level: 2,
+                alarm: 4,
+            }),
+            false,
+        );
+        assert.equal(
+            actuatorCountsTowardEnergy({
+                id: "light",
+                label: "Light",
+                kind: "light",
+                on: true,
+                level: 80,
+                alarm: 6,
+            }),
+            false,
+        );
     });
 });
 
