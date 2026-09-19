@@ -13,7 +13,8 @@ type LiveDevicesCardProps = {
 };
 
 function DeviceTile({tile}: {tile: LiveDeviceTile}) {
-    const running = tile.running;
+    const alerting = tile.alerting;
+    const running = tile.running && !alerting;
 
     return (
         <div
@@ -24,30 +25,42 @@ function DeviceTile({tile}: {tile: LiveDeviceTile}) {
         >
             <div
                 className={`flex h-12 w-12 max-w-full items-center justify-center rounded-xl ${
-                    running
-                        ? "bg-[#fff7ed] dark:bg-orange-950/50"
-                        : "bg-zinc-100 dark:bg-zinc-800"
+                    alerting
+                        ? "growcast-alert-pulse bg-red-50 dark:bg-red-950/45"
+                        : running
+                          ? "bg-[#fff7ed] dark:bg-orange-950/50"
+                          : "bg-zinc-100 dark:bg-zinc-800"
                 }`}
             >
                 <DeviceIcon
                     kind={tile.kind}
-                    className={running ? "text-[#ea580c]" : "text-[#a1a1aa]"}
+                    className={
+                        alerting
+                            ? "text-red-600 dark:text-red-400"
+                            : running
+                              ? "text-[#ea580c]"
+                              : "text-[#a1a1aa]"
+                    }
                 />
             </div>
             <span
                 className={`w-full truncate text-center text-xs leading-tight ${
-                    running
-                        ? "text-zinc-900 dark:text-zinc-100"
-                        : "text-zinc-500 dark:text-zinc-400"
+                    alerting
+                        ? "text-red-800 dark:text-red-200"
+                        : running
+                          ? "text-zinc-900 dark:text-zinc-100"
+                          : "text-zinc-500 dark:text-zinc-400"
                 }`}
             >
                 {tile.label}
             </span>
             <span
                 className={`text-center text-[11px] tabular-nums ${
-                    running
-                        ? "text-zinc-700 dark:text-zinc-300"
-                        : "text-zinc-500 dark:text-zinc-400"
+                    alerting
+                        ? "font-semibold tracking-wide text-red-600 dark:text-red-400"
+                        : running
+                          ? "text-zinc-700 dark:text-zinc-300"
+                          : "text-zinc-500 dark:text-zinc-400"
                 }`}
             >
                 {tile.levelText}

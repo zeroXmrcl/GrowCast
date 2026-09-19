@@ -39,6 +39,26 @@ html:has([data-overlay-root]) body {
   overflow: hidden;
 }
 
+@keyframes growcast-alert-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.28;
+  }
+}
+
+.growcast-alert-pulse {
+  animation: growcast-alert-pulse 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-alert-pulse {
+    animation: none;
+  }
+}
+
 .admin-theme {
   --admin-bg: #1f1f1f;
   --admin-surface: #242424;

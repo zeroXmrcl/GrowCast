@@ -188,6 +188,9 @@ describe("overlay chrome", () => {
         assert.doesNotMatch(climateSrc, /["']LIVE["']/);
         assert.match(climateSrc, /formatHumidityPctTenths/);
         assert.doesNotMatch(climateSrc, /formatHumidityPct\(/);
+        assert.match(climateSrc, /growcast-alert-pulse/);
+        assert.match(climateSrc, /climateMetricAlerts/);
+        assert.doesNotMatch(climateSrc, /grow\.climate/);
     });
 
     it("plays HLS in OverlayCamera with the GrowCast reconnect cover", () => {
