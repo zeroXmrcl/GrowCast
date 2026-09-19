@@ -150,6 +150,7 @@ describe("mergeOverlayGrowPoll", () => {
         overlayLayout: "left-rail" as const,
         overlayStream: "include" as const,
         overlayScalePct: 100,
+        climateTick: "plain" as const,
         streamUrl: "http://mediamtx:8888/growcam/",
         stage: "Seed",
         lightSchedule: "12/12",

@@ -131,6 +131,24 @@ describe("saveAdminSettings orchestration", () => {
         });
     });
 
+    it("persists climateTick from the stream form", async () => {
+        await withTempDataDir(async () => {
+            const live = await getCurrentGrow();
+            assert.equal(live.climateTick, "plain");
+
+            const parsed = parseStreamSettingsForm(
+                settingsForm({
+                    climateTick: "picker",
+                    growId: live.id,
+                }),
+            );
+            const result = await saveAdminSettings(parsed);
+            assert.equal(result.ok, true);
+            const grow = await getCurrentGrow();
+            assert.equal(grow.climateTick, "picker");
+        });
+    });
+
     it("does not wipe estimatedHarvestDate when the date field is omitted from FormData", async () => {
         await withTempDataDir(async () => {
             const live = await updateCurrentGrow({

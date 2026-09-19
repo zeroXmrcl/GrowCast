@@ -56,6 +56,7 @@ describe("admin settings split", () => {
         assert.doesNotMatch(growFields, /name="streamUrl"/);
         assert.doesNotMatch(growFields, /name="overlayLayout"/);
         assert.doesNotMatch(growFields, /name="overlayStream"/);
+        assert.doesNotMatch(growFields, /name="climateTick"/);
         assert.doesNotMatch(growFields, /name="showGrowName"/);
         assert.doesNotMatch(growFields, /id="twitch"/);
         assert.doesNotMatch(growFields, /timelapsePaused/);

@@ -100,6 +100,42 @@ export function StreamSettingsFields({
                 </div>
             </AdminPanel>
 
+            <AdminPanel id="design" title="Design">
+                <div>
+                    <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
+                        Climate numbers
+                    </p>
+                    <div className="grid gap-3">
+                        <label className="flex items-center gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
+                            <input
+                                type="radio"
+                                name="climateTick"
+                                form={growForm}
+                                value="plain"
+                                defaultChecked={grow.climateTick !== "picker"}
+                                className="h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
+                            />
+                            <span className="text-sm font-medium text-(--admin-text)">
+                                Current
+                            </span>
+                        </label>
+                        <label className="flex items-center gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
+                            <input
+                                type="radio"
+                                name="climateTick"
+                                form={growForm}
+                                value="picker"
+                                defaultChecked={grow.climateTick === "picker"}
+                                className="h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
+                            />
+                            <span className="text-sm font-medium text-(--admin-text)">
+                                Picker
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </AdminPanel>
+
             <AdminPanel id="stream" title="Camera">
                 <div className="space-y-4">
                     <AdminField label="Stream URL">

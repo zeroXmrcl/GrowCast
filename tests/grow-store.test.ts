@@ -138,6 +138,32 @@ describe("grow JSON store", () => {
         });
     });
 
+    it("persists climateTick and defaults missing or junk to plain", async () => {
+        await withTempDataDir(async (dir) => {
+            const file = path.join(dir, "current-grow.json");
+            await writeFile(file, JSON.stringify({name: "Tick Grow"}), "utf8");
+            const grow = await getCurrentGrow();
+            assert.equal(grow.climateTick, "plain");
+
+            await updateCurrentGrow({
+                name: grow.name,
+                plant: grow.plant,
+                streamUrl: grow.streamUrl,
+                climateTick: "picker",
+            });
+            const saved = JSON.parse(await readFile(file, "utf8"));
+            assert.equal(saved.climateTick, "picker");
+            assert.equal((await getCurrentGrow()).climateTick, "picker");
+
+            await writeFile(
+                file,
+                JSON.stringify({name: "Junk Tick", climateTick: "barrel"}),
+                "utf8",
+            );
+            assert.equal((await getCurrentGrow()).climateTick, "plain");
+        });
+    });
+
     it("atomic write replaces the dest only after the temp file is written", async () => {
         await withTempDataDir(async (dir) => {
             const file = path.join(dir, "current-grow.json");

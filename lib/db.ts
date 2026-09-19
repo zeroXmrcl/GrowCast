@@ -4,6 +4,7 @@ import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
 import {isDateOnly} from "@/lib/date-only";
+import {DEFAULT_CLIMATE_TICK, parseClimateTick, type ClimateTick} from "@/lib/climate-tick";
 import {DEFAULT_OVERLAY_LAYOUT, parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
 import {DEFAULT_OVERLAY_STREAM, parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
 import {DEFAULT_OVERLAY_SCALE_PCT, parseOverlayScalePct} from "@/lib/overlay-scale";
@@ -61,6 +62,7 @@ export type GrowRecord = {
   overlayLayout: OverlayLayout;
   overlayStream: OverlayStream;
   overlayScalePct: number;
+  climateTick: ClimateTick;
 };
 
 export type GrowUpdateInput = {
@@ -78,6 +80,7 @@ export type GrowUpdateInput = {
   overlayLayout?: OverlayLayout;
   overlayStream?: OverlayStream;
   overlayScalePct?: number;
+  climateTick?: ClimateTick;
 };
 
 function dataDir(): string {
@@ -193,6 +196,7 @@ export const EMPTY_GROW: GrowRecord = {
   overlayLayout: DEFAULT_OVERLAY_LAYOUT,
   overlayStream: DEFAULT_OVERLAY_STREAM,
   overlayScalePct: DEFAULT_OVERLAY_SCALE_PCT,
+  climateTick: DEFAULT_CLIMATE_TICK,
 };
 
 export function normalizeGrowRecord(raw: unknown): GrowRecord {
@@ -259,6 +263,7 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
     overlayLayout: parseOverlayLayout(parsed.overlayLayout),
     overlayStream: parseOverlayStream(parsed.overlayStream),
     overlayScalePct: parseOverlayScalePct(parsed.overlayScalePct),
+    climateTick: parseClimateTick(parsed.climateTick),
   };
 }
 
@@ -314,6 +319,9 @@ export async function updateCurrentGrow(
     ),
     overlayScalePct: parseOverlayScalePct(
       input.overlayScalePct !== undefined ? input.overlayScalePct : current.overlayScalePct,
+    ),
+    climateTick: parseClimateTick(
+      input.climateTick !== undefined ? input.climateTick : current.climateTick,
     ),
   };
 

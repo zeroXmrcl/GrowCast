@@ -11,6 +11,7 @@ export default function ProgramScene({
     seededAt,
     overlayLayout,
     overlayScalePct,
+    climateTick,
     streamUrl,
     stage,
     lightSchedule,
@@ -27,6 +28,7 @@ export default function ProgramScene({
                     overlayLayout={overlayLayout}
                     lockStream
                     overlayScalePct={overlayScalePct}
+                    climateTick={climateTick}
                     streamUrl={streamUrl}
                     stage={stage}
                     lightSchedule={lightSchedule}

@@ -78,6 +78,8 @@ describe("overlay chrome", () => {
         );
         assert.match(fieldsSrc, /name="overlayLayout"/);
         assert.match(fieldsSrc, /name="overlayStream"/);
+        assert.match(fieldsSrc, /name="climateTick"/);
+        assert.match(fieldsSrc, /title="Design"/);
         assert.match(fieldsSrc, /OverlayScaleInput/);
         assert.match(scaleSrc, /name = "overlayScalePct"/);
         assert.match(scaleSrc, /name=\{name\}/);
@@ -124,6 +126,7 @@ describe("overlay chrome", () => {
         assert.match(shellSrc, /absolute inset-0 z-0/);
         assert.match(hudSrc, /overlayStream/);
         assert.match(hudSrc, /overlayScalePct/);
+        assert.match(hudSrc, /climateTick=\{grow\.climateTick\}/);
         assert.match(hudSrc, /extra\?:/);
         assert.match(hudSrc, /\{extra\}/);
         assert.match(hudSrc, /look\??:/);
@@ -192,6 +195,8 @@ describe("overlay chrome", () => {
         assert.doesNotMatch(climateSrc, /formatHumidityPct\(/);
         assert.match(climateSrc, /growcast-alert-pulse/);
         assert.match(climateSrc, /climateMetricAlerts/);
+        assert.match(climateSrc, /ClimatePickerValue/);
+        assert.match(climateSrc, /climateTick === "picker"/);
         assert.doesNotMatch(climateSrc, /grow\.climate/);
     });
 

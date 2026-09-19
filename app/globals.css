@@ -85,3 +85,59 @@ html:has([data-overlay-root]) body {
     animation: none;
   }
 }
+
+.growcast-climate-wheel {
+  --row: 1.75rem;
+  position: relative;
+  height: calc(var(--row) * 3);
+  overflow: hidden;
+  user-select: none;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 28%, #000 72%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 28%,
+    #000 72%,
+    transparent 100%
+  );
+}
+
+.growcast-climate-wheel::before,
+.growcast-climate-wheel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 1px;
+  background: rgb(255 255 255 / 0.14);
+  pointer-events: none;
+}
+
+.growcast-climate-wheel::before {
+  top: var(--row);
+}
+
+.growcast-climate-wheel::after {
+  top: calc(var(--row) * 2);
+}
+
+.growcast-climate-wheel-strip {
+  will-change: transform;
+  transition-property: transform;
+}
+
+.growcast-climate-wheel-row {
+  height: var(--row);
+  font-size: 1.125rem;
+  line-height: var(--row);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-climate-wheel-strip {
+    transition-duration: 0ms !important;
+  }
+}

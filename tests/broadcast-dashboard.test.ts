@@ -101,6 +101,7 @@ describe("broadcast chrome", () => {
         const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
         assert.match(fields, /name="overlayStream"\s+form=\{growForm\}/);
         assert.match(fields, /name="overlayLayout"\s+form=\{growForm\}/);
+        assert.match(fields, /name="climateTick"\s+form=\{growForm\}/);
         assert.match(fields, /OverlayScaleInput defaultValue=\{grow\.overlayScalePct\} form=\{growForm\}/);
         assert.match(fields, /name="streamUrl"\s+form=\{growForm\}/);
         assert.match(fields, /name="showGrowName"\s+form=\{growForm\}/);

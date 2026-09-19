@@ -24,6 +24,7 @@ describe("parseAdminSettingsForm", () => {
                 youtube: "https://www.youtube.com/@example",
                 overlayLayout: "bottom-bar",
                 overlayStream: "include",
+                climateTick: "picker",
                 showGrowName: "on",
                 timelapseQuality: "high",
             }),
@@ -35,6 +36,7 @@ describe("parseAdminSettingsForm", () => {
         assert.equal(result.grow.overlayLayout, undefined);
         assert.equal(result.grow.overlayStream, undefined);
         assert.equal(result.grow.overlayScalePct, undefined);
+        assert.equal(result.grow.climateTick, undefined);
     });
 
     it("strips javascript: and data: URL schemes on socials", () => {
@@ -160,6 +162,17 @@ describe("parseStreamSettingsForm", () => {
 
         const snapped = parseStreamSettingsForm(formFrom({overlayScalePct: "77"}));
         assert.equal(snapped.grow.overlayScalePct, 75);
+    });
+
+    it("parses climateTick radios with plain as the missing/junk default", () => {
+        const missing = parseStreamSettingsForm(formFrom({}));
+        assert.equal(missing.grow.climateTick, "plain");
+
+        const junk = parseStreamSettingsForm(formFrom({climateTick: "barrel"}));
+        assert.equal(junk.grow.climateTick, "plain");
+
+        const picker = parseStreamSettingsForm(formFrom({climateTick: "picker"}));
+        assert.equal(picker.grow.climateTick, "picker");
     });
 });
 

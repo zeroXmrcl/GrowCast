@@ -1,3 +1,4 @@
+import {parseClimateTick, type ClimateTick} from "@/lib/climate-tick";
 import {asString, isRecord} from "@/lib/coerce";
 import {parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
 import {parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
@@ -13,6 +14,7 @@ export type OverlayGrowView = {
     overlayLayout: OverlayLayout;
     overlayStream: OverlayStream;
     overlayScalePct: number;
+    climateTick: ClimateTick;
     streamUrl: string;
     stage: string;
     lightSchedule: string;
@@ -46,6 +48,7 @@ export function parseOverlayGrowBody(raw: unknown): OverlayGrowView | null {
         overlayLayout: parseOverlayLayout(raw.overlayLayout),
         overlayStream: parseOverlayStream(raw.overlayStream),
         overlayScalePct: parseOverlayScalePct(raw.overlayScalePct),
+        climateTick: parseClimateTick(raw.climateTick),
         streamUrl: asString(raw.streamUrl),
         stage: asString(details.stage),
         lightSchedule: asString(details.lightSchedule),

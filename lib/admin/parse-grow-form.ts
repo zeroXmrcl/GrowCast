@@ -1,4 +1,5 @@
 import type {ArchiveEditInput, CompleteGrowInput} from "@/lib/archives";
+import {parseClimateTick} from "@/lib/climate-tick";
 import type {GrowUpdateInput} from "@/lib/db";
 import {parseOverlayLayout} from "@/lib/overlay-layout";
 import {parseOverlayStream} from "@/lib/overlay-stream";
@@ -98,6 +99,7 @@ export function parseStreamSettingsForm(formData: FormData): AdminSettingsFormRe
             overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
             overlayStream: parseOverlayStream(formData.get("overlayStream")),
             overlayScalePct: parseOverlayScalePct(formData.get("overlayScalePct")),
+            climateTick: parseClimateTick(formData.get("climateTick")),
         },
         ...expectedGrowIdFrom(formData),
     };

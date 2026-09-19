@@ -128,6 +128,7 @@ export default function OverlayHud({
                         snapshot={heldSnapshot}
                         stale={stale}
                         nowMs={nowMs}
+                        climateTick={grow.climateTick}
                     />
                 ) : null}
             </OverlayMotionItem>

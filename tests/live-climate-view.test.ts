@@ -84,6 +84,8 @@ describe("homepage live-climate gate", () => {
         assert.match(card, /climateMetricAlerts/);
         assert.match(card, /text-emerald-600/);
         assert.doesNotMatch(card, /badge\.kind === "live"[\s\S]*growcast-alert-pulse/);
+        assert.doesNotMatch(card, /ClimatePickerValue/);
+        assert.doesNotMatch(card, /climateTick/);
     });
 
     it("shows humidity tenths on the dashboard card and whole percents on the OG card", () => {
