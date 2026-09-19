@@ -1,4 +1,5 @@
 import type {GgsActuatorKind, GgsDeviceSnapshot} from "@/lib/ggs-live";
+import type {ActuatorAlarmMark} from "@/lib/live-climate-view";
 
 export type EnergyLevelSeconds = Record<string, number>;
 
@@ -60,7 +61,7 @@ export type EnergySeriesWindows = {
     grow: EnergySeries;
 };
 
-export type EnergyFlowMark = "EMPTY" | "FULL" | "HOT" | "OFFLINE" | "ALARM";
+export type EnergyFlowMark = ActuatorAlarmMark;
 
 export type EnergyFlowCell = {
     duty: number;
