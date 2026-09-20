@@ -231,15 +231,22 @@ describe("overlay chrome", () => {
         assert.match(css, /prefers-reduced-motion/);
     });
 
-    it("embeds OverlayCamera on the homepage, not a MediaMTX iframe", () => {
+    it("embeds OverlayCamera in the workspace shell, not a MediaMTX iframe", () => {
+        const frame = readFileSync(
+            path.join(process.cwd(), "components", "workspace-frame.tsx"),
+            "utf8",
+        );
         const home = readFileSync(
             path.join(process.cwd(), "app", "(site)", "page.tsx"),
             "utf8",
         );
-        assert.match(home, /OverlayCamera/);
-        assert.match(home, /streamUrl=\{streamUrl\}/);
+        assert.match(frame, /OverlayCamera/);
+        assert.match(frame, /streamUrl=\{streamUrl\}/);
+        assert.match(frame, /isWorkspacePath/);
+        assert.doesNotMatch(frame, /<iframe/);
+        assert.match(frame, /No Stream configured/);
+        assert.doesNotMatch(home, /OverlayCamera/);
         assert.doesNotMatch(home, /<iframe/);
-        assert.match(home, /No Stream configured/);
         assert.doesNotMatch(home, /look=/);
     });
 });

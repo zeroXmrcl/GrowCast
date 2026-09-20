@@ -5,6 +5,8 @@
   --foreground: #171717;
   --font-geist-sans: "Geist", "Geist Fallback", "Segoe UI", sans-serif;
   --font-geist-mono: "Geist Mono", "Geist Mono Fallback", "SFMono-Regular", monospace;
+  --growcast-workspace-ms: 360ms;
+  --growcast-workspace-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -159,5 +161,257 @@ html:has([data-overlay-root]) body {
 @media (prefers-reduced-motion: reduce) {
   .growcast-climate-wheel-strip {
     transition-duration: 0ms !important;
+  }
+}
+
+.growcast-board {
+  --growcast-hair: rgb(228 228 231);
+  --growcast-cam-w: 320px;
+  display: grid;
+}
+
+@media (prefers-color-scheme: dark) {
+  .growcast-board {
+    --growcast-hair: rgb(39 39 42);
+  }
+}
+
+.growcast-board > * {
+  min-width: 0;
+}
+
+.growcast-dash-slot,
+.growcast-energy-slot {
+  display: contents;
+}
+
+.growcast-board[data-page="energy"] .growcast-dash-slot {
+  display: none;
+}
+
+.growcast-board[data-page="dash"] .growcast-energy-slot,
+.growcast-board[data-page="dash-noname"] .growcast-energy-slot {
+  display: none;
+}
+
+.growcast-board[data-page="energy"] .growcast-area-name {
+  display: none;
+}
+
+.growcast-board[data-page="energy"] .growcast-area-cam {
+  width: 320px;
+  align-self: start;
+}
+
+@media (max-width: 1023px) {
+  .growcast-board[data-page="energy"] .growcast-area-cam {
+    width: 100%;
+  }
+}
+
+.growcast-board[data-page="energy"] .growcast-dash-slot,
+.growcast-board[data-page="energy"] .growcast-dash-slot *,
+.growcast-board[data-page="energy"] .growcast-area-name {
+  view-transition-name: none !important;
+}
+
+.growcast-board:is([data-page="dash"], [data-page="dash-noname"]) .growcast-energy-slot,
+.growcast-board:is([data-page="dash"], [data-page="dash-noname"]) .growcast-energy-slot * {
+  view-transition-name: none !important;
+}
+
+.growcast-board[data-page="dash"] {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-areas:
+    "name details"
+    "cam details"
+    "live live"
+    "run run"
+    "pics pics"
+    "setup setup"
+    "socials socials";
+}
+
+.growcast-board[data-page="dash-noname"] {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-areas:
+    "cam details"
+    "live live"
+    "run run"
+    "pics pics"
+    "setup setup"
+    "socials socials";
+}
+
+.growcast-board[data-page="energy"] {
+  grid-template-columns: var(--growcast-cam-w) minmax(0, 1fr);
+  grid-template-areas:
+    "cam kwh"
+    "watts watts"
+    "flow flow"
+    "water water"
+    "table table";
+}
+
+@media (max-width: 1023px) {
+  .growcast-board[data-page="dash"],
+  .growcast-board[data-page="dash-noname"],
+  .growcast-board[data-page="energy"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .growcast-board[data-page="dash"] {
+    grid-template-areas:
+      "name"
+      "cam"
+      "details"
+      "live"
+      "run"
+      "pics"
+      "setup"
+      "socials";
+  }
+
+  .growcast-board[data-page="dash-noname"] {
+    grid-template-areas:
+      "cam"
+      "details"
+      "live"
+      "run"
+      "pics"
+      "setup"
+      "socials";
+  }
+
+  .growcast-board[data-page="energy"] {
+    grid-template-areas:
+      "cam"
+      "kwh"
+      "watts"
+      "flow"
+      "water"
+      "table";
+  }
+}
+
+.growcast-area-name {
+  grid-area: name;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-cam {
+  grid-area: cam;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-details {
+  grid-area: details;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-live {
+  grid-area: live;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-run {
+  grid-area: run;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-pics {
+  grid-area: pics;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-setup {
+  grid-area: setup;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-socials {
+  grid-area: socials;
+}
+
+.growcast-area-kwh {
+  grid-area: kwh;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-watts {
+  grid-area: watts;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-flow {
+  grid-area: flow;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-water {
+  grid-area: water;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-table {
+  grid-area: table;
+}
+
+@media (min-width: 1024px) {
+  .growcast-area-details {
+    border-left: 1px solid var(--growcast-hair);
+  }
+
+  .growcast-board[data-page="energy"] .growcast-area-cam {
+    border-right: 1px solid var(--growcast-hair);
+  }
+}
+
+.vt-header { view-transition-name: vt-header; }
+.vt-cam { view-transition-name: vt-cam; }
+.vt-name { view-transition-name: vt-name; }
+.vt-side { view-transition-name: vt-side; }
+.vt-mid { view-transition-name: vt-mid; }
+.vt-flow { view-transition-name: vt-flow; }
+.vt-water { view-transition-name: vt-water; }
+.vt-table { view-transition-name: vt-table; }
+.vt-socials { view-transition-name: vt-socials; }
+
+.growcast-vt-off,
+.growcast-vt-off * {
+  view-transition-name: none !important;
+}
+
+::view-transition-group(*) {
+  animation-duration: var(--growcast-workspace-ms);
+  animation-timing-function: var(--growcast-workspace-ease);
+}
+
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: var(--growcast-workspace-ms);
+  animation-timing-function: var(--growcast-workspace-ease);
+  mix-blend-mode: normal;
+}
+
+::view-transition-group(vt-cam) {
+  z-index: 8;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-old(vt-header),
+::view-transition-new(vt-header) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
   }
 }

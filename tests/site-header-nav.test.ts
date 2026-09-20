@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {navItemsFor, type NavFlags} from "../lib/site-nav.ts";
+import {navItemIsActive, navItemsFor, type NavFlags} from "../lib/site-nav.ts";
 
 const allOn: NavFlags = {
     showEnergy: true,
@@ -31,11 +31,19 @@ describe("navItemsFor", () => {
         );
     });
 
-    it("includes Energy only when GGS live data exists, and hides it on the energy page", () => {
+    it("keeps Dashboard and Energy visible on both workspace pages", () => {
+        assert.deepEqual(
+            navItemsFor("/", allOn).map((item) => item.href),
+            ["/", "/energy", "/gallery", "/grows", "/admin"],
+        );
         assert.deepEqual(
             navItemsFor("/energy", {...allOn, showSettingsLink: false}).map((item) => item.href),
-            ["/", "/gallery", "/grows"],
+            ["/", "/energy", "/gallery", "/grows"],
         );
+        assert.equal(navItemIsActive("/", "/"), true);
+        assert.equal(navItemIsActive("/", "/energy"), false);
+        assert.equal(navItemIsActive("/energy", "/energy"), true);
+        assert.equal(navItemIsActive("/energy", "/"), false);
         assert.equal(
             navItemsFor("/", {...allOn, showEnergy: false, showSettingsLink: false})
                 .some((item) => item.href === "/energy"),
@@ -48,7 +56,7 @@ describe("navItemsFor", () => {
             navItemsFor("/", {...allOn, showPastGrows: false, showSettingsLink: false}).map(
                 (item) => item.href,
             ),
-            ["/energy", "/gallery"],
+            ["/", "/energy", "/gallery"],
         );
     });
 
@@ -66,7 +74,7 @@ describe("navItemsFor", () => {
             navItemsFor("/", {...allOn, showGallery: false, showSettingsLink: false}).map(
                 (item) => item.href,
             ),
-            ["/energy", "/grows"],
+            ["/", "/energy", "/grows"],
         );
     });
 });

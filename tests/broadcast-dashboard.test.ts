@@ -403,8 +403,11 @@ describe("GET /api/data/broadcast", () => {
 describe("homepage toast", () => {
     it("mounts the toast poller only on the grow homepage and renders markup only when live", () => {
         const home = src(path.join("app", "(site)", "page.tsx"));
+        const frame = src(path.join("components", "workspace-frame.tsx"));
         const toast = src(path.join("components", "broadcast-toast.tsx"));
-        assert.match(home, /BroadcastToast/);
+        assert.doesNotMatch(home, /BroadcastToast/);
+        assert.match(frame, /BroadcastToast/);
+        assert.match(frame, /energy \? null/);
         assert.match(toast, /if \(!payload\.live\)/);
         assert.match(toast, /Live on Twitch/);
         assert.match(toast, /#9146FF/);

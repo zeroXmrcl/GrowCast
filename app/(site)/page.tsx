@@ -5,12 +5,16 @@ import {formatDateDisplay} from "@/app/(site)/grows/format";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
 import {listMediaUrls} from "@/lib/media-library";
-import {BroadcastToast} from "@/components/broadcast-toast";
-import SiteFooter from "@/components/site-footer";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
 import {markdownUrlTransform, safeHttpUrlOrEmpty} from "@/lib/url-policy";
-import OverlayCamera from "@/components/overlay-camera";
+import {
+    WORKSPACE_AREA,
+    WORKSPACE_PAD,
+    WORKSPACE_SPLIT_MID,
+    WORKSPACE_TITLE,
+    WORKSPACE_VT,
+} from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +71,6 @@ export default async function Home() {
         hasGgsLiveUi(),
     ]);
     const details = grow.details;
-    const streamUrl = safeHttpUrlOrEmpty(grow.streamUrl);
     const socialLinks = [
         {
             label: "YouTube",
@@ -102,89 +105,62 @@ export default async function Home() {
     ].filter(({href}) => href.length > 0);
 
     return (
-        <main className="flex flex-1 flex-col gap-6 py-4 md:py-8">
-            <div className="flex w-full flex-col gap-6 lg:flex-row">
-                <section className="w-full lg:w-2/3">
+        <>
+            <aside className={`${WORKSPACE_AREA.details} ${WORKSPACE_VT.side} ${WORKSPACE_PAD}`}>
+                <h2 className={WORKSPACE_TITLE}>Details</h2>
+                <dl className="space-y-3 text-sm">
+                    {grow.plant && (<div className="flex justify-between gap-3">
+                        <dt className="text-zinc-500 dark:text-zinc-400">Plant</dt>
+                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plant}</dd>
+                    </div>)}
+                    {details.strain && (<div className="flex justify-between gap-3">
+                        <dt className="text-zinc-500 dark:text-zinc-400">Strain</dt>
+                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.strain}</dd>
+                    </div>)}
+                    {(grow.plantAmount != 0) && (<div className="flex justify-between gap-3">
+                        <dt className="text-zinc-500 dark:text-zinc-400">Plant Count</dt>
+                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plantAmount}</dd>
+                    </div>)}
+                    {grow.growSetup.growingMedium && (<div className="flex justify-between gap-3">
+                        <dt className="text-zinc-500 dark:text-zinc-400">Growing Medium</dt>
+                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.growingMedium}</dd>
+                    </div>)}
+                    {(grow.growSetup.potSizeLiters != 0) && (<div className="flex justify-between gap-3">
+                        <dt className="text-zinc-500 dark:text-zinc-400">Pot Size</dt>
+                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.potSizeLiters}</dd>
+                    </div>)}
+                    <DayOrNight
+                        label="Temperature"
+                        day={grow.climate.temperatureDay}
+                        night={grow.climate.temperatureNight}
+                        unit=" C"
+                    />
+                    <DayOrNight
+                        label="Humidity"
+                        day={grow.climate.humidityDay}
+                        night={grow.climate.humidityNight}
+                        unit="%"
+                    />
+                    {(formatDateDisplay(details.seededAt) != '01.01.2001') && (
+                        <div className="flex justify-between gap-3">
+                            <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
+                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatDateDisplay(details.seededAt)}</dd>
+                        </div>)}
+                </dl>
+                {details.notes && (
                     <div
-                        className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100  dark:border-zinc-800 dark:bg-zinc-900">
-                        {grow.showGrowName ? (
-                            <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-                                <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">{grow.name}</h1>
-                            </div>
-                        ) : null}
-                        <div className="aspect-video w-full">
-                            {streamUrl ? (
-                                <OverlayCamera streamUrl={streamUrl} />
-                            ) : (
-                                <div
-                                    className="flex h-full w-full items-center justify-center bg-zinc-800 text-zinc-100">
-                                    <p>No Stream configured</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </section>
-
-                <aside className="w-full lg:w-1/3">
-                    <div
-                        className="h-full rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
-                        <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Details</h2>
-                        <dl className="space-y-3 text-sm">
-                            {grow.plant && (<div className="flex justify-between gap-3">
-                                <dt className="text-zinc-500 dark:text-zinc-400">Plant</dt>
-                                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plant}</dd>
-                            </div>)}
-                            {details.strain && (<div className="flex justify-between gap-3">
-                                <dt className="text-zinc-500 dark:text-zinc-400">Strain</dt>
-                                <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.strain}</dd>
-                            </div>)}
-                            {(grow.plantAmount != 0) && (<div className="flex justify-between gap-3">
-                                <dt className="text-zinc-500 dark:text-zinc-400">Plant Count</dt>
-                                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plantAmount}</dd>
-                            </div>)}
-                            {grow.growSetup.growingMedium && (<div className="flex justify-between gap-3">
-                                <dt className="text-zinc-500 dark:text-zinc-400">Growing Medium</dt>
-                                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.growingMedium}</dd>
-                            </div>)}
-                            {(grow.growSetup.potSizeLiters != 0) && (<div className="flex justify-between gap-3">
-                                <dt className="text-zinc-500 dark:text-zinc-400">Pot Size</dt>
-                                <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.potSizeLiters}</dd>
-                            </div>)}
-                            <DayOrNight
-                                label="Temperature"
-                                day={grow.climate.temperatureDay}
-                                night={grow.climate.temperatureNight}
-                                unit=" C"
-                            />
-                            <DayOrNight
-                                label="Humidity"
-                                day={grow.climate.humidityDay}
-                                night={grow.climate.humidityNight}
-                                unit="%"
-                            />
-                            {(formatDateDisplay(details.seededAt) != '01.01.2001') && (
-                                <div className="flex justify-between gap-3">
-                                    <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
-                                    <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatDateDisplay(details.seededAt)}</dd>
-                                </div>)}
-                        </dl>
-                        {details.notes && (
-                            <div
-                                className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
-                                <ReactMarkdown urlTransform={markdownUrlTransform}>
-                                    {details.notes}
-                                </ReactMarkdown>
-                            </div>)}
-                    </div>
-                </aside>
-            </div>
+                        className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
+                        <ReactMarkdown urlTransform={markdownUrlTransform}>
+                            {details.notes}
+                        </ReactMarkdown>
+                    </div>)}
+            </aside>
 
             {showLiveClimate ? <LiveTentRow climateTick={grow.climateTick} /> : null}
 
-            <section className="grid gap-6 lg:grid-cols-2">
-                <article
-                    className="rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
-                    <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Status</h2>
+            <section className={`${WORKSPACE_AREA.run} ${WORKSPACE_VT.flow} grid lg:grid-cols-2`}>
+                <article className={`${WORKSPACE_PAD} ${WORKSPACE_SPLIT_MID}`}>
+                    <h2 className={WORKSPACE_TITLE}>Status</h2>
                     <dl className="space-y-3 text-sm">
                         <div className="flex justify-between gap-3">
                             <dt className="text-zinc-500 dark:text-zinc-400">Stage</dt>
@@ -201,9 +177,8 @@ export default async function Home() {
                     </dl>
                 </article>
 
-                <article
-                    className="rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
-                    <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Vitals</h2>
+                <article className={WORKSPACE_PAD}>
+                    <h2 className={WORKSPACE_TITLE}>Vitals</h2>
                     <div className="space-y-3 text-sm">
                         <div>
                             <p className="text-zinc-500 dark:text-zinc-400">Status</p>
@@ -220,9 +195,8 @@ export default async function Home() {
             <DashPictures />
 
             {(grow.growSetup.setupText?.trim() || setupImages.length > 0) && (
-                <section
-                    className="rounded-2xl border border-zinc-200 bg-white p-5  dark:border-zinc-800 dark:bg-zinc-950">
-                    <h2 className="mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                <section className={`${WORKSPACE_AREA.setup} ${WORKSPACE_VT.table} ${WORKSPACE_PAD}`}>
+                    <h2 className={WORKSPACE_TITLE}>
                         Setup
                     </h2>
 
@@ -235,20 +209,20 @@ export default async function Home() {
                     ) : null}
 
                     {setupImages.length > 0 && (
-                        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                            {setupImages.map((src) => (
+                        <div className="mt-4 grid grid-cols-2 md:grid-cols-3">
+                            {setupImages.map((src, index) => (
                                 <a
                                     key={src}
                                     href={src}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800"
+                                    className={`overflow-hidden ${index < setupImages.length - 1 ? "border-r border-zinc-200 dark:border-zinc-800" : ""}`}
                                 >
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={src}
                                         alt=""
-                                        className="h-full w-full object-cover"
+                                        className="aspect-video h-full w-full object-cover"
                                         loading="lazy"
                                     />
                                 </a>
@@ -259,8 +233,7 @@ export default async function Home() {
             )}
 
             {socialLinks.length > 0 && (
-                <section
-                    className="bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+                <section className={`${WORKSPACE_AREA.socials} ${WORKSPACE_VT.socials} ${WORKSPACE_PAD}`}>
                     <div className="flex flex-wrap items-center justify-evenly gap-3">
                         {socialLinks.map(({label, href, iconSrc}) => (
                             <a
@@ -285,8 +258,6 @@ export default async function Home() {
                     </div>
                 </section>
             )}
-            <SiteFooter/>
-            <BroadcastToast/>
-        </main>
+        </>
     );
 }

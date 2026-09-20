@@ -1,4 +1,5 @@
 import type {EnergyFlowRow, EnergyFlowView} from "@/lib/energy/types";
+import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
 
 function padHour(hour: number): string {
     return String(hour).padStart(2, "0");
@@ -36,14 +37,26 @@ function Stream({row}: {row: EnergyFlowRow}) {
     );
 }
 
-export default function EnergyFlowmap({flow}: {flow: EnergyFlowView}) {
+export default function EnergyFlowmap({
+    flow,
+    flush = false,
+}: {
+    flow: EnergyFlowView;
+    flush?: boolean;
+}) {
     const hours = flow.columns.map((column) => column.hour);
     const start = hours[0];
     const mid = hours[Math.floor((hours.length - 1) / 2)];
     const end = hours[hours.length - 1];
 
     return (
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+        <section
+            className={
+                flush
+                    ? `${WORKSPACE_AREA.flow} ${WORKSPACE_VT.flow} ${WORKSPACE_PAD}`
+                    : "rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
+            }
+        >
             {flow.rows.length === 0 ? (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">No actuator runtime yet.</p>
             ) : (

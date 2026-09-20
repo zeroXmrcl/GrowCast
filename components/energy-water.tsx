@@ -4,6 +4,7 @@ import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/lib/energy/berlin";
 import {formatKwh} from "@/lib/energy/format";
 import type {EnergyWaterView, EnergyWaterWindows} from "@/lib/energy/types";
+import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
 
 const PLOT_H = 160;
 const PLOT_W = 600;
@@ -111,17 +112,25 @@ export default function EnergyWater({
     water,
     windowKey,
     onWindowKey,
+    flush = false,
 }: {
     water: EnergyWaterWindows;
     windowKey: WindowKey;
     onWindowKey: (key: WindowKey) => void;
+    flush?: boolean;
 }) {
     const selected = water[windowKey] ?? water.today;
     const labels = axisLabels(selected);
     const maxLiters = scaleMax(selected.kind);
 
     return (
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+        <section
+            className={
+                flush
+                    ? `${WORKSPACE_AREA.water} ${WORKSPACE_VT.water} ${WORKSPACE_PAD}`
+                    : "rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
+            }
+        >
             <div className="mb-4 flex items-baseline justify-between gap-3">
                 <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Water Usage</h2>
                 <p className="text-sm tabular-nums text-zinc-600 dark:text-zinc-300">

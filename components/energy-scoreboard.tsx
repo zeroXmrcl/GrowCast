@@ -19,6 +19,12 @@ import type {
     EnergySeriesWindows,
     EnergyWindow,
 } from "@/lib/energy/types";
+import {
+    WORKSPACE_AREA,
+    WORKSPACE_HAIRLINE,
+    WORKSPACE_PAD,
+    WORKSPACE_VT,
+} from "@/lib/workspace";
 
 type WindowKey = keyof EnergySeriesWindows;
 
@@ -75,7 +81,7 @@ function WindowTile({
     window: EnergyWindow;
 }) {
     return (
-        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className={`border-b p-4 last:border-b-0 lg:border-b-0 lg:border-r lg:last:border-r-0 ${WORKSPACE_HAIRLINE}`}>
             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 {title}
             </p>
@@ -89,9 +95,15 @@ function WindowTile({
     );
 }
 
-function DeviceTable({dto}: {dto: EnergyPublicDto}) {
+function DeviceTable({dto, flush = false}: {dto: EnergyPublicDto; flush?: boolean}) {
     return (
-        <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <section
+            className={
+                flush
+                    ? `${WORKSPACE_AREA.table} ${WORKSPACE_VT.table}`
+                    : "overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+            }
+        >
             <table className="w-full text-left text-sm">
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
                     <tr>
@@ -396,7 +408,7 @@ function EnergyGraphCard({
     const selected = series[windowKey] ?? series.today;
 
     return (
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+        <section className={`${WORKSPACE_AREA.watts} ${WORKSPACE_VT.mid} ${WORKSPACE_PAD}`}>
             <div className="relative z-10 mb-4 flex flex-wrap gap-2">
                 {CHIPS.map((chip) => {
                     const pressed = chip.key === windowKey;
@@ -426,7 +438,7 @@ function EnergyGraphCard({
     );
 }
 
-function usePolledEnergyDto(initial: EnergyPublicDto): EnergyPublicDto {
+function usePolledEnergyDto(initial: EnergyPublicDto | null): EnergyPublicDto | null {
     const [dto, setDto] = useState(initial);
     useEffect(() => {
         setDto(initial);
@@ -442,6 +454,7 @@ function usePolledEnergyDto(initial: EnergyPublicDto): EnergyPublicDto {
                 setDto(next);
             }
         }
+        void tick();
         const id = window.setInterval(() => {
             void tick();
         }, ENERGY_POLL_MS);
@@ -460,24 +473,31 @@ function usePolledEnergyDto(initial: EnergyPublicDto): EnergyPublicDto {
     return dto;
 }
 
-export default function EnergyScoreboard({dto: initial}: {dto: EnergyPublicDto}) {
+export default function EnergyScoreboard({dto: initial = null}: {dto?: EnergyPublicDto | null}) {
     const dto = usePolledEnergyDto(initial);
     const [graphWindow, setGraphWindow] = usePersistedWindowKey(GRAPH_WINDOW_SLOT);
     const [waterWindow, setWaterWindow] = usePersistedWindowKey(WATER_WINDOW_SLOT);
+    if (!dto) {
+        return (
+            <>
+                <section className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} ${WORKSPACE_PAD}`} />
+                <section className={`${WORKSPACE_AREA.watts} ${WORKSPACE_VT.mid} ${WORKSPACE_PAD}`} />
+                <section className={`${WORKSPACE_AREA.flow} ${WORKSPACE_VT.flow} ${WORKSPACE_PAD}`} />
+                <section className={`${WORKSPACE_AREA.water} ${WORKSPACE_VT.water} ${WORKSPACE_PAD}`} />
+                <section className={`${WORKSPACE_AREA.table} ${WORKSPACE_VT.table}`} />
+            </>
+        );
+    }
     return (
-        <div className="space-y-6">
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                Energy
-            </h1>
-
+        <>
             {dto.empty ? (
-                <p className="rounded-2xl border border-zinc-200 bg-white p-5 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                <p className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} ${WORKSPACE_PAD} text-sm text-zinc-600 dark:text-zinc-300`}>
                     Energy starts when live devices are flowing.
                 </p>
             ) : dto.windows ? (
                 <>
-                    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                    <section className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} grid h-full grid-cols-2 lg:grid-cols-5`}>
+                        <div className={`border-b p-4 lg:border-b-0 lg:border-r ${WORKSPACE_HAIRLINE}`}>
                             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                                 Now
                             </p>
@@ -501,20 +521,21 @@ export default function EnergyScoreboard({dto: initial}: {dto: EnergyPublicDto})
                             onWindowKey={setGraphWindow}
                         />
                     ) : null}
-                    {dto.flow ? <EnergyFlowmap flow={dto.flow}/> : null}
+                    {dto.flow ? <EnergyFlowmap flow={dto.flow} flush/> : null}
                     {dto.water ? (
                         <EnergyWater
                             water={dto.water}
                             windowKey={waterWindow}
                             onWindowKey={setWaterWindow}
+                            flush
                         />
                     ) : null}
-                    <DeviceTable dto={dto}/>
+                    <DeviceTable dto={dto} flush/>
                 </>
             ) : (
-                <DeviceTable dto={dto}/>
+                <DeviceTable dto={dto} flush/>
             )}
-        </div>
+        </>
     );
 }
 

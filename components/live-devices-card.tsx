@@ -7,6 +7,7 @@ import {
     LIVE_DEVICE_VOID_CLASS,
     liveDeviceRowItems,
 } from "@/lib/live-devices-layout";
+import {WORKSPACE_PAD, WORKSPACE_TITLE} from "@/lib/workspace";
 
 type LiveDevicesCardProps = {
     snapshot: GgsLivePublic;
@@ -73,8 +74,8 @@ export default function LiveDevicesCard({snapshot}: LiveDevicesCardProps) {
     const tiles = mapDeviceTiles(snapshot);
 
     return (
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Devices</h2>
+        <article className={WORKSPACE_PAD}>
+            <h2 className={WORKSPACE_TITLE}>Devices</h2>
             {tiles.length > 0 ? (
                 <ul className={LIVE_DEVICE_ROW_CLASS}>
                     {liveDeviceRowItems(tiles).map((item) =>

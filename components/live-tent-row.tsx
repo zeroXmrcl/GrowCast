@@ -11,6 +11,7 @@ import {
     parseOverlayGrowBody,
 } from "@/lib/overlay-grow";
 import {shouldShowLiveRow} from "@/lib/live-climate-view";
+import {WORKSPACE_AREA, WORKSPACE_VT} from "@/lib/workspace";
 
 export default function LiveTentRow({
     climateTick: initialTick = "plain",
@@ -56,7 +57,7 @@ export default function LiveTentRow({
     }
 
     return (
-        <section className="grid gap-6 lg:grid-cols-2">
+        <section className={`${WORKSPACE_AREA.live} ${WORKSPACE_VT.mid} grid lg:grid-cols-2`}>
             <LiveClimateCard
                 snapshot={snapshot}
                 stale={stale}

@@ -9,6 +9,7 @@ import {
     formatTempC,
     formatVpd,
 } from "@/lib/live-climate-view";
+import {WORKSPACE_PAD, WORKSPACE_SPLIT_MID, WORKSPACE_TITLE} from "@/lib/workspace";
 import type {ReactNode} from "react";
 
 type LiveClimateCardProps = {
@@ -53,9 +54,9 @@ export default function LiveClimateCard({
     const picker = climateTick === "picker";
 
     return (
-        <article className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+        <article className={`${WORKSPACE_PAD} ${WORKSPACE_SPLIT_MID}`}>
             <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Climate</h2>
+                <h2 className={`${WORKSPACE_TITLE} mb-0`}>Climate</h2>
                 <p
                     className={`text-xs font-semibold tracking-wide ${
                         badge.kind === "live"

@@ -24,7 +24,17 @@ export function navItemsFor(pathname: string, flags: NavFlags): NavItem[] {
         items.push(SETTINGS_ITEM);
     }
 
-    return items.filter((item) =>
-        item.href === "/" ? pathname !== "/" : !pathname.startsWith(item.href),
-    );
+    return items.filter((item) => {
+        if (item.href === "/" || item.href === "/energy") {
+            return true;
+        }
+        return !navItemIsActive(pathname, item.href);
+    });
+}
+
+export function navItemIsActive(pathname: string, href: string): boolean {
+    if (href === "/") {
+        return pathname === "/";
+    }
+    return pathname.startsWith(href);
 }
