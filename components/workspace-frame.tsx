@@ -39,7 +39,7 @@ export default function WorkspaceFrame({
 
     return (
         <main className="flex flex-1 flex-col py-4">
-            <div className={WORKSPACE_BOARD_CLASS} data-page={page}>
+            <div className={`${WORKSPACE_BOARD_CLASS} ${WORKSPACE_VT.board}`} data-page={page}>
                 {showGrowName ? (
                     <div className={`${WORKSPACE_AREA.name} ${WORKSPACE_VT.name} px-4 py-3`}>
                         <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">

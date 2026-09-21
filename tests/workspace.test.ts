@@ -3,10 +3,14 @@ import {readFileSync} from "node:fs";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {
+    isPlainWorkspaceClick,
     isWorkspaceHandoff,
     isWorkspacePath,
     WORKSPACE_CAM_ENERGY_PX,
     WORKSPACE_EASING,
+    WORKSPACE_FADE_IN_DELAY_MS,
+    WORKSPACE_FADE_IN_MS,
+    WORKSPACE_FADE_OUT_MS,
     WORKSPACE_MORPH_MS,
 } from "../lib/workspace.ts";
 
@@ -26,6 +30,26 @@ describe("workspace morph", () => {
         assert.equal(isWorkspaceHandoff("/", "/"), false);
         assert.equal(isWorkspaceHandoff("/gallery", "/"), false);
         assert.equal(isWorkspaceHandoff("/", "/gallery"), false);
+        assert.equal(
+            isPlainWorkspaceClick({
+                altKey: false,
+                button: 0,
+                ctrlKey: false,
+                metaKey: false,
+                shiftKey: false,
+            }),
+            true,
+        );
+        assert.equal(
+            isPlainWorkspaceClick({
+                altKey: false,
+                button: 0,
+                ctrlKey: false,
+                metaKey: true,
+                shiftKey: false,
+            }),
+            false,
+        );
     });
 
     it("keeps OverlayCamera in the site shell and LiveTentRow on home", () => {
@@ -65,24 +89,41 @@ describe("workspace morph", () => {
         assert.match(css, /view-transition-name: vt-table/);
         assert.match(css, /view-transition-name: vt-socials/);
         assert.match(css, /view-transition-name: vt-header/);
+        assert.match(css, /view-transition-name: vt-board/);
+        assert.match(css, /view-transition-name: vt-footer/);
         assert.match(css, /::view-transition-old\(root\)/);
         assert.match(css, /--growcast-workspace-ms: 360ms/);
+        assert.match(css, /--growcast-workspace-fade-out: 160ms/);
+        assert.match(css, /object-fit: cover/);
+        assert.match(css, /growcast-vt-fade-out/);
         assert.match(css, /cubic-bezier\(0\.16, 1, 0\.3, 1\)/);
         assert.match(css, /\[data-page="energy"\] \.growcast-dash-slot/);
         assert.match(css, /\[data-page="energy"\] \.growcast-area-cam/);
         assert.match(css, /width: 320px/);
         assert.equal(WORKSPACE_MORPH_MS, 360);
+        assert.equal(WORKSPACE_FADE_OUT_MS, 160);
+        assert.equal(WORKSPACE_FADE_IN_MS, 220);
+        assert.equal(WORKSPACE_FADE_IN_DELAY_MS, 70);
         assert.equal(WORKSPACE_EASING, "cubic-bezier(0.16, 1, 0.3, 1)");
         const nav = src(path.join("components", "workspace-nav.tsx"));
+        const footer = src(path.join("components", "site-footer.tsx"));
         assert.match(header, /useWorkspaceNav/);
         assert.match(header, /isWorkspacePath\(item\.href\)/);
+        assert.match(header, /isPlainWorkspaceClick/);
         assert.match(nav, /morphWorkspace/);
         assert.match(nav, /applyWorkspacePage/);
         assert.match(nav, /document\.startViewTransition\(apply\)/);
         assert.match(nav, /history\.pushState/);
         assert.match(nav, /flushSync/);
         assert.match(nav, /prefers-reduced-motion/);
+        assert.match(nav, /busy\.current/);
+        assert.match(nav, /waitingForDash/);
+        assert.match(nav, /keepCameraInView/);
+        assert.match(nav, /popstate/);
+        assert.match(nav, /WORKSPACE_MORPH_MS \+ 80/);
         assert.match(frame, /EnergyScoreboard/);
+        assert.match(frame, /WORKSPACE_VT\.board/);
+        assert.match(footer, /vt-footer/);
         assert.match(css, /growcast-vt-off/);
         assert.match(header, /WORKSPACE_VT\.header/);
         assert.match(home, /WORKSPACE_VT\.side/);

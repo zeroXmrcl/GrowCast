@@ -7,7 +7,7 @@ import {useEffect, useState} from "react";
 import {useWorkspaceNav} from "@/components/workspace-nav";
 import {SITE_FRAME_CLASS} from "@/lib/site-frame";
 import {navItemIsActive, navItemsFor, type NavFlags} from "@/lib/site-nav";
-import {isWorkspacePath, WORKSPACE_VT} from "@/lib/workspace";
+import {isPlainWorkspaceClick, isWorkspacePath, WORKSPACE_VT} from "@/lib/workspace";
 
 export default function SiteHeader({
     showEnergy = false,
@@ -78,9 +78,17 @@ export default function SiteHeader({
         >
             <div className={`${SITE_FRAME_CLASS} flex items-center justify-between py-3`}>
                 {workspace ? (
-                    <button type="button" className="flex cursor-pointer items-center gap-3" onClick={() => go("/")}>
+                    <Link
+                        href="/"
+                        className="flex cursor-pointer items-center gap-3"
+                        onClick={(event) => {
+                            if (isPlainWorkspaceClick(event)) {
+                                go("/", event);
+                            }
+                        }}
+                    >
                         {logo}
-                    </button>
+                    </Link>
                 ) : (
                     <Link href="/" className="flex items-center gap-3">
                         {logo}
@@ -93,24 +101,21 @@ export default function SiteHeader({
                         const className = active
                             ? "cursor-pointer px-3 py-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100"
                             : "cursor-pointer px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400";
-                        if (workspace && isWorkspacePath(item.href)) {
-                            return (
-                                <button
-                                    key={item.href}
-                                    type="button"
-                                    aria-current={active ? "page" : undefined}
-                                    onClick={() => go(item.href)}
-                                    className={className}
-                                >
-                                    {item.label}
-                                </button>
-                            );
-                        }
+                        const workspaceTab = workspace && isWorkspacePath(item.href);
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 aria-current={active ? "page" : undefined}
+                                onClick={
+                                    workspaceTab
+                                        ? (event) => {
+                                            if (isPlainWorkspaceClick(event)) {
+                                                go(item.href, event);
+                                            }
+                                        }
+                                        : undefined
+                                }
                                 className={className}
                             >
                                 {item.label}

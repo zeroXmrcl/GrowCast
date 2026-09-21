@@ -1,6 +1,9 @@
 import {OVERLAY_EASING_ENTER} from "@/lib/overlay-motion";
 
 export const WORKSPACE_MORPH_MS = 360;
+export const WORKSPACE_FADE_OUT_MS = 160;
+export const WORKSPACE_FADE_IN_MS = 220;
+export const WORKSPACE_FADE_IN_DELAY_MS = 70;
 export const WORKSPACE_EASING = OVERLAY_EASING_ENTER;
 export const WORKSPACE_CAM_ENERGY_PX = 320;
 
@@ -32,6 +35,8 @@ export const WORKSPACE_AREA = {
 
 export const WORKSPACE_VT = {
     header: "vt-header",
+    board: "vt-board",
+    footer: "vt-footer",
     cam: "vt-cam",
     name: "vt-name",
     side: "vt-side",
@@ -48,4 +53,14 @@ export function isWorkspacePath(pathname: string): boolean {
 
 export function isWorkspaceHandoff(from: string, to: string): boolean {
     return isWorkspacePath(from) && isWorkspacePath(to) && from !== to;
+}
+
+export function isPlainWorkspaceClick(event: {
+    altKey: boolean;
+    button: number;
+    ctrlKey: boolean;
+    metaKey: boolean;
+    shiftKey: boolean;
+}): boolean {
+    return !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0;
 }

@@ -6,6 +6,9 @@
   --font-geist-sans: "Geist", "Geist Fallback", "Segoe UI", sans-serif;
   --font-geist-mono: "Geist Mono", "Geist Mono Fallback", "SFMono-Regular", monospace;
   --growcast-workspace-ms: 360ms;
+  --growcast-workspace-fade-out: 160ms;
+  --growcast-workspace-fade-in: 220ms;
+  --growcast-workspace-fade-delay: 70ms;
   --growcast-workspace-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -168,6 +171,7 @@ html:has([data-overlay-root]) body {
   --growcast-hair: rgb(228 228 231);
   --growcast-cam-w: 320px;
   display: grid;
+  view-transition-name: vt-board;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -368,6 +372,7 @@ html:has([data-overlay-root]) body {
 }
 
 .vt-header { view-transition-name: vt-header; }
+.vt-footer { view-transition-name: vt-footer; }
 .vt-cam { view-transition-name: vt-cam; }
 .vt-name { view-transition-name: vt-name; }
 .vt-side { view-transition-name: vt-side; }
@@ -382,6 +387,18 @@ html:has([data-overlay-root]) body {
   view-transition-name: none !important;
 }
 
+@keyframes growcast-vt-fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes growcast-vt-fade-in {
+  from { opacity: 0; }
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
 ::view-transition-group(*) {
   animation-duration: var(--growcast-workspace-ms);
   animation-timing-function: var(--growcast-workspace-ease);
@@ -389,22 +406,55 @@ html:has([data-overlay-root]) body {
 
 ::view-transition-old(*),
 ::view-transition-new(*) {
-  animation-duration: var(--growcast-workspace-ms);
-  animation-timing-function: var(--growcast-workspace-ease);
   mix-blend-mode: normal;
+}
+
+::view-transition-old(vt-side),
+::view-transition-old(vt-mid),
+::view-transition-old(vt-flow),
+::view-transition-old(vt-water),
+::view-transition-old(vt-table),
+::view-transition-old(vt-name),
+::view-transition-old(vt-socials) {
+  animation: growcast-vt-fade-out var(--growcast-workspace-fade-out) var(--growcast-workspace-ease) both;
+}
+
+::view-transition-new(vt-side),
+::view-transition-new(vt-mid),
+::view-transition-new(vt-flow),
+::view-transition-new(vt-water),
+::view-transition-new(vt-table),
+::view-transition-new(vt-name),
+::view-transition-new(vt-socials) {
+  animation: growcast-vt-fade-in var(--growcast-workspace-fade-in) var(--growcast-workspace-ease) var(--growcast-workspace-fade-delay) both;
 }
 
 ::view-transition-group(vt-cam) {
   z-index: 8;
+  overflow: clip;
+}
+
+::view-transition-old(vt-cam),
+::view-transition-new(vt-cam) {
+  animation: none;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  overflow: clip;
+}
+
+::view-transition-new(vt-cam) {
+  opacity: 0;
 }
 
 ::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-}
-
+::view-transition-new(root),
 ::view-transition-old(vt-header),
-::view-transition-new(vt-header) {
+::view-transition-new(vt-header),
+::view-transition-old(vt-board),
+::view-transition-new(vt-board),
+::view-transition-old(vt-footer),
+::view-transition-new(vt-footer) {
   animation: none;
 }
 
@@ -413,5 +463,6 @@ html:has([data-overlay-root]) body {
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
