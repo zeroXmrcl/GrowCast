@@ -5,6 +5,7 @@ import path from "node:path";
 import {describe, it} from "node:test";
 import sharp from "sharp";
 import {
+    encodePortableSnapshotThumb,
     openSnapshotThumb,
     snapshotThumbFilename,
     snapshotThumbSrc,
@@ -55,6 +56,21 @@ describe("snapshot thumbs", () => {
         } finally {
             await rm(dir, {recursive: true, force: true});
         }
+    });
+
+    it("builds a 640 px jpeg thumb without sharp", async () => {
+        const source = await sharp({
+            create: {width: 1280, height: 720, channels: 3, background: {r: 20, g: 90, b: 40}},
+        })
+            .webp()
+            .toBuffer();
+        const thumb = await encodePortableSnapshotThumb(source);
+        assert.equal(thumb[0], 0xff);
+        assert.equal(thumb[1], 0xd8);
+        const meta = await sharp(thumb).metadata();
+        assert.equal(meta.format, "jpeg");
+        assert.equal(meta.width, 640);
+        assert.equal(meta.height, 360);
     });
 
     it("rejects a parent-directory filename", async () => {

@@ -153,6 +153,7 @@ describe("completeCurrentGrow", () => {
             await writeFile(path.join(sources.snapshotsDir, "1000.webp"), "a");
             await mkdir(path.join(sources.snapshotsDir, "thumbs"), {recursive: true});
             await writeFile(path.join(sources.snapshotsDir, "thumbs", "1000.webp"), "thumb");
+            await writeFile(path.join(sources.snapshotsDir, "thumbs", "1000.jpg"), "jpeg-thumb");
             await writeFile(path.join(sources.snapshotsDir, "thumbs", "keep.webp"), "other");
 
             const live = await getCurrentGrow();
@@ -168,6 +169,7 @@ describe("completeCurrentGrow", () => {
 
             assert.equal(result.ok, true);
             await assert.rejects(access(path.join(sources.snapshotsDir, "thumbs", "1000.webp")));
+            await assert.rejects(access(path.join(sources.snapshotsDir, "thumbs", "1000.jpg")));
             assert.equal(
                 await readFile(path.join(sources.snapshotsDir, "thumbs", "keep.webp"), "utf8"),
                 "other",

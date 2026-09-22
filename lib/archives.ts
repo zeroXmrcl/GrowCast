@@ -13,7 +13,7 @@ import {
 } from "@/lib/db";
 import {isDateOnly, todayDateOnly} from "@/lib/date-only";
 import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/lib/extension-status";
-import {snapshotThumbFilename} from "@/lib/snapshot-thumb";
+import {snapshotThumbFilenames} from "@/lib/snapshot-thumb";
 import {mediaCollectionDir} from "@/lib/media-library";
 import {EnergyCopyError, resetEnergyCurrentLocked, stageEnergyArchive} from "@/lib/energy/archive";
 import {logEnergy} from "@/lib/energy/log";
@@ -408,7 +408,7 @@ async function completeCurrentGrowUnlocked(
             deleteFiles(sources.snapshotsDir, snapshotFiles),
             deleteFiles(
                 path.join(sources.snapshotsDir, "thumbs"),
-                snapshotFiles.map(snapshotThumbFilename),
+                snapshotFiles.flatMap(snapshotThumbFilenames),
             ),
             deleteFiles(sources.timelapseDir, timelapseFiles),
             deleteFiles(sources.picturesDir, pictureFiles),
