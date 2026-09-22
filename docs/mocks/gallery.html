@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GrowCast gallery</title>
+  <style>
+    :root {
+      --font: "Geist", "Geist Fallback", "Segoe UI", system-ui, sans-serif;
+      --bg: #fafafa; --fg: #18181b; --muted: #71717a; --card: #fff;
+      --stroke: #e4e4e7; --hair: rgb(24 24 27 / 0.12);
+    }
+    html[data-theme="dark"] {
+      --bg: #0a0a0a; --fg: #ededed; --muted: #a1a1aa; --card: #09090b;
+      --stroke: #27272a; --hair: rgb(255 255 255 / 0.14);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--fg); line-height: 1.45; }
+    header.page {
+      position: sticky; top: 0; z-index: 4;
+      display: flex; justify-content: space-between; gap: 16px; align-items: center;
+      padding: 16px 24px; border-bottom: 1px solid var(--stroke);
+      background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(8px);
+    }
+    header.page h1 { margin: 0; font-size: 16px; }
+    header.page p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+    button { font: inherit; font-size: 13px; border: 1px solid var(--stroke); background: var(--bg); color: var(--fg); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+    main { max-width: 80rem; margin: 0 auto; padding: 28px 32px 80px; }
+    h2 { margin: 40px 0 8px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    h2:first-of-type { margin-top: 0; }
+    .lead { margin: 0 0 14px; max-width: 72ch; color: var(--muted); font-size: 14px; }
+    .board { border: 1px solid var(--stroke); background: var(--card); overflow: hidden; }
+    .pad { padding: 18px; }
+    .title { margin: 0; font-size: 18px; font-weight: 600; }
+    .sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+    .shot {
+      aspect-ratio: 16 / 9;
+      background:
+        radial-gradient(40% 50% at 50% 70%, #1a3a22, transparent 70%),
+        linear-gradient(180deg, #12140f, #070806);
+    }
+    .shot.b { background: radial-gradient(50% 60% at 40% 60%, #245c30, transparent 65%), linear-gradient(#10130e, #050605); }
+    .shot.c { background: radial-gradient(45% 40% at 60% 55%, #3d7a38, transparent 60%), linear-gradient(#161910, #080907); }
+    .shot.d { background: radial-gradient(30% 40% at 50% 80%, #16301c, transparent 70%), linear-gradient(#0e110d, #050605); }
+    .play {
+      position: relative; aspect-ratio: 16 / 9; background: #050605;
+      display: grid; place-items: center;
+    }
+    .play i {
+      width: 54px; height: 54px; border-radius: 50%;
+      border: 1px solid rgb(255 255 255 / 0.35);
+      display: grid; place-items: center;
+    }
+    .play i::before {
+      content: ""; border-style: solid; border-width: 8px 0 8px 14px;
+      border-color: transparent transparent transparent #ededed; margin-left: 3px;
+    }
+    .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+    .card { overflow: hidden; border-radius: 16px; border: 1px solid var(--stroke); background: var(--card); }
+    .roundplay { overflow: hidden; border-radius: 24px; border: 1px solid #27272a; background: #000; }
+    .hair { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .hair a { border-right: 1px solid var(--hair); position: relative; }
+    .hair a:last-child { border-right: 0; }
+    .stamp {
+      position: absolute; left: 8px; bottom: 8px;
+      font-size: 11px; font-variant-numeric: tabular-nums; color: #fafafa;
+      text-shadow: 0 1px 2px #000;
+    }
+    .days { display: flex; flex-direction: column; }
+    .day { display: grid; grid-template-columns: 140px 1fr; border-top: 1px solid var(--hair); }
+    .day .when { padding: 14px 16px; }
+    .day .when strong { display: block; font-size: 14px; }
+    .day .when span { color: var(--muted); font-size: 12px; }
+    .day .strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .day .strip a { border-left: 1px solid var(--hair); }
+    .reel { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); }
+    .bin { display: flex; flex-direction: column; border-left: 1px solid var(--hair); max-height: 100%; }
+    .bin a { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--hair); color: inherit; text-decoration: none; }
+    .bin .shot { aspect-ratio: 16 / 9; }
+    .bin p { margin: 0; font-size: 13px; }
+    .bin span { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    @media (max-width: 800px) {
+      .grid4, .hair, .day, .reel, .day .strip { grid-template-columns: 1fr 1fr; }
+      .day { grid-template-columns: 1fr; }
+      .reel { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <div>
+      <h1>Gallery</h1>
+      <p>Timelapse on top, snapshots under it. Same plant, four ways to hold them.</p>
+    </div>
+    <button type="button" id="theme">Light</button>
+  </header>
+  <main>
+    <h2>A · Current</h2>
+    <p class="lead">Shipped. A rounded player, then cards with a gap, a lift on hover, and no date on the still.</p>
+    <section>
+      <div class="roundplay play"><i></i></div>
+      <div style="height:28px"></div>
+      <div class="grid4" id="cards"></div>
+    </section>
+
+    <h2>B · Sheet</h2>
+    <p class="lead">The dashboard picture strip, continued. Player and stills share one board. Hairlines only. The time sits in the corner of each frame.</p>
+    <section class="board">
+      <div class="play" style="border-bottom:1px solid var(--hair)"><i></i></div>
+      <div class="hair" id="sheet"></div>
+    </section>
+
+    <h2>C · Days</h2>
+    <p class="lead">Snapshots grouped by the day they were taken. The date is a column, the stills are a strip. The player stays a flush 16:9 above the list.</p>
+    <section class="board">
+      <div class="play" style="border-bottom:1px solid var(--hair)"><i></i></div>
+      <div class="days" id="days"></div>
+    </section>
+
+    <h2>D · Bin</h2>
+    <p class="lead">The player is the stage. A bin of the latest stills sits beside it, name and time as a caption, the way the needle gauge puts the name under the value.</p>
+    <section class="board">
+      <div class="reel">
+        <div class="play"><i></i></div>
+        <div class="bin" id="bin"></div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const STILLS = [
+      ["Sep 7", "14:52", "b"],
+      ["Sep 7", "14:52", "c"],
+      ["Sep 14", "09:10", ""],
+      ["Sep 14", "09:11", "d"],
+      ["Sep 21", "18:04", "b"],
+      ["Sep 21", "18:05", "c"],
+      ["Sep 22", "15:17", ""],
+      ["Sep 22", "15:18", "d"],
+    ];
+    const shot = (cls) => `<div class="shot ${cls}"></div>`;
+    document.getElementById("cards").innerHTML = STILLS.slice(0, 8).map(([, , cls]) =>
+      `<a class="card">${shot(cls)}</a>`
+    ).join("");
+    document.getElementById("sheet").innerHTML = STILLS.map(([day, time, cls]) =>
+      `<a>${shot(cls)}<span class="stamp">${day} ${time}</span></a>`
+    ).join("");
+    const byDay = {};
+    for (const row of STILLS) (byDay[row[0]] ??= []).push(row);
+    document.getElementById("days").innerHTML = Object.entries(byDay).map(([day, rows]) =>
+      `<div class="day"><div class="when"><strong>${day}</strong><span>${rows.length} stills</span></div><div class="strip">${rows.map(([, time, cls]) => `<a>${shot(cls)}<span class="stamp">${time}</span></a>`).join("")}</div></div>`
+    ).join("");
+    document.getElementById("bin").innerHTML = STILLS.slice(-4).reverse().map(([day, time, cls]) =>
+      `<a>${shot(cls)}<div><p>${day}</p><span>${time}</span></div></a>`
+    ).join("");
+    document.getElementById("theme").addEventListener("click", () => {
+      const light = document.documentElement.getAttribute("data-theme") !== "light";
+      document.documentElement.setAttribute("data-theme", light ? "light" : "dark");
+      document.getElementById("theme").textContent = light ? "Dark" : "Light";
+    });
+  </script>
+</body>
+</html>

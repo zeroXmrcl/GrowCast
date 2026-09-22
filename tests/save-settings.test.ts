@@ -146,6 +146,7 @@ describe("saveAdminSettings orchestration", () => {
             assert.equal(result.ok, true);
             const grow = await getCurrentGrow();
             assert.equal(grow.climateTick, "picker");
+            assert.equal(grow.devicesDesign, "needle");
         });
     });
 

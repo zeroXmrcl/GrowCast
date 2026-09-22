@@ -1,4 +1,5 @@
 import {getTimelapseFiles} from "@/lib/extension-status";
+import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
 
 type TimelapsePlayerProps = {
     /**
@@ -6,9 +7,11 @@ type TimelapsePlayerProps = {
      * `undefined` falls back to the live timelapse.
      */
     videoUrl?: string | null;
+    /** Flush 16:9 inside the gallery sheet. Archived grows keep the card. */
+    sheet?: boolean;
 };
 
-export default async function TimelapsePlayer({videoUrl}: TimelapsePlayerProps = {}) {
+export default async function TimelapsePlayer({videoUrl, sheet = false}: TimelapsePlayerProps = {}) {
     let resolvedUrl: string | null;
 
     if (videoUrl === undefined) {
@@ -20,7 +23,7 @@ export default async function TimelapsePlayer({videoUrl}: TimelapsePlayerProps =
 
     if (!resolvedUrl) {
         return (
-            <section className="p-4">
+            <section className={sheet ? `border-b p-4 ${WORKSPACE_HAIRLINE}` : "p-4"}>
                 <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
                     Timelapse
                 </h2>
@@ -28,6 +31,22 @@ export default async function TimelapsePlayer({videoUrl}: TimelapsePlayerProps =
                     No timelapse created yet.
                 </p>
             </section>
+        );
+    }
+
+    if (sheet) {
+        return (
+            <div className={`border-b bg-black ${WORKSPACE_HAIRLINE}`}>
+                <video
+                    controls
+                    preload="metadata"
+                    className="block h-auto w-full"
+                    aria-label="Grow timelapse"
+                >
+                    <source src={resolvedUrl} type="video/mp4"/>
+                    Your browser does not support video.
+                </video>
+            </div>
         );
     }
 

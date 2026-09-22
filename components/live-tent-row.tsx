@@ -5,6 +5,7 @@ import LiveClimateCard from "@/components/live-climate-card";
 import LiveDevicesCard from "@/components/live-devices-card";
 import {useLiveClimate} from "@/hooks/use-live-climate";
 import type {ClimateTick} from "@/lib/climate-tick";
+import type {DevicesDesign} from "@/lib/devices-design";
 import {
     OVERLAY_GROW_PATH,
     OVERLAY_GROW_POLL_MS,
@@ -15,15 +16,22 @@ import {WORKSPACE_AREA, WORKSPACE_VT} from "@/lib/workspace";
 
 export default function LiveTentRow({
     climateTick: initialTick = "plain",
+    devicesDesign: initialDesign = "needle",
 }: {
     climateTick?: ClimateTick;
+    devicesDesign?: DevicesDesign;
 }) {
     const {snapshot, stale, nowMs} = useLiveClimate();
     const [climateTick, setClimateTick] = useState(initialTick);
+    const [devicesDesign, setDevicesDesign] = useState(initialDesign);
 
     useEffect(() => {
         setClimateTick(initialTick);
     }, [initialTick]);
+
+    useEffect(() => {
+        setDevicesDesign(initialDesign);
+    }, [initialDesign]);
 
     useEffect(() => {
         const abort = new AbortController();
@@ -39,6 +47,7 @@ export default function LiveTentRow({
                 const parsed = parseOverlayGrowBody(await response.json());
                 if (parsed) {
                     setClimateTick(parsed.climateTick);
+                    setDevicesDesign(parsed.devicesDesign);
                 }
             } catch {
                 // next interval retries
@@ -64,7 +73,7 @@ export default function LiveTentRow({
                 nowMs={nowMs}
                 climateTick={climateTick}
             />
-            <LiveDevicesCard snapshot={snapshot}/>
+            <LiveDevicesCard snapshot={snapshot} devicesDesign={devicesDesign}/>
         </section>
     );
 }

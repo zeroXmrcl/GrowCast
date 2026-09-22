@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {access, mkdir, mkdtemp, readdir, rm, writeFile} from "node:fs/promises";
+import {access, mkdir, mkdtemp, readFile, readdir, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
@@ -144,6 +144,34 @@ describe("completeCurrentGrow", () => {
             assert.equal(current.plant, "Cannabis");
             assert.equal(current.plantAmount, 2);
             assert.equal(current.details.lightSchedule, "12/12");
+        });
+    });
+
+    it("deletes the live thumb for each archived snapshot", async () => {
+        await withTempEnv(async ({sources}) => {
+            await updateCurrentGrow({name: "Thumb Run"});
+            await writeFile(path.join(sources.snapshotsDir, "1000.webp"), "a");
+            await mkdir(path.join(sources.snapshotsDir, "thumbs"), {recursive: true});
+            await writeFile(path.join(sources.snapshotsDir, "thumbs", "1000.webp"), "thumb");
+            await writeFile(path.join(sources.snapshotsDir, "thumbs", "keep.webp"), "other");
+
+            const live = await getCurrentGrow();
+            const result = await completeCurrentGrow(
+                {
+                    harvestedAt: "2026-04-20",
+                    yieldGrams: null,
+                    finalNotes: "",
+                    expectedGrowId: live.id,
+                },
+                sources,
+            );
+
+            assert.equal(result.ok, true);
+            await assert.rejects(access(path.join(sources.snapshotsDir, "thumbs", "1000.webp")));
+            assert.equal(
+                await readFile(path.join(sources.snapshotsDir, "thumbs", "keep.webp"), "utf8"),
+                "other",
+            );
         });
     });
 

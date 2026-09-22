@@ -6,6 +6,7 @@ import {
 } from "@/lib/logging";
 import { openMediaFile } from "@/lib/open-media-file";
 import { IMAGE_EXTENSIONS } from "@/lib/safe-media-filename";
+import { openSnapshotThumb, snapshotThumbResponse } from "@/lib/snapshot-thumb";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,6 +17,13 @@ export async function GET(
 ) {
     return withRequestLog(request, "/api/snapshots/:filename", async () => {
         const { filename } = await context.params;
+        if (request.nextUrl.searchParams.get("thumb") === "1") {
+            const thumb = await openSnapshotThumb(SNAPSHOT_DIR, filename);
+            if (!thumb.ok && thumb.status === 400) {
+                logHttpPathTraversalBlocked({ reason: "invalid_filename" });
+            }
+            return snapshotThumbResponse(thumb);
+        }
         const opened = await openMediaFile(SNAPSHOT_DIR, filename, IMAGE_EXTENSIONS);
         if (!opened.ok) {
             if (opened.status === 400) {

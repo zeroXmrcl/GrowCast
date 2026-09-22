@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GrowCast alert treatments</title>
+  <style>
+    :root {
+      --bg: #f4f4f5;
+      --fg: #18181b;
+      --muted: #71717a;
+      --card: #ffffff;
+      --stroke: #e4e4e7;
+      --well-idle: #f4f4f5;
+      --icon-idle: #a1a1aa;
+      --well-run: #fff7ed;
+      --icon-run: #ea580c;
+      --label-run: #18181b;
+      --caption-run: #3f3f46;
+      --alert: #dc2626;
+      --alert-well: #fef2f2;
+      --alert-ink: #991b1b;
+      --live: #059669;
+      --font: "Geist", "Segoe UI", system-ui, sans-serif;
+      --mono: "Geist Mono", "SFMono-Regular", ui-monospace, monospace;
+    }
+    html[data-theme="dark"] {
+      --bg: #0a0a0a;
+      --fg: #ededed;
+      --muted: #a1a1aa;
+      --card: #09090b;
+      --stroke: #27272a;
+      --well-idle: #27272a;
+      --icon-idle: #a1a1aa;
+      --well-run: rgba(124, 45, 18, 0.5);
+      --icon-run: #ea580c;
+      --label-run: #fafafa;
+      --caption-run: #d4d4d8;
+      --alert: #f87171;
+      --alert-well: rgba(127, 29, 29, 0.45);
+      --alert-ink: #fecaca;
+      --live: #34d399;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.45;
+    }
+    header.page {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--stroke);
+      background: var(--card);
+    }
+    header.page h1 { font-size: 16px; margin: 0; }
+    header.page p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      font: inherit;
+      font-size: 13px;
+      border: 1px solid var(--stroke);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 999px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    button[aria-pressed="true"] { border-color: var(--fg); }
+    main { max-width: 1180px; margin: 0 auto; padding: 28px 20px 72px; }
+    h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 36px 0 12px; }
+    h2:first-child { margin-top: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 880px) { .pair { grid-template-columns: 1fr; } }
+    .card {
+      border: 1px solid var(--stroke);
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .card h3 { margin: 0 0 4px; font-size: 15px; }
+    .note { margin: 0 0 16px; color: var(--muted); font-size: 12px; min-height: 2.6em; }
+    .climate {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .climate h4 { margin: 0; font-size: 18px; }
+    .live { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: var(--live); }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .metric .k { font-size: 14px; color: var(--muted); margin: 0; }
+    .metric .v {
+      margin: 4px 0 0;
+      font-size: 20px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric .sub {
+      margin: 2px 0 0;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--alert);
+    }
+    .devices h4 { margin: 0 0 16px; font-size: 18px; }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+    }
+    .tile {
+      width: 4.75rem;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .well {
+      height: 48px;
+      width: 48px;
+      max-width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: var(--well-idle);
+      color: var(--icon-idle);
+    }
+    .tile.run .well { background: var(--well-run); color: var(--icon-run); }
+    .name {
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.2;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tile.run .name { color: var(--label-run); }
+    .cap {
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+    }
+    .tile.run .cap { color: var(--caption-run); }
+    .tile.alert .name { color: var(--alert-ink); }
+    .tile.alert .cap { color: var(--alert); font-weight: 700; letter-spacing: 0.04em; }
+    .tile.alert .well { background: var(--alert-well); color: var(--alert); }
+    .tile.alert.keep-run .well { background: var(--well-run); color: var(--icon-run); }
+    .tile.alert.keep-run .name { color: var(--label-run); }
+    .tile.alert.keep-cap .cap {
+      color: var(--caption-run);
+      font-weight: 400;
+      letter-spacing: 0;
+    }
+    .pulse-cell .k,
+    .pulse-cell .v { color: var(--alert); }
+    .pulse-well .tile.alert .well,
+    .pulse-value,
+    .pulse-cell .v,
+    .chip.alert.pulse-chip {
+      animation: alertPulse 1.1s ease-in-out infinite;
+    }
+    .pulse-ring .tile.alert .well {
+      outline: 2px solid var(--alert);
+      outline-offset: 2px;
+      animation: ringPulse 1.1s ease-in-out infinite;
+    }
+    .wash {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      border-radius: 12px;
+      padding: 6px 2px 8px;
+      background: var(--alert-well);
+    }
+    .badge-wrap { position: relative; }
+    .dot {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--alert);
+      border: 2px solid var(--card);
+      animation: alertPulse 1.1s ease-in-out infinite;
+    }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .chip {
+      min-width: 3.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      border-radius: 12px;
+      padding: 6px 8px;
+      background: rgba(39, 39, 42, 0.8);
+      color: #a1a1aa;
+    }
+    .chip.run { background: rgba(234, 88, 12, 0.2); color: #fed7aa; }
+    .chip.run svg { color: #fdba74; }
+    .chip.alert { background: rgba(220, 38, 38, 0.22); color: #fecaca; }
+    .chip.alert svg { color: #f87171; }
+    .chip .n { font-size: 10px; line-height: 1.2; text-align: center; }
+    .chip .c { font-size: 11px; font-variant-numeric: tabular-nums; }
+    .overlay-stage {
+      background: #14532d;
+      background-image: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.45));
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .overlay-panel {
+      max-width: 22rem;
+      border-radius: 16px;
+      background: rgba(9, 9, 11, 0.72);
+      color: #f4f4f5;
+      padding: 12px 16px;
+    }
+    .overlay-panel .k { color: #a1a1aa; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .overlay-panel .v { color: #fafafa; font-size: 18px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .ov-metrics { display: flex; gap: 16px; }
+    .ov-alert { color: #f87171; }
+    html.paused .pulse-well .tile.alert .well,
+    html.paused .pulse-value,
+    html.paused .pulse-cell .v,
+    html.paused .chip.alert.pulse-chip,
+    html.paused .pulse-ring .tile.alert .well,
+    html.paused .dot {
+      animation: none !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pulse-well .tile.alert .well,
+      .pulse-value,
+      .pulse-cell .v,
+      .chip.alert.pulse-chip,
+      .pulse-ring .tile.alert .well,
+      .dot { animation: none !important; }
+    }
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.28; }
+    }
+    @keyframes ringPulse {
+      0%, 100% { outline-color: var(--alert); }
+      50% { outline-color: transparent; }
+    }
+    .legend { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <div>
+      <h1>Alert treatments</h1>
+      <p>Same tent: humidifier empty (alarm 4), humidity high. Pick a device language and a climate language.</p>
+    </div>
+    <div class="controls">
+      <button type="button" id="theme" aria-pressed="false">Dark</button>
+      <button type="button" id="pause" aria-pressed="false">Pause blink</button>
+    </div>
+  </header>
+  <main>
+    <p class="legend">Orange is running. Grey is idle. Red is fault / out of range. Animations are 1.1s opacity pulses, not strobes.</p>
+
+    <h2>Devices card</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>A · Today</h3>
+        <p class="note">No alarm styling. Empty humidifier still looks like a healthy 50% run.</p>
+        <div class="devices" data-demo="a"></div>
+      </article>
+      <article class="card">
+        <h3>B · Pulse well + EMPTY</h3>
+        <p class="note">Recommended. Alarm overrides running. Caption tells you why. Well blinks.</p>
+        <div class="devices pulse-well" data-demo="b"></div>
+      </article>
+      <article class="card">
+        <h3>C · Pulse well, keep 50%</h3>
+        <p class="note">You see something is wrong, but the level still looks commanded-on.</p>
+        <div class="devices pulse-well" data-demo="c"></div>
+      </article>
+      <article class="card">
+        <h3>D · Ring blink + EMPTY</h3>
+        <p class="note">Well stays orange. A red ring blinks around the icon so running vs fault stay separate.</p>
+        <div class="devices pulse-ring" data-demo="d"></div>
+      </article>
+      <article class="card">
+        <h3>E · Whole-tile wash</h3>
+        <p class="note">Loudest homepage option. Name, well, and caption sit in a red pad.</p>
+        <div class="devices" data-demo="e"></div>
+      </article>
+      <article class="card">
+        <h3>F · Corner dot, keep 50%</h3>
+        <p class="note">Smallest change. Easy to miss on a 4.75rem tile, especially on overlay.</p>
+        <div class="devices" data-demo="f"></div>
+      </article>
+    </div>
+
+    <h2>Climate card</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>1 · Today</h3>
+        <p class="note">All three metrics look equally fine. 82% RH is not called out.</p>
+        <div data-climate="1"></div>
+      </article>
+      <article class="card">
+        <h3>2 · Value blinks red</h3>
+        <p class="note">What you asked for. Only the out-of-range number pulses. LIVE stays green.</p>
+        <div data-climate="2"></div>
+      </article>
+      <article class="card">
+        <h3>3 · Blink + HIGH</h3>
+        <p class="note">Number pulses and a HIGH / LOW tag says direction. Still one metric, not the whole card.</p>
+        <div data-climate="3"></div>
+      </article>
+      <article class="card">
+        <h3>4 · Metric cell pulse</h3>
+        <p class="note">Label and value both go red and pulse. Stronger, a bit shouty beside Devices.</p>
+        <div data-climate="4"></div>
+      </article>
+    </div>
+
+    <h2>Homepage row pairings</h2>
+    <p class="legend">Climate left, Devices right — same split as <code>LiveTentRow</code>.</p>
+    <div class="pair">
+      <article class="card">
+        <h3>B + 2</h3>
+        <p class="note">Quietest readable pair: EMPTY on the tile, RH number blinks. Card chrome stays calm.</p>
+        <div class="pair">
+          <div data-climate="2"></div>
+          <div class="devices pulse-well" data-demo="b"></div>
+        </div>
+      </article>
+      <article class="card">
+        <h3>B + 3</h3>
+        <p class="note">Same devices, climate also says HIGH. Better if a metric can be high or low.</p>
+        <div class="pair">
+          <div data-climate="3"></div>
+          <div class="devices pulse-well" data-demo="b"></div>
+        </div>
+      </article>
+    </div>
+
+    <h2>Overlay chips</h2>
+    <div class="grid">
+      <article class="card overlay-stage">
+        <h3 style="color:#fafafa">G · Overlay today</h3>
+        <p class="note" style="color:#d4d4d8">Humidifier chip is orange 50%. RH is white.</p>
+        <div class="overlay-panel" style="margin-bottom:10px">
+          <div class="ov-metrics">
+            <div><p class="k">Temp</p><p class="v">24.5°</p></div>
+            <div><p class="k">RH</p><p class="v">82%</p></div>
+            <div><p class="k">VPD</p><p class="v">1.55</p></div>
+          </div>
+        </div>
+        <div class="overlay-panel" data-overlay="today"></div>
+      </article>
+      <article class="card overlay-stage">
+        <h3 style="color:#fafafa">H · Overlay pulse + EMPTY / RH blink</h3>
+        <p class="note" style="color:#d4d4d8">Same third state as homepage B + climate 2, on dark glass.</p>
+        <div class="overlay-panel" style="margin-bottom:10px">
+          <div class="ov-metrics">
+            <div><p class="k">Temp</p><p class="v">24.5°</p></div>
+            <div><p class="k">RH</p><p class="v ov-alert pulse-value">82%</p></div>
+            <div><p class="k">VPD</p><p class="v">1.55</p></div>
+          </div>
+        </div>
+        <div class="overlay-panel" data-overlay="alert"></div>
+      </article>
+    </div>
+  </main>
+
+  <script>
+    const ICONS = {
+      light: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>',
+      fan: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45 5.412Z"/><path d="M12 12v.01"/></svg>',
+      blower: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/></svg>',
+      humidifier: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>',
+      dehumidifier: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.715 13.186C18.29 11.858 17.384 10.607 16 9.5c-2-1.6-3.5-4-4-6.5a10.7 10.7 0 0 1-.884 2.586"/><path d="m2 2 20 20"/><path d="M8.795 8.797A11 11 0 0 1 8 9.5C6 11.1 5 13 5 15a7 7 0 0 0 13.222 3.208"/></svg>',
+      heater: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></svg>'
+    };
+
+    const GEAR = [
+      { id: "light", label: "Light", cap: "35%", run: true },
+      { id: "fan", label: "Fan", cap: "10%", run: true },
+      { id: "blower", label: "Blower", cap: "30%", run: true },
+      { id: "humidifier", label: "Humidifier", cap: "50%", run: true, alert: true },
+      { id: "dehumidifier", label: "Dehumidifier", cap: "OFF", run: false },
+      { id: "heater", label: "Heater", cap: "OFF", run: false }
+    ];
+
+    function tileHtml(item, variant) {
+      const alert = Boolean(item.alert);
+      const cap = alert && (variant === "b" || variant === "d" || variant === "e") ? "EMPTY" : item.cap;
+      const cls = ["tile"];
+      if (item.run) cls.push("run");
+      if (alert && variant !== "a") cls.push("alert");
+      if (alert && (variant === "d" || variant === "f")) cls.push("keep-run");
+      if (alert && (variant === "c" || variant === "f")) cls.push("keep-cap");
+      const wellInner = ICONS[item.id] || "";
+      const well = variant === "f" && alert
+        ? `<div class="well badge-wrap">${wellInner}<span class="dot"></span></div>`
+        : `<div class="well">${wellInner}</div>`;
+      const inner = `${well}<span class="name">${item.label}</span><span class="cap">${cap}</span>`;
+      if (variant === "e" && alert) return `<div class="${cls.join(" ")}"><div class="wash">${inner}</div></div>`;
+      return `<div class="${cls.join(" ")}">${inner}</div>`;
+    }
+
+    function devicesHtml(variant) {
+      return `<h4>Devices</h4><div class="row">${GEAR.map((g) => tileHtml(g, variant)).join("")}</div>`;
+    }
+
+    function climateHtml(variant) {
+      const rhAlert = variant !== "1";
+      const rhClass = [
+        "v",
+        rhAlert && variant !== "4" ? "pulse-value" : "",
+        rhAlert ? "" : ""
+      ].filter(Boolean).join(" ");
+      const rhStyle = rhAlert ? ` style="color:var(--alert)"` : "";
+      const cell = variant === "4" ? " metric pulse-cell" : " metric";
+      const kStyle = variant === "4" ? ` style="color:var(--alert)"` : "";
+      const high = variant === "3" ? `<p class="sub">HIGH</p>` : "";
+      return `<div class="climate"><h4>Climate</h4><p class="live">LIVE</p></div>
+        <div class="metrics">
+          <div class="metric"><p class="k">Temp</p><p class="v">24.5°</p></div>
+          <div class="${cell.trim()}"><p class="k"${kStyle}>Humidity</p><p class="${rhClass}"${rhStyle}>82%</p>${high}</div>
+          <div class="metric"><p class="k">VPD</p><p class="v">1.55</p></div>
+        </div>`;
+    }
+
+    function overlayHtml(mode) {
+      return `<div class="chip-row">${GEAR.map((g) => {
+        const alert = mode === "alert" && g.alert;
+        const cls = ["chip"];
+        if (g.run && !alert) cls.push("run");
+        if (alert) cls.push("alert", "pulse-chip");
+        const cap = alert ? "EMPTY" : g.cap;
+        return `<div class="${cls.join(" ")}">${ICONS[g.id]}<span class="n">${g.label}</span><span class="c">${cap}</span></div>`;
+      }).join("")}</div>`;
+    }
+
+    document.querySelectorAll("[data-demo]").forEach((el) => {
+      el.innerHTML = devicesHtml(el.getAttribute("data-demo"));
+    });
+    document.querySelectorAll("[data-climate]").forEach((el) => {
+      el.innerHTML = climateHtml(el.getAttribute("data-climate"));
+    });
+    document.querySelectorAll("[data-overlay]").forEach((el) => {
+      el.innerHTML = overlayHtml(el.getAttribute("data-overlay"));
+    });
+
+    const themeBtn = document.getElementById("theme");
+    const pauseBtn = document.getElementById("pause");
+    themeBtn.addEventListener("click", () => {
+      const dark = document.documentElement.getAttribute("data-theme") === "dark";
+      if (dark) document.documentElement.removeAttribute("data-theme");
+      else document.documentElement.setAttribute("data-theme", "dark");
+      themeBtn.setAttribute("aria-pressed", String(!dark));
+      themeBtn.textContent = dark ? "Dark" : "Light";
+    });
+    pauseBtn.addEventListener("click", () => {
+      const paused = document.documentElement.classList.toggle("paused");
+      pauseBtn.setAttribute("aria-pressed", String(paused));
+    });
+  </script>
+</body>
+</html>

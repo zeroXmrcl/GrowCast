@@ -5,6 +5,7 @@ import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
 import {isDateOnly} from "@/lib/date-only";
 import {DEFAULT_CLIMATE_TICK, parseClimateTick, type ClimateTick} from "@/lib/climate-tick";
+import {DEFAULT_DEVICES_DESIGN, parseDevicesDesign, type DevicesDesign} from "@/lib/devices-design";
 import {DEFAULT_OVERLAY_LAYOUT, parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
 import {DEFAULT_OVERLAY_STREAM, parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
 import {DEFAULT_OVERLAY_SCALE_PCT, parseOverlayScalePct} from "@/lib/overlay-scale";
@@ -63,6 +64,7 @@ export type GrowRecord = {
   overlayStream: OverlayStream;
   overlayScalePct: number;
   climateTick: ClimateTick;
+  devicesDesign: DevicesDesign;
 };
 
 export type GrowUpdateInput = {
@@ -81,6 +83,7 @@ export type GrowUpdateInput = {
   overlayStream?: OverlayStream;
   overlayScalePct?: number;
   climateTick?: ClimateTick;
+  devicesDesign?: DevicesDesign;
 };
 
 function dataDir(): string {
@@ -197,6 +200,7 @@ export const EMPTY_GROW: GrowRecord = {
   overlayStream: DEFAULT_OVERLAY_STREAM,
   overlayScalePct: DEFAULT_OVERLAY_SCALE_PCT,
   climateTick: DEFAULT_CLIMATE_TICK,
+  devicesDesign: DEFAULT_DEVICES_DESIGN,
 };
 
 export function normalizeGrowRecord(raw: unknown): GrowRecord {
@@ -264,6 +268,7 @@ export function normalizeGrowRecord(raw: unknown): GrowRecord {
     overlayStream: parseOverlayStream(parsed.overlayStream),
     overlayScalePct: parseOverlayScalePct(parsed.overlayScalePct),
     climateTick: parseClimateTick(parsed.climateTick),
+    devicesDesign: parseDevicesDesign(parsed.devicesDesign),
   };
 }
 
@@ -322,6 +327,9 @@ export async function updateCurrentGrow(
     ),
     climateTick: parseClimateTick(
       input.climateTick !== undefined ? input.climateTick : current.climateTick,
+    ),
+    devicesDesign: parseDevicesDesign(
+      input.devicesDesign !== undefined ? input.devicesDesign : current.devicesDesign,
     ),
   };
 

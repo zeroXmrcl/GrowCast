@@ -135,6 +135,7 @@ describe("parseOverlayGrowBody", () => {
             overlayStream: "include",
             overlayScalePct: 75,
             climateTick: "plain",
+            devicesDesign: "needle",
             streamUrl: "https://stream.0xmarcel.com/growcam/",
             stage: "Seed",
             lightSchedule: "12/12",
@@ -148,6 +149,7 @@ describe("parseOverlayGrowBody", () => {
         assert.equal(parsed?.overlayStream, "transparent");
         assert.equal(parsed?.overlayScalePct, 100);
         assert.equal(parsed?.climateTick, "plain");
+        assert.equal(parsed?.devicesDesign, "needle");
         assert.equal(parsed?.stage, "");
         assert.equal(parsed?.lightSchedule, "");
         assert.equal(parsed?.strain, "");

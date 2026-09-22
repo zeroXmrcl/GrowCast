@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-page="dash">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GrowCast workspace</title>
+  <style>
+    :root {
+      --font: "Geist", "Geist Fallback", "Segoe UI", system-ui, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --ms: 360ms;
+      --fade: 220ms;
+      --bg: #fafafa;
+      --fg: #18181b;
+      --muted: #71717a;
+      --card: #ffffff;
+      --stroke: #e4e4e7;
+      --header: rgb(255 255 255 / 0.9);
+      --live: #059669;
+      --health: #059669;
+      --run: #ea580c;
+      --run-bg: #fff7ed;
+      --off: #a1a1aa;
+      --off-bg: #f4f4f5;
+      --alert: #dc2626;
+      --alert-bg: #fef2f2;
+      --green: #0c7700;
+      --fill: rgba(22, 163, 74, 0.12);
+      --line: #16a34a;
+      --water: #2c6e8a;
+      --hair: rgb(24 24 27 / 0.12);
+    }
+    html[data-theme="dark"] {
+      --bg: #0a0a0a;
+      --fg: #ededed;
+      --muted: #a1a1aa;
+      --card: #09090b;
+      --stroke: #27272a;
+      --header: rgb(9 9 11 / 0.9);
+      --live: #34d399;
+      --health: #34d399;
+      --run-bg: rgb(67 20 7 / 0.5);
+      --off-bg: #27272a;
+      --alert: #f87171;
+      --alert-bg: rgb(69 10 10 / 0.45);
+      --fill: rgba(74, 222, 128, 0.15);
+      --line: #4ade80;
+      --water: #7eb6d9;
+      --hair: rgb(255 255 255 / 0.14);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.45;
+    }
+    .frame { max-width: 80rem; margin: 0 auto; padding: 0 2rem; }
+    header.site {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      border-bottom: 1px solid var(--stroke);
+      background: var(--header);
+      backdrop-filter: blur(8px);
+    }
+    header.site .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 0;
+    }
+    header.site .end { display: flex; align-items: center; gap: 8px; }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .brand svg { display: block; }
+    .brand span { font-size: 18px; font-weight: 600; }
+    nav.tabs { display: flex; align-items: center; gap: 4px; }
+    nav.tabs button, nav.tabs span {
+      font: inherit;
+      font-size: 14px;
+      border: 0;
+      background: none;
+      color: var(--muted);
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    nav.tabs button.on { color: var(--fg); font-weight: 600; }
+    nav.tabs span { cursor: default; opacity: 0.55; }
+    .theme {
+      font: inherit;
+      font-size: 13px;
+      border: 1px solid var(--stroke);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 999px;
+      padding: 6px 12px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    .hint {
+      margin: 16px 0 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .board {
+      display: grid;
+      border: 1px solid var(--stroke);
+      background: var(--card);
+      overflow: hidden;
+    }
+    html[data-page="dash"] .board {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      grid-template-areas:
+        "name details"
+        "cam details"
+        "live live"
+        "run run"
+        "pics pics"
+        "setup setup"
+        "socials socials";
+    }
+    html[data-page="energy"] .board {
+      grid-template-columns: 320px minmax(0, 1fr);
+      grid-template-areas:
+        "cam kwh"
+        "watts watts"
+        "flow flow"
+        "water water"
+        "table table";
+    }
+    .pair { display: grid; grid-template-columns: 1fr 1fr; min-width: 0; }
+    .cell { min-width: 0; }
+    .pad { padding: 16px 18px; }
+    .split-r { border-right: 1px solid var(--stroke); }
+    .split-b { border-bottom: 1px solid var(--stroke); }
+    .title { margin: 0 0 12px; font-size: 18px; font-weight: 600; }
+    .row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .row-head h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .live { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--live); }
+    .dl { display: grid; gap: 10px; font-size: 14px; }
+    .kv { display: flex; justify-content: space-between; gap: 12px; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; text-align: right; }
+    .notes { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--stroke); font-size: 14px; color: var(--muted); }
+    .grow-name { padding: 12px 16px; font-size: 20px; font-weight: 600; }
+
+    .cam {
+      position: relative;
+      align-self: start;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      view-transition-name: vt-cam;
+      background:
+        radial-gradient(60% 80% at 45% 40%, #2a5a32 0%, transparent 55%),
+        linear-gradient(180deg, #1c2418 0%, #0b0e0a 100%);
+    }
+    .cam::after {
+      content: "";
+      position: absolute;
+      inset: 18% 32% 22% 28%;
+      border-radius: 40% 40% 30% 30%;
+      background: radial-gradient(circle at 50% 40%, #3d8f4a, #145022 70%);
+    }
+    html[data-page="energy"] .cam { width: 320px; }
+
+    .dash-only, .energy-only { min-width: 0; }
+    html[data-page="dash"] .energy-only { display: none; }
+    html[data-page="energy"] .dash-only { display: none; }
+    .energy-only { opacity: 1; }
+    html[data-page="energy"] .energy-only.is-in {
+      animation: none;
+    }
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    header.site { view-transition-name: vt-header; }
+    #vt-name { view-transition-name: vt-name; }
+    #vt-details, #vt-kwh { view-transition-name: vt-side; }
+    #vt-live, #vt-watts { view-transition-name: vt-mid; }
+    #vt-run, #vt-flow { view-transition-name: vt-flow; }
+    #vt-pics, #vt-water { view-transition-name: vt-water; }
+    #vt-setup, #vt-table { view-transition-name: vt-table; }
+    #vt-socials { view-transition-name: vt-socials; }
+
+    ::view-transition-group(*) {
+      animation-duration: var(--ms);
+      animation-timing-function: var(--ease);
+    }
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation-duration: var(--ms);
+      animation-timing-function: var(--ease);
+      mix-blend-mode: normal;
+    }
+    ::view-transition-group(vt-cam) { z-index: 8; }
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation: none;
+    }
+
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .lbl { margin: 0; font-size: 14px; color: var(--muted); }
+    .wheel {
+      --row: 2rem;
+      position: relative;
+      height: calc(var(--row) * 3);
+      overflow: hidden;
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 28%, #000 72%, transparent 100%);
+    }
+    .wheel::before, .wheel::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0;
+      height: 1px;
+      background: var(--hair);
+      z-index: 2;
+    }
+    .wheel::before { top: var(--row); }
+    .wheel::after { top: calc(var(--row) * 2); }
+    .detent {
+      height: var(--row);
+      line-height: var(--row);
+      font-size: 20px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .devices { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 8px; }
+    .tile { width: 3.85rem; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .ico {
+      width: 3rem; height: 3rem; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tile .name { font-size: 12px; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tile .lvl { font-size: 11px; font-variant-numeric: tabular-nums; }
+    .run .ico { background: var(--run-bg); color: var(--run); }
+    .off .ico { background: var(--off-bg); color: var(--off); }
+    .off .name, .off .lvl { color: var(--off); }
+    .al .ico { background: var(--alert-bg); color: var(--alert); }
+    .al .name, .al .lvl { color: var(--alert); font-weight: 600; }
+    .health { margin: 4px 0 0; font-size: 18px; font-weight: 600; color: var(--health); }
+
+    .photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .shot { aspect-ratio: 16 / 9; border-right: 1px solid var(--stroke); }
+    .shot:last-child { border-right: 0; }
+    .s1 { background: linear-gradient(160deg, #1e3a24, #0c140e); }
+    .s2 { background: linear-gradient(160deg, #2a4a20, #10180c); }
+    .s3 { background: linear-gradient(160deg, #163322, #0a100c); }
+    .s4 { background: linear-gradient(160deg, #244028, #0e1610); }
+
+    .md { font-size: 14px; color: var(--muted); }
+    .md b { color: var(--fg); }
+    .setup-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 12px; border-top: 1px solid var(--stroke); }
+    .setup-shots .shot { border-right: 1px solid var(--stroke); }
+    .socials { display: flex; justify-content: space-evenly; align-items: center; padding: 16px; }
+    .soc { width: 20px; height: 20px; border-radius: 4px; background: var(--muted); opacity: 0.8; }
+    .foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 20px 0 32px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .kwh {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      height: 100%;
+    }
+    .kwh > div {
+      padding: 14px 16px;
+      border-right: 1px solid var(--stroke);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .kwh > div:last-child { border-right: 0; }
+    .kwh .cap { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .kwh .num { margin: 6px 0 0; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .kwh .sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .chip {
+      font: inherit;
+      font-size: 13px;
+      border: 1px solid var(--stroke);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 5px 12px;
+    }
+    .chip.on { background: var(--fg); color: var(--card); border-color: var(--fg); }
+
+    .plot { position: relative; height: 160px; }
+    .plot svg { width: 100%; height: 160px; display: block; }
+    .axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .bars { display: flex; align-items: flex-end; gap: 3px; height: 160px; }
+    .bars i { flex: 1; background: var(--water); min-height: 0; }
+
+    .flow { display: grid; gap: 8px; }
+    .lane { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 12px; align-items: center; }
+    .node { font-size: 11px; padding: 4px 8px; border-radius: 8px; }
+    .node.on { background: color-mix(in srgb, var(--green) 22%, transparent); color: var(--fg); }
+    .node.al { background: color-mix(in srgb, var(--alert) 22%, transparent); color: var(--alert); }
+    .node.off { background: color-mix(in srgb, var(--muted) 16%, transparent); color: var(--muted); }
+    .stream { height: 14px; border-radius: 99px; overflow: hidden; display: flex; }
+    .stream b { display: block; height: 100%; }
+    .stream .g { background: var(--green); }
+    .stream .r { background: #8b2e2e; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { text-align: left; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 10px 16px; border-bottom: 1px solid var(--stroke); }
+    td { padding: 10px 16px; border-top: 1px solid var(--stroke); font-variant-numeric: tabular-nums; }
+    td .sub { display: block; font-size: 12px; color: var(--muted); font-variant-numeric: normal; }
+
+    .ghost {
+      position: fixed;
+      z-index: 50;
+      overflow: hidden;
+      pointer-events: none;
+      transform-origin: top left;
+      background:
+        radial-gradient(60% 80% at 45% 40%, #2a5a32 0%, transparent 55%),
+        linear-gradient(180deg, #1c2418 0%, #0b0e0a 100%);
+    }
+    .ghost::after {
+      content: "";
+      position: absolute;
+      inset: 18% 32% 22% 28%;
+      border-radius: 40% 40% 30% 30%;
+      background: radial-gradient(circle at 50% 40%, #3d8f4a, #145022 70%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="energy"] .energy-only.is-in { animation: none; }
+      ::view-transition-group(*),
+      ::view-transition-old(*),
+      ::view-transition-new(*) {
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site">
+    <div class="frame bar">
+      <a class="brand" href="#dash" data-go="dash">
+        <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="6" fill="#0c7700"/>
+          <path d="M10 22V10h8.2c2.6 0 4.3 1.6 4.3 4 0 1.6-.8 2.8-2.1 3.4L23 22h-3.2l-2.3-4.3H13V22H10zm3-7.2h4.4c.9 0 1.5-.5 1.5-1.3s-.6-1.3-1.5-1.3H13v2.6z" fill="#fff"/>
+        </svg>
+        <span>GrowCast</span>
+      </a>
+      <div class="end">
+      <nav class="tabs">
+        <button type="button" data-go="dash" class="on">Dashboard</button>
+        <button type="button" data-go="energy">Energy</button>
+        <span>Gallery</span>
+        <span>Past Grows</span>
+        <span>Settings</span>
+      </nav>
+      <button type="button" class="theme" id="theme">Light</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="frame">
+    <p class="hint">Mock. Dashboard ↔ Energy: the whole board reflows. Cam, details, climate, graphs — not a tab swap.</p>
+    <div class="board" id="board">
+      <div class="cell dash-only split-r split-b grow-name" id="vt-name" style="grid-area:name">Godfather OG</div>
+      <div class="cam cell split-r split-b" id="cam" style="grid-area:cam" role="img" aria-label="Grow stream"></div>
+
+      <aside class="cell dash-only pad split-b" id="vt-details" style="grid-area:details">
+        <h2 class="title">Details</h2>
+        <dl class="dl">
+          <div class="kv"><dt>Strain</dt><dd>Godfather OG</dd></div>
+          <div class="kv"><dt>Plant Count</dt><dd>1</dd></div>
+          <div class="kv"><dt>Growing Medium</dt><dd>Coco</dd></div>
+          <div class="kv"><dt>Pot Size</dt><dd>11</dd></div>
+          <div class="kv"><dt>Temperature (D/N)</dt><dd>26 / 21 C</dd></div>
+          <div class="kv"><dt>Humidity (D/N)</dt><dd>65 / 70%</dd></div>
+          <div class="kv"><dt>Start Date</dt><dd>21.08.2026</dd></div>
+        </dl>
+        <div class="notes">My second grow, one plant this tent.</div>
+      </aside>
+
+      <div class="cell dash-only pair split-b" id="vt-live" style="grid-area:live">
+      <section class="cell pad split-r">
+        <div class="row-head"><h2>Climate</h2><p class="live">LIVE</p></div>
+        <div class="metrics">
+          <div>
+            <p class="lbl">Temp</p>
+            <div class="wheel"><div class="detent">24.6°</div><div class="detent">24.7°</div><div class="detent">24.8°</div></div>
+          </div>
+          <div>
+            <p class="lbl">Humidity</p>
+            <div class="wheel"><div class="detent">48.7%</div><div class="detent">48.8%</div><div class="detent">48.9%</div></div>
+          </div>
+          <div>
+            <p class="lbl">VPD</p>
+            <div class="wheel"><div class="detent">1.58</div><div class="detent">1.59</div><div class="detent">1.60</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="cell pad">
+        <h2 class="title">Devices</h2>
+        <div class="devices" id="devices"></div>
+      </section>
+      </div>
+
+      <div class="cell dash-only pair split-b" id="vt-run" style="grid-area:run">
+      <section class="cell pad split-r">
+        <h2 class="title">Status</h2>
+        <dl class="dl">
+          <div class="kv"><dt>Stage</dt><dd>Seedling</dd></div>
+          <div class="kv"><dt>Age</dt><dd>29 days</dd></div>
+          <div class="kv"><dt>Light Schedule</dt><dd>18/6</dd></div>
+        </dl>
+      </section>
+
+      <section class="cell pad">
+        <h2 class="title">Vitals</h2>
+        <p class="lbl">Status</p>
+        <p class="health">Healthy</p>
+        <p class="lbl" style="margin-top:10px">Notes</p>
+        <p style="margin:4px 0 0;font-size:14px">Cotyledons open, first true leaves coming. VPD a bit high — humidifier on overnight.</p>
+      </section>
+      </div>
+
+      <div class="cell dash-only split-b photos" id="vt-pics" style="grid-area:pics">
+        <div class="shot s1"></div>
+        <div class="shot s2"></div>
+        <div class="shot s3"></div>
+        <div class="shot s4"></div>
+      </div>
+
+      <section class="cell dash-only pad split-b" id="vt-setup" style="grid-area:setup">
+        <h2 class="title">Setup</h2>
+        <div class="md">
+          <div>• <b>Grow Tent:</b> Spider Farmer 90×90×180 cm</div>
+          <div>• <b>Grow Light:</b> Spider Farmer SE3000 EVO (300W)</div>
+          <div>• <b>Ventilation Fan:</b> Spider Farmer Smart Ventilation System</div>
+          <div>• <b>Humidifier</b> Spider Farmer 5L 450 ml/h</div>
+        </div>
+        <div class="setup-shots">
+          <div class="shot s2"></div>
+          <div class="shot s3"></div>
+        </div>
+      </section>
+
+      <div class="cell dash-only socials" id="vt-socials" style="grid-area:socials">
+        <div class="soc"></div><div class="soc"></div><div class="soc"></div>
+        <div class="soc"></div><div class="soc"></div>
+      </div>
+
+      <div class="cell energy-only split-b kwh" id="vt-kwh" style="grid-area:kwh">
+        <div>
+          <p class="cap">Now</p>
+          <p class="num">312 W</p>
+        </div>
+        <div>
+          <p class="cap">24h</p>
+          <p class="num">4.82 kWh</p>
+          <p class="sub">1.54 €</p>
+        </div>
+        <div>
+          <p class="cap">7 days</p>
+          <p class="num">31.2 kWh</p>
+          <p class="sub">9.98 €</p>
+        </div>
+        <div>
+          <p class="cap">30 days</p>
+          <p class="num">118 kWh</p>
+          <p class="sub">37.76 €</p>
+        </div>
+        <div>
+          <p class="cap">This grow</p>
+          <p class="num">142 kWh</p>
+          <p class="sub">45.44 €</p>
+        </div>
+      </div>
+
+      <section class="cell energy-only pad split-b" id="vt-watts" style="grid-area:watts">
+        <div class="chips">
+          <button type="button" class="chip on">24h</button>
+          <button type="button" class="chip">7 days</button>
+          <button type="button" class="chip">30 days</button>
+          <button type="button" class="chip">This grow</button>
+        </div>
+        <div class="plot">
+          <svg viewBox="0 0 600 160" preserveAspectRatio="none" aria-hidden="true">
+            <line x1="0" x2="600" y1="0" y2="0" stroke="var(--stroke)" stroke-width="1"/>
+            <line x1="0" x2="600" y1="80" y2="80" stroke="var(--stroke)" stroke-width="1"/>
+            <line x1="0" x2="600" y1="160" y2="160" stroke="var(--stroke)" stroke-width="1"/>
+            <path d="M0,120 L80,120 L80,70 L210,70 L210,88 L290,88 L290,96 L420,96 L420,110 L600,110 L600,160 L0,160 Z" fill="var(--fill)"/>
+            <path d="M0,120 L80,120 L80,70 L210,70 L210,88 L290,88 L290,96 L420,96 L420,110 L600,110" fill="none" stroke="var(--line)" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="axis"><span>00</span><span>12</span><span>now</span></div>
+      </section>
+
+      <section class="cell energy-only pad split-b" id="vt-flow" style="grid-area:flow">
+        <div class="flow">
+          <div class="lane"><span class="node on">Light</span><div class="stream"><b class="g" style="width:72%"></b></div></div>
+          <div class="lane"><span class="node on">Fan</span><div class="stream"><b class="g" style="width:100%"></b></div></div>
+          <div class="lane"><span class="node on">Blower</span><div class="stream"><i style="width:8%"></i><b class="g" style="width:55%"></b></div></div>
+          <div class="lane"><span class="node al">Humidifier EMPTY</span><div class="stream"><i style="width:10%"></i><b class="g" style="width:38%"></b><b class="r" style="width:52%"></b></div></div>
+          <div class="lane"><span class="node off">Dehumidifier</span><div class="stream"></div></div>
+          <div class="lane"><span class="node on">Heater</span><div class="stream"><i style="width:62%"></i><b class="g" style="width:12%"></b></div></div>
+        </div>
+        <div class="axis" style="padding-left:7.75rem"><span>00</span><span>12</span><span>now</span></div>
+      </section>
+
+      <section class="cell energy-only pad split-b" id="vt-water" style="grid-area:water">
+        <div class="row-head">
+          <h2>Water Usage</h2>
+          <p style="margin:0;font-size:14px;font-variant-numeric:tabular-nums;color:var(--muted)">1.240 L</p>
+        </div>
+        <div class="chips">
+          <button type="button" class="chip on">24h</button>
+          <button type="button" class="chip">7 days</button>
+          <button type="button" class="chip">30 days</button>
+          <button type="button" class="chip">This grow</button>
+        </div>
+        <div class="bars" aria-hidden="true">
+          <i style="height:18%"></i><i style="height:22%"></i><i style="height:40%"></i><i style="height:55%"></i>
+          <i style="height:48%"></i><i style="height:30%"></i><i style="height:12%"></i><i style="height:8%"></i>
+          <i style="height:20%"></i><i style="height:36%"></i><i style="height:44%"></i><i style="height:28%"></i>
+        </div>
+        <div class="axis"><span>00</span><span>12</span><span>now</span></div>
+      </section>
+
+      <section class="cell energy-only" id="vt-table" style="grid-area:table">
+        <table>
+          <thead>
+            <tr><th>Device</th><th>Hours on</th><th>kWh</th><th>€</th><th>Share</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Light<span class="sub">SE3000</span></td><td>18.2</td><td>5.46</td><td>1.75</td><td>62%</td></tr>
+            <tr><td>Fan<span class="sub">Inline</span></td><td>24.0</td><td>0.72</td><td>0.23</td><td>8%</td></tr>
+            <tr><td>Blower<span class="sub">Clip</span></td><td>11.4</td><td>0.34</td><td>0.11</td><td>4%</td></tr>
+            <tr><td>Humidifier<span class="sub">5 L</span></td><td>6.1</td><td>0.18</td><td>0.06</td><td>2%</td></tr>
+            <tr><td>Heater<span class="sub">540 W</span></td><td>2.8</td><td>1.51</td><td>0.48</td><td>17%</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <div class="foot">
+      <span>© 2026 GrowCast. Made by 0xmrcl</span>
+      <span>GitHub · Website</span>
+    </div>
+  </div>
+
+  <script>
+    const ICO = {
+      sun: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+      fan: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"/></svg>',
+      drop: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>',
+      flame: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></svg>',
+      dropOff: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.715 13.186C18.29 11.858 17.384 10.607 16 9.5c-2-1.6-3.5-4-4-6.5a10.7 10.7 0 0 1-.884 2.586"/><path d="m2 2 20 20"/><path d="M8.795 8.797A11 11 0 0 1 8 9.5C6 11.1 5 13 5 15a7 7 0 0 0 13.222 3.208"/></svg>',
+    };
+    const DEV = [
+      ["run", "sun", "Light", "35%"],
+      ["off", "sun", "Light 2", "OFF"],
+      ["run", "fan", "Fan", "10%"],
+      ["run", "fan", "Blower", "30%"],
+      ["al", "dropOff", "Humidifier", "EMPTY"],
+      ["off", "drop", "Dehumidifier", "OFF"],
+      ["off", "flame", "Heater", "OFF"],
+    ];
+    document.getElementById("devices").innerHTML = DEV.map(([cls, kind, name, lvl]) =>
+      `<div class="tile ${cls}"><div class="ico">${ICO[kind]}</div><span class="name">${name}</span><span class="lvl">${lvl}</span></div>`
+    ).join("");
+
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let busy = false;
+    const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
+    const MS = 360;
+    const PAIRS = [
+      ["vt-details", "vt-kwh"],
+      ["vt-live", "vt-watts"],
+      ["vt-run", "vt-flow"],
+      ["vt-pics", "vt-water"],
+      ["vt-setup", "vt-table"],
+    ];
+
+    function setTabs(page) {
+      document.querySelectorAll("nav.tabs button[data-go]").forEach((btn) => {
+        btn.classList.toggle("on", btn.getAttribute("data-go") === page);
+      });
+    }
+
+    function applyPage(page) {
+      document.documentElement.setAttribute("data-page", page);
+      setTabs(page);
+    }
+
+    function rectOf(id) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) return null;
+      return r;
+    }
+
+    function playGhost(from, to, fadeOut) {
+      const ghost = document.createElement("div");
+      ghost.className = "ghost";
+      ghost.style.left = `${from.left}px`;
+      ghost.style.top = `${from.top}px`;
+      ghost.style.width = `${from.width}px`;
+      ghost.style.height = `${from.height}px`;
+      ghost.style.background = fadeOut ? "var(--card)" : "transparent";
+      ghost.style.border = "1px solid var(--stroke)";
+      ghost.style.opacity = fadeOut ? "1" : "0.35";
+      document.body.appendChild(ghost);
+      const dx = to.left - from.left;
+      const dy = to.top - from.top;
+      const sx = to.width / from.width;
+      const sy = to.height / from.height;
+      requestAnimationFrame(() => {
+        ghost.style.transition = `transform ${MS}ms ${EASE}, opacity ${MS}ms ${EASE}`;
+        ghost.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+        ghost.style.opacity = fadeOut ? "0" : "0";
+      });
+      window.setTimeout(() => ghost.remove(), MS + 40);
+    }
+
+    function flipFallback(fromPage, toPage) {
+      const cam = document.getElementById("cam");
+      const firstCam = cam.getBoundingClientRect();
+      const firsts = {};
+      for (const [dashId, energyId] of PAIRS) {
+        const id = fromPage === "dash" ? dashId : energyId;
+        const r = rectOf(id);
+        if (r) firsts[dashId] = r;
+      }
+      const nameFirst = rectOf("vt-name");
+      const socialFirst = rectOf("vt-socials");
+      applyPage(toPage);
+      const lastCam = cam.getBoundingClientRect();
+      cam.style.visibility = "hidden";
+      const ghost = document.createElement("div");
+      ghost.className = "ghost";
+      ghost.style.left = `${firstCam.left}px`;
+      ghost.style.top = `${firstCam.top}px`;
+      ghost.style.width = `${firstCam.width}px`;
+      ghost.style.height = `${firstCam.height}px`;
+      document.body.appendChild(ghost);
+      const dx = lastCam.left - firstCam.left;
+      const dy = lastCam.top - firstCam.top;
+      const sx = lastCam.width / firstCam.width;
+      const sy = lastCam.height / firstCam.height;
+      requestAnimationFrame(() => {
+        ghost.style.transition = `transform ${MS}ms ${EASE}`;
+        ghost.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+      });
+      for (const [dashId, energyId] of PAIRS) {
+        const from = firsts[dashId];
+        const toId = toPage === "energy" ? energyId : dashId;
+        const to = rectOf(toId);
+        if (from && to) playGhost(from, to, true);
+      }
+      if (toPage === "energy") {
+        if (nameFirst) playGhost(nameFirst, lastCam, true);
+        if (socialFirst) playGhost(socialFirst, lastCam, true);
+      }
+      window.setTimeout(() => {
+        ghost.remove();
+        cam.style.visibility = "";
+        busy = false;
+      }, MS + 40);
+    }
+
+    async function go(page) {
+      const now = document.documentElement.getAttribute("data-page");
+      if (page === now || busy) return;
+      if (reduced.matches) {
+        applyPage(page);
+        return;
+      }
+      busy = true;
+      if (typeof document.startViewTransition === "function") {
+        try {
+          const transition = document.startViewTransition(() => applyPage(page));
+          await transition.finished;
+        } catch {
+          applyPage(page);
+        }
+        busy = false;
+        return;
+      }
+      flipFallback(now, page);
+    }
+
+    document.querySelectorAll("[data-go]").forEach((el) => {
+      el.addEventListener("click", (event) => {
+        event.preventDefault();
+        go(el.getAttribute("data-go"));
+      });
+    });
+    document.getElementById("theme").addEventListener("click", () => {
+      const dark = document.documentElement.getAttribute("data-theme") === "dark";
+      if (dark) document.documentElement.removeAttribute("data-theme");
+      else document.documentElement.setAttribute("data-theme", "dark");
+      document.getElementById("theme").textContent = dark ? "Dark" : "Light";
+    });
+  </script>
+</body>
+</html>

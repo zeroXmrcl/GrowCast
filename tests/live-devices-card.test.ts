@@ -2,99 +2,49 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import path from "node:path";
 import {describe, it} from "node:test";
+import {deviceGaugePercent} from "../lib/device-gauge.ts";
 import type {LiveDeviceTile} from "../lib/live-climate-view.ts";
-import {
-    LIVE_DEVICE_ITEM_CLASS,
-    LIVE_DEVICE_ROW_CLASS,
-    LIVE_DEVICE_VOID_CLASS,
-    liveDeviceRowItems,
-} from "../lib/live-devices-layout.ts";
 
-function tile(id: string, label: string): LiveDeviceTile {
+function tile(partial: Partial<LiveDeviceTile>): LiveDeviceTile {
     return {
-        id,
+        id: "fan",
         kind: "fan",
-        label,
+        label: "Fan",
         running: false,
         alerting: false,
         levelText: "OFF",
-        accessibleName: `${label}: OFF`,
+        accessibleName: "Fan: OFF",
+        ...partial,
     };
 }
 
-describe("liveDeviceRowItems", () => {
-    it("returns no items when there are no tiles", () => {
-        assert.deepEqual(liveDeviceRowItems([]), []);
+describe("deviceGaugePercent", () => {
+    it("parks the needle for off and for faults", () => {
+        assert.equal(deviceGaugePercent(tile({levelText: "OFF"})), 0);
+        assert.equal(deviceGaugePercent(tile({running: true, alerting: true, levelText: "EMPTY"})), 0);
+        assert.equal(deviceGaugePercent(tile({running: true, alerting: true, levelText: "HOT"})), 0);
     });
 
-    it("omits voids for a single tile", () => {
-        const light = tile("light", "Light");
-        assert.deepEqual(liveDeviceRowItems([light]), [
-            {kind: "tile", key: "light", tile: light},
-        ]);
-    });
-
-    it("inserts a shrinking void between each pair of tiles", () => {
-        const light = tile("light", "Light");
-        const fan = tile("fan", "Fan");
-        const heater = tile("heater", "Heater");
-        assert.deepEqual(liveDeviceRowItems([light, fan, heater]), [
-            {kind: "tile", key: "light", tile: light},
-            {kind: "void", key: "void-fan"},
-            {kind: "tile", key: "fan", tile: fan},
-            {kind: "void", key: "void-heater"},
-            {kind: "tile", key: "heater", tile: heater},
-        ]);
-    });
-});
-
-describe("live device layout classes", () => {
-    it("keeps a wrapping centered row below lg and nowrap beside Climate", () => {
-        assert.match(LIVE_DEVICE_ROW_CLASS, /\bflex-wrap\b/);
-        assert.match(LIVE_DEVICE_ROW_CLASS, /\bjustify-center\b/);
-        assert.match(LIVE_DEVICE_ROW_CLASS, /\bgap-4\b/);
-        assert.match(LIVE_DEVICE_ROW_CLASS, /\blg:flex-nowrap\b/);
-        assert.match(LIVE_DEVICE_ROW_CLASS, /\blg:gap-0\b/);
-    });
-
-    it("lets the 1rem void shrink before tiles, and only from lg up", () => {
-        assert.match(LIVE_DEVICE_VOID_CLASS, /\bhidden\b/);
-        assert.match(LIVE_DEVICE_VOID_CLASS, /\blg:block\b/);
-        assert.match(LIVE_DEVICE_VOID_CLASS, /\bw-4\b/);
-        assert.match(LIVE_DEVICE_VOID_CLASS, /\bmax-w-4\b/);
-        assert.match(LIVE_DEVICE_VOID_CLASS, /\bbasis-4\b/);
-        assert.match(LIVE_DEVICE_VOID_CLASS, /\bshrink-\[100\]/);
-        assert.match(LIVE_DEVICE_VOID_CLASS, /\bgrow-0\b/);
-        assert.match(LIVE_DEVICE_VOID_CLASS, /\bmin-w-0\b/);
-    });
-
-    it("caps tiles at 4.75rem and allows shrink after the void is gone", () => {
-        assert.match(LIVE_DEVICE_ITEM_CLASS, /w-\[4\.75rem\]/);
-        assert.match(LIVE_DEVICE_ITEM_CLASS, /max-w-\[4\.75rem\]/);
-        assert.match(LIVE_DEVICE_ITEM_CLASS, /basis-\[4\.75rem\]/);
-        assert.match(LIVE_DEVICE_ITEM_CLASS, /\bmin-w-0\b/);
-        assert.match(LIVE_DEVICE_ITEM_CLASS, /\bshrink\b/);
-        assert.match(LIVE_DEVICE_ITEM_CLASS, /\bgrow-0\b/);
+    it("uses the percent caption when the actuator is drawing", () => {
+        assert.equal(deviceGaugePercent(tile({running: true, levelText: "35%"})), 35);
+        assert.equal(deviceGaugePercent(tile({running: true, levelText: "10%"})), 10);
+        assert.equal(deviceGaugePercent(tile({running: true, levelText: "LOW"})), 50);
+        assert.equal(deviceGaugePercent(tile({running: true, levelText: "HIGH"})), 100);
     });
 });
 
 describe("live devices card wiring", () => {
-    it("uses the layout helper, truncates names, and shrinks the tile with its item", () => {
+    it("draws a half-circle needle gauge with the value under the arc", () => {
         const src = readFileSync(
             path.join(process.cwd(), "components", "live-devices-card.tsx"),
             "utf8",
         );
-        assert.match(src, /liveDeviceRowItems/);
-        assert.match(src, /LIVE_DEVICE_ROW_CLASS/);
-        assert.match(src, /LIVE_DEVICE_VOID_CLASS/);
-        assert.match(src, /LIVE_DEVICE_ITEM_CLASS/);
-        assert.match(src, /\baria-hidden/);
+        assert.match(src, /deviceGaugePercent/);
+        assert.match(src, /flex w-full flex-1 items-center/);
+        assert.match(src, /DeviceIcon/);
+        assert.match(src, /growcast-turbine-power/);
+        assert.match(src, /tile\.levelText[\s\S]*tile\.label/);
         assert.match(src, /\btruncate\b/);
-        assert.match(src, /w-full min-w-0/);
-        assert.match(src, /max-w-full/);
-        assert.doesNotMatch(src, /flex-wrap gap-4/);
-        assert.match(src, /growcast-alert-pulse/);
-        assert.match(src, /tile\.alerting/);
     });
 
     it("does not change overlay gear wrapping", () => {
@@ -110,15 +60,13 @@ describe("live devices card wiring", () => {
     });
 });
 
-describe("alert pulse CSS", () => {
-    it("pulses at 1.1s and stays solid red when motion is reduced", () => {
-        const src = readFileSync(
-            path.join(process.cwd(), "app", "globals.css"),
-            "utf8",
-        );
-        assert.match(src, /@keyframes growcast-alert-pulse/);
-        assert.match(src, /animation: growcast-alert-pulse 1\.1s ease-in-out infinite/);
+describe("turbine gauge motion", () => {
+    it("eases the needle and arc, and holds still when motion is reduced", () => {
+        const src = readFileSync(path.join(process.cwd(), "app", "globals.css"), "utf8");
+        assert.match(src, /\.growcast-turbine-power/);
+        assert.match(src, /\.growcast-turbine-mark/);
+        assert.match(src, /stroke-dashoffset 360ms cubic-bezier\(0\.16, 1, 0\.3, 1\)/);
+        assert.match(src, /transform 360ms cubic-bezier\(0\.16, 1, 0\.3, 1\)/);
         assert.match(src, /prefers-reduced-motion: reduce/);
-        assert.match(src, /animation: none/);
     });
 });

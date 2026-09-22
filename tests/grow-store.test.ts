@@ -144,6 +144,7 @@ describe("grow JSON store", () => {
             await writeFile(file, JSON.stringify({name: "Tick Grow"}), "utf8");
             const grow = await getCurrentGrow();
             assert.equal(grow.climateTick, "plain");
+            assert.equal(grow.devicesDesign, "needle");
 
             await updateCurrentGrow({
                 name: grow.name,
@@ -161,6 +162,7 @@ describe("grow JSON store", () => {
                 "utf8",
             );
             assert.equal((await getCurrentGrow()).climateTick, "plain");
+            assert.equal((await getCurrentGrow()).devicesDesign, "needle");
         });
     });
 

@@ -1,6 +1,7 @@
 import {archiveMediaDir, isArchiveMediaKind, isValidArchiveId} from "@/lib/archives";
 import {openMediaFile} from "@/lib/open-media-file";
 import {IMAGE_EXTENSIONS, VIDEO_EXTENSIONS} from "@/lib/safe-media-filename";
+import {openSnapshotThumb, snapshotThumbResponse} from "@/lib/snapshot-thumb";
 
 export const ARCHIVE_MEDIA_CACHE_CONTROL = "no-store, must-revalidate";
 export const ARCHIVE_MEDIA_ERROR_CACHE_CONTROL = "no-store";
@@ -9,7 +10,12 @@ export async function archiveMediaGetResponse(
     archiveId: string,
     kind: string,
     filename: string,
+    options?: {thumb?: boolean},
 ): Promise<Response> {
+    if (options?.thumb && kind === "snapshots" && isValidArchiveId(archiveId) && isArchiveMediaKind(kind)) {
+        return snapshotThumbResponse(await openSnapshotThumb(archiveMediaDir(archiveId, kind), filename));
+    }
+
     if (!isValidArchiveId(archiveId) || !isArchiveMediaKind(kind)) {
         return new Response("Not found", {
             status: 404,

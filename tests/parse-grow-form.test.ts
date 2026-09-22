@@ -173,6 +173,13 @@ describe("parseStreamSettingsForm", () => {
 
         const picker = parseStreamSettingsForm(formFrom({climateTick: "picker"}));
         assert.equal(picker.grow.climateTick, "picker");
+
+        const devicesMissing = parseStreamSettingsForm(formFrom({}));
+        assert.equal(devicesMissing.grow.devicesDesign, "needle");
+        const devicesIcons = parseStreamSettingsForm(formFrom({devicesDesign: "icons"}));
+        assert.equal(devicesIcons.grow.devicesDesign, "icons");
+        const devicesJunk = parseStreamSettingsForm(formFrom({devicesDesign: "barrel"}));
+        assert.equal(devicesJunk.grow.devicesDesign, "needle");
     });
 });
 

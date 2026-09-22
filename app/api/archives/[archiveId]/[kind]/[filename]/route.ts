@@ -14,7 +14,8 @@ export async function GET(
 ) {
     return withRequestLog(request, "/api/archives/:archiveId/:kind/:filename", async () => {
         const { archiveId, kind, filename } = await context.params;
-        const response = await archiveMediaGetResponse(archiveId, kind, filename);
+        const thumb = new URL(request.url).searchParams.get("thumb") === "1";
+        const response = await archiveMediaGetResponse(archiveId, kind, filename, {thumb});
         if (response.status === 404 && (!isValidArchiveId(archiveId) || !isArchiveMediaKind(kind))) {
             logHttpPathTraversalBlocked({ reason: "invalid_archive_path" });
         } else if (response.status === 400) {

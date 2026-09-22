@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GrowCast turbine gauges</title>
+  <style>
+    :root {
+      --font: "Geist", "Geist Fallback", "Segoe UI", system-ui, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --row: 2rem;
+      --bg: #fafafa;
+      --fg: #18181b;
+      --muted: #71717a;
+      --card: #ffffff;
+      --stroke: #e4e4e7;
+      --hair: rgb(24 24 27 / 0.12);
+      --live: #059669;
+      --duty: #0c7700;
+      --off: #a1a1aa;
+      --alert: #b91c1c;
+    }
+    html[data-theme="dark"] {
+      --bg: #0a0a0a;
+      --fg: #ededed;
+      --muted: #a1a1aa;
+      --card: #09090b;
+      --stroke: #27272a;
+      --hair: rgb(255 255 255 / 0.14);
+      --live: #34d399;
+      --duty: #3d9a33;
+      --off: #a1a1aa;
+      --alert: #f87171;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { font-family: var(--font); background: var(--bg); color: var(--fg); line-height: 1.45; }
+    header.page {
+      position: sticky; top: 0; z-index: 4;
+      display: flex; flex-wrap: wrap; gap: 12px 20px;
+      align-items: center; justify-content: space-between;
+      padding: 16px 24px; border-bottom: 1px solid var(--stroke);
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      backdrop-filter: blur(8px);
+    }
+    header.page h1 { font-size: 16px; margin: 0; }
+    header.page p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      font: inherit; font-size: 13px; border: 1px solid var(--stroke);
+      background: var(--bg); color: var(--fg); border-radius: 999px;
+      padding: 6px 12px; cursor: pointer;
+    }
+    button[aria-pressed="true"] { border-color: var(--fg); }
+    main { max-width: 80rem; margin: 0 auto; padding: 28px 32px 80px; }
+    h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 36px 0 8px; }
+    h2:first-of-type { margin-top: 0; }
+    .lead { margin: 0 0 14px; color: var(--muted); font-size: 14px; max-width: 72ch; }
+    .board { border: 1px solid var(--stroke); background: var(--card); overflow: hidden; }
+    .live { display: grid; grid-template-columns: 1fr 1fr; }
+    .cell { min-width: 0; padding: 18px; }
+    .cell + .cell { border-left: 1px solid var(--hair); }
+    .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; min-height: 1.75rem; }
+    .head h3 { margin: 0; font-size: 18px; font-weight: 600; }
+    .badge { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--live); }
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .row7 { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+    .lbl { margin: 0; height: 1.25rem; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .metrics .lbl { font-size: 14px; }
+    .wheel { position: relative; height: calc(var(--row) * 3); overflow: hidden; mask-image: linear-gradient(to bottom, transparent, #000 28% 72%, transparent); }
+    .wheel::before, .wheel::after { content: ""; position: absolute; left: 0; right: 0; height: 1px; background: var(--hair); z-index: 2; }
+    .wheel::before { top: var(--row); }
+    .wheel::after { top: calc(var(--row) * 2); }
+    .detent { height: var(--row); font-size: 1.25rem; line-height: var(--row); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .gauge { height: calc(var(--row) * 3); display: flex; flex-direction: column; align-items: center; }
+    .gauge svg { width: 100%; height: calc(100% - 1.15rem); display: block; }
+    .val {
+      margin: 0; height: 1.15rem;
+      font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+      line-height: 1.15rem; text-align: center;
+    }
+    .unit.off .val { color: var(--muted); font-weight: 500; }
+    .unit.al .val { color: var(--alert); letter-spacing: 0.04em; font-size: 11px; }
+
+    .track { fill: none; stroke: var(--hair); stroke-width: 3; stroke-linecap: round; }
+    .power { fill: none; stroke: var(--duty); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 360ms var(--ease); }
+    .mark {
+      transform-box: view-box;
+      transform-origin: 50px 48px;
+      transition: transform 360ms var(--ease);
+    }
+    .needle { stroke: var(--fg); stroke-width: 1.6; stroke-linecap: round; }
+    .hub { fill: var(--fg); }
+    .bead { fill: var(--fg); }
+    .wedge { fill: var(--fg); }
+    .notch { stroke: var(--fg); stroke-width: 2.4; stroke-linecap: round; }
+    .unit.off .needle, .unit.off .bead, .unit.off .wedge, .unit.off .notch, .unit.off .hub { stroke: var(--off); fill: var(--off); }
+    .unit.al .power { stroke: transparent; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .power, .mark { transition: none !important; }
+    }
+    @media (max-width: 900px) {
+      .live { grid-template-columns: 1fr; }
+      .cell + .cell { border-left: 0; border-top: 1px solid var(--hair); }
+    }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <div>
+      <h1>Half-circle turbine gauges</h1>
+      <p>Same bowl, white indicator, value on its own line under the arc.</p>
+    </div>
+    <div class="controls">
+      <button type="button" data-scene="now" aria-pressed="true">Now</button>
+      <button type="button" data-scene="quiet">Quiet</button>
+      <button type="button" data-scene="fault">Faults</button>
+      <button type="button" id="auto" aria-pressed="true">Auto</button>
+      <button type="button" id="theme">Light</button>
+    </div>
+  </header>
+  <main>
+    <h2>A · Needle</h2>
+    <p class="lead">The first one. Half-circle, white needle from the hub, percent underneath.</p>
+    <section class="board" data-kind="needle"></section>
+
+    <h2>B · Bead</h2>
+    <p class="lead">Same arc. The indicator is a white bead on the line, no shaft through the bowl.</p>
+    <section class="board" data-kind="bead"></section>
+
+    <h2>C · Wedge</h2>
+    <p class="lead">A white slice from the hub out to the arc. The green stroke still shows how far it has come.</p>
+    <section class="board" data-kind="wedge"></section>
+
+    <h2>D · Cap</h2>
+    <p class="lead">No radial mark. The green arc ends in a white cap, and the bowl stays empty for the number’s line below.</p>
+    <section class="board" data-kind="cap"></section>
+
+    <h2>E · Notch</h2>
+    <p class="lead">A short white tick standing on the arc, like a lubber mark. The bowl stays clear.</p>
+    <section class="board" data-kind="notch"></section>
+  </main>
+  <script>
+    const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
+    const NAMES = ["Light", "Light 2", "Fan", "Blower", "Humidifier", "Dehumidifier", "Heater"];
+    const SCENES = {
+      now: [
+        [{t:24.7,h:48.8,v:1.59}, [{pct:35,state:"on"},{pct:0,state:"off"},{pct:10,state:"on"},{pct:30,state:"on"},{pct:0,state:"al",mark:"EMPTY"},{pct:0,state:"off"},{pct:0,state:"off"}]],
+        [{t:24.8,h:48.6,v:1.62}, [{pct:40,state:"on"},{pct:0,state:"off"},{pct:10,state:"on"},{pct:35,state:"on"},{pct:0,state:"al",mark:"EMPTY"},{pct:0,state:"off"},{pct:0,state:"off"}]],
+        [{t:24.6,h:49.1,v:1.57}, [{pct:40,state:"on"},{pct:0,state:"off"},{pct:20,state:"on"},{pct:30,state:"on"},{pct:0,state:"al",mark:"EMPTY"},{pct:0,state:"off"},{pct:10,state:"on"}]],
+        [{t:24.7,h:48.9,v:1.59}, [{pct:35,state:"on"},{pct:0,state:"off"},{pct:20,state:"on"},{pct:25,state:"on"},{pct:0,state:"al",mark:"EMPTY"},{pct:0,state:"off"},{pct:0,state:"off"}]],
+      ],
+      quiet: [
+        [{t:22.4,h:58.2,v:1.12}, [{pct:0,state:"off"},{pct:0,state:"off"},{pct:10,state:"on"},{pct:0,state:"off"},{pct:0,state:"off"},{pct:0,state:"off"},{pct:0,state:"off"}]],
+      ],
+      fault: [
+        [{t:27.4,h:41.2,v:2.08}, [{pct:0,state:"al",mark:"HOT"},{pct:0,state:"off"},{pct:10,state:"on"},{pct:30,state:"on"},{pct:0,state:"al",mark:"EMPTY"},{pct:0,state:"al",mark:"FULL"},{pct:0,state:"off"}]],
+      ],
+    };
+    const CX = 50, CY = 48, R = 30;
+    const ARC = Math.PI * R;
+
+    function range(min, max, step, digits, suffix) {
+      const out = [];
+      const f = 10 ** digits;
+      for (let i = Math.round(min * f); i <= Math.round(max * f); i += Math.round(step * f)) out.push(`${(i / f).toFixed(digits)}${suffix}`);
+      return out;
+    }
+    const CLIMATE = { t: range(20, 30, 0.1, 1, "°"), h: range(40, 65, 0.1, 1, "%"), v: range(0.8, 2.4, 0.01, 2, "") };
+    function nearest(list, label) { const i = list.indexOf(label); return i < 0 ? 0 : i; }
+    function pt(pct, r) {
+      const deg = 180 - (pct / 100) * 180;
+      const rad = (deg * Math.PI) / 180;
+      return [CX + r * Math.cos(rad), CY - r * Math.sin(rad)];
+    }
+    function arc(from, to, r) {
+      const [x0, y0] = pt(from, r);
+      const [x1, y1] = pt(to, r);
+      const large = to - from > 50 ? 1 : 0;
+      return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+    }
+    const TRACK = arc(0, 100, R);
+    const [bx, by] = pt(0, R);
+    const [nx0, ny0] = pt(0, R - 3);
+    const [nx1, ny1] = pt(0, R + 4);
+    const wedge = (() => {
+      const [a, b] = pt(0, 6);
+      const [c, d] = pt(0, R - 2);
+      const [e, f] = pt(7, R - 2);
+      const [g, h] = pt(7, 6);
+      return `${a.toFixed(2)},${b.toFixed(2)} ${c.toFixed(2)},${d.toFixed(2)} ${e.toFixed(2)},${f.toFixed(2)} ${g.toFixed(2)},${h.toFixed(2)}`;
+    })();
+
+    function climateCell() {
+      const wheel = (labels) => `<div class="wheel"><div class="strip">${labels.map((label) => `<div class="detent">${label}</div>`).join("")}</div></div>`;
+      return `<article class="cell"><div class="head"><h3>Climate</h3><p class="badge">LIVE</p></div>
+        <div class="metrics">
+          <div><p class="lbl">Temp</p>${wheel(CLIMATE.t)}</div>
+          <div><p class="lbl">Humidity</p>${wheel(CLIMATE.h)}</div>
+          <div><p class="lbl">VPD</p>${wheel(CLIMATE.v)}</div>
+        </div></article>`;
+    }
+    function marks(kind) {
+      if (kind === "needle") {
+        return `<g class="mark"><line class="needle" x1="${CX}" y1="${CY}" x2="${(CX - R + 4).toFixed(1)}" y2="${CY}"/><circle class="hub" cx="${CX}" cy="${CY}" r="2.1"/></g>`;
+      }
+      if (kind === "bead") return `<g class="mark"><circle class="bead" cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="3.2"/></g>`;
+      if (kind === "wedge") return `<g class="mark"><polygon class="wedge" points="${wedge}"/></g>`;
+      if (kind === "cap") return `<g class="mark"><circle class="bead" cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="3.4"/></g>`;
+      return `<g class="mark"><line class="notch" x1="${nx0.toFixed(1)}" y1="${ny0.toFixed(1)}" x2="${nx1.toFixed(1)}" y2="${ny1.toFixed(1)}"/></g>`;
+    }
+    function devices(kind) {
+      return `<div class="row7">${NAMES.map((name) => `<div class="unit off" data-dev>
+        <p class="lbl">${name}</p>
+        <div class="gauge">
+          <svg viewBox="0 0 100 62">
+            <path class="track" d="${TRACK}"/>
+            <path class="power" d="${TRACK}" stroke-dasharray="${ARC.toFixed(2)}" stroke-dashoffset="${ARC.toFixed(2)}"/>
+            ${marks(kind)}
+          </svg>
+          <p class="val">OFF</p>
+        </div>
+      </div>`).join("")}</div>`;
+    }
+
+    document.querySelectorAll("[data-kind]").forEach((board) => {
+      const kind = board.getAttribute("data-kind");
+      board.innerHTML = `<div class="live">${climateCell()}<article class="cell"><div class="head"><h3>Devices</h3></div>${devices(kind)}</article></div>`;
+    });
+
+    const wheelIndex = new WeakMap();
+    function placeWheel(el, index, animate) {
+      const strip = el.querySelector(".strip");
+      const row = strip.firstElementChild;
+      if (!row) return;
+      const y = el.clientHeight / 2 - row.clientHeight / 2 - index * row.clientHeight;
+      const prev = wheelIndex.get(el);
+      const dist = prev == null ? 0 : Math.abs(index - prev);
+      wheelIndex.set(el, index);
+      const ms = !animate || REDUCED.matches || dist === 0 ? 0 : Math.min(560, 200 + dist * 55);
+      strip.style.transition = `transform ${ms}ms ${EASE}`;
+      strip.style.transform = `translateY(${y}px)`;
+    }
+    function paintClimate(root, climate, animate) {
+      const specs = [[CLIMATE.t, `${climate.t.toFixed(1)}°`], [CLIMATE.h, `${climate.h.toFixed(1)}%`], [CLIMATE.v, climate.v.toFixed(2)]];
+      root.querySelectorAll(".metrics .wheel").forEach((el, i) => placeWheel(el, nearest(specs[i][0], specs[i][1]), animate));
+    }
+    function label(dev) {
+      if (dev.state === "al") return dev.mark;
+      if (dev.state !== "on") return "OFF";
+      return `${dev.pct}%`;
+    }
+    function paint(frame, animate) {
+      document.querySelectorAll("[data-kind]").forEach((board) => {
+        paintClimate(board, frame[0], animate);
+        board.querySelectorAll("[data-dev]").forEach((el, i) => {
+          const dev = frame[1][i];
+          el.classList.remove("on", "off", "al");
+          el.classList.add(dev.state === "on" ? "on" : dev.state);
+          const pct = dev.state === "on" ? dev.pct : 0;
+          const ms = !animate || REDUCED.matches ? "0ms" : "360ms";
+          const power = el.querySelector(".power");
+          const mark = el.querySelector(".mark");
+          power.style.transitionDuration = ms;
+          mark.style.transitionDuration = ms;
+          power.style.strokeDashoffset = String(ARC * (1 - pct / 100));
+          mark.style.transform = `rotate(${(pct / 100) * 180}deg)`;
+          el.querySelector(".val").textContent = label(dev);
+        });
+      });
+    }
+
+    let scene = "now";
+    let step = 0;
+    let auto = true;
+    function render(animate) { paint(SCENES[scene][step % SCENES[scene].length], animate); }
+    document.querySelectorAll("[data-scene]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        scene = btn.getAttribute("data-scene");
+        step = 0;
+        document.querySelectorAll("[data-scene]").forEach((b) => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+        render(true);
+      });
+    });
+    document.getElementById("auto").addEventListener("click", () => {
+      auto = !auto;
+      document.getElementById("auto").setAttribute("aria-pressed", String(auto));
+    });
+    document.getElementById("theme").addEventListener("click", () => {
+      const light = document.documentElement.getAttribute("data-theme") === "dark";
+      document.documentElement.setAttribute("data-theme", light ? "light" : "dark");
+      document.getElementById("theme").textContent = light ? "Dark" : "Light";
+    });
+    requestAnimationFrame(() => render(false));
+    window.setInterval(() => {
+      if (!auto || SCENES[scene].length < 2) return;
+      step = (step + 1) % SCENES[scene].length;
+      render(true);
+    }, 2400);
+  </script>
+</body>
+</html>

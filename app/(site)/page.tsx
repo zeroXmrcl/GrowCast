@@ -10,6 +10,7 @@ import Image from "next/image";
 import {markdownUrlTransform, safeHttpUrlOrEmpty} from "@/lib/url-policy";
 import {
     WORKSPACE_AREA,
+    WORKSPACE_HAIRLINE,
     WORKSPACE_PAD,
     WORKSPACE_SPLIT_MID,
     WORKSPACE_TITLE,
@@ -156,7 +157,9 @@ export default async function Home() {
                     </div>)}
             </aside>
 
-            {showLiveClimate ? <LiveTentRow climateTick={grow.climateTick} /> : null}
+            {showLiveClimate ? (
+                <LiveTentRow climateTick={grow.climateTick} devicesDesign={grow.devicesDesign}/>
+            ) : null}
 
             <section className={`${WORKSPACE_AREA.run} ${WORKSPACE_VT.flow} grid lg:grid-cols-2`}>
                 <article className={`${WORKSPACE_PAD} ${WORKSPACE_SPLIT_MID}`}>
@@ -209,20 +212,22 @@ export default async function Home() {
                     ) : null}
 
                     {setupImages.length > 0 && (
-                        <div className="mt-4 grid grid-cols-2 md:grid-cols-3">
+                        <div className="-mx-4 -mb-4 mt-4 grid grid-cols-2 sm:-mx-[18px] sm:-mb-[18px] md:grid-cols-3">
                             {setupImages.map((src, index) => (
                                 <a
                                     key={src}
                                     href={src}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className={`overflow-hidden ${index < setupImages.length - 1 ? "border-r border-zinc-200 dark:border-zinc-800" : ""}`}
+                                    className={`overflow-hidden ${
+                                        index < setupImages.length - 1 ? `border-r ${WORKSPACE_HAIRLINE}` : ""
+                                    } max-md:nth-[2n]:border-r-0 md:nth-[3n]:border-r-0`}
                                 >
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={src}
                                         alt=""
-                                        className="aspect-video h-full w-full object-cover"
+                                        className="h-full w-full object-cover"
                                         loading="lazy"
                                     />
                                 </a>

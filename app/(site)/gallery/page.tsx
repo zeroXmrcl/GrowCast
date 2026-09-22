@@ -1,6 +1,7 @@
 import SnapshotGallery from "@/components/snapshot-gallery";
 import TimelapsePlayer from "@/components/timelapse-player";
 import {isTimelapsePluginInstalled} from "@/lib/extension-status";
+import {WORKSPACE_BOARD_CLASS} from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +23,11 @@ export default async function GalleryPage() {
     }
 
     return (
-        <main className="flex flex-1 flex-col gap-10 py-10 text-zinc-900 dark:text-white">
-            <TimelapsePlayer/>
-            <SnapshotGallery/>
+        <main className="flex flex-1 flex-col py-4 text-zinc-900 dark:text-zinc-100">
+            <section className={WORKSPACE_BOARD_CLASS}>
+                <TimelapsePlayer sheet/>
+                <SnapshotGallery sheet/>
+            </section>
         </main>
     );
 }

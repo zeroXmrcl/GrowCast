@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GrowCast device names</title>
+  <style>
+    :root {
+      --font: "Geist", "Geist Fallback", "Segoe UI", system-ui, sans-serif;
+      --bg: #0a0a0a;
+      --fg: #ededed;
+      --muted: #a1a1aa;
+      --card: #09090b;
+      --stroke: #27272a;
+      --hair: rgb(255 255 255 / 0.14);
+      --duty: #3d9a33;
+      --off: #a1a1aa;
+      --alert: #f87171;
+    }
+    html[data-theme="light"] {
+      --bg: #fafafa; --fg: #18181b; --muted: #71717a; --card: #fff;
+      --stroke: #e4e4e7; --hair: rgb(24 24 27 / 0.12); --duty: #0c7700; --alert: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--fg); line-height: 1.45; }
+    header.page {
+      position: sticky; top: 0; z-index: 4;
+      display: flex; justify-content: space-between; gap: 16px; align-items: center;
+      padding: 16px 24px; border-bottom: 1px solid var(--stroke); background: var(--card);
+    }
+    header.page h1 { margin: 0; font-size: 16px; }
+    header.page p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+    button { font: inherit; font-size: 13px; border: 1px solid var(--stroke); background: var(--bg); color: var(--fg); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+    main { max-width: 80rem; margin: 0 auto; padding: 28px 32px 80px; }
+    h2 { margin: 36px 0 8px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    h2:first-of-type { margin-top: 0; }
+    .lead { margin: 0 0 14px; max-width: 68ch; color: var(--muted); font-size: 14px; }
+    .cell {
+      width: min(100%, 36rem);
+      border: 1px solid var(--stroke);
+      background: var(--card);
+      padding: 18px;
+    }
+    .title { margin: 0 0 16px; font-size: 18px; font-weight: 600; }
+    .row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+    .name, .val { margin: 0; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .name { font-size: 12px; color: var(--muted); line-height: 1.25rem; }
+    .val { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15rem; }
+    .on .val { color: var(--fg); }
+    .off .val { color: var(--muted); font-weight: 500; }
+    .al .val { color: var(--alert); letter-spacing: 0.04em; font-size: 11px; }
+    svg { width: 100%; height: 52px; display: block; }
+    .track { fill: none; stroke: var(--hair); stroke-width: 3; stroke-linecap: round; }
+    .power { fill: none; stroke: var(--duty); stroke-width: 3; stroke-linecap: round; }
+    .needle { stroke: var(--fg); stroke-width: 1.6; stroke-linecap: round; }
+    .off .needle, .off .hub { stroke: var(--off); fill: var(--off); }
+    .hub { fill: var(--fg); }
+    .bowl { position: relative; }
+    .bowl .name {
+      position: absolute; left: 8px; right: 8px; top: 8%;
+      font-size: 10px; line-height: 1.1;
+    }
+    .foot .name {
+      position: absolute; left: 0; bottom: 0; width: 62%;
+      text-align: left; font-size: 9px; line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <div>
+      <h1>Device name placement</h1>
+      <p>Needle gauge stays. Only the name moves.</p>
+    </div>
+    <button type="button" id="theme">Light</button>
+  </header>
+  <main>
+    <h2>A · Above</h2>
+    <p class="lead">Shipped. Name over the arc, value under it. Long names clip before they reach the bowl.</p>
+    <section class="cell" data-place="above"></section>
+
+    <h2>B · Bowl</h2>
+    <p class="lead">Name sits in the open half-circle. The value stays on the line underneath, so the percent doesn’t compete with the label.</p>
+    <section class="cell" data-place="bowl"></section>
+
+    <h2>C · Under</h2>
+    <p class="lead">Percent stays against the arc. The name drops beneath it, muted, like a caption.</p>
+    <section class="cell" data-place="under"></section>
+
+    <h2>D · Foot</h2>
+    <p class="lead">Name is a small caption at the left foot of the arc. The value stays centered under the bowl.</p>
+    <section class="cell" data-place="foot"></section>
+  </main>
+  <script>
+    const DEV = [
+      {name: "Light", val: "35%", pct: 35, state: "on"},
+      {name: "Light 2", val: "OFF", pct: 0, state: "off"},
+      {name: "Fan", val: "10%", pct: 10, state: "on"},
+      {name: "Blower", val: "30%", pct: 30, state: "on"},
+      {name: "Humidifier", val: "EMPTY", pct: 0, state: "al"},
+      {name: "Dehumidifier", val: "OFF", pct: 0, state: "off"},
+      {name: "Heater", val: "OFF", pct: 0, state: "off"},
+    ];
+    const ARC = Math.PI * 30;
+    function gauge(dev) {
+      const sweep = (dev.pct / 100) * 180;
+      const dash = ARC * (1 - dev.pct / 100);
+      return `<svg viewBox="0 0 100 62" aria-hidden="true">
+        <path class="track" d="M 20 48 A 30 30 0 1 1 80 48"/>
+        <path class="power" d="M 20 48 A 30 30 0 1 1 80 48" stroke-dasharray="${ARC.toFixed(2)}" stroke-dashoffset="${dash.toFixed(2)}"/>
+        <g transform="rotate(${sweep} 50 48)">
+          <line class="needle" x1="50" y1="48" x2="24" y2="48"/>
+          <circle class="hub" cx="50" cy="48" r="2.1"/>
+        </g>
+      </svg>`;
+    }
+    function nameEl(dev) { return `<p class="name">${dev.name}</p>`; }
+    function valEl(dev) { return `<p class="val">${dev.val}</p>`; }
+    function render() {
+      document.querySelectorAll("[data-place]").forEach((slot) => {
+        const place = slot.getAttribute("data-place");
+        const items = DEV.map((dev) => {
+          const g = `<div class="bowl">${gauge(dev)}${place === "bowl" ? nameEl(dev) : ""}</div>`;
+          if (place === "above") return `<div class="${dev.state}">${nameEl(dev)}${g}${valEl(dev)}</div>`;
+          if (place === "bowl") return `<div class="${dev.state}">${g}${valEl(dev)}</div>`;
+          if (place === "under") return `<div class="${dev.state}">${g}${valEl(dev)}${nameEl(dev)}</div>`;
+          return `<div class="${dev.state}"><div class="bowl foot">${gauge(dev)}${nameEl(dev)}</div>${valEl(dev)}</div>`;
+        }).join("");
+        slot.innerHTML = `<h3 class="title">Devices</h3><div class="row">${items}</div>`;
+      });
+    }
+    document.getElementById("theme").addEventListener("click", () => {
+      const light = document.documentElement.getAttribute("data-theme") !== "light";
+      document.documentElement.setAttribute("data-theme", light ? "light" : "dark");
+      document.getElementById("theme").textContent = light ? "Dark" : "Light";
+    });
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GrowCast homepage climate picker</title>
+  <style>
+    :root {
+      --font: "Geist", "Geist Fallback", "Segoe UI", system-ui, sans-serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --row: 2rem;
+      --bg: #fafafa;
+      --fg: #18181b;
+      --muted: #71717a;
+      --card: #ffffff;
+      --stroke: #e4e4e7;
+      --header: rgb(255 255 255 / 0.9);
+      --live: #059669;
+      --run-bg: #fff7ed;
+      --run: #ea580c;
+      --off-bg: #f4f4f5;
+      --off: #a1a1aa;
+      --alert: #dc2626;
+      --alert-bg: #fef2f2;
+      --hair: rgb(24 24 27 / 0.12);
+    }
+    html[data-theme="dark"] {
+      --bg: #09090b;
+      --fg: #f4f4f5;
+      --muted: #a1a1aa;
+      --card: #09090b;
+      --stroke: #27272a;
+      --header: rgb(9 9 11 / 0.9);
+      --live: #34d399;
+      --run-bg: rgb(67 20 7 / 0.5);
+      --run: #ea580c;
+      --off-bg: #27272a;
+      --off: #a1a1aa;
+      --alert: #f87171;
+      --alert-bg: rgb(69 10 10 / 0.45);
+      --hair: rgb(255 255 255 / 0.14);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.45;
+    }
+
+    header.page {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--stroke);
+      background: var(--header);
+      backdrop-filter: blur(8px);
+    }
+    header.page h1 { font-size: 16px; margin: 0; }
+    header.page p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      font: inherit;
+      font-size: 13px;
+      border: 1px solid var(--stroke);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 999px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    button[aria-pressed="true"] { border-color: var(--fg); }
+
+    main { max-width: 80rem; margin: 0 auto; padding: 28px 32px 80px; }
+    h2 {
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 40px 0 8px;
+    }
+    .lead { margin: 0 0 16px; color: var(--muted); font-size: 14px; max-width: 72ch; }
+
+    .site-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0 20px;
+      border-bottom: 1px solid var(--stroke);
+      margin-bottom: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 600; }
+    .brand svg { display: block; }
+    nav.site { display: flex; gap: 12px; color: var(--muted); font-size: 14px; }
+    nav.site span[data-on] { color: var(--fg); font-weight: 600; }
+
+    .row {
+      display: grid;
+      gap: 24px;
+    }
+    @media (min-width: 1024px) {
+      .row { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+      border-radius: 1rem;
+      border: 1px solid var(--stroke);
+      background: var(--card);
+      padding: 1.25rem;
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+    .card-head h3 {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+    .live {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--live);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .lbl {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    .val {
+      margin: 0.25rem 0 0;
+      font-size: 1.25rem;
+      line-height: var(--row);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+    }
+
+    .wheel {
+      position: relative;
+      height: calc(var(--row) * 3);
+      overflow: hidden;
+      user-select: none;
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 28%, #000 72%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 28%, #000 72%, transparent 100%);
+    }
+    .wheel::before,
+    .wheel::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      z-index: 2;
+      height: 1px;
+      background: var(--hair);
+      pointer-events: none;
+    }
+    .wheel::before { top: var(--row); }
+    .wheel::after { top: calc(var(--row) * 2); }
+    .strip {
+      will-change: transform;
+      transition-property: transform;
+      transition-timing-function: var(--ease);
+      transition-duration: 0ms;
+    }
+    .detent {
+      height: var(--row);
+      font-size: 1.25rem;
+      line-height: var(--row);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+      white-space: nowrap;
+    }
+
+    .devices { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }
+    .tile {
+      width: 4.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .tile .ico {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tile .name { font-size: 12px; line-height: 1.25; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tile .lvl { font-size: 11px; font-variant-numeric: tabular-nums; }
+    .tile.run .ico { background: var(--run-bg); color: var(--run); }
+    .tile.run .name { color: var(--fg); }
+    .tile.run .lvl { color: var(--muted); }
+    .tile.off .ico { background: var(--off-bg); color: var(--off); }
+    .tile.off .name,
+    .tile.off .lvl { color: var(--muted); }
+    .tile.alert .ico { background: var(--alert-bg); color: var(--alert); }
+    .tile.alert .name { color: var(--alert); }
+    .tile.alert .lvl { color: var(--alert); font-weight: 600; letter-spacing: 0.04em; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .strip { transition-duration: 0ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page">
+    <div>
+      <h1>Homepage climate</h1>
+      <p>Same Design setting as overlay. Current is the dashboard card today. Picker is the iOS wheel on that card.</p>
+    </div>
+    <div class="controls">
+      <button type="button" id="theme" aria-pressed="true">Dark</button>
+      <button type="button" id="tick">Tick</button>
+      <button type="button" id="auto" aria-pressed="true">Auto</button>
+    </div>
+  </header>
+  <main>
+    <p class="lead">
+      Root Climate sits next to Devices in a two-column row. Labels stay sentence-case
+      (Humidity, not RH). Values stay <code>text-xl</code>. Picker uses a 2rem row so the
+      selected number matches Current, with neighbors and hairlines around it.
+    </p>
+
+    <div class="site-bar">
+      <div class="brand">
+        <svg width="32" height="32" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="18" fill="#0c7700"/>
+        </svg>
+        GrowCast
+      </div>
+      <nav class="site">
+        <span data-on>Dashboard</span>
+        <span>Energy</span>
+        <span>Past Grows</span>
+        <span>Settings</span>
+      </nav>
+    </div>
+
+    <h2>A · Current</h2>
+    <p class="lead">Locked today. One line. Card height matches Devices.</p>
+    <div class="row" data-demo="plain"></div>
+
+    <h2>B · Picker</h2>
+    <p class="lead">
+      Same card chrome, same Design radio. The climate block grows to three rows.
+      Devices stays top-aligned in the grid cell.
+    </p>
+    <div class="row" data-demo="picker"></div>
+  </main>
+  <script>
+    const STEPS = [
+      { temp: 24.6, rh: 48.7, vpd: 1.58 },
+      { temp: 24.7, rh: 48.8, vpd: 1.59 },
+      { temp: 24.8, rh: 48.9, vpd: 1.60 },
+      { temp: 24.8, rh: 49.4, vpd: 1.60 },
+      { temp: 25.1, rh: 49.4, vpd: 1.62 },
+      { temp: 24.4, rh: 48.2, vpd: 1.55 },
+    ];
+    const KINDS = [
+      { id: "temp", label: "Temp", unit: "°", digits: 1, min: 18, max: 32, step: 0.1 },
+      { id: "rh", label: "Humidity", unit: "%", digits: 1, min: 40, max: 70, step: 0.1 },
+      { id: "vpd", label: "VPD", unit: "", digits: 2, min: 0.8, max: 2.2, step: 0.01 },
+    ];
+    const ICO = {
+      sun: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+      fan: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"/><path d="M12 12v.01"/></svg>',
+      drop: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>',
+      flame: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/></svg>',
+      dropOff: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18.715 13.186C18.29 11.858 17.384 10.607 16 9.5c-2-1.6-3.5-4-4-6.5a10.7 10.7 0 0 1-.884 2.586"/><path d="m2 2 20 20"/><path d="M8.795 8.797A11 11 0 0 1 8 9.5C6 11.1 5 13 5 15a7 7 0 0 0 13.222 3.208"/></svg>',
+    };
+
+    function series(kind) {
+      const out = [];
+      const factor = 10 ** kind.digits;
+      for (let i = Math.round(kind.min * factor); i <= Math.round(kind.max * factor); i += Math.round(kind.step * factor)) {
+        out.push(i / factor);
+      }
+      return out;
+    }
+    const LISTS = Object.fromEntries(KINDS.map((k) => [k.id, series(k)]));
+
+    function fmt(kind, value) {
+      return value.toFixed(kind.digits) + kind.unit;
+    }
+    function nearestIndex(list, value) {
+      let best = 0;
+      let dist = Infinity;
+      list.forEach((v, i) => {
+        const d = Math.abs(v - value);
+        if (d < dist) {
+          dist = d;
+          best = i;
+        }
+      });
+      return best;
+    }
+
+    function climate(variant, step) {
+      const cells = KINDS.map((kind) => {
+        if (variant === "plain") {
+          return `<div><p class="lbl">${kind.label}</p><p class="val" data-plain="${kind.id}">${fmt(kind, step[kind.id])}</p></div>`;
+        }
+        const rows = LISTS[kind.id].map((v) => `<div class="detent">${fmt(kind, v)}</div>`).join("");
+        return `<div><p class="lbl">${kind.label}</p><div class="wheel" data-wheel data-kind="${kind.id}"><div class="strip">${rows}</div></div></div>`;
+      }).join("");
+      return `<article class="card">
+        <div class="card-head"><h3>Climate</h3><p class="live">LIVE</p></div>
+        <div class="metrics">${cells}</div>
+      </article>`;
+    }
+
+    function tile(cls, icon, name, lvl) {
+      return `<div class="tile ${cls}">
+        <div class="ico">${icon}</div>
+        <span class="name">${name}</span>
+        <span class="lvl">${lvl}</span>
+      </div>`;
+    }
+
+    function devices() {
+      return `<article class="card">
+        <div class="card-head"><h3>Devices</h3></div>
+        <div class="devices">
+          ${tile("run", ICO.sun, "Light", "35%")}
+          ${tile("off", ICO.sun, "Light 2", "OFF")}
+          ${tile("run", ICO.fan, "Fan", "10%")}
+          ${tile("run", ICO.fan, "Blower", "30%")}
+          ${tile("alert", ICO.dropOff, "Humidifier", "EMPTY")}
+          ${tile("off", ICO.drop, "Dehumidifier", "OFF")}
+          ${tile("off", ICO.flame, "Heater", "OFF")}
+        </div>
+      </article>`;
+    }
+
+    function nearestPlace(host, step, animate) {
+      host.querySelectorAll("[data-plain]").forEach((el) => {
+        const kind = KINDS.find((k) => k.id === el.getAttribute("data-plain"));
+        el.textContent = fmt(kind, step[kind.id]);
+      });
+      host.querySelectorAll("[data-wheel]").forEach((el) => {
+        const kind = KINDS.find((k) => k.id === el.getAttribute("data-kind"));
+        const list = LISTS[kind.id];
+        const idx = nearestIndex(list, step[kind.id]);
+        const strip = el.querySelector(".strip");
+        const row = el.querySelector(".detent");
+        const y = el.clientHeight / 2 - row.offsetHeight / 2 - idx * row.offsetHeight;
+        const prev = Number(strip.dataset.idx ?? idx);
+        const dist = Math.abs(idx - prev);
+        strip.dataset.idx = String(idx);
+        strip.style.transitionDuration = !animate || dist === 0
+          ? "0ms"
+          : `${Math.min(560, 200 + dist * 55)}ms`;
+        strip.style.transform = `translateY(${y}px)`;
+      });
+    }
+
+    let index = 1;
+    let auto = true;
+    const hosts = [...document.querySelectorAll("[data-demo]")];
+    hosts.forEach((host) => {
+      host.innerHTML = climate(host.getAttribute("data-demo"), STEPS[index]) + devices();
+    });
+    requestAnimationFrame(() => {
+      hosts.forEach((host) => nearestPlace(host, STEPS[index], false));
+    });
+
+    function tick() {
+      index = (index + 1) % STEPS.length;
+      hosts.forEach((host) => nearestPlace(host, STEPS[index], true));
+    }
+
+    document.getElementById("tick").addEventListener("click", () => {
+      auto = false;
+      document.getElementById("auto").setAttribute("aria-pressed", "false");
+      tick();
+    });
+    document.getElementById("auto").addEventListener("click", () => {
+      auto = !auto;
+      document.getElementById("auto").setAttribute("aria-pressed", String(auto));
+    });
+    document.getElementById("theme").addEventListener("click", () => {
+      const dark = document.documentElement.getAttribute("data-theme") !== "dark";
+      document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      document.getElementById("theme").textContent = dark ? "Dark" : "Light";
+      document.getElementById("theme").setAttribute("aria-pressed", String(dark));
+    });
+    setInterval(() => { if (auto) tick(); }, 2400);
+  </script>
+</body>
+</html>

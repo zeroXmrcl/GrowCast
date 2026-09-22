@@ -134,6 +134,39 @@ export function StreamSettingsFields({
                         </label>
                     </div>
                 </div>
+                <div className="mt-6">
+                    <p className="mb-3 text-xs font-semibold uppercase text-(--admin-subtle)">
+                        Devices
+                    </p>
+                    <div className="grid gap-3">
+                        <label className="flex items-center gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
+                            <input
+                                type="radio"
+                                name="devicesDesign"
+                                form={growForm}
+                                value="needle"
+                                defaultChecked={grow.devicesDesign !== "icons"}
+                                className="h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
+                            />
+                            <span className="text-sm font-medium text-(--admin-text)">
+                                Needle
+                            </span>
+                        </label>
+                        <label className="flex items-center gap-3 rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3">
+                            <input
+                                type="radio"
+                                name="devicesDesign"
+                                form={growForm}
+                                value="icons"
+                                defaultChecked={grow.devicesDesign === "icons"}
+                                className="h-4 w-4 border-(--admin-border-strong) bg-(--admin-surface) accent-zinc-300"
+                            />
+                            <span className="text-sm font-medium text-(--admin-text)">
+                                Icons
+                            </span>
+                        </label>
+                    </div>
+                </div>
             </AdminPanel>
 
             <AdminPanel id="stream" title="Camera">
