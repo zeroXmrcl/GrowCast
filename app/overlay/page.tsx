@@ -15,6 +15,7 @@ export default async function OverlayPage() {
             overlayStream={grow.overlayStream}
             overlayScalePct={grow.overlayScalePct}
             climateTick={grow.climateTick}
+            devicesDesign={grow.devicesDesign}
             streamUrl={grow.streamUrl}
             stage={grow.details.stage}
             lightSchedule={grow.details.lightSchedule}

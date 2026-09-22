@@ -19,6 +19,7 @@ export default async function ProgramPage() {
             overlayLayout={grow.overlayLayout}
             overlayScalePct={grow.overlayScalePct}
             climateTick={grow.climateTick}
+            devicesDesign={grow.devicesDesign}
             streamUrl={grow.streamUrl}
             stage={grow.details.stage}
             lightSchedule={grow.details.lightSchedule}
