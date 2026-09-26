@@ -17,6 +17,12 @@ import {
 } from "@/lib/admin/save-settings";
 import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
 import {withNotice} from "@/lib/admin/notice";
+import {writeSpiderFarmerBrokerEnv} from "@/lib/ggs-sidecar-env";
+import {
+    SpiderFarmerLoginError,
+    spiderFarmerFailureNotice,
+    spiderFarmerMailLogin,
+} from "@/lib/spider-farmer-login";
 import {completeCurrentGrow} from "@/lib/archives";
 import {parseOverlayScalePct} from "@/lib/overlay-scale";
 import {parseMusicLook, parseWaveBars, parseWaveSmoothPct} from "@/lib/program-music-wave";
@@ -155,6 +161,35 @@ export async function saveEnergyAction(formData: FormData): Promise<void> {
         revalidatePath("/overlay");
         revalidatePath("/admin/ggs");
         redirect(withNotice("/admin/ggs", "saved"));
+    });
+}
+
+export async function connectSpiderFarmerAction(formData: FormData): Promise<void> {
+    await withNextRequestLogContext("/admin/ggs", async () => {
+        await requireAdmin();
+        const email = String(formData.get("sfEmail") ?? "").trim();
+        const password = String(formData.get("sfPassword") ?? "");
+        if (!email || !password.trim() || /[\r\n]/.test(email) || /[\r\n]/.test(password)) {
+            redirect(withNotice("/admin/ggs", "spider_farmer_missing"));
+        }
+        try {
+            const broker = await spiderFarmerMailLogin(email, password);
+            await writeSpiderFarmerBrokerEnv({
+                email: broker.mqttName,
+                mqttName: broker.mqttName,
+                mqttPwd: broker.mqttPwd,
+                userId: broker.userId,
+            });
+        } catch (error) {
+            redirect(withNotice(
+                "/admin/ggs",
+                error instanceof SpiderFarmerLoginError
+                    ? spiderFarmerFailureNotice(error)
+                    : "spider_farmer_failed",
+            ));
+        }
+        revalidatePath("/admin/ggs");
+        redirect(withNotice("/admin/ggs", "spider_farmer_connected"));
     });
 }
 

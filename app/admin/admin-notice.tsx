@@ -223,6 +223,31 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "Upload too large",
         body: "The request exceeded the 100 MB upload limit. Choose fewer or smaller tracks and try again.",
     },
+    spider_farmer_connected: {
+        tone: "success",
+        title: "Spider Farmer connected",
+        body: "The broker login is saved in the sidecar env. Restart the ggs sidecar to use it.",
+    },
+    spider_farmer_missing: {
+        tone: "warning",
+        title: "Email and password required",
+        body: "Enter the Spider Farmer email and password.",
+    },
+    spider_farmer_bad_password: {
+        tone: "danger",
+        title: "Password rejected",
+        body: "Spider Farmer did not accept that password.",
+    },
+    spider_farmer_unknown_account: {
+        tone: "danger",
+        title: "Account not registered",
+        body: "That email is not a Spider Farmer account. Sign in with Apple cannot be used here.",
+    },
+    spider_farmer_failed: {
+        tone: "danger",
+        title: "Spider Farmer login failed",
+        body: "Could not log in or save the sidecar env. Review logs and try again.",
+    },
 };
 
 export function AdminFlashNotice({notice}: {notice?: string}) {

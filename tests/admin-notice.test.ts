@@ -27,6 +27,9 @@ describe("admin notice query", () => {
         assert.equal(isAdminNoticeId("music_invalid_file"), true);
         assert.equal(isAdminNoticeId("music_too_many_files"), true);
         assert.equal(isAdminNoticeId("music_payload_too_large"), true);
+        assert.equal(isAdminNoticeId("spider_farmer_connected"), true);
+        assert.equal(isAdminNoticeId("spider_farmer_bad_password"), true);
+        assert.equal(isAdminNoticeId("spider_farmer_unknown_account"), true);
         assert.equal(isAdminNoticeId("not-a-notice"), false);
         assert.equal(isAdminNoticeId(""), false);
     });

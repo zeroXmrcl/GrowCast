@@ -15,10 +15,12 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: 3000
       GROWCAST_TRUST_PROXY: "1"
+      GROWCAST_GGS_ENV_FILE: /run/growcast/ggs.env
     volumes:
       - ./data:/app/data
-      # Timelapse media only. Do not bind the whole extensions/ tree — GrowCast-GGS/.env
-      # would otherwise be readable/owned by the internet-facing app user.
+      # Timelapse media only. Do not bind the whole extensions/ tree.
+      # This one file is the sidecar env the GGS settings login rewrites.
+      - ./extensions/GrowCast-GGS/.env:/run/growcast/ggs.env
       - ./extensions/GrowCast-Timelapse:/app/extensions/GrowCast-Timelapse
       - ./public/setup:/app/public/setup
       - ./public/yourPictures:/app/public/yourPictures

@@ -4,7 +4,9 @@ import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/adm
 import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {EnergySettingsFields} from "@/app/admin/energy-fields";
 import {AdminSettingsForm} from "@/app/admin/settings-form";
+import {SpiderFarmerLoginPanel} from "@/app/admin/spider-farmer-panel";
 import {AdminPanel} from "@/components/admin/ui";
+import {readSpiderFarmerBrokerStatus} from "@/lib/ggs-sidecar-env";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {energyActuatorRows, readEnergySettings} from "@/lib/energy/settings";
 import {withStale} from "@/lib/ggs-live";
@@ -23,9 +25,10 @@ export default async function AdminGgsPage({searchParams}: GgsPageProps) {
         redirect("/admin");
     }
 
-    const [energySettings, live] = await Promise.all([
+    const [energySettings, live, spiderFarmer] = await Promise.all([
         readEnergySettings(),
         readGgsLive(),
+        readSpiderFarmerBrokerStatus().catch(() => ({configured: false, account: null})),
     ]);
     const view = live ? withStale(live) : null;
 
@@ -36,6 +39,7 @@ export default async function AdminGgsPage({searchParams}: GgsPageProps) {
             actions={<AdminSignOutButton/>}
         >
             <AdminFlashNotice notice={params.notice}/>
+            <SpiderFarmerLoginPanel status={spiderFarmer}/>
             <AdminPanel title="Sidecar">
                 {view ? (
                     <div className="space-y-1 text-sm text-(--admin-text)">

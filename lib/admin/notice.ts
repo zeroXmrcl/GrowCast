@@ -45,6 +45,11 @@ export const ADMIN_NOTICE_IDS = [
     "music_invalid_file",
     "music_too_many_files",
     "music_payload_too_large",
+    "spider_farmer_connected",
+    "spider_farmer_missing",
+    "spider_farmer_bad_password",
+    "spider_farmer_unknown_account",
+    "spider_farmer_failed",
 ] as const;
 
 export type AdminNoticeId = (typeof ADMIN_NOTICE_IDS)[number];
