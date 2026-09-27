@@ -108,7 +108,7 @@ describe("overlay picker wiring", () => {
 
         assert.match(fields, /id="design"/);
         assert.match(fields, /title="Design"/);
-        assert.match(fields, /name="climateTick"\s+form=\{growForm\}/);
+        assert.match(fields, /name="climateTick"/);
         assert.match(fields, /value="plain"/);
         assert.match(fields, /value="picker"/);
         assert.match(fields, />\s*Current\s*</);

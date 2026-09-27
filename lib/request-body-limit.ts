@@ -1,5 +1,4 @@
-import {withNotice} from "@/lib/admin/notice";
-import {seeOther} from "@/lib/http-redirect";
+import {noticeJson} from "@/lib/admin/notice-response";
 
 /** Default cap for unauthenticated / non-media requests (proxy clones bodies). */
 export const DEFAULT_MAX_BODY_BYTES = 1 * 1024 * 1024;
@@ -58,10 +57,10 @@ export function payloadTooLargeResponse(method: string, pathname: string): Respo
     if (method.toUpperCase() === "POST") {
         const path = normalizePathname(pathname);
         if (path === MEDIA_PATH) {
-            return seeOther(withNotice("/admin", "media_payload_too_large"));
+            return noticeJson("media_payload_too_large", 413);
         }
         if (path === MUSIC_PATH) {
-            return seeOther(withNotice("/admin/stream", "music_payload_too_large"));
+            return noticeJson("music_payload_too_large", 413);
         }
     }
     return new Response("Payload Too Large", {

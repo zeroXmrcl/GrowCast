@@ -1,7 +1,9 @@
 "use client";
 
 import {useState} from "react";
-import {AdminButton, AdminPanel} from "@/components/admin/ui";
+import {AdminBand} from "@/app/admin/admin-band";
+import {AdminButton} from "@/components/admin/ui";
+import {publishAdminNotice} from "@/lib/admin/publish-notice";
 import {
     CAMERA_LOOK_DRAFT_EVENT,
     CAMERA_LOOK_MAX,
@@ -63,7 +65,6 @@ function Slider({
 
 export function CameraLookPanel({look}: {look: CameraLook}) {
     const [current, setCurrent] = useState<CameraLook>(look);
-    const [notice, setNotice] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
 
     function update(name: keyof CameraLook, value: number): void {
@@ -74,7 +75,6 @@ export function CameraLookPanel({look}: {look: CameraLook}) {
 
     async function persist(next: CameraLook): Promise<void> {
         setBusy(true);
-        setNotice(null);
         try {
             const response = await fetch("/api/admin/camera-look", {
                 method: "POST",
@@ -85,21 +85,26 @@ export function CameraLookPanel({look}: {look: CameraLook}) {
             const raw: unknown = await response.json().catch(() => null);
             const ok = raw !== null && typeof raw === "object" && "ok" in raw && raw.ok === true;
             if (!response.ok || !ok) {
-                setNotice("Could not save the camera look.");
+                publishAdminNotice({
+                    title: "Camera look",
+                    body: "Could not save the camera look.",
+                    tone: "danger",
+                });
             }
         } catch {
-            setNotice("Could not save the camera look.");
+            publishAdminNotice({
+                title: "Camera look",
+                body: "Could not save the camera look.",
+                tone: "danger",
+            });
         } finally {
             setBusy(false);
         }
     }
 
     return (
-        <AdminPanel id="camera-look" title="Camera look">
+        <AdminBand id="camera-look" title="Camera look">
             <div className="space-y-4">
-                <p className="text-xs text-(--admin-subtle)">
-                    Grades the live cam only. HUD stays true.
-                </p>
                 <Slider name="brightness" label="Brightness" value={current.brightness} onChange={update}/>
                 <Slider name="contrast" label="Contrast" value={current.contrast} onChange={update}/>
                 <Slider name="saturation" label="Saturation" value={current.saturation} onChange={update}/>
@@ -110,7 +115,6 @@ export function CameraLookPanel({look}: {look: CameraLook}) {
                     temperature
                     onChange={update}
                 />
-                {notice ? <p className="text-sm text-(--admin-muted)">{notice}</p> : null}
                 <div className="flex gap-2">
                     <AdminButton
                         type="button"
@@ -136,6 +140,6 @@ export function CameraLookPanel({look}: {look: CameraLook}) {
                     </AdminButton>
                 </div>
             </div>
-        </AdminPanel>
+        </AdminBand>
     );
 }

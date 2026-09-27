@@ -99,15 +99,15 @@ describe("broadcast chrome", () => {
     it("wires overlay and camera grow fields to the disconnected broadcast-grow form", () => {
         const fields = src(path.join("app", "admin", "stream-fields.tsx"));
         const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
-        assert.match(fields, /name="overlayStream"\s+form=\{growForm\}/);
-        assert.match(fields, /name="overlayLayout"\s+form=\{growForm\}/);
-        assert.match(fields, /name="climateTick"\s+form=\{growForm\}/);
-        assert.match(fields, /OverlayScaleInput defaultValue=\{grow\.overlayScalePct\} form=\{growForm\}/);
-        assert.match(fields, /name="streamUrl"\s+form=\{growForm\}/);
-        assert.match(fields, /name="showGrowName"\s+form=\{growForm\}/);
-        assert.match(streamPage, /id="broadcast-grow"/);
-        assert.match(streamPage, /form="broadcast-grow"/);
-        assert.match(streamPage, /Save Changes/);
+        assert.match(fields, /name="overlayStream"/);
+        assert.match(fields, /name="overlayLayout"/);
+        assert.match(fields, /name="climateTick"/);
+        assert.match(fields, /OverlayScaleInput defaultValue=\{grow\.overlayScalePct\}/);
+        assert.match(fields, /name="streamUrl"/);
+        assert.match(fields, /name="showGrowName"/);
+        assert.match(streamPage, /saveStreamAction/);
+        assert.match(streamPage, /StreamSettingsFields/);
+        assert.doesNotMatch(streamPage, /id="broadcast-grow"/);
     });
 });
 

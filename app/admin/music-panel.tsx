@@ -1,5 +1,8 @@
 import {saveProgramAudioUrlAction} from "@/app/admin/actions";
-import {AdminButton, AdminField, AdminInput, AdminPanel} from "@/components/admin/ui";
+import {AdminBand} from "@/app/admin/admin-band";
+import {AdminFetchForm} from "@/app/admin/admin-fetch-form";
+import {AdminImmediateForm} from "@/app/admin/admin-save-form";
+import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
 import WaveBarsInput from "@/components/wave-bars-input";
 import WaveSmoothInput from "@/components/wave-smooth-input";
 import type {MusicLook} from "@/lib/program-music-wave";
@@ -20,13 +23,10 @@ export function MusicPanel({
     waveBars: number;
 }) {
     return (
-        <AdminPanel id="music" title="Music">
+        <AdminBand id="music" title="Music">
             <div className="space-y-4">
-                <form action={saveProgramAudioUrlAction} className="space-y-3">
-                    <AdminField
-                        label="Stream URL"
-                        hint="URL wins while set. Clear it to loop uploaded tracks."
-                    >
+                <AdminImmediateForm action={saveProgramAudioUrlAction} className="space-y-3">
+                    <AdminField label="Stream URL">
                         <AdminInput
                             name="url"
                             type="url"
@@ -65,19 +65,14 @@ export function MusicPanel({
                     <AdminButton type="submit" tone="secondary">
                         Save URL
                     </AdminButton>
-                </form>
+                </AdminImmediateForm>
 
-                <form
-                    action={MUSIC_ENDPOINT}
-                    method="post"
-                    encType="multipart/form-data"
+                <AdminFetchForm
+                    endpoint={MUSIC_ENDPOINT}
                     className="flex flex-col gap-3"
                 >
                     <input type="hidden" name="intent" value="upload"/>
-                    <AdminField
-                        label="Upload tracks"
-                        hint="mp3, ogg, wav, or m4a. Select several at once. Up to 20 MB each, 30 files in the library, 100 MB per upload."
-                    >
+                    <AdminField label="Upload tracks">
                         <input
                             type="file"
                             name="file"
@@ -90,7 +85,7 @@ export function MusicPanel({
                     <AdminButton type="submit" tone="primary">
                         Upload
                     </AdminButton>
-                </form>
+                </AdminFetchForm>
 
                 {files.length === 0 ? (
                     <p className="rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3 text-sm text-(--admin-muted)">
@@ -106,7 +101,7 @@ export function MusicPanel({
                                 <span className="truncate text-sm text-(--admin-text)" title={filename}>
                                     {filename}
                                 </span>
-                                <form action={MUSIC_ENDPOINT} method="post">
+                                <AdminFetchForm endpoint={MUSIC_ENDPOINT}>
                                     <input type="hidden" name="intent" value="delete"/>
                                     <input type="hidden" name="filename" value={filename}/>
                                     <button
@@ -115,12 +110,12 @@ export function MusicPanel({
                                     >
                                         Delete
                                     </button>
-                                </form>
+                                </AdminFetchForm>
                             </li>
                         ))}
                     </ul>
                 )}
             </div>
-        </AdminPanel>
+        </AdminBand>
     );
 }

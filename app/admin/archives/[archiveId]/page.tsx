@@ -5,14 +5,14 @@ import {
     deleteArchiveMediaAction,
     updateArchiveAction,
 } from "@/app/admin/archives/actions";
+import {AdminBand, AdminBandGroup} from "@/app/admin/admin-band";
+import {AdminImmediateForm, AdminSaveForm} from "@/app/admin/admin-save-form";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
-import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {
     AdminButton,
     AdminCheckboxRow,
     AdminField,
     AdminInput,
-    AdminPanel,
     AdminTextarea,
 } from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
@@ -46,15 +46,8 @@ function MediaDeleteGrid({archiveId, kind, title, files}: MediaDeleteGridProps) 
     }
 
     return (
-        <form action={deleteArchiveMediaAction}>
-            <AdminPanel
-                title={`${title} (${files.length})`}
-                actions={
-                    <AdminButton type="submit" tone="danger">
-                        Delete selected
-                    </AdminButton>
-                }
-            >
+        <AdminImmediateForm action={deleteArchiveMediaAction}>
+            <AdminBand id={kind} title={title}>
                 <input type="hidden" name="archiveId" value={archiveId}/>
                 <input type="hidden" name="kind" value={kind}/>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -87,13 +80,16 @@ function MediaDeleteGrid({archiveId, kind, title, files}: MediaDeleteGridProps) 
                         </label>
                     ))}
                 </div>
-            </AdminPanel>
-        </form>
+                <AdminButton type="submit" tone="danger" className="mt-4">
+                    Delete selected
+                </AdminButton>
+            </AdminBand>
+        </AdminImmediateForm>
     );
 }
 
-export default async function ArchiveEditorPage({params, searchParams}: ArchiveEditorPageProps) {
-    const [{archiveId}, query] = await Promise.all([params, searchParams]);
+export default async function ArchiveEditorPage({params}: ArchiveEditorPageProps) {
+    const {archiveId} = await params;
 
     if (!(await isAdminAuthenticated())) {
         redirect("/admin");
@@ -146,17 +142,9 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                 </div>
             }
         >
-            <AdminFlashNotice notice={query.notice}/>
-
-            <form action={updateArchiveAction}>
-                    <AdminPanel
-                        title="Details"
-                        actions={
-                            <AdminButton type="submit" tone="primary">
-                                Save Changes
-                            </AdminButton>
-                        }
-                    >
+            <AdminBandGroup>
+                <AdminSaveForm action={updateArchiveAction}>
+                    <AdminBand id="details" title="Details">
                         <input type="hidden" name="archiveId" value={archiveId}/>
                         <div className="grid gap-4 md:grid-cols-2">
                             <AdminField label="Grow Name">
@@ -168,7 +156,7 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                             <AdminField label="Strain">
                                 <AdminInput name="strain" defaultValue={grow.details.strain}/>
                             </AdminField>
-                            <AdminField label="Yield (grams)" hint="Leave empty to clear.">
+                            <AdminField label="Yield (grams)">
                                 <AdminInput
                                     name="yieldGrams"
                                     type="number"
@@ -201,8 +189,8 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                                 />
                             </AdminField>
                         </div>
-                    </AdminPanel>
-                </form>
+                    </AdminBand>
+                </AdminSaveForm>
 
                 <MediaDeleteGrid
                     archiveId={archiveId}
@@ -219,19 +207,12 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                 />
 
                 {timelapseFile ? (
-                    <form action={deleteArchiveMediaAction}>
-                        <AdminPanel
-                            title="Timelapse"
-                            description={timelapseFile}
-                            actions={
-                                <AdminButton type="submit" tone="danger">
-                                    Delete timelapse
-                                </AdminButton>
-                            }
-                        >
+                    <AdminImmediateForm action={deleteArchiveMediaAction}>
+                        <AdminBand id="timelapse" title="Timelapse">
                             <input type="hidden" name="archiveId" value={archiveId}/>
                             <input type="hidden" name="kind" value="timelapse"/>
                             <input type="hidden" name="filenames" value={timelapseFile}/>
+                            <p className="mb-3 text-sm text-(--admin-text)">{timelapseFile}</p>
                             <video
                                 controls
                                 preload="metadata"
@@ -242,30 +223,29 @@ export default async function ArchiveEditorPage({params, searchParams}: ArchiveE
                                     type="video/mp4"
                                 />
                             </video>
-                        </AdminPanel>
-                    </form>
+                            <AdminButton type="submit" tone="danger" className="mt-4">
+                                Delete timelapse
+                            </AdminButton>
+                        </AdminBand>
+                    </AdminImmediateForm>
                 ) : null}
 
                 <form action={deleteArchiveAction}>
-                    <AdminPanel
-                        title="Danger Zone"
-                        description="Delete this archive permanently, including all media."
-                        className="border-red-900/50"
-                    >
+                    <AdminBand id="danger" title="Danger Zone">
                         <input type="hidden" name="archiveId" value={archiveId}/>
                         <div className="space-y-4">
                             <AdminCheckboxRow
                                 name="confirmDelete"
                                 required
                                 label="I understand this permanently deletes the archive"
-                                description="Details, snapshots, pictures and the timelapse are removed from disk. This cannot be undone."
                             />
                             <AdminButton type="submit" tone="danger">
                                 Delete Entire Archive
                             </AdminButton>
                         </div>
-                    </AdminPanel>
+                    </AdminBand>
                 </form>
+            </AdminBandGroup>
         </AdminChrome>
     );
 }

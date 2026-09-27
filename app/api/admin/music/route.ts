@@ -1,7 +1,7 @@
 import {revalidatePath} from "next/cache";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {applyMusicPost} from "@/lib/admin/apply-music-post";
-import {withNotice} from "@/lib/admin/notice";
+import {noticeJson} from "@/lib/admin/notice-response";
 import {logAuthzDenied, withRequestLog} from "@/lib/logging";
 import {seeOther} from "@/lib/http-redirect";
 import {isSameOriginRequest} from "@/lib/same-origin";
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         }
 
         if (!isSameOriginRequest(request)) {
-            return seeOther(withNotice("/admin/stream", "music_invalid_file"));
+            return noticeJson("music_invalid_file");
         }
 
         if (!(await isAdminAuthenticated())) {
@@ -33,16 +33,16 @@ export async function POST(request: Request) {
         try {
             result = await applyMusicPost(await request.formData());
         } catch {
-            return seeOther(withNotice("/admin/stream", "music_invalid_file"));
+            return noticeJson("music_invalid_file");
         }
 
         if (!result.ok) {
-            return seeOther(withNotice("/admin/stream", result.notice));
+            return noticeJson(result.notice);
         }
 
         revalidatePath("/admin/stream");
         revalidatePath("/program");
         revalidatePath("/overlay/capture");
-        return seeOther(withNotice("/admin/stream", result.notice));
+        return noticeJson(result.notice);
     });
 }

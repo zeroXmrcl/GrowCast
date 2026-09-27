@@ -1,7 +1,7 @@
 import {revalidatePath} from "next/cache";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {applyMediaPost} from "@/lib/admin/apply-media-post";
-import {withNotice} from "@/lib/admin/notice";
+import {noticeJson} from "@/lib/admin/notice-response";
 import {
     logAdminMediaDeleteFailed,
     logAdminMediaDeleted,
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
         if (!isSameOriginRequest(request)) {
             logAdminMediaUploadFailed({reason: "cross_origin"});
-            return seeOther(withNotice("/admin", "media_upload_failed"));
+            return noticeJson("media_upload_failed");
         }
 
         if (!(await isAdminAuthenticated())) {
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
             result = await applyMediaPost(await request.formData());
         } catch (error) {
             logAdminMediaUploadFailed({err: sanitizeError(error)});
-            return seeOther(withNotice("/admin", "media_upload_failed"));
+            return noticeJson("media_upload_failed");
         }
 
         if (!result.ok) {
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
                     rejected: result.rejected,
                 });
             }
-            return seeOther(withNotice("/admin", result.notice));
+            return noticeJson(result.notice);
         }
 
         switch (result.notice) {
@@ -90,6 +90,6 @@ export async function POST(request: Request) {
 
         revalidatePath("/");
         revalidatePath("/admin");
-        return seeOther(withNotice("/admin", result.notice));
+        return noticeJson(result.notice);
     });
 }

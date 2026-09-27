@@ -1,12 +1,11 @@
-import {AdminButton, AdminField, AdminPanel} from "@/components/admin/ui";
+import {AdminBand} from "@/app/admin/admin-band";
+import {AdminFetchForm} from "@/app/admin/admin-fetch-form";
+import {AdminButton, AdminField} from "@/components/admin/ui";
 import {
     listMediaFiles,
-    MAX_UPLOAD_FILE_BYTES,
-    MAX_UPLOAD_FILES,
     type MediaCollectionId,
     type MediaFile,
 } from "@/lib/media-library";
-import {MEDIA_MAX_BODY_BYTES} from "@/lib/request-body-limit";
 
 const MEDIA_ENDPOINT = "/api/admin/media";
 
@@ -25,19 +24,14 @@ function CollectionSection({
         <div className="space-y-4">
             <p className="text-sm font-semibold text-(--admin-text)">{title}</p>
 
-            <form
-                action={MEDIA_ENDPOINT}
-                method="post"
-                encType="multipart/form-data"
+            <AdminFetchForm
+                endpoint={MEDIA_ENDPOINT}
                 className="flex flex-col gap-3 sm:flex-row sm:items-end"
             >
                 <input type="hidden" name="intent" value="upload"/>
                 <input type="hidden" name="collection" value={collection}/>
                 <div className="min-w-0 flex-1">
-                    <AdminField
-                        label="Add images"
-                        hint={`JPEG, PNG or WebP. Up to ${MAX_UPLOAD_FILES} files, ${Math.round(MAX_UPLOAD_FILE_BYTES / 1024 / 1024)} MB each (${Math.round(MEDIA_MAX_BODY_BYTES / 1024 / 1024)} MB total per upload).`}
-                    >
+                    <AdminField label="Add images">
                         <input
                             type="file"
                             name="files"
@@ -48,10 +42,10 @@ function CollectionSection({
                         />
                     </AdminField>
                 </div>
-                <AdminButton type="submit" tone="primary" className="shrink-0 sm:mb-6.5">
+                <AdminButton type="submit" tone="primary" className="shrink-0">
                     Upload
                 </AdminButton>
-            </form>
+            </AdminFetchForm>
 
             {files.length === 0 ? (
                 <p className="rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3 text-sm text-(--admin-muted)">
@@ -83,7 +77,7 @@ function CollectionSection({
                                     {file.name}
                                 </span>
                                 <div className="flex shrink-0 gap-1">
-                                    <form action={MEDIA_ENDPOINT} method="post">
+                                    <AdminFetchForm endpoint={MEDIA_ENDPOINT}>
                                         <input type="hidden" name="intent" value="rotate"/>
                                         <input type="hidden" name="collection" value={collection}/>
                                         <input type="hidden" name="filename" value={file.name}/>
@@ -93,8 +87,8 @@ function CollectionSection({
                                         >
                                             Rotate
                                         </button>
-                                    </form>
-                                    <form action={MEDIA_ENDPOINT} method="post">
+                                    </AdminFetchForm>
+                                    <AdminFetchForm endpoint={MEDIA_ENDPOINT}>
                                         <input type="hidden" name="intent" value="delete"/>
                                         <input type="hidden" name="collection" value={collection}/>
                                         <input type="hidden" name="filename" value={file.name}/>
@@ -104,7 +98,7 @@ function CollectionSection({
                                         >
                                             Delete
                                         </button>
-                                    </form>
+                                    </AdminFetchForm>
                                 </div>
                             </div>
                         </div>
@@ -122,7 +116,7 @@ export default async function MediaManager() {
     ]);
 
     return (
-        <AdminPanel id="pictures" title="Pictures">
+        <AdminBand id="pictures" title="Pictures" plain>
             <div className="space-y-8">
                 <CollectionSection
                     collection="dashboard"
@@ -135,6 +129,6 @@ export default async function MediaManager() {
                     files={setupFiles}
                 />
             </div>
-        </AdminPanel>
+        </AdminBand>
     );
 }

@@ -1,15 +1,13 @@
 import {connectSpiderFarmerAction} from "@/app/admin/actions";
-import {AdminButton, AdminField, AdminInput, AdminPanel} from "@/components/admin/ui";
+import {AdminBand} from "@/app/admin/admin-band";
+import {AdminImmediateForm} from "@/app/admin/admin-save-form";
+import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
 import type {SpiderFarmerBrokerStatus} from "@/lib/ggs-sidecar-env";
 
 export function SpiderFarmerLoginPanel({status}: {status: SpiderFarmerBrokerStatus}) {
     return (
-        <AdminPanel
-            id="spider-farmer"
-            title="Spider Farmer"
-            description="Email and password from the Spider Farmer app. A successful login saves the broker username and password into the sidecar env."
-        >
-            <form action={connectSpiderFarmerAction} className="space-y-3">
+        <AdminBand id="spider-farmer" title="Spider Farmer">
+            <AdminImmediateForm action={connectSpiderFarmerAction} className="space-y-3">
                 <p className="text-sm text-(--admin-muted)">
                     {status.configured
                         ? `Broker login saved${status.account ? ` for ${status.account}` : ""}. Restart the ggs sidecar to use it.`
@@ -24,10 +22,7 @@ export function SpiderFarmerLoginPanel({status}: {status: SpiderFarmerBrokerStat
                         required
                     />
                 </AdminField>
-                <AdminField
-                    label="Password"
-                    hint="Sent only to Spider Farmer. It is not written to the env file."
-                >
+                <AdminField label="Password">
                     <AdminInput
                         name="sfPassword"
                         type="password"
@@ -38,7 +33,7 @@ export function SpiderFarmerLoginPanel({status}: {status: SpiderFarmerBrokerStat
                 <AdminButton type="submit" tone="primary">
                     Log in
                 </AdminButton>
-            </form>
-        </AdminPanel>
+            </AdminImmediateForm>
+        </AdminBand>
     );
 }

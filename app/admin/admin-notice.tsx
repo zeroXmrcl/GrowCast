@@ -250,12 +250,19 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     },
 };
 
+export function adminNoticeContent(notice: string): NoticeContent | null {
+    if (!isAdminNoticeId(notice)) {
+        return null;
+    }
+    return NOTICES[notice];
+}
+
 export function AdminFlashNotice({notice}: {notice?: string}) {
-    if (!notice || !isAdminNoticeId(notice)) {
+    const content = notice ? adminNoticeContent(notice) : null;
+    if (!content) {
         return null;
     }
 
-    const content = NOTICES[notice];
     return (
         <AdminNotice tone={content.tone} title={content.title}>
             {content.body}

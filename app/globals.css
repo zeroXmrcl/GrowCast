@@ -76,6 +76,143 @@ html:has([data-overlay-root]) body {
   color-scheme: dark;
 }
 
+.admin-nav-roll {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-nav-roll-open {
+  grid-template-rows: 1fr;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav-roll {
+    transition: none;
+  }
+}
+
+.admin-band {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+  padding: 2rem 1rem;
+  scroll-margin-top: 5rem;
+}
+
+.admin-band-group > .admin-band:nth-of-type(odd),
+.admin-band-group > .admin-save-form > .admin-band:nth-of-type(odd) {
+  background: #1a1a1a;
+}
+
+.admin-band.admin-band-plain {
+  background: transparent;
+}
+
+.admin-savebar,
+.admin-toast {
+  position: fixed;
+  z-index: 40;
+  right: 0;
+}
+
+.admin-savebar {
+  left: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: #1a1a1a;
+  border-top: 1px solid var(--admin-border);
+}
+
+.admin-savebar-discard,
+.admin-savebar-save {
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.admin-savebar-discard {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--admin-muted);
+}
+
+.admin-savebar-save {
+  border: 1px solid #d4d4d8;
+  background: #e4e4e7;
+  color: #18181b;
+  font-weight: 600;
+}
+
+.admin-savebar-save:disabled {
+  opacity: 0.55;
+}
+
+.admin-toast {
+  bottom: 1.5rem;
+  width: 20rem;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.75rem;
+  margin-right: 1.5rem;
+  padding: 0.875rem 1rem 1rem;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+  overflow: hidden;
+}
+
+html[data-admin-save-bar] .admin-toast {
+  bottom: 5.5rem;
+}
+
+.admin-toast-mark {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+}
+
+.admin-toast-timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: #3d9a33;
+  transform-origin: left center;
+  animation: admin-toast-timer 4s linear forwards;
+}
+
+@keyframes admin-toast-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (min-width: 1024px) {
+  .admin-band {
+    grid-template-columns: 240px minmax(0, 640px);
+    gap: 2.5rem;
+    padding: 2rem 2.5rem;
+  }
+
+  .admin-savebar {
+    left: 240px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-toast-timer {
+    animation: none;
+  }
+}
+
 @keyframes growcast-cover-breathe {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 1; }

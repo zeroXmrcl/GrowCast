@@ -1,13 +1,13 @@
 import {getAdminAuthStatus, isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {loginAction, saveGrowAction} from "@/app/admin/actions";
+import {AdminBandGroup} from "@/app/admin/admin-band";
+import {AdminSaveForm} from "@/app/admin/admin-save-form";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
-import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {AdminHashRedirect} from "@/app/admin/hash-redirect";
 import {AdminLoginForm} from "@/app/admin/login-form";
 import MediaManager from "@/app/admin/media-manager";
 import {GrowSettingsFields} from "@/app/admin/settings-fields";
-import {AdminSettingsForm} from "@/app/admin/settings-form";
 
 type AdminPageProps = {
     searchParams: Promise<{
@@ -42,11 +42,13 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
             actions={<AdminSignOutButton/>}
         >
             <AdminHashRedirect/>
-            <AdminFlashNotice notice={params.notice}/>
-            <AdminSettingsForm growId={grow.id} saveAction={saveGrowAction}>
-                <GrowSettingsFields grow={grow}/>
-            </AdminSettingsForm>
-            <MediaManager/>
+            <AdminBandGroup>
+                <AdminSaveForm action={saveGrowAction}>
+                    <input type="hidden" name="growId" value={grow.id}/>
+                    <GrowSettingsFields grow={grow}/>
+                </AdminSaveForm>
+                <MediaManager/>
+            </AdminBandGroup>
         </AdminChrome>
     );
 }

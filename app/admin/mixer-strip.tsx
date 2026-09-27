@@ -2,11 +2,12 @@
 
 import {useState, type FormEvent} from "react";
 import {saveProgramAudioAction} from "@/app/admin/actions";
+import {AdminImmediateForm} from "@/app/admin/admin-save-form";
 import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
+import {publishAdminNotice} from "@/lib/admin/publish-notice";
 import type {RestreamAudio} from "@/lib/restream/audio";
 
 export function MixerStrip({audio}: {audio: RestreamAudio}) {
-    const [alertNotice, setAlertNotice] = useState<string | null>(null);
     const [alertBusy, setAlertBusy] = useState(false);
 
     async function sendAlert(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -14,7 +15,6 @@ export function MixerStrip({audio}: {audio: RestreamAudio}) {
         const form = event.currentTarget;
         const alertBody = String(new FormData(form).get("alertBody") ?? "");
         setAlertBusy(true);
-        setAlertNotice(null);
         try {
             const response = await fetch("/api/admin/program-alert", {
                 method: "POST",
@@ -25,21 +25,29 @@ export function MixerStrip({audio}: {audio: RestreamAudio}) {
             const raw: unknown = await response.json().catch(() => null);
             const ok = raw !== null && typeof raw === "object" && "ok" in raw && raw.ok === true;
             if (!response.ok || !ok) {
-                setAlertNotice("Could not send the alert.");
+                publishAdminNotice({
+                    title: "Alert",
+                    body: "Could not send the alert.",
+                    tone: "danger",
+                });
                 return;
             }
             form.reset();
-            setAlertNotice("Sent — watch the program monitor.");
+            publishAdminNotice("alert_sent");
         } catch {
-            setAlertNotice("Could not send the alert.");
+            publishAdminNotice({
+                title: "Alert",
+                body: "Could not send the alert.",
+                tone: "danger",
+            });
         } finally {
             setAlertBusy(false);
         }
     }
 
     return (
-        <div className="mt-3 space-y-3 rounded-md border border-(--admin-border) bg-(--admin-surface-muted) px-4 py-3">
-            <form action={saveProgramAudioAction} className="flex flex-wrap items-end gap-3">
+        <div className="space-y-3">
+            <AdminImmediateForm action={saveProgramAudioAction} className="flex flex-wrap items-end gap-3">
                 <label className="flex h-10 items-center gap-2 text-sm font-medium text-(--admin-text)">
                     <input
                         type="checkbox"
@@ -65,7 +73,7 @@ export function MixerStrip({audio}: {audio: RestreamAudio}) {
                 <AdminButton type="submit" tone="secondary">
                     Apply
                 </AdminButton>
-            </form>
+            </AdminImmediateForm>
             {audio.url ? (
                 <p className="text-xs text-(--admin-muted)">{audio.url}</p>
             ) : null}
@@ -83,9 +91,6 @@ export function MixerStrip({audio}: {audio: RestreamAudio}) {
                 <AdminButton type="submit" tone="primary" disabled={alertBusy}>
                     Send alert
                 </AdminButton>
-                {alertNotice ? (
-                    <p className="text-xs text-(--admin-muted)">{alertNotice}</p>
-                ) : null}
             </form>
         </div>
     );

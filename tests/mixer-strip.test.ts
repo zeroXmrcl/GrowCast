@@ -31,7 +31,6 @@ describe("mixer strip", () => {
         assert.match(panel, /Upload tracks/);
         assert.match(panel, /name="filename"/);
         assert.match(panel, /accept="\.mp3,\.ogg,\.wav,\.m4a"/);
-        assert.match(panel, /URL wins while set/);
         assert.match(page, /waveSmoothPct=\{audio\.waveSmoothPct\}/);
         assert.match(page, /musicLook=\{audio\.musicLook\}/);
         assert.match(page, /waveBars=\{audio\.waveBars\}/);

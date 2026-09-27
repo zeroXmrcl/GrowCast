@@ -1,8 +1,8 @@
+import {AdminBand} from "@/app/admin/admin-band";
 import {
     AdminCheckboxRow,
     AdminField,
     AdminInput,
-    AdminPanel,
     AdminSelect,
     AdminTextarea,
 } from "@/components/admin/ui";
@@ -14,8 +14,8 @@ type GrowSettingsFieldsProps = {
 
 export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
     return (
-        <div className="space-y-6">
-            <AdminPanel id="general" title="General">
+        <>
+            <AdminBand id="general" title="General">
                 <div className="grid gap-4 md:grid-cols-2">
                     <AdminField label="Grow Name">
                         <AdminInput name="name" defaultValue={grow.name} required/>
@@ -40,12 +40,11 @@ export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
                         name="showSettingsLink"
                         defaultChecked={grow.showSettingsLink}
                         label="Show Settings link in the site header"
-                        description="When disabled, the link is hidden for all visitors. The admin area stays reachable at /admin."
                     />
                 </div>
-            </AdminPanel>
+            </AdminBand>
 
-            <AdminPanel id="lifecycle" title="Lifecycle">
+            <AdminBand id="lifecycle" title="Lifecycle">
                 <div className="grid gap-4 md:grid-cols-2">
                     <AdminField label="Stage">
                         <AdminSelect name="stage" defaultValue={grow.details.stage}>
@@ -70,9 +69,9 @@ export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
                         />
                     </AdminField>
                 </div>
-            </AdminPanel>
+            </AdminBand>
 
-            <AdminPanel id="climate" title="Climate">
+            <AdminBand id="climate" title="Climate">
                 <div className="grid gap-6 md:grid-cols-2">
                     <div className="space-y-4">
                         <p className="text-xs font-semibold uppercase text-(--admin-subtle)">
@@ -123,9 +122,9 @@ export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
                         </AdminField>
                     </div>
                 </div>
-            </AdminPanel>
+            </AdminBand>
 
-            <AdminPanel id="status" title="Status">
+            <AdminBand id="status" title="Status">
                 <div className="grid gap-4 md:grid-cols-2">
                     <AdminField label="Health">
                         <AdminSelect name="health" defaultValue={grow.status.health}>
@@ -152,9 +151,9 @@ export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
                         />
                     </AdminField>
                 </div>
-            </AdminPanel>
+            </AdminBand>
 
-            <AdminPanel id="notes" title="Notes">
+            <AdminBand id="notes" title="Notes">
                 <AdminField label="Markdown supported">
                     <AdminTextarea
                         name="notes"
@@ -162,9 +161,9 @@ export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
                         rows={6}
                     />
                 </AdminField>
-            </AdminPanel>
+            </AdminBand>
 
-            <AdminPanel id="hardware" title="Hardware">
+            <AdminBand id="hardware" title="Hardware">
                 <div className="grid gap-4 md:grid-cols-2">
                     <AdminField label="Medium">
                         <AdminInput
@@ -192,9 +191,9 @@ export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
                         />
                     </AdminField>
                 </div>
-            </AdminPanel>
+            </AdminBand>
 
-            <AdminPanel id="socials" title="Socials">
+            <AdminBand id="socials" title="Socials">
                 <div className="grid gap-4 md:grid-cols-2">
                     <AdminField label="YouTube">
                         <AdminInput
@@ -239,7 +238,7 @@ export function GrowSettingsFields({grow}: GrowSettingsFieldsProps) {
                         />
                     </AdminField>
                 </div>
-            </AdminPanel>
-        </div>
+            </AdminBand>
+        </>
     );
 }

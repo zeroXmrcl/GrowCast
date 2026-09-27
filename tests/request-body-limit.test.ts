@@ -81,25 +81,24 @@ describe("admin media upload vs proxy cap", () => {
         );
     });
 
-    it("maps a media POST 413 to an admin notice 303, not a raw body", async () => {
+    it("maps a media POST 413 to a JSON notice, not a raw body", async () => {
         const response = payloadTooLargeResponse("POST", "/api/admin/media");
-        assert.equal(response.status, 303);
-        assert.equal(response.headers.get("location"), "/admin?notice=media_payload_too_large");
-        assert.equal(await response.text(), "");
+        assert.equal(response.status, 413);
+        assert.equal(response.headers.get("location"), null);
+        assert.deepEqual(await response.json(), {notice: "media_payload_too_large"});
 
         const other = payloadTooLargeResponse("POST", "/api/mesh/growcast.ggs/state");
         assert.equal(other.status, 413);
         assert.equal(await other.text(), "Payload Too Large");
     });
 
-    it("maps a music POST 413 to a stream notice 303", async () => {
+    it("maps a music POST 413 to a JSON notice", async () => {
         const response = payloadTooLargeResponse("POST", "/api/admin/music");
-        assert.equal(response.status, 303);
-        assert.equal(response.headers.get("location"), "/admin/stream?notice=music_payload_too_large");
-        assert.equal(await response.text(), "");
+        assert.equal(response.status, 413);
+        assert.deepEqual(await response.json(), {notice: "music_payload_too_large"});
 
         const trailing = payloadTooLargeResponse("POST", "/api/admin/music/");
-        assert.equal(trailing.status, 303);
-        assert.equal(trailing.headers.get("location"), "/admin/stream?notice=music_payload_too_large");
+        assert.equal(trailing.status, 413);
+        assert.deepEqual(await trailing.json(), {notice: "music_payload_too_large"});
     });
 });

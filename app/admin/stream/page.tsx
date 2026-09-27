@@ -7,8 +7,9 @@ import {
     startTwitchRestreamAction,
     stopTwitchRestreamAction,
 } from "@/app/admin/actions";
+import {AdminBand, AdminBandGroup} from "@/app/admin/admin-band";
+import {AdminSaveForm} from "@/app/admin/admin-save-form";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
-import {AdminFlashNotice} from "@/app/admin/admin-notice";
 import {AlertsPanel} from "@/app/admin/alerts-panel";
 import {CameraLookPanel} from "@/app/admin/camera-look-panel";
 import {MixerStrip} from "@/app/admin/mixer-strip";
@@ -16,7 +17,6 @@ import {MusicPanel} from "@/app/admin/music-panel";
 import {ProgramMonitor} from "@/app/admin/program-monitor";
 import {RestreamPanel} from "@/app/admin/restream-panel";
 import {StreamSettingsFields} from "@/app/admin/stream-fields";
-import {AdminButton} from "@/components/admin/ui";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {overlayPublicUrl} from "@/lib/overlay-layout";
@@ -29,14 +29,7 @@ import {readRestreamPublicView} from "@/lib/restream/store";
 import {readTwitchOAuthFile} from "@/lib/restream/twitch-oauth";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
 
-type StreamPageProps = {
-    searchParams: Promise<{
-        notice?: string;
-    }>;
-};
-
-export default async function AdminStreamPage({searchParams}: StreamPageProps) {
-    const params = await searchParams;
+export default async function AdminStreamPage() {
 
     if (!(await isAdminAuthenticated())) {
         redirect("/admin");
@@ -60,42 +53,34 @@ export default async function AdminStreamPage({searchParams}: StreamPageProps) {
             sections={SETTINGS_SECTION_LINKS}
             actions={<AdminSignOutButton/>}
         >
-            <AdminFlashNotice notice={params.notice}/>
-            <form id="broadcast-grow" action={saveStreamAction} className="hidden">
-                <input type="hidden" name="growId" value={grow.id}/>
-            </form>
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
-                <div>
+            <AdminBandGroup>
+                <AdminBand id="program" title="Program">
                     <ProgramMonitor/>
+                </AdminBand>
+                <AdminBand id="mixer" title="Mixer">
                     <MixerStrip audio={audio}/>
-                </div>
-                <div className="space-y-4 lg:sticky lg:top-20">
-                    <RestreamPanel
-                        view={restream}
-                        startAction={startTwitchRestreamAction}
-                        stopAction={stopTwitchRestreamAction}
-                        saveToastAction={saveBroadcastToastAction}
-                        saveKeyAction={saveTwitchKeyAction}
-                    />
-                    <CameraLookPanel look={look}/>
-                    <MusicPanel
-                        files={await listMusicFiles()}
-                        url={audio.url}
-                        waveSmoothPct={audio.waveSmoothPct}
-                        musicLook={audio.musicLook}
-                        waveBars={audio.waveBars}
-                    />
-                    <AlertsPanel settings={alerts} twitchLogin={oauth?.login ?? ""}/>
-                    <StreamSettingsFields
-                        grow={grow}
-                        overlayUrl={overlayUrl}
-                        growForm="broadcast-grow"
-                    />
-                    <AdminButton form="broadcast-grow" type="submit" tone="primary" className="w-full">
-                        Save Changes
-                    </AdminButton>
-                </div>
-            </div>
+                </AdminBand>
+                <RestreamPanel
+                    view={restream}
+                    startAction={startTwitchRestreamAction}
+                    stopAction={stopTwitchRestreamAction}
+                    saveToastAction={saveBroadcastToastAction}
+                    saveKeyAction={saveTwitchKeyAction}
+                />
+                <CameraLookPanel look={look}/>
+                <MusicPanel
+                    files={await listMusicFiles()}
+                    url={audio.url}
+                    waveSmoothPct={audio.waveSmoothPct}
+                    musicLook={audio.musicLook}
+                    waveBars={audio.waveBars}
+                />
+                <AlertsPanel settings={alerts} twitchLogin={oauth?.login ?? ""}/>
+                <AdminSaveForm action={saveStreamAction}>
+                    <input type="hidden" name="growId" value={grow.id}/>
+                    <StreamSettingsFields grow={grow} overlayUrl={overlayUrl}/>
+                </AdminSaveForm>
+            </AdminBandGroup>
         </AdminChrome>
     );
 }

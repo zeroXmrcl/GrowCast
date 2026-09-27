@@ -1,5 +1,7 @@
 import {saveAlertsSettingsAction} from "@/app/admin/actions";
-import {AdminButton, AdminCheckboxRow, AdminPanel} from "@/components/admin/ui";
+import {AdminBand} from "@/app/admin/admin-band";
+import {AdminImmediateForm} from "@/app/admin/admin-save-form";
+import {AdminButton, AdminCheckboxRow} from "@/components/admin/ui";
 import OverlayScaleInput from "@/components/overlay-scale-input";
 import type {AlertsSettings} from "@/lib/restream/alerts-settings";
 
@@ -12,20 +14,19 @@ export function AlertsPanel({
 }) {
     const connected = twitchLogin.trim().length > 0;
     return (
-        <AdminPanel
-            id="alerts"
-            title="Alerts"
-            description={connected ? `Connected as ${twitchLogin}` : undefined}
-            actions={
+        <AdminBand id="alerts" title="Alerts">
+            <div className="mb-4 flex items-center justify-between gap-3">
+                {connected ? (
+                    <p className="text-sm text-(--admin-muted)">{`Connected as ${twitchLogin}`}</p>
+                ) : <span/>}
                 <a
                     href="/admin/stream/twitch-connect"
                     className="inline-flex h-10 items-center justify-center rounded-md border border-(--admin-border-strong) bg-(--admin-surface) px-4 text-sm font-medium text-(--admin-text) hover:border-zinc-500 hover:bg-(--admin-surface-muted)"
                 >
                     Connect Twitch
                 </a>
-            }
-        >
-            <form action={saveAlertsSettingsAction} className="space-y-3">
+            </div>
+            <AdminImmediateForm action={saveAlertsSettingsAction} className="space-y-3">
                 {!connected && settings.follow ? <input type="hidden" name="follow" value="on"/> : null}
                 <AdminCheckboxRow
                     name="follow"
@@ -67,7 +68,7 @@ export function AlertsPanel({
                 <AdminButton type="submit" tone="secondary">
                     Save
                 </AdminButton>
-            </form>
-        </AdminPanel>
+            </AdminImmediateForm>
+        </AdminBand>
     );
 }

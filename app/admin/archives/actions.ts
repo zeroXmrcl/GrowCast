@@ -3,6 +3,7 @@
 import {revalidatePath} from "next/cache";
 import {redirect} from "next/navigation";
 import {requireAdmin} from "@/lib/admin-auth";
+import type {AdminActionResult} from "@/lib/admin/action-result";
 import {withNotice} from "@/lib/admin/notice";
 import {parseArchiveEditForm} from "@/lib/admin/parse-grow-form";
 import {
@@ -33,8 +34,8 @@ function revalidateArchivePages(archiveId: string): void {
     revalidatePath(editorPath(archiveId));
 }
 
-export async function updateArchiveAction(formData: FormData): Promise<void> {
-    await withNextRequestLogContext("/admin/archives", async () => {
+export async function updateArchiveAction(formData: FormData): Promise<AdminActionResult> {
+    return withNextRequestLogContext("/admin/archives", async () => {
         await requireAdmin();
 
         const archiveId = String(formData.get("archiveId") ?? "");
@@ -48,21 +49,20 @@ export async function updateArchiveAction(formData: FormData): Promise<void> {
 
         if (!result.ok) {
             logAdminArchiveUpdateFailed({archiveId, reason: result.error});
-            redirect(
-                result.error === "not_found"
-                    ? withNotice("/admin/archives", "archive_not_found")
-                    : withNotice(editorPath(archiveId), "archive_update_failed"),
-            );
+            if (result.error === "not_found") {
+                redirect(withNotice("/admin/archives", "archive_not_found"));
+            }
+            return {notice: "archive_update_failed"};
         }
 
         logAdminArchiveUpdated({archiveId});
         revalidateArchivePages(archiveId);
-        redirect(withNotice(editorPath(archiveId), "archive_updated"));
+        return {notice: "archive_updated"};
     });
 }
 
-export async function deleteArchiveMediaAction(formData: FormData): Promise<void> {
-    await withNextRequestLogContext("/admin/archives", async () => {
+export async function deleteArchiveMediaAction(formData: FormData): Promise<AdminActionResult> {
+    return withNextRequestLogContext("/admin/archives", async () => {
         await requireAdmin();
 
         const archiveId = String(formData.get("archiveId") ?? "");
@@ -74,28 +74,27 @@ export async function deleteArchiveMediaAction(formData: FormData): Promise<void
         const kind = String(formData.get("kind") ?? "");
         if (!isArchiveMediaKind(kind)) {
             logAdminArchiveMediaDeleteFailed({archiveId, reason: "invalid_kind"});
-            redirect(withNotice(editorPath(archiveId), "archive_media_delete_failed"));
+            return {notice: "archive_media_delete_failed"};
         }
 
         const filenames = formData.getAll("filenames").map(String);
         if (filenames.length === 0) {
-            redirect(withNotice(editorPath(archiveId), "archive_none_selected"));
+            return {notice: "archive_none_selected"};
         }
 
         const result = await deleteArchiveMediaFiles(archiveId, kind, filenames);
 
         if (!result.ok) {
             logAdminArchiveMediaDeleteFailed({archiveId, kind, reason: result.error});
-            redirect(
-                result.error === "not_found"
-                    ? withNotice("/admin/archives", "archive_not_found")
-                    : withNotice(editorPath(archiveId), "archive_media_delete_failed"),
-            );
+            if (result.error === "not_found") {
+                redirect(withNotice("/admin/archives", "archive_not_found"));
+            }
+            return {notice: "archive_media_delete_failed"};
         }
 
         logAdminArchiveMediaDeleted({archiveId, kind, deleted: result.deleted});
         revalidateArchivePages(archiveId);
-        redirect(withNotice(editorPath(archiveId), "archive_media_deleted"));
+        return {notice: "archive_media_deleted"};
     });
 }
 

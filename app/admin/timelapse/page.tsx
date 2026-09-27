@@ -1,21 +1,13 @@
 import {redirect} from "next/navigation";
 import {saveTimelapseAction} from "@/app/admin/actions";
+import {AdminBandGroup} from "@/app/admin/admin-band";
+import {AdminSaveForm} from "@/app/admin/admin-save-form";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
-import {AdminFlashNotice} from "@/app/admin/admin-notice";
-import {AdminSettingsForm} from "@/app/admin/settings-form";
 import {TimelapseSettingsFields} from "@/app/admin/timelapse-fields";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {getTimelapseSettings} from "@/lib/timelapse-settings";
 
-type TimelapsePageProps = {
-    searchParams: Promise<{
-        notice?: string;
-    }>;
-};
-
-export default async function AdminTimelapsePage({searchParams}: TimelapsePageProps) {
-    const params = await searchParams;
-
+export default async function AdminTimelapsePage() {
     if (!(await isAdminAuthenticated())) {
         redirect("/admin");
     }
@@ -28,10 +20,11 @@ export default async function AdminTimelapsePage({searchParams}: TimelapsePagePr
             sections={SETTINGS_SECTION_LINKS}
             actions={<AdminSignOutButton/>}
         >
-            <AdminFlashNotice notice={params.notice}/>
-            <AdminSettingsForm saveAction={saveTimelapseAction}>
-                <TimelapseSettingsFields timelapseSettings={timelapseSettings}/>
-            </AdminSettingsForm>
+            <AdminBandGroup>
+                <AdminSaveForm action={saveTimelapseAction}>
+                    <TimelapseSettingsFields timelapseSettings={timelapseSettings}/>
+                </AdminSaveForm>
+            </AdminBandGroup>
         </AdminChrome>
     );
 }
