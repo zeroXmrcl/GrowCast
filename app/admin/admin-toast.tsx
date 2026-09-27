@@ -1,11 +1,10 @@
 "use client";
 
 import {useEffect, useState, type ReactNode} from "react";
-import {usePathname, useRouter, useSearchParams} from "next/navigation";
+import {usePathname, useSearchParams} from "next/navigation";
 import {adminNoticeContent} from "@/app/admin/admin-notice";
 import {
     ADMIN_NOTICE_EVENT,
-    publishAdminNotice,
     type AdminToastDetail,
 } from "@/lib/admin/publish-notice";
 import {isAdminNoticeId} from "@/lib/admin/notice";
@@ -35,39 +34,43 @@ function viewFromDetail(detail: AdminToastDetail): ToastView | null {
     return detail;
 }
 
+function showToast(
+    detail: AdminToastDetail,
+    setView: (view: ToastView | null) => void,
+    setTick: (update: (value: number) => number) => void,
+): void {
+    const next = viewFromDetail(detail);
+    if (!next) {
+        return;
+    }
+    setView(next);
+    setTick((value) => value + 1);
+}
+
 export function AdminToast() {
     const searchParams = useSearchParams();
     const pathname = usePathname();
-    const router = useRouter();
     const [view, setView] = useState<ToastView | null>(null);
     const [tick, setTick] = useState(0);
 
     useEffect(() => {
-        const notice = searchParams.get("notice");
-        if (!notice || !isAdminNoticeId(notice)) {
-            return;
-        }
-        publishAdminNotice(notice);
-        const next = new URLSearchParams(searchParams.toString());
-        next.delete("notice");
-        const query = next.toString();
-        router.replace(query ? `${pathname}?${query}` : pathname, {scroll: false});
-    }, [pathname, router, searchParams]);
-
-    useEffect(() => {
         function onNotice(event: Event) {
-            const detail = (event as CustomEvent<AdminToastDetail>).detail;
-            const next = viewFromDetail(detail);
-            if (!next) {
-                return;
-            }
-            setView(next);
-            setTick((value) => value + 1);
+            showToast((event as CustomEvent<AdminToastDetail>).detail, setView, setTick);
         }
 
         window.addEventListener(ADMIN_NOTICE_EVENT, onNotice);
+
+        const notice = searchParams.get("notice");
+        if (notice && isAdminNoticeId(notice)) {
+            showToast(notice, setView, setTick);
+            const next = new URLSearchParams(searchParams.toString());
+            next.delete("notice");
+            const query = next.toString();
+            window.history.replaceState(window.history.state, "", query ? `${pathname}?${query}` : pathname);
+        }
+
         return () => window.removeEventListener(ADMIN_NOTICE_EVENT, onNotice);
-    }, []);
+    }, [pathname, searchParams]);
 
     useEffect(() => {
         if (!view) {

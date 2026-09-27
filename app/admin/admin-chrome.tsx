@@ -20,6 +20,30 @@ export function AdminSignOutButton() {
     );
 }
 
+export function AdminSidebar() {
+    return (
+        <aside className="border-b border-(--admin-border) bg-(--admin-surface) lg:sticky lg:top-0 lg:h-screen lg:overflow-auto lg:border-b-0 lg:border-r">
+            <div className="border-b border-(--admin-border) px-4 py-4">
+                <Link href="/" className="flex items-center gap-3">
+                    <Image
+                        src="/growCastLogo_white.svg"
+                        alt="GrowCast"
+                        width={28}
+                        height={28}
+                        priority
+                    />
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-(--admin-text)">GrowCast</p>
+                    </div>
+                </Link>
+            </div>
+            <div className="px-3 py-3 lg:py-4">
+                <AdminSectionNav sections={SETTINGS_SECTION_LINKS}/>
+            </div>
+        </aside>
+    );
+}
+
 type AdminChromeProps = {
     title: string;
     eyebrow?: ReactNode;
@@ -59,32 +83,7 @@ export function AdminChrome({
     }
 
     return (
-        <div className="admin-theme min-h-screen bg-(--admin-bg) text-(--admin-text) lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
-            <aside className="border-b border-(--admin-border) bg-(--admin-surface) lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
-                <div className="border-b border-(--admin-border) px-4 py-4">
-                    <Link href="/" className="flex items-center gap-3">
-                        <Image
-                            src="/growCastLogo_white.svg"
-                            alt="GrowCast"
-                            width={28}
-                            height={28}
-                            priority
-                        />
-                        <div className="min-w-0">
-                            <p className="text-sm font-semibold text-(--admin-text)">GrowCast</p>
-                        </div>
-                    </Link>
-                </div>
-
-                <div className="space-y-2 px-3 py-3 lg:space-y-6 lg:py-4">
-                    <div>
-                        <p className="px-3 text-xs font-medium text-(--admin-subtle)">Sections</p>
-                        <AdminSectionNav sections={sections}/>
-                    </div>
-                </div>
-            </aside>
-
-            <div className="min-w-0">
+        <div className="min-w-0">
                 <header className="sticky top-0 z-20 flex h-15.25 items-center justify-between border-b border-(--admin-border) bg-(--admin-bg) px-4 sm:px-6">
                     <div className="min-w-0">
                         {typeof eyebrow === "string" ? (
@@ -100,7 +99,6 @@ export function AdminChrome({
                 <main className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
                     <div className="space-y-6">{children}</div>
                 </main>
-            </div>
         </div>
     );
 }

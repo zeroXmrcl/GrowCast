@@ -94,7 +94,7 @@ export function AdminSectionNav({
                     <div key={item.href}>
                         <NavLink href={item.href} label={item.label} active={active}/>
                         <div className={active ? "admin-nav-roll admin-nav-roll-open" : "admin-nav-roll"}>
-                            <div className="overflow-hidden">
+                            <div className="min-h-0 overflow-hidden" inert={active ? undefined : true}>
                                 <div className="flex flex-col py-1">
                                     {bands.map((band) => {
                                         const href = active ? `${pathname}#${band.id}` : `${item.href}#${band.id}`;

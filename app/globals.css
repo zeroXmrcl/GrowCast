@@ -79,15 +79,45 @@ html:has([data-overlay-root]) body {
 .admin-nav-roll {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 380ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: grid-template-rows 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-nav-roll > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-nav-roll a {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 160ms ease,
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 120ms ease;
 }
 
 .admin-nav-roll-open {
   grid-template-rows: 1fr;
 }
 
+.admin-nav-roll-open a {
+  opacity: 1;
+  transform: none;
+}
+
+.admin-nav-roll-open a:nth-child(1) { transition-delay: 30ms; }
+.admin-nav-roll-open a:nth-child(2) { transition-delay: 50ms; }
+.admin-nav-roll-open a:nth-child(3) { transition-delay: 70ms; }
+.admin-nav-roll-open a:nth-child(4) { transition-delay: 90ms; }
+.admin-nav-roll-open a:nth-child(5) { transition-delay: 110ms; }
+.admin-nav-roll-open a:nth-child(6) { transition-delay: 130ms; }
+.admin-nav-roll-open a:nth-child(7) { transition-delay: 150ms; }
+.admin-nav-roll-open a:nth-child(8) { transition-delay: 170ms; }
+.admin-nav-roll-open a:nth-child(9) { transition-delay: 190ms; }
+
 @media (prefers-reduced-motion: reduce) {
-  .admin-nav-roll {
+  .admin-nav-roll,
+  .admin-nav-roll a {
     transition: none;
   }
 }
