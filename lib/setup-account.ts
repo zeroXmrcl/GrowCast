@@ -129,4 +129,5 @@ export async function writeSkippedStep(step: string): Promise<void> {
     const file = skippedStepsPath();
     await mkdir(path.dirname(file), {recursive: true});
     await atomicWriteFile(file, `${JSON.stringify(steps)}\n`);
+    await chmod(file, 0o600).catch(() => undefined);
 }

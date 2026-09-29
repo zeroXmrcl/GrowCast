@@ -109,7 +109,15 @@ export async function setupCameraAction(formData: FormData): Promise<SetupStepRe
     return {ok: true};
 }
 
+const SKIPPABLE_INSTALLER_STEPS = new Set(["climate", "camera", "twitch", "timelapse"]);
+
 export async function skipInstallerStepAction(step: string): Promise<SetupStepResult> {
+    if (!needsSetupWizard()) {
+        return closed();
+    }
+    if (!SKIPPABLE_INSTALLER_STEPS.has(step)) {
+        return {ok: false, message: "That step cannot be skipped."};
+    }
     await writeSkippedStep(step);
     return {ok: true};
 }
