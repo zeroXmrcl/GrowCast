@@ -4,7 +4,7 @@ import {mkdtemp, readFile, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {INSTALLER_COPY} from "../app/setup/installer-copy.ts";
+import {INSTALLER_COPY, installerDoneRows} from "../app/setup/installer-copy.ts";
 import {isInstallerStreamUrl} from "../app/setup/installer-url.ts";
 import {passwordLineMet, passwordLineScale} from "../app/setup/password-line.ts";
 import {readSkippedSteps, writeSkippedStep} from "../lib/setup-account.ts";
@@ -23,6 +23,19 @@ describe("installer copy", () => {
         assert.equal(INSTALLER_COPY.twitch.line, "Creator Dashboard -> Settings -> Stream.");
         assert.equal(INSTALLER_COPY.timelapse.line, "Use the camera’s rtsp:// address.");
         assert.equal(INSTALLER_COPY.done.line, "You can change any of this later in admin settings.");
+    });
+
+    it("marks skipped climate and keeps a saved camera url", () => {
+        const rows = installerDoneRows({
+            username: "admin",
+            climate: null,
+            streamUrl: "https://stream.example.com/growcam/",
+            twitchSaved: false,
+            timelapse: null,
+            skipped: ["climate"],
+        });
+        assert.equal(rows.find((row) => row.label === "Climate")?.value, "Skipped");
+        assert.equal(rows.find((row) => row.label === "Camera")?.value, "https://stream.example.com/growcam/");
     });
 });
 

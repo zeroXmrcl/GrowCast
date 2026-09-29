@@ -40,3 +40,21 @@ export const INSTALLER_COPY = {
         button: "Open the dashboard",
     },
 } as const;
+
+export function installerDoneRows(input: {
+    username: string;
+    climate: string | null;
+    streamUrl: string | null;
+    twitchSaved: boolean;
+    timelapse: string | null;
+    skipped: readonly string[];
+}): Array<{label: string; value: string}> {
+    const skipped = new Set(input.skipped);
+    return [
+        {label: "Admin", value: input.username},
+        {label: "Climate", value: skipped.has("climate") ? "Skipped" : (input.climate ?? "Skipped")},
+        {label: "Camera", value: skipped.has("camera") ? "Skipped" : (input.streamUrl ?? "Skipped")},
+        {label: "Twitch", value: skipped.has("twitch") || !input.twitchSaved ? "Skipped" : "Key saved. Start is on Broadcast."},
+        {label: "Timelapse", value: skipped.has("timelapse") ? "Skipped" : (input.timelapse ?? "Skipped")},
+    ];
+}

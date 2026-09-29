@@ -28,7 +28,7 @@ import {
 import {isInstallerStreamUrl} from "./installer-url";
 
 export type SetupStepResult =
-    | {ok: true}
+    | {ok: true; detail?: string}
     | {ok: false; message: string; choose?: SpiderFarmerController[]};
 
 function closed(): SetupStepResult {
@@ -41,11 +41,12 @@ export async function createSetupAdminAction(formData: FormData): Promise<SetupS
     }
     const username = normalizeUsernameInput(String(formData.get("username") ?? ""));
     const password = String(formData.get("password") ?? "");
+    const hasConfirm = formData.has("confirm");
     const confirm = String(formData.get("confirm") ?? "");
     if (!validateUsernameInput(username)) {
         return {ok: false, message: "Use 1–64 characters: letters, numbers, and . _ @ -."};
     }
-    if (password !== confirm) {
+    if (hasConfirm && password !== confirm) {
         return {ok: false, message: "Passwords do not match."};
     }
     if (!validatePasswordStrength(password)) {
@@ -73,7 +74,7 @@ export async function setupClimateAction(formData: FormData): Promise<SetupStepR
         serial: String(formData.get("sfSerial") ?? ""),
     });
     if (result.ok) {
-        return {ok: true};
+        return {ok: true, detail: result.name};
     }
     if ("choose" in result) {
         return {
