@@ -140,7 +140,7 @@ async function ensureEventsubSecretFile(): Promise<string> {
     }
     const secret = randomBytes(32).toString("hex");
     const file = restreamEventsubSecretFile();
-    await atomicWriteFile(file, `${secret}\n`);
+    await atomicWriteFile(file, `${secret}\n`, 0o600);
     await chmod(restreamDir(), 0o700).catch(() => undefined);
     await chmod(file, 0o600);
     return secret;
@@ -340,12 +340,22 @@ async function createEventsubSubscription(
     });
 }
 
+const LIVE_EVENTSUB_STATUSES = new Set([
+    "enabled",
+    "webhook_callback_verification_pending",
+]);
+
 type ListedSubscription = {
     id: string;
     type: string;
+    status: string;
     callback: string;
     condition: unknown;
 };
+
+function isCurrentEventsub(sub: ListedSubscription): boolean {
+    return LIVE_EVENTSUB_STATUSES.has(sub.status);
+}
 
 async function listEventsubSubscriptions(
     type: EventsubType,
@@ -383,6 +393,7 @@ async function listEventsubSubscriptions(
                 found.push({
                     id,
                     type: asString(row.type).trim(),
+                    status: asString(row.status).trim(),
                     callback: transport ? asString(transport.callback).trim() : "",
                     condition: row.condition,
                 });
@@ -449,7 +460,7 @@ async function remainingCallbackMatches(
 ): Promise<boolean> {
     const existing = await listEventsubSubscriptions(type, auth, fetcher);
     return matchingSubscriptions(existing, type, userId).some(
-        (sub) => sub.callback === callback,
+        (sub) => sub.callback === callback && isCurrentEventsub(sub),
     );
 }
 
@@ -516,7 +527,7 @@ export async function ensureEventsubSubscriptions(
                     const existing = await listEventsubSubscriptions(type, auth, fetcher);
                     if (
                         matchingSubscriptions(existing, type, oauth.userId).some(
-                            (sub) => sub.callback === callback,
+                            (sub) => sub.callback === callback && isCurrentEventsub(sub),
                         )
                     ) {
                         continue;

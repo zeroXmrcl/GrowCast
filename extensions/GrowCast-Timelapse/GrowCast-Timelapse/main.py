@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import math
 import os
+import re
 import subprocess
 import sys
 import time
@@ -143,6 +144,13 @@ def webhook(file_path: str, webhook_url: str, message: str = "New snapshot!") ->
         print(e)
         return False
 
+_RTSP_USERINFO = re.compile(r"(rtsp://)([^/\s:@]+):([^@\s]+)@", re.IGNORECASE)
+
+
+def redact_stream_url(text: str) -> str:
+    return _RTSP_USERINFO.sub(r"\1***:***@", text)
+
+
 def create_filename(snapshot_dir: str) -> str:
     os.makedirs(snapshot_dir, exist_ok=True)
     existing = []
@@ -182,7 +190,7 @@ def grab_snapshot(rtsp_url: str, snapshot_dir: str):
     except subprocess.TimeoutExpired as e:
         print("ERROR: snapshot attempt timed out")
         if e.stderr:
-            print(e.stderr)
+            print(redact_stream_url(e.stderr))
         if os.path.exists(filename):
             os.remove(filename)
         return False
@@ -192,7 +200,7 @@ def grab_snapshot(rtsp_url: str, snapshot_dir: str):
         return filename
 
     print("ERROR: ")
-    print(result.stderr)
+    print(redact_stream_url(result.stderr or ""))
     if os.path.exists(filename):
         os.remove(filename)
     return False
@@ -233,7 +241,7 @@ def create_timelapse(state: RuntimeState) -> bool:
     # Write to a sibling file first. ffmpeg +faststart remuxes the finished
     # MP4 (moves moov to the start). Overwriting the published path in place
     # can leave two moov atoms and a truncated mdat that browsers cannot play.
-    temp_file = os.path.join(cfg.timelapse_dir, "latest_timelapse.partial.mp4")
+    temp_file = os.path.join(cfg.timelapse_dir, "latest_timelapse.mp4.partial")
     concat_path = os.path.join(cfg.timelapse_dir, "latest_timelapse.concat.txt")
     write_concat_file(image_files, cfg.snapshot_dir, concat_path)
     cmd = build_timelapse_cmd(fps, concat_path, cfg.quality_crf(), temp_file)
@@ -254,7 +262,7 @@ def create_timelapse(state: RuntimeState) -> bool:
         return True
 
     print("ERROR: ")
-    print(result.stderr)
+    print(redact_stream_url(result.stderr or ""))
     _unlink_if_exists(temp_file)
     _unlink_if_exists(concat_path)
     return False

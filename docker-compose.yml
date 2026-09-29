@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${GROWCAST_PORT:-3000}:3000"
+      - "${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}:3000"
     env_file:
       - path: .env.local
         format: raw
@@ -16,6 +16,8 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: 3000
       GROWCAST_TRUST_PROXY: "1"
+      GROWCAST_BIND: ${GROWCAST_BIND:-127.0.0.1}
+      GROWCAST_PORT: ${GROWCAST_PORT:-3000}
       GROWCAST_GGS_ENV_FILE: /app/data/ggs.env
     volumes:
       - ./data:/app/data
@@ -36,7 +38,7 @@ services:
     volumes:
       - ./data:/data
       - ./docker/ggs-run.sh:/opt/growcast/ggs-run.sh:ro
-    entrypoint: ["/bin/sh", "/opt/growcast/ggs-run.sh"]
+    entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /opt/growcast/ggs-run.sh > /tmp/ggs-run.sh && exec /bin/sh /tmp/ggs-run.sh"]
     depends_on:
       - growcast
 
@@ -51,7 +53,7 @@ services:
       GROWCAST_URL: http://growcast:3000
       TWITCH_INGEST: ${TWITCH_INGEST:-rtmps://live.twitch.tv:443/app}
     volumes:
-      - ./data:/data
+      - ./data/restream:/data/restream
     depends_on:
       - growcast
 
@@ -70,6 +72,6 @@ services:
       - ./extensions/GrowCast-Timelapse/snapshots:/app/GrowCast-Timelapse/snapshots
       - ./extensions/GrowCast-Timelapse/timelapse:/app/GrowCast-Timelapse/timelapse
       - ./docker/timelapse-run.sh:/opt/growcast/timelapse-run.sh:ro
-    entrypoint: ["/bin/sh", "/opt/growcast/timelapse-run.sh"]
+    entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /opt/growcast/timelapse-run.sh > /tmp/timelapse-run.sh && exec /bin/sh /tmp/timelapse-run.sh"]
     depends_on:
       - growcast

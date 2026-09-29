@@ -143,6 +143,6 @@ export async function writeTimelapseSidecarEnv(
             throw error;
         }
     }
-    await atomicWriteFile(filePath, mergeTimelapseSidecarEnv(source, withToken));
+    await atomicWriteFile(filePath, mergeTimelapseSidecarEnv(source, withToken), 0o600);
     await chmod(filePath, 0o600).catch(() => undefined);
 }

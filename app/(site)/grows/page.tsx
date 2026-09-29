@@ -1,5 +1,7 @@
+import path from "node:path";
 import Link from "next/link";
-import {archiveMediaUrl, getArchiveSnapshotFiles, listArchivedGrows, type ArchivedGrow} from "@/lib/archives";
+import {archiveMediaDir, archiveMediaUrl, getArchiveSnapshotFiles, listArchivedGrows, type ArchivedGrow} from "@/lib/archives";
+import {snapshotFileVersion, snapshotThumbSrc} from "@/lib/snapshot-thumb";
 import {formatDateDisplay, growDurationDays} from "./format";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +18,14 @@ async function loadArchiveCards(): Promise<ArchiveCard[]> {
         archives.map(async (archive) => {
             const snapshotFiles = await getArchiveSnapshotFiles(archive.archiveId);
             const newest = snapshotFiles[0];
+            const version = newest
+                ? await snapshotFileVersion(path.join(archiveMediaDir(archive.archiveId, "snapshots"), newest))
+                : undefined;
 
             return {
                 archive,
                 thumbnailUrl: newest
-                    ? archiveMediaUrl(archive.archiveId, "snapshots", newest)
+                    ? snapshotThumbSrc(archiveMediaUrl(archive.archiveId, "snapshots", newest), version)
                     : null,
             };
         }),

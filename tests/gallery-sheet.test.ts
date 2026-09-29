@@ -17,7 +17,7 @@ describe("gallery sheet", () => {
         assert.match(player, /text-xl font-semibold text-zinc-900 dark:text-zinc-100/);
         assert.match(gallery, /rounded-2xl/);
         assert.match(gallery, /href=\{snapshot\.url\}/);
-        assert.match(gallery, /src=\{snapshotThumbSrc\(snapshot\.url\)\}/);
+        assert.match(gallery, /snapshotThumbSrc\(snapshot\.url, snapshot\.version\)/);
         assert.equal(/src=\{snapshot\.url\}/.test(gallery), false);
     });
 });

@@ -1,6 +1,7 @@
 import pino, { type Logger, type LoggerOptions } from "pino";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { Writable } from "node:stream";
 import { REDACT_PATHS } from "./redact";
 import type { LogBindings, LogLevel, SecurityEventName } from "./types";
 import { getContextOrEmpty } from "./context";
@@ -79,14 +80,87 @@ function buildBaseBindings(): LogBindings {
   };
 }
 
+const HUMAN_SKIP = new Set([
+  "time",
+  "level",
+  "event",
+  "msg",
+  "pid",
+  "hostname",
+  "service",
+  "version",
+  "environment",
+  "channel",
+]);
+
+function wantsJsonLogs(env: NodeJS.ProcessEnv = process.env): boolean {
+  return (env.LOG_FORMAT ?? "").trim().toLowerCase() === "json";
+}
+
+function formatLogValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value.includes(" ") ? JSON.stringify(value) : value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
+/** One pino JSON line as `time level event  key=value`. */
+export function formatHumanLogLine(raw: string): string {
+  const text = raw.trim();
+  if (!text) {
+    return "";
+  }
+  let record: Record<string, unknown>;
+  try {
+    record = JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return text;
+  }
+  const time = typeof record.time === "string"
+    ? record.time.replace("T", " ").replace(/\.\d+Z$/, "").replace("Z", "")
+    : "";
+  const level = typeof record.level === "string" ? record.level : "info";
+  const event = typeof record.event === "string"
+    ? record.event
+    : typeof record.msg === "string"
+      ? record.msg
+      : "";
+  const details: string[] = [];
+  for (const [key, value] of Object.entries(record)) {
+    if (HUMAN_SKIP.has(key) || value == null || value === "") {
+      continue;
+    }
+    details.push(`${key}=${formatLogValue(value)}`);
+  }
+  const head = [time, level, event].filter((part) => part.length > 0).join(" ");
+  return details.length > 0 ? `${head}  ${details.join(" ")}` : head;
+}
+
+function humanDestination(): Writable {
+  let pending = "";
+  return new Writable({
+    write(chunk, _encoding, callback) {
+      pending += chunk.toString();
+      const lines = pending.split("\n");
+      pending = lines.pop() ?? "";
+      for (const line of lines) {
+        const formatted = formatHumanLogLine(line);
+        if (formatted) {
+          process.stdout.write(`${formatted}\n`);
+        }
+      }
+      callback();
+    },
+  });
+}
+
 function buildPinoOptions(): LoggerOptions {
   const level = resolveLogLevel();
-  const environment = resolveEnvironment();
-  const pretty =
-    !isProductionEnv(environment) &&
-    (process.env.LOG_PRETTY === "1" || process.env.LOG_PRETTY === "true");
 
-  const options: LoggerOptions = {
+  return {
     level,
     base: buildBaseBindings(),
     redact: {
@@ -100,19 +174,6 @@ function buildPinoOptions(): LoggerOptions {
     },
     timestamp: pino.stdTimeFunctions.isoTime,
   };
-
-  if (pretty) {
-    options.transport = {
-      target: "pino-pretty",
-      options: {
-        colorize: true,
-        translateTime: "SYS:standard",
-        ignore: "pid,hostname",
-      },
-    };
-  }
-
-  return options;
 }
 
 let rootLogger: Logger | undefined;
@@ -120,7 +181,9 @@ let securityLogger: Logger | undefined;
 
 export function getLogger(): Logger {
   if (!rootLogger) {
-    rootLogger = pino(buildPinoOptions());
+    rootLogger = wantsJsonLogs()
+      ? pino(buildPinoOptions())
+      : pino(buildPinoOptions(), humanDestination());
   }
   return rootLogger;
 }

@@ -153,6 +153,6 @@ export async function writeSpiderFarmerBrokerEnv(
             throw error;
         }
     }
-    await atomicWriteFile(filePath, mergeGgsSidecarEnv(source, values));
+    await atomicWriteFile(filePath, mergeGgsSidecarEnv(source, values), 0o600);
     await chmod(filePath, 0o600).catch(() => undefined);
 }

@@ -1,6 +1,6 @@
 # GrowCast production logging
 
-GrowCast emits **structured JSON logs to stdout** (Pino). In production, logs are always JSON lines — suitable for Docker log drivers, journald, and log aggregators. A pretty (human-readable) transport is available only in non-production when explicitly enabled.
+GrowCast emits **human-readable log lines to stdout** by default, so `docker compose logs` shows the setup code and events directly. Set `LOG_FORMAT=json` for one JSON object per line (Docker log drivers, journald, aggregators). The schema below describes that JSON form. The human line is `time level event  key=value`, with the same redaction.
 
 Implementation lives under `lib/logging/`. The Next.js proxy (`proxy.ts`) is intentionally free of Pino/Node APIs and only handles correlation IDs.
 

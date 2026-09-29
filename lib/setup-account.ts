@@ -48,7 +48,7 @@ export function readStoredAdminAccount(): StoredAdminAccount | null {
 
 export async function writeStoredAdminAccount(account: StoredAdminAccount): Promise<void> {
     const file = adminAccountPath();
-    await atomicWriteFile(file, `${JSON.stringify(account)}\n`);
+    await atomicWriteFile(file, `${JSON.stringify(account)}\n`, 0o600);
     await chmod(file, 0o600).catch(() => undefined);
 }
 

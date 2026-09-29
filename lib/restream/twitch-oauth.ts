@@ -224,7 +224,7 @@ export async function writeTwitchOAuthFile(value: TwitchOAuthFile): Promise<void
     if (!parsed) {
         return;
     }
-    await atomicWriteFile(restreamOAuthFile(), `${JSON.stringify(parsed, null, 2)}\n`);
+    await atomicWriteFile(restreamOAuthFile(), `${JSON.stringify(parsed, null, 2)}\n`, 0o600);
     await chmod(restreamDir(), 0o700).catch(() => undefined);
     await chmod(restreamOAuthFile(), 0o600);
 }

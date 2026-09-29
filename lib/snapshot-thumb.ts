@@ -1,4 +1,4 @@
-import {lstat, mkdir, readFile, rename, unlink, writeFile} from "node:fs/promises";
+import {lstat, mkdir, readFile, readdir, rename, stat, unlink, writeFile} from "node:fs/promises";
 import path from "node:path";
 import jpeg from "jpeg-js";
 import {atomicTempPath} from "@/lib/atomic-file";
@@ -40,29 +40,69 @@ export function snapshotThumbFilename(filename: string): string {
     return snapshotThumbFilenames(filename)[0] ?? `${snapshotThumbStem(filename)}.webp`;
 }
 
-/** Grid image URL. The link keeps the original snapshot URL. */
-export function snapshotThumbSrc(url: string): string {
+/** Grid image URL. `version` is the source mtime so a reused filename cannot stay cached. */
+export function snapshotThumbSrc(url: string, version?: string): string {
     const hashAt = url.indexOf("#");
     const hash = hashAt === -1 ? "" : url.slice(hashAt);
     const withoutHash = hashAt === -1 ? url : url.slice(0, hashAt);
     const separator = withoutHash.includes("?") ? "&" : "?";
-    return `${withoutHash}${separator}thumb=1${hash}`;
+    const versionQuery = version ? `&v=${encodeURIComponent(version)}` : "";
+    return `${withoutHash}${separator}thumb=1${versionQuery}${hash}`;
 }
 
-export function snapshotThumbResponse(opened: SnapshotThumbResult): Response {
+export async function snapshotFileVersion(filePath: string): Promise<string | undefined> {
+    try {
+        const stats = await stat(filePath);
+        if (!stats.isFile()) {
+            return undefined;
+        }
+        return String(Math.trunc(stats.mtimeMs));
+    } catch {
+        return undefined;
+    }
+}
+
+export function snapshotThumbResponse(
+    opened: SnapshotThumbResult,
+    options?: {versioned?: boolean},
+): Response {
     if (!opened.ok) {
         return new Response(opened.status === 400 ? "Invalid filename" : "File not found", {
             status: opened.status,
             headers: {"Cache-Control": "no-store"},
         });
     }
-    return new Response(new Uint8Array(opened.buffer), {
+    return new Response(new Uint8Array(opened.buffer.buffer, opened.buffer.byteOffset, opened.buffer.byteLength), {
         status: 200,
         headers: {
             "Content-Type": opened.contentType,
-            "Cache-Control": SNAPSHOT_THUMB_CACHE_CONTROL,
+            "Cache-Control": options?.versioned ? SNAPSHOT_THUMB_CACHE_CONTROL : "private, no-cache",
         },
     });
+}
+
+export async function deleteSnapshotThumbs(sourceDir: string, filenames: string[]): Promise<void> {
+    const thumbs = path.join(sourceDir, "thumbs");
+    let entries: string[];
+    try {
+        entries = await readdir(thumbs);
+    } catch {
+        return;
+    }
+    const stems = new Set(filenames.map((name) => snapshotThumbStem(name)));
+    await Promise.all(entries.map(async (name) => {
+        const stem = name.split(".")[0] ?? "";
+        if (!stems.has(stem)) {
+            return;
+        }
+        try {
+            await unlink(path.join(thumbs, name));
+        } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                throw error;
+            }
+        }
+    }));
 }
 
 function thumbsDirFor(sourceDir: string, filename: string): string | null {
@@ -105,14 +145,13 @@ async function readStoredFile(filePath: string): Promise<EncodedSnapshotThumb | 
     }
 }
 
-async function readStoredThumb(thumbsDir: string, filename: string): Promise<EncodedSnapshotThumb | null> {
-    for (const name of snapshotThumbFilenames(filename)) {
-        const stored = await readStoredFile(path.join(thumbsDir, name));
-        if (stored) {
-            return stored;
-        }
-    }
-    return null;
+function versionedThumbName(
+    filename: string,
+    version: string,
+    contentType: SnapshotThumbContentType,
+): string {
+    const ext = contentType === "image/jpeg" ? "jpg" : "webp";
+    return `${snapshotThumbStem(filename)}.${version}.${ext}`;
 }
 
 function sharpCannotLoad(error: unknown): boolean {
@@ -258,7 +297,7 @@ async function publishThumb(thumbPath: string, data: Buffer): Promise<void> {
     }
 }
 
-/** Return the stored thumb, creating it from the original on the first request. */
+/** Return the stored thumb for this source mtime, creating it on the first request. */
 export async function openSnapshotThumb(
     sourceDir: string,
     filename: string,
@@ -268,9 +307,23 @@ export async function openSnapshotThumb(
         return {ok: false, status: 400};
     }
 
-    const stored = await readStoredThumb(thumbsDir, filename);
-    if (stored) {
-        return {ok: true, ...stored};
+    const sourcePath = path.resolve(sourceDir, filename);
+    let sourceStats;
+    try {
+        sourceStats = await lstat(sourcePath);
+    } catch {
+        return {ok: false, status: 404};
+    }
+    if (sourceStats.isSymbolicLink() || !sourceStats.isFile()) {
+        return {ok: false, status: 404};
+    }
+    const version = String(Math.trunc(sourceStats.mtimeMs));
+    const stem = snapshotThumbStem(filename);
+    for (const ext of ["webp", "jpg"]) {
+        const stored = await readStoredFile(path.join(thumbsDir, `${stem}.${version}.${ext}`));
+        if (stored) {
+            return {ok: true, ...stored};
+        }
     }
 
     const opened = await openMediaFile(sourceDir, filename, IMAGE_EXTENSIONS);
@@ -285,19 +338,16 @@ export async function openSnapshotThumb(
         return {ok: false, status: 404};
     }
 
-    const raced = await readStoredThumb(thumbsDir, filename);
+    const thumbPath = path.join(thumbsDir, versionedThumbName(filename, version, encoded.contentType));
+    const raced = await readStoredFile(thumbPath);
     if (raced) {
         return {ok: true, ...raced};
     }
-
-    const thumbPath = path.join(
-        thumbsDir,
-        encoded.contentType === "image/jpeg" ? `${snapshotThumbStem(filename)}.jpg` : snapshotThumbFilename(filename),
-    );
     try {
+        await deleteSnapshotThumbs(sourceDir, [filename]);
         await publishThumb(thumbPath, encoded.buffer);
     } catch {
-        const recovered = await readStoredThumb(thumbsDir, filename);
+        const recovered = await readStoredFile(thumbPath);
         if (recovered) {
             return {ok: true, ...recovered};
         }

@@ -120,16 +120,16 @@ export async function saveTimelapseAction(formData: FormData): Promise<AdminActi
     return withNextRequestLogContext("/admin/timelapse", async () => {
         await requireAdmin();
 
+        const submittedRtsp = String(formData.get("rtspStream") ?? "").trim();
+        if (submittedRtsp && !isRtspUrl(submittedRtsp)) {
+            return {notice: "save_failed"};
+        }
         const result = await saveTimelapseAdminSettings(parseTimelapseSettingsForm(formData));
         if (!result.ok) {
             logAdminGrowUpdateFailed({err: sanitizeError(result.error)});
             return {notice: "save_failed"};
         }
         const settings = result.timelapse;
-        const submittedRtsp = String(formData.get("rtspStream") ?? "").trim();
-        if (submittedRtsp && !isRtspUrl(submittedRtsp)) {
-            return {notice: "save_failed"};
-        }
         const rtsp = submittedRtsp || await readTimelapseRtsp();
         if (rtsp) {
             await writeTimelapseSidecarEnv({

@@ -83,14 +83,22 @@ function normalizeTime(value: unknown, fallback: string): string {
     return fallback;
 }
 
+/** IANA zone in canonical form, so `europe/berlin` is stored as `Europe/Berlin`. */
+export function canonicalTimeZone(value: string): string | null {
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return null;
+    }
+    try {
+        return new Intl.DateTimeFormat("en-US", {timeZone: trimmed}).resolvedOptions().timeZone;
+    } catch {
+        return null;
+    }
+}
+
 function normalizeTimeZone(value: unknown, fallback: string): string {
     const normalized = asString(value, fallback).trim();
-    try {
-        new Intl.DateTimeFormat("en-US", {timeZone: normalized});
-        return normalized;
-    } catch {
-        return fallback;
-    }
+    return canonicalTimeZone(normalized) ?? canonicalTimeZone(fallback) ?? "UTC";
 }
 
 function normalizeQuality(value: unknown, fallback: TimelapseQuality): TimelapseQuality {

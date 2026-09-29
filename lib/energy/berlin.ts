@@ -37,7 +37,13 @@ export function berlinDateWindow(endDate: string, days: number): string[] {
     return dates;
 }
 
+const dayStartCache = new Map<string, number>();
+
 export function berlinDayStartMs(dateOnly: string): number {
+    const cached = dayStartCache.get(dateOnly);
+    if (cached !== undefined) {
+        return cached;
+    }
     const [year, month, day] = dateOnly.split("-").map(Number);
     const utcMidnight = Date.UTC(year, month - 1, day);
     // Berlin is UTC+1/+2; ±3h around UTC midnight always contains local 00:00.
@@ -51,6 +57,7 @@ export function berlinDayStartMs(dateOnly: string): number {
             hi = mid;
         }
     }
+    dayStartCache.set(dateOnly, lo);
     return lo;
 }
 
@@ -80,24 +87,24 @@ export function berlinHourStartAtOrBefore(ms: number): number {
     return t;
 }
 
+const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * Next civil-hour boundary in Europe/Berlin. Offsets are whole hours, so the
+ * boundary is always a UTC hour. The fall-back hour is the one case that lasts
+ * two UTC hours.
+ */
 export function nextBerlinHourBoundary(ms: number): number {
-    // Fall-back repeats a civil hour for ~2h; search until date/hour actually change.
     const date = berlinDateOnly(ms);
     const hour = berlinHour(ms);
-    let lo = ms + 1;
-    let hi = ms + 3 * 60 * 60 * 1000;
-    while (berlinDateOnly(hi) === date && berlinHour(hi) === hour) {
-        hi += 3 * 60 * 60 * 1000;
-    }
-    while (lo < hi) {
-        const mid = Math.floor((lo + hi) / 2);
-        if (berlinDateOnly(mid) === date && berlinHour(mid) === hour) {
-            lo = mid + 1;
-        } else {
-            hi = mid;
+    let boundary = Math.ceil((ms + 1) / HOUR_MS) * HOUR_MS;
+    for (let guard = 0; guard < 4; guard += 1) {
+        if (berlinDateOnly(boundary) !== date || berlinHour(boundary) !== hour) {
+            return boundary;
         }
+        boundary += HOUR_MS;
     }
-    return lo;
+    return boundary;
 }
 
 /** Half-open interval [t1Ms, t2Ms). */

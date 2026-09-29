@@ -1,17 +1,27 @@
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 
-export function getDatePartsInTimeZone(
-    value: Date,
-    timeZone: string = APP_TIMEZONE,
-): {year: number; month: number; day: number} {
-    const formatter = new Intl.DateTimeFormat("en-CA", {
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function dateFormatter(timeZone: string): Intl.DateTimeFormat {
+    const cached = dateFormatters.get(timeZone);
+    if (cached) {
+        return cached;
+    }
+    const created = new Intl.DateTimeFormat("en-CA", {
         timeZone,
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
     });
+    dateFormatters.set(timeZone, created);
+    return created;
+}
 
-    const parts = formatter.formatToParts(value);
+export function getDatePartsInTimeZone(
+    value: Date,
+    timeZone: string = APP_TIMEZONE,
+): {year: number; month: number; day: number} {
+    const parts = dateFormatter(timeZone).formatToParts(value);
     const year = Number(parts.find((part) => part.type === "year")?.value);
     const month = Number(parts.find((part) => part.type === "month")?.value);
     const day = Number(parts.find((part) => part.type === "day")?.value);

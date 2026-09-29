@@ -71,6 +71,6 @@ export async function getTimelapseFiles(): Promise<string[]> {
     return entries
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)
-        .filter((name) => /\.(mp4)$/i.test(name))
+        .filter((name) => /\.(mp4)$/i.test(name) && !name.toLowerCase().includes(".partial"))
         .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
 }

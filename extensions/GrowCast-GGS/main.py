@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from growcast_push import GrowCastPush
-from normalize import device_snapshot, live_ingest
+from normalize import device_snapshot, display_name, live_ingest
 from sf_client import ReadOnlyMqtt
 
 log = logging.getLogger("growcast.ggs")
@@ -60,18 +60,23 @@ def main() -> None:
 
     def on_status(serial: str, device_prefix: str, data: dict[str, Any]) -> None:
         product = "SF-GGS-LC" if device_prefix == "LC" else "SF-GGS-CB"
-        name = f"{product}-{serial[-4:]}"
         snapshots[serial] = device_snapshot(
             serial=serial,
-            name=name,
+            name=display_name(device_prefix, serial, [serial]),
             prefix=device_prefix,
             product_type=product,
             online=True,
             data=data,
         )
-        pusher.offer(
-            live_ingest(list(snapshots.values()), online=True, updated_at=iso_now())
-        )
+        peers: dict[str, list[str]] = {}
+        for item in snapshots.values():
+            peers.setdefault(str(item["prefix"]), []).append(str(item["serial"]))
+        devices = []
+        for item in snapshots.values():
+            named = dict(item)
+            named["name"] = display_name(str(item["prefix"]), str(item["serial"]), peers[str(item["prefix"])])
+            devices.append(named)
+        pusher.offer(live_ingest(devices, online=True, updated_at=iso_now()))
 
     mqtt = ReadOnlyMqtt(
         mqtt_name=env["SF_MQTT_NAME"],
@@ -79,11 +84,11 @@ def main() -> None:
         user_id=user_id,
         on_status=on_status,
     )
-    mqtt.add_device(prefix, env["SF_SERIAL"], f"SF-GGS-CB-{env['SF_SERIAL'][-4:]}", "SF-GGS-CB")
+    mqtt.add_device(prefix, env["SF_SERIAL"], "Climate", "SF-GGS-CB")
     for serial in lc_serials:
         if serial == env["SF_SERIAL"].replace(":", "").upper():
             continue
-        mqtt.add_device("LC", serial, f"SF-GGS-LC-{serial[-4:]}", "SF-GGS-LC")
+        mqtt.add_device("LC", serial, "Lights", "SF-GGS-LC")
 
     stop = False
 

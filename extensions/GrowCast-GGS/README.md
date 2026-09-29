@@ -2,13 +2,16 @@
 
 Read-only [GrowCast](https://github.com/zeroXmrcl/GrowCast) plugin. A sidecar logs into Spider Farmer **cloud MQTT** the same way the official app does, reads `getDevSta` from your GGS control box, and POSTs a normalized snapshot to GrowCast. Visitors then get live climate over `GET /api/data/live-climate` and SSE `/api/data/live-climate/stream`.
 
-This plugin **never** publishes `set*` commands. It does **not** talk Bluetooth. Spider Farmer credentials stay in `.env` on the host and are never sent to browsers.
+This plugin **never** publishes `set*` commands. It does **not** talk Bluetooth. Spider Farmer credentials stay in `data/ggs.env` on the host and are never sent to browsers.
 
 ## Setup
 
+The GrowCast stack builds this folder as the `ggs` service. The setup wizard writes `data/ggs.env` after you sign in to Spider Farmer. You do not clone a second copy or fill `.env` by hand.
+
+Standalone (without the GrowCast compose file):
+
 ```bash
-git clone https://github.com/zeroXmrcl/GrowCast-GGS.git extensions/GrowCast-GGS
-cp extensions/GrowCast-GGS/.env.example extensions/GrowCast-GGS/.env
+cp .env.example .env
 ```
 
 Fill `.env`:

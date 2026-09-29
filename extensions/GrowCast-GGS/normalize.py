@@ -138,6 +138,17 @@ def actuators_from(data: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
+def display_name(prefix: str, serial: str, peers: list[str]) -> str:
+    """Public label. Does not include the controller serial."""
+    base = {"LC": "Lights", "PS": "Power"}.get(prefix.upper(), "Climate")
+    ordered = sorted({item.replace(":", "").upper() for item in peers if item})
+    key = serial.replace(":", "").upper()
+    if len(ordered) <= 1:
+        return base
+    index = ordered.index(key) + 1 if key in ordered else 1
+    return f"{base} {index}"
+
+
 def device_snapshot(
     *,
     serial: str,

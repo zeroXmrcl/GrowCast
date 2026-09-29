@@ -62,6 +62,7 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
     const [busy, setBusy] = useState(false);
     const [copyClass, setCopyClass] = useState("installer-copy");
 
+    const [setupCode, setSetupCode] = useState("");
     const [username, setUsername] = useState(initial.username);
     const [password, setPassword] = useState("");
     const [sfEmail, setSfEmail] = useState("");
@@ -83,7 +84,9 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
 
     const copy = stepCopy(step);
     const climateLine = step === "climate-list" ? `Signed in as ${sfEmail}.` : copy.line;
-    const adminReady = validateUsernameInput(normalizeUsernameInput(username)) && passwordLineMet(password);
+    const adminReady = setupCode.trim().length > 0
+        && validateUsernameInput(normalizeUsernameInput(username))
+        && passwordLineMet(password);
     const locked = busy || saving;
 
     useEffect(() => {
@@ -179,6 +182,7 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
         if (!adminReady) return;
         await runLocked(async () => {
             const formData = new FormData();
+            formData.set("setupCode", setupCode);
             formData.set("username", username);
             formData.set("password", password);
             const result = await createSetupAdminAction(formData);
@@ -350,6 +354,15 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
 
                     {step === "admin" ? (
                         <form className="mt-8 space-y-5" onSubmit={onAdmin}>
+                            <InstallerField label="Setup code" value={setupCode} htmlFor="installer-setup-code">
+                                <InstallerInput
+                                    id="installer-setup-code"
+                                    name="setupCode"
+                                    autoComplete="off"
+                                    value={setupCode}
+                                    onChange={setSetupCode}
+                                />
+                            </InstallerField>
                             <InstallerField label="Username" value={username} htmlFor="installer-username">
                                 <InstallerInput
                                     id="installer-username"

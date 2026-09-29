@@ -13,7 +13,10 @@ import {readSkippedSteps, writeSkippedStep} from "../lib/setup-account.ts";
 
 describe("installer copy", () => {
     it("locks the approved lines", () => {
-        assert.equal(INSTALLER_COPY.admin.line, "The password needs 12 characters.");
+        assert.equal(
+            INSTALLER_COPY.admin.line,
+            "The password needs 12 characters. The setup code is in the GrowCast log.",
+        );
         assert.equal(
             INSTALLER_COPY.climate.line,
             "Email and password only. Google or Apple sign-in will not work.",

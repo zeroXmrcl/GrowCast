@@ -30,7 +30,7 @@ export async function publicMediaGetResponse(
         });
     }
 
-    return new Response(new Uint8Array(opened.buffer), {
+    return new Response(new Uint8Array(opened.buffer.buffer, opened.buffer.byteOffset, opened.buffer.byteLength), {
         status: 200,
         headers: {
             "Content-Type": opened.contentType,

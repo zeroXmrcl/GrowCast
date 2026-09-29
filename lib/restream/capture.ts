@@ -31,7 +31,7 @@ export async function resolveRestreamCaptureToken(
 
 async function writeCaptureTokenFile(token: string): Promise<void> {
     const file = restreamCaptureTokenFile();
-    await atomicWriteFile(file, `${token}\n`);
+    await atomicWriteFile(file, `${token}\n`, 0o600);
     await chmod(file, 0o600);
 }
 

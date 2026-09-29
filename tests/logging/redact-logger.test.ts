@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import pino from "pino";
 import { Writable } from "node:stream";
 import { REDACT_PATHS, sanitizeError } from "../../lib/logging/redact";
-import { resolveLogLevel } from "../../lib/logging/logger";
+import { formatHumanLogLine, resolveLogLevel } from "../../lib/logging/logger";
 
 function capturePinoLog(
   fields: Record<string, unknown>,
@@ -107,6 +107,20 @@ describe("redact / logger", () => {
       type: "Error",
       message: "Unknown error",
     });
+  });
+});
+
+describe("formatHumanLogLine", () => {
+  it("prints one readable line and drops the process fields", () => {
+    const line = formatHumanLogLine(JSON.stringify({
+      level: "info",
+      time: "2026-09-29T17:14:02.123Z",
+      service: "growcast",
+      pid: 1,
+      event: "app.start",
+      runtime: "nodejs",
+    }));
+    assert.equal(line, "2026-09-29 17:14:02 info app.start  runtime=nodejs");
   });
 });
 

@@ -129,7 +129,10 @@ def update_env_file(env_path: Path, updates: Mapping[str, str]) -> None:
         if key not in updated_keys:
             new_lines.append(f"{key}={value}\n")
 
-    env_path.write_text("".join(new_lines), encoding="utf-8")
+    text = "".join(new_lines)
+    if env_path.exists() and env_path.read_text(encoding="utf-8") == text:
+        return
+    env_path.write_text(text, encoding="utf-8")
 
 @dataclass(frozen=True)
 class AppConfig:

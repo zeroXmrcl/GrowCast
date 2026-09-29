@@ -13,7 +13,7 @@ import {
 } from "@/lib/db";
 import {isDateOnly, todayDateOnly} from "@/lib/date-only";
 import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/lib/extension-status";
-import {snapshotThumbFilenames} from "@/lib/snapshot-thumb";
+import {deleteSnapshotThumbs} from "@/lib/snapshot-thumb";
 import {mediaCollectionDir} from "@/lib/media-library";
 import {EnergyCopyError, resetEnergyCurrentLocked, stageEnergyArchive} from "@/lib/energy/archive";
 import {logEnergy} from "@/lib/energy/log";
@@ -146,7 +146,8 @@ async function listFilesByExtension(dir: string, extensions: Set<string>): Promi
         return entries
             .filter((entry) => entry.isFile())
             .map((entry) => entry.name)
-            .filter((name) => extensions.has(path.extname(name).toLowerCase()));
+            .filter((name) => extensions.has(path.extname(name).toLowerCase()))
+            .filter((name) => !name.toLowerCase().includes(".partial"));
     } catch {
         return [];
     }
@@ -322,9 +323,25 @@ export async function completeCurrentGrow(
     return withGrowWriteLock(() => completeCurrentGrowUnlocked(input, sources, resetLiveGrow));
 }
 
+async function removeLiveMedia(sources: ArchiveMediaSources): Promise<void> {
+    const snapshotFiles = await listFilesByExtension(sources.snapshotsDir, IMAGE_EXTENSIONS);
+    const timelapseFiles = await listFilesByExtension(sources.timelapseDir, VIDEO_EXTENSIONS);
+    const pictureFiles = await listFilesByExtension(sources.picturesDir, IMAGE_EXTENSIONS);
+    const cleanup = await Promise.allSettled([
+        deleteFiles(sources.snapshotsDir, snapshotFiles),
+        deleteSnapshotThumbs(sources.snapshotsDir, snapshotFiles),
+        deleteFiles(sources.timelapseDir, timelapseFiles),
+        deleteFiles(sources.picturesDir, pictureFiles),
+    ]);
+    if (cleanup.some((entry) => entry.status === "rejected")) {
+        throw new Error("media_cleanup_failed");
+    }
+}
+
 async function retryLiveReset(
     already: ArchivedGrow,
     grow: GrowRecord,
+    sources: ArchiveMediaSources,
     resetLiveGrow?: ResetLiveGrow,
 ): Promise<CompleteGrowResult> {
     const reset = resetLiveGrow ?? ((current: GrowRecord) => replaceCurrentGrow(buildNextGrow(current)));
@@ -337,6 +354,11 @@ async function retryLiveReset(
         await resetEnergyCurrentLocked();
     } catch {
         logEnergy("energy_reset_failed");
+    }
+    try {
+        await removeLiveMedia(sources);
+    } catch {
+        return {ok: true, archive: already, warning: "media_cleanup_failed"};
     }
     return {ok: true, archive: already, warning: "reset_retried"};
 }
@@ -352,7 +374,7 @@ async function completeCurrentGrowUnlocked(
     }
     const already = await findArchiveForGrowId(grow.id);
     if (already) {
-        return retryLiveReset(already, grow, resetLiveGrow);
+        return retryLiveReset(already, grow, sources, resetLiveGrow);
     }
 
     const archiveId = await reserveArchiveId(grow.name);
@@ -406,10 +428,7 @@ async function completeCurrentGrowUnlocked(
 
         const cleanup = await Promise.allSettled([
             deleteFiles(sources.snapshotsDir, snapshotFiles),
-            deleteFiles(
-                path.join(sources.snapshotsDir, "thumbs"),
-                snapshotFiles.flatMap(snapshotThumbFilenames),
-            ),
+            deleteSnapshotThumbs(sources.snapshotsDir, snapshotFiles),
             deleteFiles(sources.timelapseDir, timelapseFiles),
             deleteFiles(sources.picturesDir, pictureFiles),
         ]);
@@ -545,6 +564,9 @@ export async function deleteArchiveMediaFiles(
                     throw error;
                 }
             }
+        }
+        if (kind === "snapshots") {
+            await deleteSnapshotThumbs(dir, filenames);
         }
 
         const media = await recountArchiveMedia(archiveId);

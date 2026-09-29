@@ -17,7 +17,7 @@ export default async function SetupPage() {
         <SetupWizard
             initial={signedIn ? progress : {
                 step: "admin",
-                username: progress.username,
+                username: "",
                 finished: [],
                 skipped: [],
                 streamUrl: null,

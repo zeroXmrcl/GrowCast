@@ -1,6 +1,23 @@
 import {ImageResponse} from "next/og";
 import {rasterizeShareCardAssets} from "@/lib/share-card-image";
-import {loadShareCardCopySafe, resolveShareCardStill} from "@/lib/share-card";
+import {
+    loadShareCardCopySafe,
+    resolveShareCardStill,
+    shareCardOgImageId,
+    shareCardStillMtimeMs,
+    shareCardStillPath,
+} from "@/lib/share-card";
+
+const ogCache = new Map<string, Uint8Array>();
+
+function ogResponse(bytes: Uint8Array): Response {
+    return new Response(bytes, {
+        headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        },
+    });
+}
 
 export const alt = "GrowCast";
 export const size = {width: 1200, height: 630};
@@ -9,10 +26,17 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function Image() {
+    const still = await resolveShareCardStill();
+    const mtime = await shareCardStillMtimeMs(still ? shareCardStillPath(still) : null);
+    const cacheId = shareCardOgImageId(still, mtime);
+    const cached = ogCache.get(cacheId);
+    if (cached) {
+        return ogResponse(cached);
+    }
     const copy = await loadShareCardCopySafe("");
-    const {stillSrc, logoSrc} = await rasterizeShareCardAssets(await resolveShareCardStill());
+    const {stillSrc, logoSrc} = await rasterizeShareCardAssets(still);
 
-    return new ImageResponse(
+    const image = new ImageResponse(
         (
             <div
                 style={{
@@ -113,4 +137,8 @@ export default async function Image() {
         ),
         {width: 1200, height: 630},
     );
+    const bytes = new Uint8Array(await image.arrayBuffer());
+    ogCache.clear();
+    ogCache.set(cacheId, bytes);
+    return ogResponse(bytes);
 }

@@ -1,9 +1,48 @@
+import {createReadStream} from "node:fs";
 import {lstat, readFile, realpath} from "node:fs/promises";
+import {Readable} from "node:stream";
 import path from "node:path";
 import {IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, isSafeMediaFilename} from "@/lib/safe-media-filename";
 
 export const MAX_PUBLIC_IMAGE_BYTES = 20 * 1024 * 1024;
 export const MAX_PUBLIC_VIDEO_BYTES = 512 * 1024 * 1024;
+/** Streamed video can be longer than the buffered cap. */
+export const MAX_STREAM_VIDEO_BYTES = 8 * 1024 * 1024 * 1024;
+
+export function bytesForResponse(buffer: Buffer): Uint8Array {
+    return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+}
+
+export type ByteRange = {start: number; end: number};
+
+/** `bytes=start-end`. Returns null when the header is absent or not a single range. */
+export function parseByteRange(header: string | null, size: number): ByteRange | "unsatisfiable" | null {
+    if (!header || size <= 0) {
+        return header ? "unsatisfiable" : null;
+    }
+    const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
+    if (!match) {
+        return null;
+    }
+    const startText = match[1] ?? "";
+    const endText = match[2] ?? "";
+    if (startText === "" && endText === "") {
+        return null;
+    }
+    if (startText === "") {
+        const suffix = Number(endText);
+        if (!Number.isSafeInteger(suffix) || suffix <= 0) {
+            return "unsatisfiable";
+        }
+        return {start: Math.max(0, size - suffix), end: size - 1};
+    }
+    const start = Number(startText);
+    const end = endText === "" ? size - 1 : Number(endText);
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || start >= size) {
+        return "unsatisfiable";
+    }
+    return {start, end: Math.min(end, size - 1)};
+}
 
 export type OpenMediaResult =
     | {ok: true; buffer: Buffer; contentType: string}
@@ -99,5 +138,95 @@ export async function openFixedMediaFile(
         return {ok: true, buffer, contentType: contentTypeFor(filename)};
     } catch {
         return {ok: false, status: 404};
+    }
+}
+
+function streamFileResponse(
+    filePath: string,
+    size: number,
+    contentType: string,
+    request: Request,
+    cacheControl: string,
+): Response {
+    const range = parseByteRange(request.headers.get("range"), size);
+    if (range === "unsatisfiable") {
+        return new Response(null, {
+            status: 416,
+            headers: {
+                "Content-Range": `bytes */${size}`,
+                "Accept-Ranges": "bytes",
+                "Cache-Control": cacheControl,
+            },
+        });
+    }
+    const start = range?.start ?? 0;
+    const end = range?.end ?? size - 1;
+    const nodeStream = createReadStream(filePath, {start, end});
+    const body = Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>;
+    const headers: Record<string, string> = {
+        "Content-Type": contentType,
+        "Content-Length": String(end - start + 1),
+        "Accept-Ranges": "bytes",
+        "Cache-Control": cacheControl,
+    };
+    if (range) {
+        headers["Content-Range"] = `bytes ${start}-${end}/${size}`;
+    }
+    return new Response(body, {status: range ? 206 : 200, headers});
+}
+
+/** Stream a file inside rootDir. Supports a single Range request so video does not load into memory. */
+export async function streamMediaFile(
+    rootDir: string,
+    filename: string,
+    request: Request,
+    allowedExtensions: Set<string>,
+    cacheControl: string,
+): Promise<Response> {
+    if (!isSafeMediaFilename(filename, allowedExtensions)) {
+        return new Response("Invalid filename", {status: 400, headers: {"Cache-Control": "no-store"}});
+    }
+    const root = path.resolve(rootDir);
+    const candidate = path.resolve(root, filename);
+    if (path.dirname(candidate) !== root) {
+        return new Response("Invalid filename", {status: 400, headers: {"Cache-Control": "no-store"}});
+    }
+    return streamResolvedFile(candidate, filename, request, cacheControl);
+}
+
+export async function streamFixedMediaFile(
+    filePath: string,
+    request: Request,
+    allowedExtensions: Set<string>,
+    cacheControl: string,
+): Promise<Response> {
+    const filename = path.basename(filePath);
+    if (!isSafeMediaFilename(filename, allowedExtensions)) {
+        return new Response("Invalid filename", {status: 400, headers: {"Cache-Control": "no-store"}});
+    }
+    return streamResolvedFile(path.resolve(filePath), filename, request, cacheControl);
+}
+
+async function streamResolvedFile(
+    resolved: string,
+    filename: string,
+    request: Request,
+    cacheControl: string,
+): Promise<Response> {
+    try {
+        const stats = await lstat(resolved);
+        if (stats.isSymbolicLink() || !stats.isFile() || stats.size > MAX_STREAM_VIDEO_BYTES) {
+            return new Response("File not found", {status: 404, headers: {"Cache-Control": "no-store"}});
+        }
+        const realFile = await realpath(resolved);
+        if (realFile !== resolved) {
+            const realStats = await lstat(realFile);
+            if (!realStats.isFile()) {
+                return new Response("File not found", {status: 404, headers: {"Cache-Control": "no-store"}});
+            }
+        }
+        return streamFileResponse(realFile, stats.size, contentTypeFor(filename), request, cacheControl);
+    } catch {
+        return new Response("File not found", {status: 404, headers: {"Cache-Control": "no-store"}});
     }
 }

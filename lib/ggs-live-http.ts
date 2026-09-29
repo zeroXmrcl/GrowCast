@@ -118,6 +118,15 @@ export async function liveClimateStreamResponse(request?: Request): Promise<Resp
                 if (closed) {
                     return;
                 }
+                if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+                    teardown();
+                    try {
+                        controller.close();
+                    } catch {
+                        /* already closed */
+                    }
+                    return;
+                }
                 try {
                     controller.enqueue(encodeSse(event, state));
                 } catch {

@@ -60,6 +60,13 @@ export function extractClientIp(
         return realIp;
     }
 
+    // Last: the first X-Forwarded-For hop. Safe on the default loopback bind,
+    // where only the local proxy can connect. Caddy sets this by default.
+    const forwarded = firstForwardedValue(headerGet(headers, "x-forwarded-for"));
+    if (forwarded && isPlausibleIp(forwarded)) {
+        return forwarded;
+    }
+
     return undefined;
 }
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import os
 from enum import Enum
 from pathlib import Path
 from typing import Callable
@@ -40,6 +41,16 @@ class SettingsSync:
         self.on_reschedule = on_reschedule
         self.last_settings_version = None
         self.last_applied_env_key = None
+
+    def _growcast_owns_env(self) -> bool:
+        """GrowCast writes this file and restarts us when it changes. Writing it back loops."""
+        managed = os.environ.get("GROWCAST_TIMELAPSE_ENV", "").strip()
+        if not managed:
+            return False
+        try:
+            return Path(managed).resolve() == self.env_path.resolve()
+        except OSError:
+            return False
 
     @property
     def enabled(self) -> bool:
@@ -106,7 +117,8 @@ class SettingsSync:
         candidate.apply_timezone()
 
         try:
-            update_env_file(self.env_path, env_updates)
+            if not self._growcast_owns_env():
+                update_env_file(self.env_path, env_updates)
         except OSError as e:
             log_api(f"Failed to write .env: {e}")
             self.state.config = previous_config

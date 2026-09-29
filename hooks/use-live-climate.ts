@@ -99,9 +99,11 @@ export function useLiveClimate(): {
 
         void loadInitial();
 
-        source = new EventSource(LIVE_CLIMATE_STREAM_URL);
+        let retryMs = 1000;
+        let retryTimer: number | undefined;
         const onEvent = (event: MessageEvent) => {
             const heardAt = Date.now();
+            retryMs = 1000;
             let raw: unknown;
             try {
                 raw = JSON.parse(event.data) as unknown;
@@ -120,24 +122,40 @@ export function useLiveClimate(): {
                 setLastEventAtMs(heardAt);
             }
         };
-        source.addEventListener("snapshot", onEvent);
-        source.addEventListener("heartbeat", onEvent);
-        source.onerror = () => {
-            sseHasApplied = false;
-            void recoverLiveClimateOnSseFailure({
-                reason: "error",
-                current: latest,
-                fetch,
-                signal: abort.signal,
-            }).then((next) => {
-                if (cancelled || !next) {
+        function connect() {
+            if (cancelled) {
+                return;
+            }
+            source?.close();
+            source = new EventSource(LIVE_CLIMATE_STREAM_URL);
+            source.addEventListener("snapshot", onEvent);
+            source.addEventListener("heartbeat", onEvent);
+            source.onerror = () => {
+                sseHasApplied = false;
+                const dead = source;
+                void recoverLiveClimateOnSseFailure({
+                    reason: "error",
+                    current: latest,
+                    fetch,
+                    signal: abort.signal,
+                }).then((next) => {
+                    if (cancelled || !next) {
+                        return;
+                    }
+                    latest = next;
+                    setSnapshot(next);
+                    setLastEventAtMs(Date.now());
+                });
+                if (cancelled || !dead || dead.readyState !== EventSource.CLOSED) {
                     return;
                 }
-                latest = next;
-                setSnapshot(next);
-                setLastEventAtMs(Date.now());
-            });
-        };
+                dead.close();
+                const wait = retryMs;
+                retryMs = Math.min(retryMs * 2, 30_000);
+                retryTimer = window.setTimeout(connect, wait);
+            };
+        }
+        connect();
 
         const tick = setInterval(() => {
             setNowMs(Date.now());
@@ -146,6 +164,9 @@ export function useLiveClimate(): {
         return () => {
             cancelled = true;
             abort.abort();
+            if (retryTimer !== undefined) {
+                window.clearTimeout(retryTimer);
+            }
             source?.close();
             clearInterval(tick);
         };

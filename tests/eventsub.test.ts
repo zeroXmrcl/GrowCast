@@ -758,6 +758,7 @@ describe("ensureEventsubSubscriptionsOnBoot", () => {
                             ? {
                                   id: `live-${type}`,
                                   type,
+                                  status: "enabled",
                                   condition,
                                   transport: {
                                       method: "webhook",
@@ -767,6 +768,7 @@ describe("ensureEventsubSubscriptionsOnBoot", () => {
                             : {
                                   id: `stale-${type}`,
                                   type,
+                                  status: "enabled",
                                   condition,
                                   transport: {
                                       method: "webhook",
@@ -789,6 +791,52 @@ describe("ensureEventsubSubscriptionsOnBoot", () => {
             );
             assert.deepEqual(posts.sort(), ["channel.cheer", "channel.raid"]);
             assert.deepEqual(deleted, []);
+        });
+    });
+
+    it("recreates a subscription Twitch has disabled", async () => {
+        await withTempDataDir(async () => {
+            await writeTwitchOAuthFile({
+                accessToken: "user-access",
+                refreshToken: "user-refresh-token",
+                userId: "141981764",
+                login: "0xmarcel",
+            });
+            const posts: string[] = [];
+            const fetcher: typeof fetch = async (input, init) => {
+                const url = String(input);
+                const method = String(init?.method ?? "GET").toUpperCase();
+                if (url === "https://id.twitch.tv/oauth2/token") {
+                    return Response.json({access_token: "app-access"});
+                }
+                if (method === "GET") {
+                    const type = new URL(url).searchParams.get("type") ?? "";
+                    return Response.json({
+                        data: [{
+                            id: `dead-${type}`,
+                            type,
+                            status: "notification_failures_exceeded",
+                            condition: type === "channel.follow"
+                                ? {broadcaster_user_id: "141981764", moderator_user_id: "141981764"}
+                                : type === "channel.raid"
+                                    ? {to_broadcaster_user_id: "141981764"}
+                                    : {broadcaster_user_id: "141981764"},
+                            transport: {
+                                method: "webhook",
+                                callback: "https://grow.example/api/twitch/eventsub",
+                            },
+                        }],
+                    });
+                }
+                const body = JSON.parse(String(init?.body ?? "{}")) as {type?: string};
+                posts.push(body.type ?? "");
+                return new Response(null, {status: 202});
+            };
+            await ensureEventsubSubscriptionsOnBoot(
+                {GROWCAST_PUBLIC_URL: "https://grow.example", ...helixEnv},
+                fetcher,
+            );
+            assert.deepEqual(posts.sort(), [...EVENTSUB_TYPES].sort());
         });
     });
 });

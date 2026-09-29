@@ -7,6 +7,8 @@ import {
     MAX_PUBLIC_IMAGE_BYTES,
     openFixedMediaFile,
     openMediaFile,
+    parseByteRange,
+    streamMediaFile,
 } from "../lib/open-media-file.ts";
 import {IMAGE_EXTENSIONS, VIDEO_EXTENSIONS} from "../lib/safe-media-filename.ts";
 
@@ -100,6 +102,26 @@ describe("openFixedMediaFile", () => {
             if (!opened.ok) {
                 assert.equal(opened.status, 404);
             }
+        } finally {
+            await rm(root, {recursive: true, force: true});
+        }
+    });
+
+    it("streams a byte range instead of the whole video", async () => {
+        const root = await mkdtemp(path.join(os.tmpdir(), "growcast-media-range-"));
+        try {
+            await writeFile(path.join(root, "clip.mp4"), "abcdefghij");
+            assert.deepEqual(parseByteRange("bytes=2-5", 10), {start: 2, end: 5});
+            const response = await streamMediaFile(
+                root,
+                "clip.mp4",
+                new Request("http://growcast/clip.mp4", {headers: {range: "bytes=2-5"}}),
+                VIDEO_EXTENSIONS,
+                "no-store",
+            );
+            assert.equal(response.status, 206);
+            assert.equal(await response.text(), "cdef");
+            assert.equal(response.headers.get("content-range"), "bytes 2-5/10");
         } finally {
             await rm(root, {recursive: true, force: true});
         }

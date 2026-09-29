@@ -96,6 +96,27 @@ class AtomicApplyTests(unittest.TestCase):
             self.assertIn("RTSP_STREAM=rtsp://cam", text)
             self.assertEqual(rescheduled, [1])
 
+    def test_apply_does_not_rewrite_a_growcast_owned_env_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            env_path = Path(tmp) / "timelapse.env"
+            original = "RTSP_STREAM=rtsp://cam\nTIME_1=06:00\n"
+            env_path.write_text(original, encoding="utf-8")
+            state = self._base_state(tmp)
+            sync = SettingsSync(env_path, state, on_reschedule=lambda: None)
+            with mock.patch.dict(os.environ, {"GROWCAST_TIMELAPSE_ENV": str(env_path)}):
+                result = sync.apply_settings(
+                    {
+                        "timezone": "UTC",
+                        "time1": "09:30",
+                        "timelapseLengthSeconds": 10,
+                        "timelapseQuality": "medium",
+                    },
+                    settings_version=42,
+                )
+            self.assertEqual(result, SyncResult.APPLIED)
+            self.assertEqual(state.config.time1, "09:30")
+            self.assertEqual(env_path.read_text(encoding="utf-8"), original)
+
     def test_apply_validation_failure_updates_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:
             env_path = Path(tmp) / ".env"

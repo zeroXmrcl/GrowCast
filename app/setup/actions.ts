@@ -1,6 +1,7 @@
 "use server";
 
 import {randomBytes} from "node:crypto";
+import {headers} from "next/headers";
 import {isAdminAuthenticated, loginAdmin, needsSetupWizard} from "@/lib/admin-auth";
 import {
     hashAdminPassword,
@@ -14,8 +15,10 @@ import {updateCurrentGrow} from "@/lib/db";
 import {adminSetupDecision, isOptionalInstallerStep} from "@/lib/installer-ready";
 import {installerFinishCheck} from "@/lib/installer-progress";
 import {markSetupComplete, readStoredAdminAccount, writeSkippedStep, writeStoredAdminAccount} from "@/lib/setup-account";
+import {clearSetupCode, readSetupCode, setupCodesMatch} from "@/lib/setup-gate";
+import {loginRateLimitKey} from "@/lib/request-trust";
 import {isRtspUrl, writeTimelapseSidecarEnv} from "@/lib/timelapse-sidecar-env";
-import {updateTimelapseSettings} from "@/lib/timelapse-settings";
+import {canonicalTimeZone, updateTimelapseSettings} from "@/lib/timelapse-settings";
 import {
     readRestreamChannel,
     readRestreamKey,
@@ -47,9 +50,25 @@ async function openSetup(): Promise<SetupStepResult | null> {
     return null;
 }
 
+function setupCodeRejected(): SetupStepResult {
+    return {
+        ok: false,
+        message: "That setup code does not match. It is printed in the GrowCast log when the container starts.",
+    };
+}
+
+async function loginDuringSetup(username: string, password: string) {
+    const clientKey = loginRateLimitKey(await headers());
+    return loginAdmin(username, password, clientKey);
+}
+
 export async function createSetupAdminAction(formData: FormData): Promise<SetupStepResult> {
     if (!needsSetupWizard()) {
         return closed();
+    }
+    const expectedCode = readSetupCode();
+    if (!expectedCode || !setupCodesMatch(String(formData.get("setupCode") ?? ""), expectedCode)) {
+        return setupCodeRejected();
     }
     const username = normalizeUsernameInput(String(formData.get("username") ?? ""));
     const password = String(formData.get("password") ?? "");
@@ -68,7 +87,7 @@ export async function createSetupAdminAction(formData: FormData): Promise<SetupS
         return {ok: false, message: "This installer already has an admin account."};
     }
     if (decision === "sign-in") {
-        const login = await loginAdmin(username, password);
+        const login = await loginDuringSetup(username, password);
         if (!login.ok) {
             return {ok: false, message: "That password does not match the admin account."};
         }
@@ -79,7 +98,7 @@ export async function createSetupAdminAction(formData: FormData): Promise<SetupS
         passwordHash: hashAdminPassword(password),
         sessionSecret: randomBytes(48).toString("base64url"),
     });
-    const login = await loginAdmin(username, password);
+    const login = await loginDuringSetup(username, password);
     if (!login.ok) {
         return {ok: false, message: "The account was saved, but sign-in did not complete. Try again."};
     }
@@ -175,18 +194,17 @@ export async function setupTimelapseAction(formData: FormData): Promise<SetupSte
     if (!Number.isInteger(interval) || interval < 1) {
         return {ok: false, message: "Interval is a whole number of minutes, at least 1."};
     }
-    try {
-        new Intl.DateTimeFormat("en-US", {timeZone: timezone});
-    } catch {
+    const zone = canonicalTimeZone(timezone);
+    if (!zone) {
         return {ok: false, message: "Timezone must be an IANA name, like Europe/Berlin."};
     }
     await updateTimelapseSettings({
-        timezone,
+        timezone: zone,
         intervalMinutes: interval,
     });
     await writeTimelapseSidecarEnv({
         RTSP_STREAM: rtsp,
-        TZ: timezone,
+        TZ: zone,
         INTERVAL: String(interval),
     });
     return {ok: true};
@@ -200,5 +218,6 @@ export async function finishSetupAction(): Promise<SetupStepResult> {
         return ready;
     }
     await markSetupComplete();
+    await clearSetupCode();
     return {ok: true};
 }

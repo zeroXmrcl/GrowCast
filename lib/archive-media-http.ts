@@ -1,5 +1,5 @@
 import {archiveMediaDir, isArchiveMediaKind, isValidArchiveId} from "@/lib/archives";
-import {openMediaFile} from "@/lib/open-media-file";
+import {bytesForResponse, openMediaFile, streamMediaFile} from "@/lib/open-media-file";
 import {IMAGE_EXTENSIONS, VIDEO_EXTENSIONS} from "@/lib/safe-media-filename";
 import {openSnapshotThumb, snapshotThumbResponse} from "@/lib/snapshot-thumb";
 
@@ -10,10 +10,16 @@ export async function archiveMediaGetResponse(
     archiveId: string,
     kind: string,
     filename: string,
-    options?: {thumb?: boolean},
+    options?: {thumb?: boolean; request?: Request},
 ): Promise<Response> {
     if (options?.thumb && kind === "snapshots" && isValidArchiveId(archiveId) && isArchiveMediaKind(kind)) {
-        return snapshotThumbResponse(await openSnapshotThumb(archiveMediaDir(archiveId, kind), filename));
+        const versioned = options.request
+            ? new URL(options.request.url).searchParams.has("v")
+            : false;
+        return snapshotThumbResponse(
+            await openSnapshotThumb(archiveMediaDir(archiveId, kind), filename),
+            {versioned},
+        );
     }
 
     if (!isValidArchiveId(archiveId) || !isArchiveMediaKind(kind)) {
@@ -24,6 +30,15 @@ export async function archiveMediaGetResponse(
     }
 
     const allowed = kind === "timelapse" ? VIDEO_EXTENSIONS : IMAGE_EXTENSIONS;
+    if (kind === "timelapse" && options?.request) {
+        return streamMediaFile(
+            archiveMediaDir(archiveId, kind),
+            filename,
+            options.request,
+            allowed,
+            ARCHIVE_MEDIA_CACHE_CONTROL,
+        );
+    }
     const opened = await openMediaFile(archiveMediaDir(archiveId, kind), filename, allowed);
     if (!opened.ok) {
         if (opened.status === 400) {
@@ -38,7 +53,7 @@ export async function archiveMediaGetResponse(
         });
     }
 
-    return new Response(new Uint8Array(opened.buffer), {
+    return new Response(bytesForResponse(opened.buffer), {
         status: 200,
         headers: {
             "Content-Type": opened.contentType,

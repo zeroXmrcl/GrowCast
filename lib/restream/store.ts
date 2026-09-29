@@ -152,7 +152,7 @@ export async function saveRestreamKey(value: string): Promise<void> {
     if (next.length === 0) {
         return;
     }
-    await atomicWriteFile(restreamKeyFile(), `${next}\n`);
+    await atomicWriteFile(restreamKeyFile(), `${next}\n`, 0o600);
     await chmod(restreamKeyFile(), 0o600);
 }
 

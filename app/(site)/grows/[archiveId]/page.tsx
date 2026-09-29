@@ -4,13 +4,16 @@ import {EnergyArchiveSection} from "@/components/energy-scoreboard";
 import SnapshotGallery from "@/components/snapshot-gallery";
 import TimelapsePlayer from "@/components/timelapse-player";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
+import path from "node:path";
 import {
+    archiveMediaDir,
     archiveMediaUrl,
     getArchivedGrow,
     getArchivePictureFiles,
     getArchiveSnapshotFiles,
     getArchiveTimelapseFile,
 } from "@/lib/archives";
+import {snapshotFileVersion} from "@/lib/snapshot-thumb";
 import {buildEnergyDto} from "@/lib/energy/scoreboard";
 import {formatDateDisplay, growDurationDays} from "../format";
 
@@ -66,10 +69,12 @@ export default async function ArchivedGrowPage({
         }),
     ]);
 
-    const snapshots = snapshotFiles.map((name) => ({
+    const snapshotDir = archiveMediaDir(archiveId, "snapshots");
+    const snapshots = await Promise.all(snapshotFiles.map(async (name) => ({
         name,
         url: archiveMediaUrl(archiveId, "snapshots", name),
-    }));
+        version: await snapshotFileVersion(path.join(snapshotDir, name)),
+    })));
     const pictures = pictureFiles.map((name) => ({
         name,
         url: archiveMediaUrl(archiveId, "pictures", name),

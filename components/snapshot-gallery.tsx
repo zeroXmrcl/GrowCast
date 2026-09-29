@@ -1,10 +1,12 @@
-import { getSnapshotFiles } from "@/lib/extension-status";
-import {snapshotThumbSrc} from "@/lib/snapshot-thumb";
+import path from "node:path";
+import { getSnapshotFiles, SNAPSHOT_DIR } from "@/lib/extension-status";
+import {snapshotFileVersion, snapshotThumbSrc} from "@/lib/snapshot-thumb";
 import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
 
 export type SnapshotItem = {
     name: string;
     url: string;
+    version?: string;
 };
 
 type SnapshotGalleryProps = {
@@ -17,10 +19,11 @@ type SnapshotGalleryProps = {
 async function loadLiveSnapshots(): Promise<SnapshotItem[]> {
     const files = await getSnapshotFiles();
 
-    return files.map((name) => ({
+    return Promise.all(files.map(async (name) => ({
         name,
         url: `/api/snapshots/${encodeURIComponent(name)}`,
-    }));
+        version: await snapshotFileVersion(path.join(SNAPSHOT_DIR, name)),
+    })));
 }
 
 export default async function SnapshotGallery({ snapshots, sheet = false }: SnapshotGalleryProps = {}) {
@@ -53,7 +56,7 @@ export default async function SnapshotGallery({ snapshots, sheet = false }: Snap
                         <div className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                                src={snapshotThumbSrc(snapshot.url)}
+                                src={snapshotThumbSrc(snapshot.url, snapshot.version)}
                                 alt={snapshot.name}
                                 className="h-full w-full object-cover"
                                 loading="lazy"
@@ -88,7 +91,7 @@ export default async function SnapshotGallery({ snapshots, sheet = false }: Snap
                         <div className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                                src={snapshotThumbSrc(snapshot.url)}
+                                src={snapshotThumbSrc(snapshot.url, snapshot.version)}
                                 alt={snapshot.name}
                                 className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                                 loading="lazy"

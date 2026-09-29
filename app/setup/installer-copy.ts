@@ -3,7 +3,7 @@ export const INSTALLER_COPY = {
         label: "Admin",
         eyebrow: "Setup",
         title: "Create the admin account",
-        line: "The password needs 12 characters.",
+        line: "The password needs 12 characters. The setup code is in the GrowCast log.",
     },
     climate: {
         label: "Climate",

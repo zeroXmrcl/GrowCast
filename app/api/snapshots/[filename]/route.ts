@@ -22,7 +22,9 @@ export async function GET(
             if (!thumb.ok && thumb.status === 400) {
                 logHttpPathTraversalBlocked({ reason: "invalid_filename" });
             }
-            return snapshotThumbResponse(thumb);
+            return snapshotThumbResponse(thumb, {
+                versioned: request.nextUrl.searchParams.has("v"),
+            });
         }
         const opened = await openMediaFile(SNAPSHOT_DIR, filename, IMAGE_EXTENSIONS);
         if (!opened.ok) {
@@ -33,7 +35,7 @@ export async function GET(
             return new Response("File not found", { status: 404 });
         }
 
-        return new Response(new Uint8Array(opened.buffer), {
+        return new Response(new Uint8Array(opened.buffer.buffer, opened.buffer.byteOffset, opened.buffer.byteLength), {
             status: 200,
             headers: {
                 "Content-Type": opened.contentType,

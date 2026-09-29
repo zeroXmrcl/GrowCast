@@ -40,7 +40,7 @@ docker compose up --build -d
 
 That builds and starts the website, the climate sidecar, the Twitch restream image, and the timelapse worker. The first build downloads Chromium for the restream image and can take a while.
 
-Open `http://localhost:3000`. Until an admin account exists, the site opens the setup wizard. The wizard creates the admin login and asks which sidecars to configure:
+Open `http://localhost:3000`. Until an admin account exists, the site opens the setup wizard. The container log prints a setup code (`docker compose logs growcast`). Enter that code on the first step, then create the admin login. The wizard also asks which sidecars to configure:
 
 - Climate: Spider Farmer email and password. One controller is saved automatically. Several controllers ask you to choose.
 - Twitch: stream key and channel. Start stays on Broadcast.
@@ -80,7 +80,7 @@ Notes:
 
 ### Logging
 
-GrowCast writes **structured JSON logs to stdout** (Pino) for production observability and security events (auth, mesh, path traversal, HTTP requests). Correlation IDs are set in the Next.js proxy (`X-Request-ID` on responses). Optional env vars: `LOG_LEVEL`, `LOG_PRETTY` (dev only), `GROWCAST_ENV`.
+GrowCast writes **human-readable logs to stdout** so `docker compose logs` shows the setup code, auth events, and request lines without a JSON parser. Set `LOG_FORMAT=json` for one JSON object per line (log shipping). Correlation IDs are set in the Next.js proxy (`X-Request-ID` on responses). Optional env vars: `LOG_LEVEL`, `LOG_FORMAT`, `GROWCAST_ENV`.
 
 Full schema, event catalog, redaction rules, Docker log shipping, retention guidance, and alert examples: **[docs/logging.md](docs/logging.md)**.
 
@@ -90,7 +90,7 @@ Full schema, event catalog, redaction rules, Docker log shipping, retention guid
 
 `docker compose up --build -d` is the supported start command. It runs four services from [docker-compose.yml](docker-compose.yml): `growcast`, `ggs`, `restream`, and `timelapse`.
 
-For production, put the origin behind a **Cloudflare Tunnel** (HTTPS public hostname → `http://127.0.0.1:3000`). Compose publishes only on loopback (`127.0.0.1:${GROWCAST_PORT:-3000}`) and sets `GROWCAST_TRUST_PROXY=1` so login rate-limits use `CF-Connecting-IP` (then `X-Real-IP`). Spoofed forwarded IPs are ignored unless that flag is set. Admin cookies are `Secure` when `X-Forwarded-Proto: https` or `CF-Connecting-IP` is present (or `COOKIE_SECURE=1`). Direct HTTP to a public `:3000` is not the supported admin path.
+For production, put the origin behind a **Cloudflare Tunnel** (HTTPS public hostname → `http://127.0.0.1:3000`). Compose publishes on `${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}` (loopback unless you set `GROWCAST_BIND=0.0.0.0` for a LAN) and sets `GROWCAST_TRUST_PROXY=1`. Login rate-limits use `CF-Connecting-IP`, then `X-Real-IP`, then the first `X-Forwarded-For` hop, which Caddy sends by default. Those headers are ignored unless the flag is set. Admin cookies are `Secure` when `X-Forwarded-Proto: https` or `CF-Connecting-IP` is present (or `COOKIE_SECURE=1`). Direct HTTP to a public `:3000` is not the supported admin path.
 
 Local-only UI: `http://localhost:3000` (session cookie is not Secure).
 
@@ -116,11 +116,11 @@ Sidecars without credentials wait, then start when the wizard (or admin settings
 
 Broadcast (`/admin/stream`) previews the 1920×1080 program with background music (uploaded playlist or a stream URL; URL wins while set) and on-stream alerts (manual Send alert, plus Twitch follow/sub/raid/bits after Connect Twitch). Public `/overlay` and the homepage stay silent.
 
-The website container runs as uid 1001 (`growcast`). The entrypoint `chown`s the bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host. The sidecars use the same uid so they can read `./data`.
+The website container runs as uid 1001 (`growcast`). The entrypoint `chown`s `./data`, the upload folders, and the timelapse `snapshots` and `timelapse` directories so the process can write them. It does not change ownership of the plugin source, so a later `git pull` still works. After the first run those data folders are owned by `1001:1001` on the host. The climate and timelapse sidecars use the same uid so they can read `./data`.
 
-Optional port override:
-- The compose file publishes `127.0.0.1:${GROWCAST_PORT:-3000}:3000`.
-- If you want a different loopback port, set `GROWCAST_PORT` before starting Compose.
+Optional address:
+- The compose file publishes `${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}:3000`.
+- Set `GROWCAST_PORT` for a different port, or `GROWCAST_BIND=0.0.0.0` to reach the site from other machines on the LAN.
 
 MediaMTX stays outside this compose file. `.env.local`, media folders, and `data/` are provided at runtime and are not baked into the image.
 

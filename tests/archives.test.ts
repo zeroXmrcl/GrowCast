@@ -415,6 +415,7 @@ describe("completeCurrentGrow", () => {
             const afterRetry = await getCurrentGrow();
             assert.notEqual(afterRetry.id, live.id);
             assert.equal((await listArchivedGrows()).length, 1);
+            await assert.rejects(() => access(path.join(sources.snapshotsDir, "1000.webp")));
         });
     });
 

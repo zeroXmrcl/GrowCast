@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {mkdir, mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
+import {mkdir, mkdtemp, readFile, rm, stat, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
@@ -21,6 +21,10 @@ describe("snapshot thumbs", () => {
             snapshotThumbSrc("/api/archives/grow-1/snapshots/0033.webp"),
             "/api/archives/grow-1/snapshots/0033.webp?thumb=1",
         );
+        assert.equal(
+            snapshotThumbSrc("/api/snapshots/0033.webp", "171000"),
+            "/api/snapshots/0033.webp?thumb=1&v=171000",
+        );
         assert.equal(snapshotThumbFilename("0033.webp"), "0033.webp");
         assert.equal(snapshotThumbFilename("still.png"), "still.webp");
     });
@@ -33,7 +37,9 @@ describe("snapshot thumbs", () => {
             })
                 .webp()
                 .toBuffer();
-            await writeFile(path.join(dir, "0033.webp"), source);
+            const sourcePath = path.join(dir, "0033.webp");
+            await writeFile(sourcePath, source);
+            const version = String(Math.trunc((await stat(sourcePath)).mtimeMs));
 
             const first = await openSnapshotThumb(dir, "0033.webp");
             assert.equal(first.ok, true);
@@ -44,7 +50,7 @@ describe("snapshot thumbs", () => {
             assert.equal(meta.format, "webp");
             assert.equal(meta.width, 640);
 
-            const thumbPath = path.join(dir, "thumbs", "0033.webp");
+            const thumbPath = path.join(dir, "thumbs", `0033.${version}.webp`);
             await writeFile(thumbPath, Buffer.from("sentinel-thumb"));
             const second = await openSnapshotThumb(dir, "0033.webp");
             assert.equal(second.ok, true);

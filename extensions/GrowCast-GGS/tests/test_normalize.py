@@ -1,6 +1,6 @@
 import unittest
 
-from normalize import actuators_from, device_snapshot, finite, live_ingest, sensor_from
+from normalize import actuators_from, device_snapshot, display_name, finite, live_ingest, sensor_from
 
 
 CB_DATA = {
@@ -15,6 +15,17 @@ CB_DATA = {
     "dehumidifier": {"on": 1, "level": 1},
     "heater": {"on": 0},
 }
+
+
+class DisplayNameTests(unittest.TestCase):
+    def test_hides_the_serial(self) -> None:
+        self.assertEqual(display_name("CB", "90E5B1B87088", ["90E5B1B87088"]), "Climate")
+        self.assertEqual(display_name("LC", "AABBCCDDEEFF", ["AABBCCDDEEFF"]), "Lights")
+        self.assertEqual(
+            display_name("CB", "BBBB", ["AAAA", "BBBB"]),
+            "Climate 2",
+        )
+        self.assertNotIn("7088", display_name("CB", "90E5B1B87088", ["90E5B1B87088"]))
 
 
 class FiniteTests(unittest.TestCase):

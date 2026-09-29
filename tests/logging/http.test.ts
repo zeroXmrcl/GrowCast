@@ -31,6 +31,11 @@ describe("extractClientIp", () => {
     assert.equal(loginRateLimitKey(headers), "admin-login:unknown");
   });
 
+  it("uses the first X-Forwarded-For hop when the proxy is trusted and no real-ip header is set", () => {
+    const headers = new Headers({"x-forwarded-for": "203.0.113.8, 10.0.0.1"});
+    assert.equal(extractClientIp(headers, {GROWCAST_TRUST_PROXY: "1"}), "203.0.113.8");
+  });
+
   it("ignores X-Real-IP unless GROWCAST_TRUST_PROXY is set", () => {
     assert.equal(extractClientIp({"x-real-ip": "10.1.2.3"}), undefined);
     assert.equal(
@@ -78,7 +83,7 @@ describe("docker compose listen address", () => {
   it("publishes the app port on loopback and enables proxy trust", async () => {
     const {readFile} = await import("node:fs/promises");
     const yml = await readFile(new URL("../../docker-compose.yml", import.meta.url), "utf8");
-    assert.match(yml, /127\.0\.0\.1:\$\{GROWCAST_PORT:-3000\}:3000/);
+    assert.match(yml, /\$\{GROWCAST_BIND:-127\.0\.0\.1\}:\$\{GROWCAST_PORT:-3000\}:3000/);
     assert.doesNotMatch(yml, /ports:\s*\n\s*-\s*"\$\{GROWCAST_PORT:-3000\}:3000"/);
     assert.match(yml, /GROWCAST_TRUST_PROXY:\s*"?1"?/);
     assert.doesNotMatch(yml, /-\s*"?\.\/extensions:\/app\/extensions"?/);

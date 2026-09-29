@@ -9,6 +9,8 @@ export async function register(): Promise<void> {
     if (process.env.NEXT_PHASE === "phase-production-build") {
       return;
     }
+    const {announceStartup} = await import("@/lib/setup-gate");
+    await announceStartup();
     // Helix waits for Twitch to POST the webhook challenge; awaiting that
     // here deadlocks because Next does not serve until register() returns.
     void Promise.resolve().then(async () => {
