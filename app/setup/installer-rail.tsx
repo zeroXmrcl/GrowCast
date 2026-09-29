@@ -19,25 +19,29 @@ export function InstallerRail({current, finished}: InstallerRailProps) {
                           : "installer-step-pending";
 
                     const circleStyle = isCurrent
-                        ? {background: "#e4e4e7", color: "#09090b", border: "1px solid transparent"}
+                        ? {background: "#fafafa", color: "#09090b", border: "1px solid #09090b"}
                         : isDone
                           ? {background: "#3a3a3a", color: "#f3f4f6", border: "1px solid #f3f4f6"}
                           : {background: "transparent", color: "#b4b4b8", border: "1px solid #4a4a4a"};
 
-                    const labelColor = isCurrent || isDone ? "#f3f4f6" : "#b4b4b8";
-                    const rowStyle = isCurrent
-                        ? {background: "#e4e4e7", color: "#09090b", borderRadius: 9999}
-                        : undefined;
+                    const labelColor = isCurrent ? "#09090b" : isDone ? "#f3f4f6" : "#b4b4b8";
 
                     return (
-                        <li key={id} className={stepClass} style={{marginBottom: 8}}>
+                        <li
+                            key={id}
+                            className={stepClass}
+                            style={{marginBottom: 8}}
+                            {...(isCurrent ? {"aria-current": "step"} : {})}
+                        >
                             <div
                                 style={{
                                     display: "flex",
                                     alignItems: "center",
                                     gap: 12,
                                     padding: "8px 12px",
-                                    ...rowStyle,
+                                    ...(isCurrent
+                                        ? {background: "#e4e4e7", borderRadius: 9999}
+                                        : undefined),
                                 }}
                             >
                                 <span
