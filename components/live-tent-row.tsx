@@ -5,7 +5,7 @@ import LiveClimateCard from "@/components/live-climate-card";
 import LiveDevicesCard from "@/components/live-devices-card";
 import {useLiveClimate} from "@/hooks/use-live-climate";
 import type {ClimateTick} from "@/lib/climate-tick";
-import type {DevicesDesign} from "@/lib/devices-design";
+import {DEFAULT_DEVICES_DESIGN, type DevicesDesign} from "@/lib/devices-design";
 import {
     OVERLAY_GROW_PATH,
     OVERLAY_GROW_POLL_MS,
@@ -16,7 +16,7 @@ import {WORKSPACE_AREA, WORKSPACE_VT} from "@/lib/workspace";
 
 export default function LiveTentRow({
     climateTick: initialTick = "plain",
-    devicesDesign: initialDesign = "needle",
+    devicesDesign: initialDesign = DEFAULT_DEVICES_DESIGN,
 }: {
     climateTick?: ClimateTick;
     devicesDesign?: DevicesDesign;

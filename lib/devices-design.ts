@@ -1,7 +1,10 @@
 export type DevicesDesign = "needle" | "icons";
 
-export const DEFAULT_DEVICES_DESIGN: DevicesDesign = "needle";
+export const DEFAULT_DEVICES_DESIGN: DevicesDesign = "icons";
 
 export function parseDevicesDesign(value: unknown): DevicesDesign {
-    return value === "icons" ? "icons" : DEFAULT_DEVICES_DESIGN;
+    if (value === "needle" || value === "icons") {
+        return value;
+    }
+    return DEFAULT_DEVICES_DESIGN;
 }

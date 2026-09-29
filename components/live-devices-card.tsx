@@ -1,7 +1,7 @@
 import {DeviceIcon} from "@/components/device-icons";
 import type {GgsLivePublic} from "@/lib/ggs-live";
 import {deviceGaugePercent} from "@/lib/device-gauge";
-import type {DevicesDesign} from "@/lib/devices-design";
+import {DEFAULT_DEVICES_DESIGN, type DevicesDesign} from "@/lib/devices-design";
 import {mapDeviceTiles, type LiveDeviceTile} from "@/lib/live-climate-view";
 import {
     LIVE_DEVICE_ITEM_CLASS,
@@ -137,7 +137,7 @@ function DeviceGauge({tile}: {tile: LiveDeviceTile}) {
 
 export default function LiveDevicesCard({
     snapshot,
-    devicesDesign = "needle",
+    devicesDesign = DEFAULT_DEVICES_DESIGN,
 }: LiveDevicesCardProps) {
     const tiles = mapDeviceTiles(snapshot);
     const icons = devicesDesign === "icons";
