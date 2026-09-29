@@ -10,7 +10,7 @@ export function PasswordLine({value}: {value: string}) {
             style={{
                 width: "100%",
                 height: 2,
-                background: "#e4e4e7",
+                background: "#3a3a3a",
                 overflow: "hidden",
             }}
         >
