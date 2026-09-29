@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {mergeMissingEnv, timelapseScheduleFromMesh} from "../lib/legacy-sidecar-env.ts";
+import {mergeMissingEnv, timelapseMeshFromEnv, timelapseScheduleFromMesh} from "../lib/legacy-sidecar-env.ts";
 
 describe("legacy sidecar env", () => {
     it("fills a missing camera url and keeps one that is already set", () => {
@@ -35,5 +35,27 @@ describe("legacy sidecar env", () => {
             TIMELAPSE_LENGTH_SECONDS: "12",
             TIMELAPSE_QUALITY: "high",
         });
+    });
+
+    it("seeds an empty mesh schedule from the env and leaves a saved one alone", () => {
+        const env = "RTSP_STREAM=rtsp://cam/1\nTZ=Europe/Berlin\nTIME_1=08:00\nINTERVAL=15\n";
+        const seeded = timelapseMeshFromEnv(env, null);
+        assert.equal(seeded?.time_1, "08:00");
+        assert.equal(seeded?.interval, 15);
+        assert.equal(seeded?.timezone, "Europe/Berlin");
+
+        const kept = timelapseMeshFromEnv(env, {time_1: "09:30", interval: null});
+        assert.equal(kept, null);
+
+        const filled = timelapseMeshFromEnv(env, {
+            timezone: "UTC",
+            time_1: "",
+            interval: null,
+            timelapseLength: 10,
+            paused: true,
+        });
+        assert.equal(filled?.time_1, "08:00");
+        assert.equal(filled?.paused, true);
+        assert.equal(filled?.timezone, "Europe/Berlin");
     });
 });

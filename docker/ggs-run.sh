@@ -7,6 +7,17 @@ ENV_FILE=/data/ggs.env
 TOKEN_FILE=/data/mesh.token
 cd /app
 
+strip_quotes() {
+  v=$(printf '%s' "$1" | tr -d '\r')
+  first=${v%"${v#?}"}
+  last=${v#"${v%?}"}
+  if [ -n "$v" ] && [ "$first" = "$last" ] && { [ "$first" = '"' ] || [ "$first" = "'" ]; }; then
+    v=${v#?}
+    v=${v%?}
+  fi
+  printf '%s' "$v"
+}
+
 value_of() {
   file=$1
   want=$2
@@ -19,7 +30,7 @@ value_of() {
     esac
     key=${line%%=*}
     if [ "$key" = "$want" ]; then
-      printf "%s" "${line#*=}"
+      strip_quotes "${line#*=}"
       return 0
     fi
   done < "$file"
@@ -76,6 +87,10 @@ import_legacy() {
     case "$key" in
       SF_PASSWORD|API_URL|API_TOKEN|GROWCAST_URL|LOG_LEVEL|GROWCAST_MESH_TOKEN) continue ;;
     esac
+    if [ -z "$val" ]; then
+      continue
+    fi
+    val=$(strip_quotes "$val")
     if [ -z "$val" ]; then
       continue
     fi

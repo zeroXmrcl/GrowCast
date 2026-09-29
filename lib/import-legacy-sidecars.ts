@@ -2,7 +2,7 @@ import {chmod, readFile} from "node:fs/promises";
 import path from "node:path";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
-import {mergeMissingEnv, timelapseScheduleFromMesh} from "@/lib/legacy-sidecar-env";
+import {mergeMissingEnv, timelapseMeshFromEnv, timelapseScheduleFromMesh} from "@/lib/legacy-sidecar-env";
 import {timelapseSidecarEnvFile} from "@/lib/timelapse-sidecar-env";
 
 async function readText(filePath: string): Promise<string | null> {
@@ -47,20 +47,47 @@ export async function importLegacyTimelapseEnv(): Promise<boolean> {
     }
     const meshPath = path.join(growcastDataDir(), "mesh", "growcast.timelapse.json");
     const meshText = await readText(meshPath);
-    if (!meshText) {
-        return changed;
+    if (meshText) {
+        try {
+            const mesh = JSON.parse(meshText) as unknown;
+            const schedule = timelapseScheduleFromEnvLines(mesh);
+            if (schedule) {
+                const current = (await readText(target)) ?? "";
+                changed = (await writeIfChanged(target, current, schedule)) || changed;
+            }
+        } catch {
+            return changed;
+        }
     }
-    let mesh: unknown;
-    try {
-        mesh = JSON.parse(meshText) as unknown;
-    } catch {
-        return changed;
-    }
+    return (await seedTimelapseMesh(target)) || changed;
+}
+
+function timelapseScheduleFromEnvLines(mesh: unknown): string | null {
     const schedule = timelapseScheduleFromMesh(mesh);
     const lines = Object.entries(schedule).map(([key, value]) => `${key}=${value}`).join("\n");
-    if (!lines) {
-        return changed;
+    return lines || null;
+}
+
+/** The sidecar obeys the mesh file. Copy a schedule that exists only in the env. */
+async function seedTimelapseMesh(envFile: string): Promise<boolean> {
+    const envText = await readText(envFile);
+    if (!envText) {
+        return false;
     }
-    const current = (await readText(target)) ?? "";
-    return (await writeIfChanged(target, current, lines)) || changed;
+    const meshPath = path.join(growcastDataDir(), "mesh", "growcast.timelapse.json");
+    const meshText = await readText(meshPath);
+    let existing: unknown = null;
+    if (meshText) {
+        try {
+            existing = JSON.parse(meshText) as unknown;
+        } catch {
+            return false;
+        }
+    }
+    const seeded = timelapseMeshFromEnv(envText, existing);
+    if (!seeded) {
+        return false;
+    }
+    await atomicWriteFile(meshPath, `${JSON.stringify(seeded, null, 2)}\n`, 0o600);
+    return true;
 }

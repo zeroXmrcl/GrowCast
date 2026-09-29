@@ -114,3 +114,50 @@ export function timelapseScheduleFromMesh(raw: unknown): Record<string, string> 
     put("TIMELAPSE_QUALITY", settings.timelapseQuality);
     return updates;
 }
+
+/** True when the mesh file already has a capture time or an interval. */
+export function meshHasSchedule(raw: unknown): boolean {
+    const schedule = timelapseScheduleFromMesh(raw);
+    return Boolean(schedule.TIME_1 || schedule.TIME_2 || schedule.TIME_3 || schedule.INTERVAL);
+}
+
+/**
+ * Build the on-disk mesh file from a sidecar env that already has a schedule.
+ * Returns null when the env has no schedule, or the mesh file already has one.
+ */
+export function timelapseMeshFromEnv(envText: string, existing: unknown): Record<string, unknown> | null {
+    const env = parseEnvKeys(envText);
+    const hasEnvSchedule = ["TIME_1", "TIME_2", "TIME_3", "INTERVAL"].some((key) => (env.get(key) ?? "").trim());
+    if (!hasEnvSchedule || meshHasSchedule(existing)) {
+        return null;
+    }
+    const prev = existing && typeof existing === "object" ? existing as Record<string, unknown> : {};
+    const intervalRaw = (env.get("INTERVAL") ?? "").trim();
+    const interval = /^\d+$/.test(intervalRaw) && Number(intervalRaw) > 0 ? Number(intervalRaw) : null;
+    const lengthRaw = (env.get("TIMELAPSE_LENGTH_SECONDS") ?? "").trim();
+    const length = /^\d+$/.test(lengthRaw) && Number(lengthRaw) > 0
+        ? Number(lengthRaw)
+        : typeof prev.timelapseLength === "number" && prev.timelapseLength > 0
+            ? prev.timelapseLength
+            : 10;
+    const qualityRaw = (env.get("TIMELAPSE_QUALITY") ?? "").trim().toLowerCase();
+    const quality = qualityRaw === "low" || qualityRaw === "medium" || qualityRaw === "high"
+        ? qualityRaw
+        : prev.timelapseQuality === "low" || prev.timelapseQuality === "high" || prev.timelapseQuality === "medium"
+            ? prev.timelapseQuality
+            : "medium";
+    const timezone = (env.get("TZ") ?? "").trim()
+        || (typeof prev.timezone === "string" ? prev.timezone.trim() : "")
+        || "UTC";
+    return {
+        lastChanged: new Date().toISOString(),
+        paused: prev.paused === true,
+        timezone,
+        time_1: (env.get("TIME_1") ?? "").trim(),
+        time_2: (env.get("TIME_2") ?? "").trim(),
+        time_3: (env.get("TIME_3") ?? "").trim(),
+        interval,
+        timelapseLength: length,
+        timelapseQuality: quality,
+    };
+}

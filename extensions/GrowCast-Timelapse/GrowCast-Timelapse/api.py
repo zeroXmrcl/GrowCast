@@ -154,7 +154,27 @@ class SettingsSync:
 
         self.state.paused = bool(settings.get("paused", False))
 
+        if self._keeps_loaded_schedule(settings):
+            log_api("keeping the camera schedule already loaded; mesh schedule is empty")
+            return SyncResult.NO_CHANGE
+
         if not self.settings_changed(settings, settings_version):
             return SyncResult.NO_CHANGE
 
         return self.apply_settings(settings, settings_version)
+
+    def _keeps_loaded_schedule(self, settings: dict) -> bool:
+        """An empty mesh file must not wipe times that were imported from the old .env."""
+        times = [settings.get("time1"), settings.get("time2"), settings.get("time3")]
+        if any(str(item or "").strip() for item in times):
+            return False
+        interval = settings.get("intervalMinutes")
+        if interval not in (None, "", 0):
+            return False
+        cfg = self.state.config
+        return bool(
+            (cfg.time1 or "").strip()
+            or (cfg.time2 or "").strip()
+            or (cfg.time3 or "").strip()
+            or (cfg.interval or "").strip()
+        )
