@@ -64,7 +64,7 @@ export function installerCanFinish(input: InstallerFinishInput): InstallerFinish
     if (step === "done") {
         return {ok: true};
     }
-    if (step === "admin") {
+    if (step === "admin" || step === "authenticate" || !isOptionalInstallerStep(step)) {
         return {ok: false, message: "Create the admin account before opening the dashboard."};
     }
     return {ok: false, message: `Save or skip ${STEP_LABEL[step]} before opening the dashboard.`};

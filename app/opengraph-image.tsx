@@ -8,9 +8,9 @@ import {
     shareCardStillPath,
 } from "@/lib/share-card";
 
-const ogCache = new Map<string, Uint8Array>();
+const ogCache = new Map<string, Uint8Array<ArrayBuffer>>();
 
-function ogResponse(bytes: Uint8Array): Response {
+function ogResponse(bytes: Uint8Array<ArrayBuffer>): Response {
     return new Response(bytes, {
         headers: {
             "Content-Type": "image/png",

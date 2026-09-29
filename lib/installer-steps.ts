@@ -1,4 +1,4 @@
-export const INSTALLER_STEPS = ["admin", "climate", "camera", "twitch", "timelapse"] as const;
+export const INSTALLER_STEPS = ["authenticate", "admin", "climate", "camera", "twitch", "timelapse"] as const;
 export type InstallerStepId = (typeof INSTALLER_STEPS)[number];
 
 export const INSTALLER_OPTIONAL_STEPS = ["climate", "camera", "twitch", "timelapse"] as const;

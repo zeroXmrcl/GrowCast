@@ -3,7 +3,7 @@ import type {InstallerInitial, InstallerStepId} from "@/lib/installer-steps";
 import {INSTALLER_STEPS} from "@/lib/installer-steps";
 import {getCurrentGrow} from "@/lib/db";
 import {readSpiderFarmerBrokerStatus} from "@/lib/ggs-sidecar-env";
-import {installerCanFinish, nextInstallerStep, type InstallerFinishInput} from "@/lib/installer-ready";
+import {installerCanFinish, isOptionalInstallerStep, nextInstallerStep, type InstallerFinishInput} from "@/lib/installer-ready";
 import {hasRestreamKey} from "@/lib/restream/store";
 import {readSkippedSteps, readStoredAdminAccount} from "@/lib/setup-account";
 import {isRtspUrl, readTimelapseRtsp} from "@/lib/timelapse-sidecar-env";
@@ -45,8 +45,8 @@ export async function readInstallerProgress(): Promise<InstallerInitial> {
         timelapse: isRtspUrl(snap.rtsp),
     };
     const finished: InstallerStepId[] = INSTALLER_STEPS.filter((step) => {
-        if (step === "admin") return snap.hasAdmin;
-        return saved[step] && !skipped.has(step);
+        if (step === "authenticate" || step === "admin") return snap.hasAdmin;
+        return isOptionalInstallerStep(step) && saved[step] && !skipped.has(step);
     });
 
     return {

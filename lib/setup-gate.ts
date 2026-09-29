@@ -5,6 +5,9 @@ import path from "node:path";
 import {safeEqualText} from "@/lib/crypto-equal";
 import {growcastDataDir} from "@/lib/data-paths";
 import {isSetupComplete} from "@/lib/setup-account";
+import {compactSetupCode, SETUP_CODE_ALPHABET, SETUP_CODE_LENGTH} from "@/lib/setup-code";
+
+export {compactSetupCode};
 
 /** Same bar as admin login: a real scrypt account in the environment skips the wizard. */
 function envAdminSkipsSetup(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -20,31 +23,25 @@ function envAdminSkipsSetup(env: NodeJS.ProcessEnv = process.env): boolean {
     return secret.length >= 32 && passwordHash.startsWith("scrypt$");
 }
 
-const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
-
 export function setupCodePath(): string {
     return path.join(growcastDataDir(), "setup", "code");
 }
 
 export function generateSetupCode(): string {
     let raw = "";
-    while (raw.length < 8) {
+    while (raw.length < SETUP_CODE_LENGTH) {
         const bytes = randomBytes(16);
         for (const byte of bytes) {
-            if (byte >= ALPHABET.length * Math.floor(256 / ALPHABET.length)) {
+            if (byte >= SETUP_CODE_ALPHABET.length * Math.floor(256 / SETUP_CODE_ALPHABET.length)) {
                 continue;
             }
-            raw += ALPHABET[byte % ALPHABET.length];
-            if (raw.length === 8) {
+            raw += SETUP_CODE_ALPHABET[byte % SETUP_CODE_ALPHABET.length];
+            if (raw.length === SETUP_CODE_LENGTH) {
                 break;
             }
         }
     }
     return `${raw.slice(0, 4)}-${raw.slice(4)}`;
-}
-
-export function compactSetupCode(value: string): string {
-    return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 export function setupCodesMatch(input: string, expected: string): boolean {

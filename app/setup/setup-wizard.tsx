@@ -4,6 +4,7 @@ import {useRouter} from "next/navigation";
 import {useEffect, useRef, useState, type FormEvent, type ReactNode} from "react";
 import {
     createSetupAdminAction,
+    confirmSetupCodeAction,
     finishSetupAction,
     setupCameraAction,
     setupClimateAction,
@@ -15,8 +16,10 @@ import {ControllerList} from "@/app/setup/controller-list";
 import {INSTALLER_COPY, installerDoneRows} from "@/app/setup/installer-copy";
 import {InstallerRail} from "@/app/setup/installer-rail";
 import {PasswordLine} from "@/app/setup/password-line";
+import {SetupCodeInput} from "@/app/setup/setup-code-input";
 import {passwordLineMet} from "./password-meter";
 import {normalizeUsernameInput, validateUsernameInput} from "@/lib/admin-username";
+import {SETUP_CODE_LENGTH} from "@/lib/setup-code";
 import type {InstallerInitial, InstallerOptionalStep, InstallerStepId} from "@/lib/installer-steps";
 import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
 
@@ -63,6 +66,7 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
     const [copyClass, setCopyClass] = useState("installer-copy");
 
     const [setupCode, setSetupCode] = useState("");
+    const [codeInvalid, setCodeInvalid] = useState(false);
     const [username, setUsername] = useState(initial.username);
     const [password, setPassword] = useState("");
     const [sfEmail, setSfEmail] = useState("");
@@ -84,9 +88,9 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
 
     const copy = stepCopy(step);
     const climateLine = step === "climate-list" ? `Signed in as ${sfEmail}.` : copy.line;
-    const adminReady = setupCode.trim().length > 0
-        && validateUsernameInput(normalizeUsernameInput(username))
+    const adminReady = validateUsernameInput(normalizeUsernameInput(username))
         && passwordLineMet(password);
+    const codeReady = setupCode.replace(/[^a-z0-9]/gi, "").length === SETUP_CODE_LENGTH;
     const locked = busy || saving;
 
     useEffect(() => {
@@ -174,6 +178,21 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
             }
             setSkipped((prev) => (prev.includes(id) ? prev : [...prev, id]));
             await go(next, false);
+        });
+    }
+
+    async function onAuthenticate(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!codeReady) return;
+        await runLocked(async () => {
+            const result = await confirmSetupCodeAction(setupCode);
+            if (!result.ok) {
+                setCodeInvalid(true);
+                return;
+            }
+            setCodeInvalid(false);
+            markFinished("authenticate");
+            await go("admin", true);
         });
     }
 
@@ -319,7 +338,7 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                 <div
                     className={copyClass}
                     style={{
-                        maxWidth: 440,
+                        maxWidth: 520,
                         width: "100%",
                         padding: "64px 48px",
                         boxSizing: "border-box",
@@ -352,17 +371,25 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                         </p>
                     ) : null}
 
+                    {step === "authenticate" ? (
+                        <form className="mt-8 space-y-5" onSubmit={onAuthenticate}>
+                            <SetupCodeInput
+                                value={setupCode}
+                                onChange={(next) => {
+                                    setSetupCode(next);
+                                    setCodeInvalid(false);
+                                }}
+                                disabled={locked}
+                                invalid={codeInvalid}
+                            />
+                            <PrimaryButton className={saveClass} disabled={locked || !codeReady}>
+                                {saveLabel ?? "Continue"}
+                            </PrimaryButton>
+                        </form>
+                    ) : null}
+
                     {step === "admin" ? (
                         <form className="mt-8 space-y-5" onSubmit={onAdmin}>
-                            <InstallerField label="Setup code" value={setupCode} htmlFor="installer-setup-code">
-                                <InstallerInput
-                                    id="installer-setup-code"
-                                    name="setupCode"
-                                    autoComplete="off"
-                                    value={setupCode}
-                                    onChange={setSetupCode}
-                                />
-                            </InstallerField>
                             <InstallerField label="Username" value={username} htmlFor="installer-username">
                                 <InstallerInput
                                     id="installer-username"

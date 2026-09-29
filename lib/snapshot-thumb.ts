@@ -3,7 +3,7 @@ import path from "node:path";
 import jpeg from "jpeg-js";
 import {atomicTempPath} from "@/lib/atomic-file";
 import {getLogger} from "@/lib/logging/logger";
-import {MAX_PUBLIC_IMAGE_BYTES, openMediaFile} from "@/lib/open-media-file";
+import {bytesForResponse, MAX_PUBLIC_IMAGE_BYTES, openMediaFile} from "@/lib/open-media-file";
 import {IMAGE_EXTENSIONS, isSafeMediaFilename} from "@/lib/safe-media-filename";
 import {decodeWebpRgba} from "@/lib/webp-still";
 
@@ -72,7 +72,7 @@ export function snapshotThumbResponse(
             headers: {"Cache-Control": "no-store"},
         });
     }
-    return new Response(new Uint8Array(opened.buffer.buffer, opened.buffer.byteOffset, opened.buffer.byteLength), {
+    return new Response(bytesForResponse(opened.buffer), {
         status: 200,
         headers: {
             "Content-Type": opened.contentType,

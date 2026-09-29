@@ -62,6 +62,17 @@ async function loginDuringSetup(username: string, password: string) {
     return loginAdmin(username, password, clientKey);
 }
 
+export async function confirmSetupCodeAction(setupCode: string): Promise<SetupStepResult> {
+    if (!needsSetupWizard()) {
+        return closed();
+    }
+    const expectedCode = readSetupCode();
+    if (!expectedCode || !setupCodesMatch(setupCode, expectedCode)) {
+        return setupCodeRejected();
+    }
+    return {ok: true};
+}
+
 export async function createSetupAdminAction(formData: FormData): Promise<SetupStepResult> {
     if (!needsSetupWizard()) {
         return closed();

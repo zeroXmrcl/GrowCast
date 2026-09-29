@@ -1,5 +1,5 @@
 import path from "node:path";
-import {openMediaFile} from "@/lib/open-media-file";
+import {bytesForResponse, openMediaFile} from "@/lib/open-media-file";
 import {readAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio, resolveAudioSource} from "@/lib/restream/audio";
 import {readCameraLook} from "@/lib/restream/camera-look-store";
@@ -103,7 +103,7 @@ export async function programMusicGetResponse(
         return notFound();
     }
 
-    return new Response(new Uint8Array(opened.buffer.buffer, opened.buffer.byteOffset, opened.buffer.byteLength), {
+    return new Response(bytesForResponse(opened.buffer), {
         status: 200,
         headers: {
             "Content-Type": musicContentType(filename, opened.contentType),

@@ -9,14 +9,17 @@ import {isSafeHttpUrl} from "../lib/url-policy.ts";
 import {adminSetupDecision, installerCanFinish} from "../lib/installer-ready.ts";
 import {isRtspUrl} from "../lib/timelapse-sidecar-env.ts";
 import {passwordLineMet, passwordLineScale} from "../app/setup/password-meter.ts";
+import {parseSetupCodePaste, setupCodeSlots} from "../lib/setup-code.ts";
 import {readSkippedSteps, writeSkippedStep} from "../lib/setup-account.ts";
 
 describe("installer copy", () => {
     it("locks the approved lines", () => {
+        assert.equal(INSTALLER_COPY.authenticate.label, "Authenticate");
         assert.equal(
-            INSTALLER_COPY.admin.line,
-            "The password needs 12 characters. The setup code is in the GrowCast log.",
+            INSTALLER_COPY.authenticate.line,
+            "It is printed in the GrowCast log when the container starts.",
         );
+        assert.equal(INSTALLER_COPY.admin.line, "The password needs 12 characters.");
         assert.equal(
             INSTALLER_COPY.climate.line,
             "Email and password only. Google or Apple sign-in will not work.",
@@ -41,6 +44,16 @@ describe("installer copy", () => {
         });
         assert.equal(rows.find((row) => row.label === "Climate")?.value, "Skipped");
         assert.equal(rows.find((row) => row.label === "Camera")?.value, "https://stream.example.com/growcam/");
+    });
+});
+
+describe("setup code slots", () => {
+    it("keeps the four-and-four shape from a paste or a log line", () => {
+        assert.equal(parseSetupCodePaste("o1il-0ne2"), "o1il0ne2");
+        assert.equal(parseSetupCodePaste("4hbk-kuv6"), "4hbkkuv6");
+        assert.equal(parseSetupCodePaste("Setup code  4hbk-kuv6"), "4hbkkuv6");
+        assert.deepEqual(setupCodeSlots("4hbk-kuv6"), ["4", "h", "b", "k", "k", "u", "v", "6"]);
+        assert.deepEqual(setupCodeSlots("4hb"), ["4", "h", "b", "", "", "", "", ""]);
     });
 });
 

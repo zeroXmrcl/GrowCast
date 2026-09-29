@@ -4,7 +4,7 @@ import {
     logHttpPathTraversalBlocked,
     withRequestLog,
 } from "@/lib/logging";
-import { openMediaFile } from "@/lib/open-media-file";
+import { bytesForResponse, openMediaFile } from "@/lib/open-media-file";
 import { IMAGE_EXTENSIONS } from "@/lib/safe-media-filename";
 import { openSnapshotThumb, snapshotThumbResponse } from "@/lib/snapshot-thumb";
 
@@ -35,7 +35,7 @@ export async function GET(
             return new Response("File not found", { status: 404 });
         }
 
-        return new Response(new Uint8Array(opened.buffer.buffer, opened.buffer.byteOffset, opened.buffer.byteLength), {
+        return new Response(bytesForResponse(opened.buffer), {
             status: 200,
             headers: {
                 "Content-Type": opened.contentType,

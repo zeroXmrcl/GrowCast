@@ -74,7 +74,7 @@ export default function SiteHeader({
 
     return (
         <header
-            className={`${WORKSPACE_VT.header} sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90`}
+            className={`${WORKSPACE_VT.header} sticky top-0 z-40 bg-white/90 backdrop-blur dark:bg-zinc-950/90`}
         >
             <div className={`${SITE_FRAME_CLASS} flex items-center justify-between py-3`}>
                 {workspace ? (

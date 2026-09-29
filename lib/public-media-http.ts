@@ -1,5 +1,5 @@
 import {isMediaCollectionId, mediaCollectionDir} from "@/lib/media-library";
-import {openMediaFile} from "@/lib/open-media-file";
+import {bytesForResponse, openMediaFile} from "@/lib/open-media-file";
 
 const NO_STORE = "no-store, must-revalidate";
 const NO_STORE_ERROR = "no-store";
@@ -30,7 +30,7 @@ export async function publicMediaGetResponse(
         });
     }
 
-    return new Response(new Uint8Array(opened.buffer.buffer, opened.buffer.byteOffset, opened.buffer.byteLength), {
+    return new Response(bytesForResponse(opened.buffer), {
         status: 200,
         headers: {
             "Content-Type": opened.contentType,

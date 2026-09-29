@@ -9,8 +9,11 @@ export const MAX_PUBLIC_VIDEO_BYTES = 512 * 1024 * 1024;
 /** Streamed video can be longer than the buffered cap. */
 export const MAX_STREAM_VIDEO_BYTES = 8 * 1024 * 1024 * 1024;
 
-export function bytesForResponse(buffer: Buffer): Uint8Array {
-    return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+export function bytesForResponse(buffer: Buffer): Uint8Array<ArrayBuffer> {
+    if (buffer.buffer instanceof ArrayBuffer) {
+        return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    }
+    return new Uint8Array(buffer);
 }
 
 export type ByteRange = {start: number; end: number};

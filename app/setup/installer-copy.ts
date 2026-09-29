@@ -1,9 +1,15 @@
 export const INSTALLER_COPY = {
+    authenticate: {
+        label: "Authenticate",
+        eyebrow: "Authenticate",
+        title: "Enter the setup code",
+        line: "It is printed in the GrowCast log when the container starts.",
+    },
     admin: {
         label: "Admin",
-        eyebrow: "Setup",
+        eyebrow: "Admin",
         title: "Create the admin account",
-        line: "The password needs 12 characters. The setup code is in the GrowCast log.",
+        line: "The password needs 12 characters.",
     },
     climate: {
         label: "Climate",
