@@ -19,7 +19,7 @@ import {
 } from "@/app/setup/installer-copy";
 import {InstallerRail} from "@/app/setup/installer-rail";
 import {PasswordLine} from "@/app/setup/password-line";
-import {passwordLineMet} from "./password-line.ts";
+import {passwordLineMet} from "./password-meter.ts";
 import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
 
 type WizardStep = InstallerStepId | "climate-list" | "done";
