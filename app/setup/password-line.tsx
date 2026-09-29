@@ -1,4 +1,4 @@
-import {passwordLineMet, passwordLineScale} from "@/app/setup/password-line";
+import {passwordLineMet, passwordLineScale} from "./password-meter";
 
 export function PasswordLine({value}: {value: string}) {
     const met = passwordLineMet(value);

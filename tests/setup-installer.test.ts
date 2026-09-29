@@ -6,7 +6,7 @@ import path from "node:path";
 import {describe, it} from "node:test";
 import {INSTALLER_COPY, installerDoneRows} from "../app/setup/installer-copy.ts";
 import {isInstallerStreamUrl} from "../app/setup/installer-url.ts";
-import {passwordLineMet, passwordLineScale} from "../app/setup/password-line.ts";
+import {passwordLineMet, passwordLineScale} from "../app/setup/password-meter.ts";
 import {readSkippedSteps, writeSkippedStep} from "../lib/setup-account.ts";
 
 describe("installer copy", () => {
