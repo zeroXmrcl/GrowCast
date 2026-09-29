@@ -1,4 +1,6 @@
+import {redirect} from "next/navigation";
 import type {ReactNode} from "react";
+import {needsSetupWizard} from "@/lib/admin-auth";
 import SiteHeader from "@/components/site-header";
 import WorkspaceFrame from "@/components/workspace-frame";
 import {WorkspaceNavProvider} from "@/components/workspace-nav";
@@ -10,6 +12,9 @@ import {SITE_FRAME_CLASS} from "@/lib/site-frame";
 import {safeHttpUrlOrEmpty} from "@/lib/url-policy";
 
 export default async function SiteLayout({children}: {children: ReactNode}) {
+    if (needsSetupWizard()) {
+        redirect("/setup");
+    }
     const [grow, showEnergy, showGallery, archives] = await Promise.all([
         getCurrentGrow(),
         hasGgsLiveUi(),

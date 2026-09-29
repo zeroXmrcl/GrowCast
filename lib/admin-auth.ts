@@ -6,6 +6,7 @@ import {
   matchAdminCredentials,
   normalizeUsernameInput,
 } from "@/lib/admin-credentials";
+import {isSetupComplete, readStoredAdminAccount} from "@/lib/setup-account";
 import {SESSION_TTL_SECONDS} from "@/lib/admin-session-policy";
 import {
   getAdminLoginAttemptStore,
@@ -71,12 +72,12 @@ function getEnv(name: string): string | undefined {
   return normalized;
 }
 
-function getAdminSetupStatus(): AdminSetupStatus {
+function assessAdminConfig(
+  username: string | undefined,
+  passwordHash: string | undefined,
+  secret: string | undefined,
+): AdminSetupStatus {
   const warnings: string[] = [];
-
-  const username = getEnv("ADMIN_USERNAME");
-  const passwordHash = getEnv("ADMIN_PASSWORD_HASH");
-  const secret = getEnv("ADMIN_SESSION_SECRET");
 
   if (!username) {
     warnings.push("ADMIN_USERNAME is not set.");
@@ -116,6 +117,42 @@ function getAdminSetupStatus(): AdminSetupStatus {
   };
 }
 
+function envAdminStatus(): AdminSetupStatus {
+  return assessAdminConfig(
+    getEnv("ADMIN_USERNAME"),
+    getEnv("ADMIN_PASSWORD_HASH"),
+    getEnv("ADMIN_SESSION_SECRET"),
+  );
+}
+
+/** True when .env.local already has a usable admin account. Existing installs skip the wizard. */
+export function isEnvAdminReady(): boolean {
+  return envAdminStatus().canLogin;
+}
+
+/** First-run wizard. An env admin account, or a finished wizard, skips it. */
+export function needsSetupWizard(): boolean {
+  if (isEnvAdminReady()) {
+    return false;
+  }
+  return !isSetupComplete();
+}
+
+function getAdminSetupStatus(): AdminSetupStatus {
+  const fromEnv = envAdminStatus();
+  if (fromEnv.canLogin) {
+    return fromEnv;
+  }
+  const stored = readStoredAdminAccount();
+  if (stored) {
+    const fromFile = assessAdminConfig(stored.username, stored.passwordHash, stored.sessionSecret);
+    if (fromFile.canLogin) {
+      return fromFile;
+    }
+  }
+  return fromEnv;
+}
+
 function getRequiredAdminConfig(): AdminConfig {
   const status = getAdminSetupStatus();
 
@@ -123,10 +160,22 @@ function getRequiredAdminConfig(): AdminConfig {
     throw new Error(status.warnings.join(" "));
   }
 
+  if (isEnvAdminReady()) {
+    return {
+      username: normalizeUsernameInput(getEnv("ADMIN_USERNAME")!),
+      passwordHash: getEnv("ADMIN_PASSWORD_HASH")!,
+      secret: getEnv("ADMIN_SESSION_SECRET")!,
+    };
+  }
+
+  const stored = readStoredAdminAccount();
+  if (!stored) {
+    throw new Error(status.warnings.join(" "));
+  }
   return {
-    username: normalizeUsernameInput(getEnv("ADMIN_USERNAME")!),
-    passwordHash: getEnv("ADMIN_PASSWORD_HASH")!,
-    secret: getEnv("ADMIN_SESSION_SECRET")!,
+    username: normalizeUsernameInput(stored.username),
+    passwordHash: stored.passwordHash,
+    secret: stored.sessionSecret,
   };
 }
 

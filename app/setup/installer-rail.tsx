@@ -24,7 +24,7 @@ export function InstallerRail({current, finished}: InstallerRailProps) {
                           ? {background: "#3a3a3a", color: "#f3f4f6", border: "1px solid #f3f4f6"}
                           : {background: "transparent", color: "#b4b4b8", border: "1px solid #4a4a4a"};
 
-                    const labelColor = isCurrent ? "#09090b" : isDone ? "#f3f4f6" : "#b4b4b8";
+                    const labelColor = isCurrent ? "#09090b" : isDone ? "#f3f4f6" : "#8a8a91";
 
                     return (
                         <li

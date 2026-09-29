@@ -1,10 +1,14 @@
 import {Suspense, type ReactNode} from "react";
+import {redirect} from "next/navigation";
 import {AdminSidebar} from "@/app/admin/admin-chrome";
 import {AdminToast} from "@/app/admin/admin-toast";
-import {isAdminAuthenticated} from "@/lib/admin-auth";
+import {isAdminAuthenticated, needsSetupWizard} from "@/lib/admin-auth";
 
 /** Admin chrome is self-contained; no public site header. */
 export default async function AdminLayout({children}: {children: ReactNode}) {
+    if (needsSetupWizard()) {
+        redirect("/setup");
+    }
     const loggedIn = await isAdminAuthenticated();
 
     return (
