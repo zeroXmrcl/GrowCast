@@ -72,8 +72,52 @@ export async function readTimelapseRtsp(
     }
 }
 
+const BLOCKED_RTSP_HOSTS = new Set([
+    "localhost",
+    "growcast",
+    "metadata",
+    "metadata.google.internal",
+    "host.docker.internal",
+]);
+
+/** Loopback, metadata, and this app's own hostname. LAN cameras stay allowed. */
+export function isBlockedRtspHost(hostname: string): boolean {
+    const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (!host || BLOCKED_RTSP_HOSTS.has(host) || host === "::1" || host === "::" || host === "0.0.0.0") {
+        return true;
+    }
+    if (host.startsWith("fe80:")) {
+        return true;
+    }
+    const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+    if (!match) {
+        return false;
+    }
+    const octets = match.slice(1).map(Number);
+    if (octets.some((octet) => octet > 255)) {
+        return true;
+    }
+    const [a, b] = octets;
+    if (a === 0 || a === 127) {
+        return true;
+    }
+    return a === 169 && b === 254;
+}
+
 export function isRtspUrl(value: string): boolean {
-    return /^rtsp:\/\/\S+$/i.test(value) && !/[\r\n\0]/.test(value);
+    if (!/^rtsp:\/\/\S+$/i.test(value) || /[\r\n\0]/.test(value)) {
+        return false;
+    }
+    let parsed: URL;
+    try {
+        parsed = new URL(value);
+    } catch {
+        return false;
+    }
+    if (parsed.protocol !== "rtsp:" || !parsed.hostname) {
+        return false;
+    }
+    return !isBlockedRtspHost(parsed.hostname);
 }
 
 export async function writeTimelapseSidecarEnv(

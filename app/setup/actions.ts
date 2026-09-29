@@ -1,7 +1,7 @@
 "use server";
 
 import {randomBytes} from "node:crypto";
-import {loginAdmin, needsSetupWizard} from "@/lib/admin-auth";
+import {isAdminAuthenticated, loginAdmin, needsSetupWizard} from "@/lib/admin-auth";
 import {
     hashAdminPassword,
     normalizeUsernameInput,
@@ -11,7 +11,9 @@ import {validatePasswordStrength, MIN_PASSWORD_LENGTH} from "@/lib/password-poli
 import {prepareSpiderFarmer} from "@/lib/spider-farmer-setup";
 import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
 import {updateCurrentGrow} from "@/lib/db";
-import {markSetupComplete, writeSkippedStep, writeStoredAdminAccount} from "@/lib/setup-account";
+import {adminSetupDecision, isOptionalInstallerStep} from "@/lib/installer-ready";
+import {installerFinishCheck} from "@/lib/installer-progress";
+import {markSetupComplete, readStoredAdminAccount, writeSkippedStep, writeStoredAdminAccount} from "@/lib/setup-account";
 import {isRtspUrl, writeTimelapseSidecarEnv} from "@/lib/timelapse-sidecar-env";
 import {updateTimelapseSettings} from "@/lib/timelapse-settings";
 import {
@@ -25,7 +27,7 @@ import {
     resolveChannelLogin,
     streamKeyForChannelLookup,
 } from "@/lib/restream/twitch-helix";
-import {isInstallerStreamUrl} from "./installer-url";
+import {isSafeHttpUrl} from "@/lib/url-policy";
 
 export type SetupStepResult =
     | {ok: true; detail?: string}
@@ -35,22 +37,42 @@ function closed(): SetupStepResult {
     return {ok: false, message: "Setup is already finished."};
 }
 
+async function openSetup(): Promise<SetupStepResult | null> {
+    if (!needsSetupWizard()) {
+        return closed();
+    }
+    if (!(await isAdminAuthenticated())) {
+        return {ok: false, message: "Sign in on this browser before continuing setup."};
+    }
+    return null;
+}
+
 export async function createSetupAdminAction(formData: FormData): Promise<SetupStepResult> {
     if (!needsSetupWizard()) {
         return closed();
     }
     const username = normalizeUsernameInput(String(formData.get("username") ?? ""));
     const password = String(formData.get("password") ?? "");
-    const hasConfirm = formData.has("confirm");
-    const confirm = String(formData.get("confirm") ?? "");
     if (!validateUsernameInput(username)) {
         return {ok: false, message: "Use 1–64 characters: letters, numbers, and . _ @ -."};
     }
-    if (hasConfirm && password !== confirm) {
-        return {ok: false, message: "Passwords do not match."};
-    }
     if (!validatePasswordStrength(password)) {
         return {ok: false, message: `Use at least ${MIN_PASSWORD_LENGTH} characters.`};
+    }
+    const existing = readStoredAdminAccount();
+    const decision = adminSetupDecision(
+        existing ? normalizeUsernameInput(existing.username) : null,
+        username,
+    );
+    if (decision === "reject") {
+        return {ok: false, message: "This installer already has an admin account."};
+    }
+    if (decision === "sign-in") {
+        const login = await loginAdmin(username, password);
+        if (!login.ok) {
+            return {ok: false, message: "That password does not match the admin account."};
+        }
+        return {ok: true};
     }
     await writeStoredAdminAccount({
         username,
@@ -65,9 +87,8 @@ export async function createSetupAdminAction(formData: FormData): Promise<SetupS
 }
 
 export async function setupClimateAction(formData: FormData): Promise<SetupStepResult> {
-    if (!needsSetupWizard()) {
-        return closed();
-    }
+    const gate = await openSetup();
+    if (gate) return gate;
     const result = await prepareSpiderFarmer({
         email: String(formData.get("sfEmail") ?? ""),
         password: String(formData.get("sfPassword") ?? ""),
@@ -99,24 +120,20 @@ export async function setupClimateAction(formData: FormData): Promise<SetupStepR
 }
 
 export async function setupCameraAction(formData: FormData): Promise<SetupStepResult> {
-    if (!needsSetupWizard()) {
-        return closed();
-    }
+    const gate = await openSetup();
+    if (gate) return gate;
     const streamUrl = String(formData.get("streamUrl") ?? "").trim();
-    if (!isInstallerStreamUrl(streamUrl)) {
+    if (!isSafeHttpUrl(streamUrl)) {
         return {ok: false, message: "Paste a browser link, starting with http:// or https://."};
     }
     await updateCurrentGrow({streamUrl});
     return {ok: true};
 }
 
-const SKIPPABLE_INSTALLER_STEPS = new Set(["climate", "camera", "twitch", "timelapse"]);
-
 export async function skipInstallerStepAction(step: string): Promise<SetupStepResult> {
-    if (!needsSetupWizard()) {
-        return closed();
-    }
-    if (!SKIPPABLE_INSTALLER_STEPS.has(step)) {
+    const gate = await openSetup();
+    if (gate) return gate;
+    if (!isOptionalInstallerStep(step)) {
         return {ok: false, message: "That step cannot be skipped."};
     }
     await writeSkippedStep(step);
@@ -124,15 +141,13 @@ export async function skipInstallerStepAction(step: string): Promise<SetupStepRe
 }
 
 export async function setupTwitchAction(formData: FormData): Promise<SetupStepResult> {
-    if (!needsSetupWizard()) {
-        return closed();
-    }
+    const gate = await openSetup();
+    if (gate) return gate;
     const twitchKey = String(formData.get("twitchKey") ?? "");
     const typedLogin = String(formData.get("twitchLogin") ?? "");
     if (!twitchKey.trim()) {
         return {ok: false, message: "Enter a Twitch stream key."};
     }
-    await saveRestreamKey(twitchKey);
     const previous = await readRestreamChannel();
     if (isInvalidTypedChannelLogin(typedLogin, previous.login)) {
         return {ok: false, message: "That channel name is not a Twitch login."};
@@ -143,19 +158,19 @@ export async function setupTwitchAction(formData: FormData): Promise<SetupStepRe
         previousLogin: previous.login,
     });
     await writeRestreamChannel({login, toastEnabled: previous.toastEnabled});
+    await saveRestreamKey(twitchKey);
     return {ok: true};
 }
 
 export async function setupTimelapseAction(formData: FormData): Promise<SetupStepResult> {
-    if (!needsSetupWizard()) {
-        return closed();
-    }
+    const gate = await openSetup();
+    if (gate) return gate;
     const rtsp = String(formData.get("rtspStream") ?? "").trim();
     const timezone = String(formData.get("timezone") ?? "").trim();
     const intervalRaw = String(formData.get("interval") ?? "").trim();
     const interval = Number(intervalRaw);
     if (!isRtspUrl(rtsp)) {
-        return {ok: false, message: "Enter an RTSP URL, like rtsp://user:password@camera:554/stream."};
+        return {ok: false, message: "Use the camera’s local rtsp:// address, like rtsp://user:password@192.168.1.20:554/stream."};
     }
     if (!Number.isInteger(interval) || interval < 1) {
         return {ok: false, message: "Interval is a whole number of minutes, at least 1."};
@@ -178,8 +193,11 @@ export async function setupTimelapseAction(formData: FormData): Promise<SetupSte
 }
 
 export async function finishSetupAction(): Promise<SetupStepResult> {
-    if (!needsSetupWizard()) {
-        return {ok: true};
+    const gate = await openSetup();
+    if (gate) return gate;
+    const ready = await installerFinishCheck();
+    if (!ready.ok) {
+        return ready;
     }
     await markSetupComplete();
     return {ok: true};

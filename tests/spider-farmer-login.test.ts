@@ -59,6 +59,7 @@ describe("spider farmer login body", () => {
             mqttName: "a@b.c",
             mqttPwd: "broker-secret-value",
             userId: "42",
+            restToken: "rest",
         });
     });
 

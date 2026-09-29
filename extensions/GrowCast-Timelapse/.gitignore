@@ -1,0 +1,7 @@
+.env
+**/.timelapse.lock
+snapshots/.timelapse.lock
+
+__pycache__/
+*.pyc
+

@@ -10,13 +10,23 @@ import type {TimelapseSettings} from "@/lib/timelapse-settings";
 
 export function TimelapseSettingsFields({
     timelapseSettings,
+    rtspStream = "",
 }: {
     timelapseSettings: TimelapseSettings;
+    rtspStream?: string;
 }) {
     return (
         <>
             <AdminBand id="capture" title="Capture">
                 <div className="space-y-4">
+                    <AdminField label="Camera RTSP URL">
+                        <AdminInput
+                            name="rtspStream"
+                            defaultValue={rtspStream}
+                            placeholder="rtsp://user:password@camera-ip:554/stream"
+                            autoComplete="off"
+                        />
+                    </AdminField>
                     <AdminCheckboxRow
                         name="timelapsePaused"
                         defaultChecked={timelapseSettings.paused}

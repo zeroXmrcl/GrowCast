@@ -5,7 +5,9 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {INSTALLER_COPY, installerDoneRows} from "../app/setup/installer-copy.ts";
-import {isInstallerStreamUrl} from "../app/setup/installer-url.ts";
+import {isSafeHttpUrl} from "../lib/url-policy.ts";
+import {adminSetupDecision, installerCanFinish} from "../lib/installer-ready.ts";
+import {isRtspUrl} from "../lib/timelapse-sidecar-env.ts";
 import {passwordLineMet, passwordLineScale} from "../app/setup/password-meter.ts";
 import {readSkippedSteps, writeSkippedStep} from "../lib/setup-account.ts";
 
@@ -18,10 +20,10 @@ describe("installer copy", () => {
         );
         assert.equal(
             INSTALLER_COPY.camera.line,
-            "Something like http://stream.example.com/growcam/. Not the rtsp:// address from the camera.",
+            "Paste the MediaMTX HLS source, like http://stream.example.com/growcam/.",
         );
         assert.equal(INSTALLER_COPY.twitch.line, "Creator Dashboard -> Settings -> Stream.");
-        assert.equal(INSTALLER_COPY.timelapse.line, "Use the camera’s rtsp:// address.");
+        assert.equal(INSTALLER_COPY.timelapse.line, "Use the camera’s local rtsp:// address.");
         assert.equal(INSTALLER_COPY.done.line, "You can change any of this later in admin settings.");
     });
 
@@ -67,8 +69,55 @@ it("uses the admin rail ease for installer motion", () => {
 });
 
 it("rejects an rtsp address as the public watch link", () => {
-    assert.equal(isInstallerStreamUrl("rtsp://camera/stream"), false);
-    assert.equal(isInstallerStreamUrl("https://stream.example.com/growcam/"), true);
+    assert.equal(isSafeHttpUrl("rtsp://camera/stream"), false);
+    assert.equal(isSafeHttpUrl("https://stream.example.com/growcam/"), true);
+});
+
+it("keeps a lan camera and rejects this server as the timelapse source", () => {
+    assert.equal(isRtspUrl("rtsp://user:secret@10.0.0.8:554/stream"), true);
+    assert.equal(isRtspUrl("rtsp://192.168.1.20:554/stream"), true);
+    assert.equal(isRtspUrl("rtsp://127.0.0.1/stream"), false);
+    assert.equal(isRtspUrl("rtsp://growcast:3000/x"), false);
+    assert.equal(isRtspUrl("rtsp://169.254.169.254/"), false);
+});
+
+it("signs back into an existing admin and will not replace it", () => {
+    assert.equal(adminSetupDecision(null, "ada"), "create");
+    assert.equal(adminSetupDecision("ada", "ada"), "sign-in");
+    assert.equal(adminSetupDecision("ada", "mallory"), "reject");
+});
+
+it("finishes only after every step is saved or skipped", () => {
+    const empty = {
+        hasAdmin: true,
+        skipped: [] as string[],
+        climateConfigured: false,
+        streamUrl: "",
+        hasTwitchKey: false,
+        rtsp: "",
+    };
+    assert.equal(installerCanFinish({...empty, hasAdmin: false}).ok, false);
+    assert.match(installerCanFinish(empty).message ?? "", /Climate/);
+    assert.equal(installerCanFinish({
+        ...empty,
+        skipped: ["climate", "camera", "twitch", "timelapse"],
+    }).ok, true);
+    assert.equal(installerCanFinish({
+        hasAdmin: true,
+        skipped: [],
+        climateConfigured: true,
+        streamUrl: "https://stream.example.com/growcam/",
+        hasTwitchKey: true,
+        rtsp: "rtsp://10.0.0.8:554/stream",
+    }).ok, true);
+    assert.match(installerCanFinish({
+        hasAdmin: true,
+        skipped: ["climate", "camera", "twitch"],
+        climateConfigured: false,
+        streamUrl: "",
+        hasTwitchKey: false,
+        rtsp: "rtsp://growcast:3000/x",
+    }).message ?? "", /Timelapse/);
 });
 
 it("records a skip without dropping earlier skips", async () => {

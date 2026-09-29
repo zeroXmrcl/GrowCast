@@ -65,6 +65,8 @@ describe("admin settings bands", () => {
         assert.match(toast, /adminNoticeContent/);
         assert.match(toast, /searchParams\.get\("notice"\)/);
         assert.match(toast, /next\.delete\("notice"\)/);
+        assert.match(toast, /router\.replace\(/);
+        assert.doesNotMatch(toast, /replaceState/);
         assert.match(toast, /4000/);
     });
 

@@ -1,7 +1,7 @@
 "use client";
 
-import {useEffect, useState, type ReactNode} from "react";
-import {usePathname, useSearchParams} from "next/navigation";
+import {useEffect, useRef, useState, type ReactNode} from "react";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {adminNoticeContent} from "@/app/admin/admin-notice";
 import {
     ADMIN_NOTICE_EVENT,
@@ -50,8 +50,10 @@ function showToast(
 export function AdminToast() {
     const searchParams = useSearchParams();
     const pathname = usePathname();
+    const router = useRouter();
     const [view, setView] = useState<ToastView | null>(null);
     const [tick, setTick] = useState(0);
+    const seenNotice = useRef<string | null>(null);
 
     useEffect(() => {
         function onNotice(event: Event) {
@@ -62,15 +64,19 @@ export function AdminToast() {
 
         const notice = searchParams.get("notice");
         if (notice && isAdminNoticeId(notice)) {
-            showToast(notice, setView, setTick);
-            const next = new URLSearchParams(searchParams.toString());
-            next.delete("notice");
-            const query = next.toString();
-            window.history.replaceState(window.history.state, "", query ? `${pathname}?${query}` : pathname);
+            const key = `${pathname}?${searchParams.toString()}`;
+            if (seenNotice.current !== key) {
+                seenNotice.current = key;
+                showToast(notice, setView, setTick);
+                const next = new URLSearchParams(searchParams.toString());
+                next.delete("notice");
+                const query = next.toString();
+                router.replace(query ? `${pathname}?${query}` : pathname, {scroll: false});
+            }
         }
 
         return () => window.removeEventListener(ADMIN_NOTICE_EVENT, onNotice);
-    }, [pathname, searchParams]);
+    }, [pathname, router, searchParams]);
 
     useEffect(() => {
         if (!view) {

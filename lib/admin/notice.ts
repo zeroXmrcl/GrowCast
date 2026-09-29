@@ -50,6 +50,8 @@ export const ADMIN_NOTICE_IDS = [
     "spider_farmer_bad_password",
     "spider_farmer_unknown_account",
     "spider_farmer_failed",
+    "spider_farmer_choose",
+    "spider_farmer_no_controller",
 ] as const;
 
 export type AdminNoticeId = (typeof ADMIN_NOTICE_IDS)[number];

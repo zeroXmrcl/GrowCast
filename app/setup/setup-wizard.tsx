@@ -12,26 +12,19 @@ import {
     skipInstallerStepAction,
 } from "@/app/setup/actions";
 import {ControllerList} from "@/app/setup/controller-list";
-import {
-    INSTALLER_COPY,
-    installerDoneRows,
-    type InstallerStepId,
-} from "@/app/setup/installer-copy";
+import {INSTALLER_COPY, installerDoneRows} from "@/app/setup/installer-copy";
 import {InstallerRail} from "@/app/setup/installer-rail";
 import {PasswordLine} from "@/app/setup/password-line";
-import {passwordLineMet} from "./password-meter.ts";
+import {passwordLineMet} from "./password-meter";
+import {normalizeUsernameInput, validateUsernameInput} from "@/lib/admin-username";
+import type {InstallerInitial, InstallerOptionalStep, InstallerStepId} from "@/lib/installer-steps";
 import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
 
 type WizardStep = InstallerStepId | "climate-list" | "done";
-type SkippableStep = "climate" | "camera" | "twitch" | "timelapse";
 
 function prefersReducedMotion(): boolean {
     return typeof window !== "undefined"
         && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function usernameOk(value: string): boolean {
-    return value.length >= 1 && value.length <= 64 && /^[a-zA-Z0-9._@-]+$/.test(value);
 }
 
 function railCurrent(step: WizardStep): InstallerStepId | "done" {
@@ -54,22 +47,22 @@ function stepCopy(step: WizardStep): {eyebrow: string; title: string; line: stri
     return INSTALLER_COPY[step];
 }
 
-export function SetupWizard() {
+export function SetupWizard({initial}: {initial: InstallerInitial}) {
     const router = useRouter();
     const runGate = useRef(false);
     const goGeneration = useRef(0);
     const goTimeouts = useRef<number[]>([]);
     const goRafs = useRef<number[]>([]);
 
-    const [step, setStep] = useState<WizardStep>("admin");
-    const [finished, setFinished] = useState<ReadonlySet<InstallerStepId>>(() => new Set());
-    const [skipped, setSkipped] = useState<string[]>([]);
+    const [step, setStep] = useState<WizardStep>(initial.step);
+    const [finished, setFinished] = useState<ReadonlySet<InstallerStepId>>(() => new Set(initial.finished));
+    const [skipped, setSkipped] = useState<string[]>(initial.skipped);
     const [message, setMessage] = useState("");
     const [saving, setSaving] = useState(false);
     const [busy, setBusy] = useState(false);
     const [copyClass, setCopyClass] = useState("installer-copy");
 
-    const [username, setUsername] = useState("");
+    const [username, setUsername] = useState(initial.username);
     const [password, setPassword] = useState("");
     const [sfEmail, setSfEmail] = useState("");
     const [sfPassword, setSfPassword] = useState("");
@@ -82,15 +75,15 @@ export function SetupWizard() {
     const [interval, setIntervalMinutes] = useState("15");
     const [timezone, setTimezone] = useState("UTC");
 
-    const [savedUsername, setSavedUsername] = useState("");
-    const [climateLabel, setClimateLabel] = useState<string | null>(null);
-    const [savedStreamUrl, setSavedStreamUrl] = useState<string | null>(null);
-    const [twitchSaved, setTwitchSaved] = useState(false);
-    const [timelapseLabel, setTimelapseLabel] = useState<string | null>(null);
+    const [savedUsername, setSavedUsername] = useState(initial.username);
+    const [climateLabel, setClimateLabel] = useState<string | null>(initial.climate);
+    const [savedStreamUrl, setSavedStreamUrl] = useState<string | null>(initial.streamUrl);
+    const [twitchSaved, setTwitchSaved] = useState(initial.twitchSaved);
+    const [timelapseLabel, setTimelapseLabel] = useState<string | null>(initial.timelapse);
 
     const copy = stepCopy(step);
     const climateLine = step === "climate-list" ? `Signed in as ${sfEmail}.` : copy.line;
-    const adminReady = usernameOk(username) && passwordLineMet(password);
+    const adminReady = validateUsernameInput(normalizeUsernameInput(username)) && passwordLineMet(password);
     const locked = busy || saving;
 
     useEffect(() => {
@@ -156,12 +149,21 @@ export function SetupWizard() {
         goRafs.current.push(raf);
     }
 
-    async function skip(id: SkippableStep, next: WizardStep) {
+    async function runLocked(work: () => Promise<void>) {
         if (runGate.current) return;
         runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
+            await work();
+        } finally {
+            runGate.current = false;
+            setBusy(false);
+        }
+    }
+
+    async function skip(id: InstallerOptionalStep, next: WizardStep) {
+        await runLocked(async () => {
             const result = await skipInstallerStepAction(id);
             if (!result.ok) {
                 setMessage(result.message);
@@ -169,19 +171,13 @@ export function SetupWizard() {
             }
             setSkipped((prev) => (prev.includes(id) ? prev : [...prev, id]));
             await go(next, false);
-        } finally {
-            runGate.current = false;
-            setBusy(false);
-        }
+        });
     }
 
     async function onAdmin(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (runGate.current || !adminReady) return;
-        runGate.current = true;
-        setBusy(true);
-        setMessage("");
-        try {
+        if (!adminReady) return;
+        await runLocked(async () => {
             const formData = new FormData();
             formData.set("username", username);
             formData.set("password", password);
@@ -193,19 +189,12 @@ export function SetupWizard() {
             setSavedUsername(username);
             markFinished("admin");
             await go("climate", true);
-        } finally {
-            runGate.current = false;
-            setBusy(false);
-        }
+        });
     }
 
     async function onClimate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (runGate.current) return;
-        runGate.current = true;
-        setBusy(true);
-        setMessage("");
-        try {
+        await runLocked(async () => {
             const formData = new FormData();
             formData.set("sfEmail", sfEmail);
             formData.set("sfPassword", sfPassword);
@@ -223,19 +212,13 @@ export function SetupWizard() {
                 return;
             }
             setMessage(result.message);
-        } finally {
-            runGate.current = false;
-            setBusy(false);
-        }
+        });
     }
 
     async function onClimatePick(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (runGate.current || !selectedSerial) return;
-        runGate.current = true;
-        setBusy(true);
-        setMessage("");
-        try {
+        if (!selectedSerial) return;
+        await runLocked(async () => {
             const formData = new FormData();
             formData.set("sfEmail", sfEmail);
             formData.set("sfPassword", sfPassword);
@@ -249,19 +232,12 @@ export function SetupWizard() {
             setClimateLabel(result.detail ?? chosen?.name ?? null);
             markFinished("climate");
             await go("camera", true);
-        } finally {
-            runGate.current = false;
-            setBusy(false);
-        }
+        });
     }
 
     async function onCamera(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (runGate.current) return;
-        runGate.current = true;
-        setBusy(true);
-        setMessage("");
-        try {
+        await runLocked(async () => {
             const formData = new FormData();
             formData.set("streamUrl", streamUrl);
             const result = await setupCameraAction(formData);
@@ -272,19 +248,12 @@ export function SetupWizard() {
             setSavedStreamUrl(streamUrl.trim());
             markFinished("camera");
             await go("twitch", true);
-        } finally {
-            runGate.current = false;
-            setBusy(false);
-        }
+        });
     }
 
     async function onTwitch(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (runGate.current) return;
-        runGate.current = true;
-        setBusy(true);
-        setMessage("");
-        try {
+        await runLocked(async () => {
             const formData = new FormData();
             formData.set("twitchKey", twitchKey);
             formData.set("twitchLogin", twitchLogin);
@@ -296,19 +265,12 @@ export function SetupWizard() {
             setTwitchSaved(true);
             markFinished("twitch");
             await go("timelapse", true);
-        } finally {
-            runGate.current = false;
-            setBusy(false);
-        }
+        });
     }
 
     async function onTimelapse(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (runGate.current) return;
-        runGate.current = true;
-        setBusy(true);
-        setMessage("");
-        try {
+        await runLocked(async () => {
             const formData = new FormData();
             formData.set("rtspStream", rtspStream);
             formData.set("interval", interval);
@@ -321,28 +283,18 @@ export function SetupWizard() {
             setTimelapseLabel(`Camera address, ${interval} min, ${timezone}`);
             markFinished("timelapse");
             await go("done", true);
-        } finally {
-            runGate.current = false;
-            setBusy(false);
-        }
+        });
     }
 
     async function onFinish() {
-        if (runGate.current) return;
-        runGate.current = true;
-        setBusy(true);
-        setMessage("");
-        try {
+        await runLocked(async () => {
             const result = await finishSetupAction();
             if (!result.ok) {
                 setMessage(result.message);
                 return;
             }
             router.push("/");
-        } finally {
-            runGate.current = false;
-            setBusy(false);
-        }
+        });
     }
 
     const saveClass = saving ? "installer-save saving" : "installer-save";
@@ -416,11 +368,10 @@ export function SetupWizard() {
                                         autoComplete="new-password"
                                         value={password}
                                         onChange={setPassword}
+                                        underlined={false}
                                     />
                                 </InstallerField>
-                                <div className="mt-2">
-                                    <PasswordLine value={password}/>
-                                </div>
+                                <PasswordLine value={password}/>
                             </div>
                             <PrimaryButton className={saveClass} disabled={locked || !adminReady}>
                                 {saveLabel ?? "Continue"}
@@ -477,7 +428,7 @@ export function SetupWizard() {
 
                     {step === "camera" ? (
                         <form className="mt-8 space-y-5" onSubmit={onCamera}>
-                            <InstallerField label="Stream URL" value={streamUrl} htmlFor="installer-stream-url">
+                            <InstallerField label="HLS source" value={streamUrl} htmlFor="installer-stream-url">
                                 <InstallerInput
                                     id="installer-stream-url"
                                     name="streamUrl"
@@ -637,6 +588,7 @@ function InstallerInput({
     onChange,
     type = "text",
     autoComplete,
+    underlined = true,
 }: {
     name: string;
     id: string;
@@ -644,6 +596,7 @@ function InstallerInput({
     onChange: (value: string) => void;
     type?: string;
     autoComplete?: string;
+    underlined?: boolean;
 }) {
     return (
         <input
@@ -661,7 +614,7 @@ function InstallerInput({
                 margin: 0,
                 padding: "16px 0 0",
                 border: "none",
-                borderBottom: "1px solid #4a4a4a",
+                borderBottom: underlined ? "1px solid #4a4a4a" : "none",
                 borderRadius: 0,
                 background: "transparent",
                 color: "#f3f4f6",

@@ -74,7 +74,7 @@ describe("homepage live-climate gate", () => {
     it("does not render LiveTentRow unless hasGgsLiveUi is true", () => {
         const src = readFileSync(path.join(process.cwd(), "app", "(site)", "page.tsx"), "utf8");
         assert.match(src, /hasGgsLiveUi\(/);
-        assert.match(src, /showLiveClimate\s*\?\s*<LiveTentRow/);
+        assert.match(src, /showLiveClimate\s*\?\s*\(?\s*<LiveTentRow/);
         assert.match(src, /LiveTentRow climateTick=\{grow\.climateTick\}/);
         assert.doesNotMatch(src, /LiveTentRow climate=\{/);
         const card = readFileSync(

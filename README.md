@@ -1,18 +1,19 @@
 # GrowCast
 
-GrowCast is a Next.js web app for publishing a live garden dashboard with an optional gallery and a protected panel.
+GrowCast is a Next.js web app for a live garden: climate, energy, gallery, an OBS overlay, and Twitch broadcast, with a protected admin panel.
 
 ## 1. Project Overview
 
 ### What the app does
-GrowCast lets you share your grow in real time. Visitors can view the live stream, some details and media (setup/snapshots/timelapse). Admin users can update all metadata from a web dashboard.
+GrowCast lets you share your grow in real time. Visitors see the live stream, climate, energy, and media. Admin users update the grow from the settings pages.
 
 ### Key features
-- Live stream embed on the homepage (RTSP camera via MediaMTX (RTSP -> HLS))
-- Public grow dashboard
-- Markdown support for notes/setup text
-- Optional gallery page for snapshots + timelapse video ([GrowCast Timelapse plugin](https://github.com/zeroXmrcl/GrowCast-Timelapse))
-- Optional live tent climate from a Spider Farmer GGS ([GrowCast-GGS plugin](https://github.com/zeroXmrcl/GrowCast-GGS))
+- Live stream embed on the homepage (an RTSP camera through MediaMTX, RTSP to HLS)
+- Public grow dashboard, gallery, and energy
+- Live tent climate from the Spider Farmer sidecar
+- Timelapse snapshots and video
+- OBS overlay at `/overlay` and the Broadcast page (`/admin/stream`) for music, alerts, Twitch, and camera look
+- Settings bands with in-page save
 
 ## 2. Demo 
 
@@ -24,32 +25,30 @@ The official project site is [growcast.0xmarcel.com](https://growcast.0xmarcel.c
 ## 3. Getting Started
 
 ### Prerequisites
-- npm
-- Node.js 20 LTS or newer
-- An IP camera with RTSP support
-- npm (project includes `package-lock.json`)
-- MediaMTX server (to convert RTSP input into HLS output)
-- Node.js 20 LTS or newer (assumption based on Next.js 16 setup)
-- Docker Engine + Docker Compose plugin (for containerized setup)
-- Cloudflare account + `cloudflared` (for public tunnel access)
+- Docker Engine and the Docker Compose plugin
+- Node.js 20 LTS or newer, and npm, when you want `npm run dev` or `npm run setup:admin`
+
+A camera, MediaMTX, and Cloudflare are for publishing a stream. They are not required to open the site.
 
 ### Installation
-1. Clone the repository.
-2. Install dependencies:
+
+Clone the repository and start the stack:
 
 ```bash
-npm install
+docker compose up --build -d
 ```
 
-3. Create admin credentials:
+That builds and starts the website, the climate sidecar, the Twitch restream image, and the timelapse worker. The first build downloads Chromium for the restream image and can take a while.
 
-```bash
-npm run setup:admin
-```
+Open `http://localhost:3000`. Until an admin account exists, the site opens the setup wizard. The wizard creates the admin login and asks which sidecars to configure:
 
-This script creates `.env.local` with required admin variables.
+- Climate: Spider Farmer email and password. One controller is saved automatically. Several controllers ask you to choose.
+- Twitch: stream key and channel. Start stays on Broadcast.
+- Timelapse: camera RTSP URL, interval, and timezone.
 
-Passwords must be at least 12 characters by default. For local/dev only, short passwords can be allowed with:
+The mesh token is generated on first boot and shared with the sidecars. You do not paste it.
+
+`npm run setup:admin` still writes `.env.local` for an admin account created outside the wizard. Passwords must be at least 12 characters. For local/dev only:
 
 ```bash
 npm run setup:admin:insecure
@@ -58,22 +57,25 @@ npm run setup:admin:insecure
 
 (Do not use `npm run setup:admin --allow-insecure` — npm treats that as its own config, not a script argument.)
 
+An account already present in `.env.local` skips the wizard.
+
 ### Environment variables
-Required for admin login:
+
+`.env.local` is optional. Compose loads it when the file exists (`env_file` `required: false`).
 
 ```env
 ADMIN_USERNAME=your_admin_username
 ADMIN_PASSWORD_HASH=scrypt$...$...
 ADMIN_SESSION_SECRET=at_least_32_chars_random_secret
+GROWCAST_MESH_TOKEN=optional_existing_token
 ```
 
 Notes:
 - `ADMIN_PASSWORD_HASH` must use the `scrypt$...` format.
 - `ADMIN_SESSION_SECRET` must be at least 32 characters.
-- The same `.env.local` file is used by `docker compose` through `env_file`.
-- **Required for mesh/plugin API:** set `GROWCAST_MESH_TOKEN` to a long random secret. Requests without a matching `Authorization: Bearer <token>` are denied (fail-closed). Official plugins must send this header.
-- Admin passwords must be at least **12 characters** (`npm run setup:admin` enforces this). For local/dev only, use `npm run setup:admin:insecure` (or `npm run setup:admin -- --allow-insecure`).
-- Admin sessions last **24 hours**.
+- When `GROWCAST_MESH_TOKEN` is set, that value is copied to `data/mesh.token` and the sidecars use it. When it is unset, the container creates one token on first boot.
+- Admin passwords must be at least **12 characters** (`npm run setup:admin` and the wizard enforce this). For local/dev only, use `npm run setup:admin:insecure` (or `npm run setup:admin -- --allow-insecure`).
+- Admin sessions last **24 hours** and live in memory. `docker compose up --build` recreates the website container and signs you out. Sign in again.
 - Optional, Broadcast channel lookup and Twitch EventSub alerts (GrowCast `.env.local`, not the restream sidecar): `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. EventSub webhooks also need `GROWCAST_PUBLIC_URL` (the public HTTPS origin, e.g. the Cloudflare Tunnel hostname).
 
 ### Logging
@@ -86,67 +88,41 @@ Full schema, event catalog, redaction rules, Docker log shipping, retention guid
 
 ### Docker Compose
 
-The repository already includes a production-ready `Dockerfile` and `docker-compose.yml`. This is the supported way to run GrowCast in a container.
+`docker compose up --build -d` is the supported start command. It runs four services from [docker-compose.yml](docker-compose.yml): `growcast`, `ggs`, `restream`, and `timelapse`.
 
-1. Create admin credentials first:
-
-```bash
-npm run setup:admin
-```
-
-2. Start GrowCast (GGS plugin not required):
-
-```bash
-docker compose up --build -d
-```
-
-3. For production, put the origin behind a **Cloudflare Tunnel** (HTTPS public hostname → `http://127.0.0.1:3000`). Compose publishes only on loopback (`127.0.0.1:${GROWCAST_PORT:-3000}`) and sets `GROWCAST_TRUST_PROXY=1` so login rate-limits use `CF-Connecting-IP` (then `X-Real-IP`). Spoofed forwarded IPs are ignored unless that flag is set. Admin cookies are `Secure` when `X-Forwarded-Proto: https` or `CF-Connecting-IP` is present (or `COOKIE_SECURE=1`). Direct HTTP to a public `:3000` is not the supported admin path.
+For production, put the origin behind a **Cloudflare Tunnel** (HTTPS public hostname → `http://127.0.0.1:3000`). Compose publishes only on loopback (`127.0.0.1:${GROWCAST_PORT:-3000}`) and sets `GROWCAST_TRUST_PROXY=1` so login rate-limits use `CF-Connecting-IP` (then `X-Real-IP`). Spoofed forwarded IPs are ignored unless that flag is set. Admin cookies are `Secure` when `X-Forwarded-Proto: https` or `CF-Connecting-IP` is present (or `COOKIE_SECURE=1`). Direct HTTP to a public `:3000` is not the supported admin path.
 
 Local-only UI: `http://localhost:3000` (session cookie is not Secure).
 
 Useful commands:
 
 ```bash
+docker compose up --build -d
 docker compose logs -f growcast
 docker compose down
 ```
 
+`docker compose up --build -d` recreates the website container and signs you out. Sessions stay in memory for 24 hours or until logout. Sign in again.
+
 What gets persisted on the host:
-- `./data` -> `/app/data`
-- `./extensions/GrowCast-Timelapse` -> `/app/extensions/GrowCast-Timelapse`
+- `./data` -> `/app/data` (grow data, mesh token, sidecar env files, restream state)
+- `./extensions/GrowCast-Timelapse` -> `/app/extensions/GrowCast-Timelapse` (snapshots and timelapse video)
 - `./public/setup` -> `/app/public/setup`
 - `./public/yourPictures` -> `/app/public/yourPictures`
 
-GrowCast-GGS `.env` is **not** mounted into the web container. The `ggs` sidecar reads it via its own `env_file`.
+The website writes `data/ggs.env` for the climate sidecar and `data/timelapse.env` for the camera URL. Those files live on the `./data` directory mount, so Docker does not create a directory in place of a missing env file. The climate and timelapse containers read those files and reload their processes when the files change.
 
-This means grow data, timelapse assets, and uploaded media survive container restarts and image rebuilds.
-
-Optional GGS live climate plugin (own repo, same pattern as Timelapse):
-
-```bash
-git clone https://github.com/zeroXmrcl/GrowCast-GGS.git extensions/GrowCast-GGS
-copy extensions\GrowCast-GGS\.env.example extensions\GrowCast-GGS\.env
-```
-
-Fill `SF_MQTT_NAME`, `SF_MQTT_PWD`, `SF_SERIAL`, and the same `GROWCAST_MESH_TOKEN` as `.env.local`. Never commit `.env`. Then:
-
-```bash
-docker compose up --build -d
-```
-
-That starts GrowCast plus the GGS and Twitch restream sidecars. Without GGS credentials the climate sidecar will exit; the homepage omits Climate and Devices. Twitch restream stays idle until you save a stream key and press Start on Broadcast (`/admin/stream`). GrowCast writes `data/restream/capture.token` on its own; `GROWCAST_RESTREAM_TOKEN` in `.env.local` is an optional override.
+Sidecars without credentials wait, then start when the wizard (or admin settings) writes the config. Twitch restream stays idle until you save a stream key and press Start on Broadcast (`/admin/stream`). GrowCast writes `data/restream/capture.token` on its own; `GROWCAST_RESTREAM_TOKEN` in `.env.local` is an optional override.
 
 Broadcast (`/admin/stream`) previews the 1920×1080 program with background music (uploaded playlist or a stream URL; URL wins while set) and on-stream alerts (manual Send alert, plus Twitch follow/sub/raid/bits after Connect Twitch). Public `/overlay` and the homepage stay silent.
 
-The container process runs as uid 1001 (`growcast`). The entrypoint `chown`s those bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host.
+The website container runs as uid 1001 (`growcast`). The entrypoint `chown`s the bind mounts on start so the process can write them. After the first run they are owned by `1001:1001` on the host. The sidecars use the same uid so they can read `./data`.
 
 Optional port override:
 - The compose file publishes `127.0.0.1:${GROWCAST_PORT:-3000}:3000`.
 - If you want a different loopback port, set `GROWCAST_PORT` before starting Compose.
 
-Important:
-- The container only runs GrowCast. MediaMTX is still a separate service and must be run outside this compose file.
-- `.env.local`, media folders, and `data/` are intentionally not baked into the image. They are provided at runtime.
+MediaMTX stays outside this compose file. `.env.local`, media folders, and `data/` are provided at runtime and are not baked into the image.
 
 ### Development
 
@@ -169,45 +145,28 @@ This starts the standard Next.js production server. The Docker image builds a st
 
 ```text
 app/
-  page.tsx                     # Public dashboard
-  gallery/page.tsx             # Gallery page
-  admin/page.tsx               # Admin login + dashboard
-  admin/logout/route.ts        # Logout endpoint
-  api/data/current-grow/       # Current grow JSON endpoint
-  api/mesh/[pluginId]/          # Plugin settings endpoint
-  api/snapshots/[filename]/    # Serves snapshot images
-  api/timelapse/               # Serves latest timelapse video
-components/
-  dash-pictures.tsx
-  site-header.tsx
-  site-footer.tsx
-  snapshot-gallery.tsx
-  timelapse-player.tsx
-lib/
-  db.ts                        # JSON data store + types
-  admin-auth.ts                # Auth/session/rate-limit logic
-  mesh-auth.ts                 # Fail-closed Bearer auth for mesh API
-  timelapse-settings.ts        # Timelapse settings normalize + I/O
-  extension-status.ts          # Timelapse plugin file discovery
-  media-library.ts             # Live picture dirs, listing, upload encode
-  app-timezone.ts              # Shared app timezone for day math
-scripts/
-  admin-creator.mjs            # Interactive .env.local generator
-data/
-  current-grow.json            # Persisted grow data
-  mesh/                        # Persisted plugin settings
-public/
-  setup/                       # Optional setup photos shown on homepage
-  yourPictures/                # Optional user uploaded pictures shown on dashboard
+  (site)/page.tsx              # Public dashboard
+  (site)/gallery/page.tsx      # Gallery
+  (site)/energy/page.tsx       # Energy
+  overlay/page.tsx             # OBS overlay
+  setup/page.tsx               # First-run wizard
+  admin/page.tsx               # Admin login + grow settings
+  admin/stream/page.tsx        # Broadcast
+  admin/ggs/page.tsx           # Climate and energy settings
+  admin/timelapse/page.tsx     # Timelapse settings
 extensions/
-  GrowCast-Timelapse/          # Optional plugin folder (not included)
+  GrowCast-GGS/                # Climate sidecar
+  GrowCast-Restream/           # Twitch restream sidecar
+  GrowCast-Timelapse/          # Timelapse sidecar and media
+data/
+  mesh.token                   # Shared sidecar token, created on first boot
+  ggs.env                      # Climate credentials written by the wizard
+  timelapse.env                # Camera URL written by the wizard
 ```
 
-## 6. Configuration
+## 6. Camera (MediaMTX)
 
-My App doesnt need much configuration to get started, but i have tested some optimizations for MediaMTX.
-The default MediaMTX configuration caused issues on iOS devices and significant stuttering on some Windows systems.
-Below i have included how i configured my MediaMTX server.
+The homepage player uses a browser HLS URL. MediaMTX converts the camera RTSP stream. These settings avoided stutter on iOS and some Windows players:
 
 ```
 hlsAlwaysRemux: true
@@ -227,7 +186,11 @@ paths:
     sourceOnDemand: no
 ```
 
-If you still have issues, make sure your camera is not set to a high frame rate, (i set mine to 15fps, but feel free to try other values).
+If playback still stutters, lower the camera frame rate. 15 fps is a reasonable start.
+
+A public stream needs a second Cloudflare hostname for MediaMTX HLS, separate from the GrowCast hostname. Point Broadcast's stream URL at that public HLS path, for example `https://stream.example.com/growcam/`.
+
+The timelapse sidecar uses the camera's RTSP URL directly. That URL is collected in the setup wizard and stored in `data/timelapse.env`.
 
 ## 7. Usage Guide
 
@@ -270,16 +233,16 @@ This app uses Next.js route handlers and local filesystem storage.
     (`nginx`: `location /api/data/live-climate/stream { proxy_buffering off; proxy_http_version 1.1; }`, Caddy: `flush_interval -1`)
 - `GET /api/mesh/[pluginId]`
   - Returns registered plugin settings, for example `/api/mesh/growcast.timelapse`
-  - Always requires `GROWCAST_MESH_TOKEN` and matching `Authorization: Bearer <token>` (fail-closed if token unset)
+  - Requires the mesh token from the environment or `data/mesh.token`, and a matching `Authorization: Bearer <token>` (fail-closed when both are unset)
 - `POST /api/mesh/growcast.ggs/state`
   - Sidecar ingest, Bearer `GROWCAST_MESH_TOKEN`
 
 ### Auth model
-- Username + scrypt password hash from env vars
-- Default `setup:admin` requires a 12-character password; `--allow-insecure` is local/dev only
+- Username + scrypt password hash from `.env.local` or from the setup wizard (`data/setup/admin.json`)
+- Default `setup:admin` and the wizard require a 12-character password; `--allow-insecure` is local/dev only
 - Login verifies the stored scrypt hash (non-empty + max length); it does not re-apply the 12-character setup minimum
 - Signed cookie-based sessions (24-hour TTL)
-- In-memory session store (single-node deploy)
+- In-memory session store (single-node deploy). Recreating the container with `docker compose up --build` signs you out.
 
 
 ## 9. Deployment

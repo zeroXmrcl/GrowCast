@@ -29,8 +29,8 @@ const sample = {
 };
 
 describe("energy poll", () => {
-    it("uses a 60s interval and current-grow path", () => {
-        assert.equal(ENERGY_POLL_MS, 60_000);
+    it("uses a 15s interval and current-grow path", () => {
+        assert.equal(ENERGY_POLL_MS, 15_000);
         assert.equal(ENERGY_POLL_PATH, "/api/data/energy?grow=current");
     });
 
@@ -64,6 +64,30 @@ describe("energy poll", () => {
             throw new Error("offline");
         });
         assert.equal(threw, null);
+    });
+
+    it("does not start a second request while one is in flight", async () => {
+        let calls = 0;
+        let release: () => void = () => {};
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        const first = fetchEnergyDto(async () => {
+            calls += 1;
+            await gate;
+            return new Response(JSON.stringify(sample), {status: 200});
+        });
+        try {
+            const second = await fetchEnergyDto(async () => {
+                calls += 1;
+                return new Response(JSON.stringify(sample), {status: 200});
+            });
+            assert.equal(second, null);
+            assert.equal(calls, 1);
+        } finally {
+            release();
+        }
+        assert.equal((await first)?.nowWatts, 40);
     });
 
     it("does not poll while the tab is hidden", () => {

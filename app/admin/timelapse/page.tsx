@@ -6,13 +6,17 @@ import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/adm
 import {TimelapseSettingsFields} from "@/app/admin/timelapse-fields";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {getTimelapseSettings} from "@/lib/timelapse-settings";
+import {readTimelapseRtsp} from "@/lib/timelapse-sidecar-env";
 
 export default async function AdminTimelapsePage() {
     if (!(await isAdminAuthenticated())) {
         redirect("/admin");
     }
 
-    const timelapseSettings = await getTimelapseSettings();
+    const [timelapseSettings, rtspStream] = await Promise.all([
+        getTimelapseSettings(),
+        readTimelapseRtsp().catch(() => ""),
+    ]);
 
     return (
         <AdminChrome
@@ -22,7 +26,7 @@ export default async function AdminTimelapsePage() {
         >
             <AdminBandGroup>
                 <AdminSaveForm action={saveTimelapseAction}>
-                    <TimelapseSettingsFields timelapseSettings={timelapseSettings}/>
+                    <TimelapseSettingsFields timelapseSettings={timelapseSettings} rtspStream={rtspStream}/>
                 </AdminSaveForm>
             </AdminBandGroup>
         </AdminChrome>

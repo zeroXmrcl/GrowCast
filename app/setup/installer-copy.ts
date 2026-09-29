@@ -1,6 +1,3 @@
-export const INSTALLER_STEPS = ["admin", "climate", "camera", "twitch", "timelapse"] as const;
-export type InstallerStepId = (typeof INSTALLER_STEPS)[number];
-
 export const INSTALLER_COPY = {
     admin: {
         label: "Admin",
@@ -18,8 +15,8 @@ export const INSTALLER_COPY = {
     camera: {
         label: "Camera",
         eyebrow: "Camera",
-        title: "Where should visitors watch?",
-        line: "Something like http://stream.example.com/growcam/. Not the rtsp:// address from the camera.",
+        title: "Link your camera",
+        line: "Paste the MediaMTX HLS source, like http://stream.example.com/growcam/.",
     },
     twitch: {
         label: "Twitch",
@@ -31,7 +28,7 @@ export const INSTALLER_COPY = {
         label: "Timelapse",
         eyebrow: "Timelapse",
         title: "Point it at the camera",
-        line: "Use the camera’s rtsp:// address.",
+        line: "Use the camera’s local rtsp:// address.",
     },
     done: {
         eyebrow: "Ready",

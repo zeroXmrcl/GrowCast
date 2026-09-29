@@ -226,7 +226,7 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     spider_farmer_connected: {
         tone: "success",
         title: "Spider Farmer connected",
-        body: "The broker login is saved in the sidecar env. Restart the ggs sidecar to use it.",
+        body: "The controller was saved. The climate sidecar reloads on its own.",
     },
     spider_farmer_missing: {
         tone: "warning",
@@ -247,6 +247,16 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         tone: "danger",
         title: "Spider Farmer login failed",
         body: "Could not log in or save the sidecar env. Review logs and try again.",
+    },
+    spider_farmer_choose: {
+        tone: "warning",
+        title: "Choose a controller",
+        body: "This account has more than one controller. Pick the climate controller and log in again.",
+    },
+    spider_farmer_no_controller: {
+        tone: "warning",
+        title: "No controller found",
+        body: "Spider Farmer accepted the login and returned no controllers.",
     },
 };
 

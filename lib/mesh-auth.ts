@@ -1,6 +1,7 @@
 import {safeEqualText} from "@/lib/crypto-equal";
 import {extractClientIp, extractUserAgent} from "@/lib/logging/http";
 import {logMeshAuthFailed} from "@/lib/logging/security-events";
+import {readStoredMeshToken} from "@/lib/mesh-token";
 
 export const MESH_TOKEN_ENV = "GROWCAST_MESH_TOKEN";
 
@@ -14,6 +15,11 @@ export function getMeshTokenFromEnv(
     const token = env[MESH_TOKEN_ENV]?.trim();
 
     return token && token.length > 0 ? token : undefined;
+}
+
+/** Env token, otherwise the token written on first boot. */
+export function getMeshToken(env: NodeJS.ProcessEnv = process.env): string | undefined {
+    return getMeshTokenFromEnv(env) ?? readStoredMeshToken();
 }
 
 export function getBearerToken(request: Request): string | undefined {
@@ -66,7 +72,7 @@ function unauthorizedResponse(): Response {
  * Returns a 401 Response when unauthorized; null when allowed.
  */
 export function requireMeshAuth(request: Request): Response | null {
-    const expectedToken = getMeshTokenFromEnv();
+    const expectedToken = getMeshToken();
     const providedToken = getBearerToken(request);
 
     if (isMeshTokenAuthorized(expectedToken, providedToken)) {

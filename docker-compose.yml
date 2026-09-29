@@ -10,17 +10,16 @@ services:
     env_file:
       - path: .env.local
         format: raw
+        required: false
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: 3000
       GROWCAST_TRUST_PROXY: "1"
-      GROWCAST_GGS_ENV_FILE: /run/growcast/ggs.env
+      GROWCAST_GGS_ENV_FILE: /app/data/ggs.env
     volumes:
       - ./data:/app/data
       # Timelapse media only. Do not bind the whole extensions/ tree.
-      # This one file is the sidecar env the GGS settings login rewrites.
-      - ./extensions/GrowCast-GGS/.env:/run/growcast/ggs.env
       - ./extensions/GrowCast-Timelapse:/app/extensions/GrowCast-Timelapse
       - ./public/setup:/app/public/setup
       - ./public/yourPictures:/app/public/yourPictures
@@ -30,12 +29,14 @@ services:
       context: ./extensions/GrowCast-GGS
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file:
-      - path: ./extensions/GrowCast-GGS/.env
-        format: raw
-        required: false
+    user: "1001:1001"
     environment:
       GROWCAST_URL: http://growcast:3000
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./data:/data
+      - ./docker/ggs-run.sh:/opt/growcast/ggs-run.sh:ro
+    entrypoint: ["/bin/sh", "/opt/growcast/ggs-run.sh"]
     depends_on:
       - growcast
 
@@ -51,5 +52,24 @@ services:
       TWITCH_INGEST: ${TWITCH_INGEST:-rtmps://live.twitch.tv:443/app}
     volumes:
       - ./data:/data
+    depends_on:
+      - growcast
+
+  timelapse:
+    build:
+      context: ./extensions/GrowCast-Timelapse
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    user: "1001:1001"
+    environment:
+      GROWCAST_URL: http://growcast:3000
+      PYTHONDONTWRITEBYTECODE: "1"
+      GROWCAST_TIMELAPSE_ENV: /data/timelapse.env
+    volumes:
+      - ./data:/data
+      - ./extensions/GrowCast-Timelapse/snapshots:/app/GrowCast-Timelapse/snapshots
+      - ./extensions/GrowCast-Timelapse/timelapse:/app/GrowCast-Timelapse/timelapse
+      - ./docker/timelapse-run.sh:/opt/growcast/timelapse-run.sh:ro
+    entrypoint: ["/bin/sh", "/opt/growcast/timelapse-run.sh"]
     depends_on:
       - growcast

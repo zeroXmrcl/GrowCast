@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import {mkdtempSync} from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {describe, it} from "node:test";
 import {
   getBearerToken,
@@ -39,7 +42,9 @@ describe("mesh auth (fail-closed)", () => {
 
   it("requireMeshAuth denies without env token", () => {
     const previous = process.env.GROWCAST_MESH_TOKEN;
+    const previousDir = process.env.GROWCAST_DATA_DIR;
     delete process.env.GROWCAST_MESH_TOKEN;
+    process.env.GROWCAST_DATA_DIR = mkdtempSync(path.join(os.tmpdir(), "growcast-mesh-deny-"));
 
     try {
       const response = requireMeshAuth(new Request("http://localhost/api/mesh/x"));
@@ -50,6 +55,11 @@ describe("mesh auth (fail-closed)", () => {
         delete process.env.GROWCAST_MESH_TOKEN;
       } else {
         process.env.GROWCAST_MESH_TOKEN = previous;
+      }
+      if (previousDir === undefined) {
+        delete process.env.GROWCAST_DATA_DIR;
+      } else {
+        process.env.GROWCAST_DATA_DIR = previousDir;
       }
     }
   });

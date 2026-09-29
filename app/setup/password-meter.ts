@@ -1,4 +1,4 @@
-import {MIN_PASSWORD_LENGTH} from "../../lib/password-policy.ts";
+import {MIN_PASSWORD_LENGTH} from "@/lib/password-policy";
 
 export function passwordLineScale(value: string): number {
     return Math.min(1, value.length / MIN_PASSWORD_LENGTH);

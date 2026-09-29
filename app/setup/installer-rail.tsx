@@ -1,4 +1,6 @@
-import {INSTALLER_COPY, INSTALLER_STEPS, type InstallerStepId} from "./installer-copy";
+import Image from "next/image";
+import {INSTALLER_COPY} from "./installer-copy";
+import {INSTALLER_STEPS, type InstallerStepId} from "@/lib/installer-steps";
 
 type InstallerRailProps = {
     current: InstallerStepId | "done";
@@ -7,7 +9,21 @@ type InstallerRailProps = {
 
 export function InstallerRail({current, finished}: InstallerRailProps) {
     return (
-        <nav className="installer-rail" style={{width: 240}} aria-label="Setup steps">
+        <nav
+            className="installer-rail"
+            aria-label="Setup steps"
+            style={{
+                width: 240,
+                minHeight: "100vh",
+                boxSizing: "border-box",
+                borderRight: "1px solid #3a3a3a",
+                padding: "32px 20px",
+            }}
+        >
+            <div style={{display: "flex", alignItems: "center", gap: 12, paddingBottom: 28}}>
+                <Image src="/growCastLogo_white.svg" alt="" width={28} height={28} />
+                <span style={{fontSize: 14, fontWeight: 600}}>GrowCast</span>
+            </div>
             <ol style={{listStyle: "none", margin: 0, padding: 0}}>
                 {INSTALLER_STEPS.map((id, index) => {
                     const isCurrent = current !== "done" && id === current;
@@ -17,51 +33,37 @@ export function InstallerRail({current, finished}: InstallerRailProps) {
                         : isDone
                           ? "installer-step-done"
                           : "installer-step-pending";
-
                     const circleStyle = isCurrent
-                        ? {background: "#fafafa", color: "#09090b", border: "1px solid #09090b"}
+                        ? {background: "#e4e4e7", color: "#09090b", border: "1px solid #e4e4e7"}
                         : isDone
                           ? {background: "#3a3a3a", color: "#f3f4f6", border: "1px solid #f3f4f6"}
-                          : {background: "transparent", color: "#b4b4b8", border: "1px solid #4a4a4a"};
-
-                    const labelColor = isCurrent ? "#09090b" : isDone ? "#f3f4f6" : "#8a8a91";
+                          : {background: "transparent", color: "#8a8a91", border: "1px solid #4a4a4a"};
+                    const labelColor = isCurrent || isDone ? "#f3f4f6" : "#8a8a91";
 
                     return (
                         <li
                             key={id}
                             className={stepClass}
-                            style={{marginBottom: 8}}
-                            {...(isCurrent ? {"aria-current": "step"} : {})}
+                            {...(isCurrent ? {"aria-current": "step" as const} : {})}
                         >
-                            <div
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 12,
-                                    padding: "8px 12px",
-                                    ...(isCurrent
-                                        ? {background: "#e4e4e7", borderRadius: 9999}
-                                        : undefined),
-                                }}
-                            >
+                            <div style={{display: "flex", alignItems: "center", gap: 12, padding: "10px 0"}}>
                                 <span
                                     aria-hidden
                                     style={{
                                         display: "inline-flex",
                                         alignItems: "center",
                                         justifyContent: "center",
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: "50%",
-                                        fontSize: 13,
-                                        fontWeight: 600,
+                                        width: 22,
+                                        height: 22,
+                                        borderRadius: 999,
+                                        fontSize: 12,
                                         flexShrink: 0,
                                         ...circleStyle,
                                     }}
                                 >
                                     {index + 1}
                                 </span>
-                                <span style={{fontSize: 14, fontWeight: isCurrent ? 600 : 500, color: labelColor}}>
+                                <span style={{fontSize: 14, fontWeight: isCurrent ? 600 : 400, color: labelColor}}>
                                     {INSTALLER_COPY[id].label}
                                 </span>
                             </div>

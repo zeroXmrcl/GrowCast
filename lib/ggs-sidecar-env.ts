@@ -1,12 +1,13 @@
-import {chmod, readFile} from "node:fs/promises";
+import {chmod, readFile, stat} from "node:fs/promises";
 import path from "node:path";
 import {atomicWriteFile} from "@/lib/atomic-file";
-
-const MANAGED_KEYS = ["SF_EMAIL", "SF_MQTT_NAME", "SF_MQTT_PWD", "SF_USER_ID"] as const;
+import {growcastDataDir} from "@/lib/data-paths";
 
 export type SpiderFarmerBrokerStatus = {
     configured: boolean;
     account: string | null;
+    serial: string | null;
+    pathKind: "file" | "missing" | "directory";
 };
 
 export type SpiderFarmerEnvWrite = {
@@ -14,6 +15,10 @@ export type SpiderFarmerEnvWrite = {
     mqttName: string;
     mqttPwd: string;
     userId: string;
+    serial?: string;
+    prefix?: string;
+    lcSerials?: string;
+    meshToken?: string;
 };
 
 export function ggsSidecarEnvFile(): string {
@@ -21,7 +26,7 @@ export function ggsSidecarEnvFile(): string {
     if (override) {
         return override;
     }
-    return path.join(process.cwd(), "extensions", "GrowCast-GGS", ".env");
+    return path.join(growcastDataDir(), "ggs.env");
 }
 
 function assertEnvToken(value: string): void {
@@ -41,6 +46,18 @@ export function mergeGgsSidecarEnv(source: string, values: SpiderFarmerEnvWrite)
         SF_MQTT_PWD: values.mqttPwd,
         SF_USER_ID: values.userId,
     };
+    if (values.serial !== undefined) {
+        updates.SF_SERIAL = values.serial;
+    }
+    if (values.prefix !== undefined) {
+        updates.SF_PREFIX = values.prefix;
+    }
+    if (values.lcSerials !== undefined) {
+        updates.SF_LC_SERIALS = values.lcSerials;
+    }
+    if (values.meshToken !== undefined && values.meshToken.length > 0) {
+        updates.GROWCAST_MESH_TOKEN = values.meshToken;
+    }
     const seen = new Set<string>();
     const next: string[] = [];
     for (const line of source.split(/\r?\n/)) {
@@ -65,7 +82,7 @@ export function mergeGgsSidecarEnv(source: string, values: SpiderFarmerEnvWrite)
         }
         next.push(line);
     }
-    for (const key of MANAGED_KEYS) {
+    for (const key of Object.keys(updates)) {
         if (!seen.has(key)) {
             next.push(`${key}=${updates[key]}`);
         }
@@ -93,10 +110,13 @@ export function spiderFarmerStatusFromEnv(source: string): SpiderFarmerBrokerSta
     const values = parseEnv(source);
     const mqttName = values.get("SF_MQTT_NAME") ?? "";
     const mqttPwd = values.get("SF_MQTT_PWD") ?? "";
+    const serial = (values.get("SF_SERIAL") ?? "").trim();
     const account = (values.get("SF_EMAIL") || mqttName || "").trim();
     return {
-        configured: mqttName.length > 0 && mqttPwd.length > 0,
+        configured: mqttName.length > 0 && mqttPwd.length > 0 && serial.length > 0,
         account: account.length > 0 ? account : null,
+        serial: serial.length > 0 ? serial : null,
+        pathKind: "file",
     };
 }
 
@@ -104,10 +124,14 @@ export async function readSpiderFarmerBrokerStatus(
     filePath: string = ggsSidecarEnvFile(),
 ): Promise<SpiderFarmerBrokerStatus> {
     try {
+        const info = await stat(filePath);
+        if (info.isDirectory()) {
+            return {configured: false, account: null, serial: null, pathKind: "directory"};
+        }
         return spiderFarmerStatusFromEnv(await readFile(filePath, "utf8"));
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-            return {configured: false, account: null};
+            return {configured: false, account: null, serial: null, pathKind: "missing"};
         }
         throw error;
     }
@@ -119,6 +143,10 @@ export async function writeSpiderFarmerBrokerEnv(
 ): Promise<void> {
     let source = "";
     try {
+        const info = await stat(filePath);
+        if (info.isDirectory()) {
+            throw new Error("ggs env path is a directory");
+        }
         source = await readFile(filePath, "utf8");
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") {

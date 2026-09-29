@@ -17,12 +17,8 @@ import {
 } from "@/lib/admin/save-settings";
 import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
 import type {AdminActionResult} from "@/lib/admin/action-result";
-import {writeSpiderFarmerBrokerEnv} from "@/lib/ggs-sidecar-env";
-import {
-    SpiderFarmerLoginError,
-    spiderFarmerFailureNotice,
-    spiderFarmerMailLogin,
-} from "@/lib/spider-farmer-login";
+import {prepareSpiderFarmer} from "@/lib/spider-farmer-setup";
+import {isRtspUrl, readTimelapseRtsp, writeTimelapseSidecarEnv} from "@/lib/timelapse-sidecar-env";
 import {completeCurrentGrow} from "@/lib/archives";
 import {parseOverlayScalePct} from "@/lib/overlay-scale";
 import {parseMusicLook, parseWaveBars, parseWaveSmoothPct} from "@/lib/program-music-wave";
@@ -129,6 +125,24 @@ export async function saveTimelapseAction(formData: FormData): Promise<AdminActi
             logAdminGrowUpdateFailed({err: sanitizeError(result.error)});
             return {notice: "save_failed"};
         }
+        const settings = result.timelapse;
+        const submittedRtsp = String(formData.get("rtspStream") ?? "").trim();
+        if (submittedRtsp && !isRtspUrl(submittedRtsp)) {
+            return {notice: "save_failed"};
+        }
+        const rtsp = submittedRtsp || await readTimelapseRtsp();
+        if (rtsp) {
+            await writeTimelapseSidecarEnv({
+                RTSP_STREAM: rtsp,
+                TZ: settings.timezone,
+                INTERVAL: settings.intervalMinutes == null ? "" : String(settings.intervalMinutes),
+                TIME_1: settings.time1,
+                TIME_2: settings.time2,
+                TIME_3: settings.time3,
+                TIMELAPSE_LENGTH_SECONDS: String(settings.timelapseLengthSeconds),
+                TIMELAPSE_QUALITY: settings.timelapseQuality,
+            });
+        }
 
         revalidatePath("/gallery");
         revalidatePath("/admin/timelapse");
@@ -167,23 +181,10 @@ export async function connectSpiderFarmerAction(formData: FormData): Promise<Adm
         await requireAdmin();
         const email = String(formData.get("sfEmail") ?? "").trim();
         const password = String(formData.get("sfPassword") ?? "");
-        if (!email || !password.trim() || /[\r\n]/.test(email) || /[\r\n]/.test(password)) {
-            return {notice: "spider_farmer_missing"};
-        }
-        try {
-            const broker = await spiderFarmerMailLogin(email, password);
-            await writeSpiderFarmerBrokerEnv({
-                email: broker.mqttName,
-                mqttName: broker.mqttName,
-                mqttPwd: broker.mqttPwd,
-                userId: broker.userId,
-            });
-        } catch (error) {
-            return {
-                notice: error instanceof SpiderFarmerLoginError
-                    ? spiderFarmerFailureNotice(error)
-                    : "spider_farmer_failed",
-            };
+        const serial = String(formData.get("sfSerial") ?? "").trim();
+        const result = await prepareSpiderFarmer({email, password, serial});
+        if (!result.ok) {
+            return {notice: "choose" in result ? "spider_farmer_choose" : result.notice};
         }
         revalidatePath("/admin/ggs");
         return {notice: "spider_farmer_connected"};

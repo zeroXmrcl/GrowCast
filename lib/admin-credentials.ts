@@ -1,29 +1,14 @@
-import {scryptSync} from "node:crypto";
+import {randomBytes, scryptSync} from "node:crypto";
+import {normalizeUsernameInput, validateUsernameInput} from "@/lib/admin-username";
 import {safeEqualBuffer, safeEqualText} from "@/lib/crypto-equal";
 import {validatePasswordHardLimits} from "@/lib/password-policy";
-
-const MAX_USERNAME_LENGTH = 64;
 
 export type AdminCredentialConfig = {
   username: string;
   passwordHash: string;
 };
 
-function stripInvisibleControls(value: string): string {
-  return value.replace(/[\u0000-\u001F\u007F]/g, "");
-}
-
-export function normalizeUsernameInput(input: string): string {
-  return stripInvisibleControls(input).normalize("NFKC").trim();
-}
-
-export function validateUsernameInput(input: string): boolean {
-  if (input.length < 1 || input.length > MAX_USERNAME_LENGTH) {
-    return false;
-  }
-
-  return /^[a-zA-Z0-9._@-]+$/.test(input);
-}
+export {normalizeUsernameInput, validateUsernameInput};
 
 export function verifyAdminPassword(passwordInput: string, storedHash: string): boolean {
   try {
@@ -78,4 +63,10 @@ export function matchAdminCredentials(
   const usernameMatches = safeEqualText(normalizedUsername, config.username);
   const passwordMatches = verify(passwordInput, config.passwordHash);
   return usernameMatches && passwordMatches;
+}
+
+export function hashAdminPassword(plainPassword: string): string {
+  const salt = randomBytes(16);
+  const derivedKey = scryptSync(plainPassword, salt, 64);
+  return `scrypt$${salt.toString("base64url")}$${derivedKey.toString("base64url")}`;
 }
