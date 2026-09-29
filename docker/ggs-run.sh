@@ -53,6 +53,52 @@ stamp() {
 pid=""
 trap 'if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; fi; exit 0' TERM INT
 
+# Older installs kept MQTT credentials in the plugin .env. Copy only keys
+# that data/ggs.env does not already have.
+import_legacy() {
+  dest=$1
+  legacy=$2
+  if [ ! -f "$legacy" ]; then
+    return 0
+  fi
+  umask 077
+  tmp=$(mktemp)
+  if [ -f "$dest" ]; then
+    cat "$dest" > "$tmp" || true
+  fi
+  added=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in
+      ""|\#*) continue ;;
+    esac
+    key=${line%%=*}
+    val=${line#*=}
+    case "$key" in
+      SF_PASSWORD|API_URL|API_TOKEN|GROWCAST_URL|LOG_LEVEL|GROWCAST_MESH_TOKEN) continue ;;
+    esac
+    if [ -z "$val" ]; then
+      continue
+    fi
+    existing=$(value_of "$tmp" "$key" || true)
+    if [ -n "$existing" ]; then
+      continue
+    fi
+    grep -v "^${key}=$" "$tmp" > "${tmp}.next" || true
+    mv "${tmp}.next" "$tmp"
+    printf '%s=%s\n' "$key" "$val" >> "$tmp"
+    added=1
+  done < "$legacy"
+  if [ "$added" -eq 1 ]; then
+    mv "$tmp" "$dest"
+    chmod 600 "$dest" 2>/dev/null || true
+    echo "ggs imported spider farmer config from the previous plugin env"
+  else
+    rm -f "$tmp"
+  fi
+}
+
+import_legacy "$ENV_FILE" /opt/legacy-ggs/.env
+
 while true; do
   load_env
   if [ -n "${SF_MQTT_NAME:-}" ] && [ -n "${SF_MQTT_PWD:-}" ] && [ -n "${SF_SERIAL:-}" ] && [ -n "${GROWCAST_MESH_TOKEN:-}" ]; then

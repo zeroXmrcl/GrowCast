@@ -37,6 +37,7 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
     volumes:
       - ./data:/data
+      - ./extensions/GrowCast-GGS:/opt/legacy-ggs:ro
       - ./docker/ggs-run.sh:/opt/growcast/ggs-run.sh:ro
     entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /opt/growcast/ggs-run.sh > /tmp/ggs-run.sh && exec /bin/sh /tmp/ggs-run.sh"]
     depends_on:

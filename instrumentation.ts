@@ -11,6 +11,17 @@ export async function register(): Promise<void> {
     }
     const {announceStartup} = await import("@/lib/setup-gate");
     await announceStartup();
+    try {
+      const {importLegacyTimelapseEnv} = await import("@/lib/import-legacy-sidecars");
+      await importLegacyTimelapseEnv();
+    } catch (error) {
+      const {childLogger, sanitizeError} = await import("@/lib/logging");
+      childLogger().warn({
+        event: "sidecar.legacy_import.failed",
+        reason: "timelapse",
+        err: sanitizeError(error),
+      });
+    }
     // Helix waits for Twitch to POST the webhook challenge; awaiting that
     // here deadlocks because Next does not serve until register() returns.
     void Promise.resolve().then(async () => {
