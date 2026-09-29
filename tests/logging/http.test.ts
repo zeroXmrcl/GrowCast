@@ -97,7 +97,9 @@ describe("docker compose listen address", () => {
     assert.match(yml, /GROWCAST_GGS_ENV_FILE:\s*\/app\/data\/ggs\.env/);
     assert.match(yml, /docker\/ggs-run\.sh/);
     assert.match(yml, /docker\/timelapse-run\.sh/);
+    assert.match(yml, /GrowCast-Timelapse\/GrowCast-Timelapse:\/opt\/legacy-timelapse:ro/);
     assert.doesNotMatch(yml, /GrowCast-GGS\/\.env/);
+    assert.doesNotMatch(yml, /GrowCast-Timelapse\/GrowCast-Timelapse\/\.env/);
     assert.match(yml, /required:\s*false/);
     assert.doesNotMatch(yml, /profiles:/);
   });

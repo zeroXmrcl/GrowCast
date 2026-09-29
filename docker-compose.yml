@@ -70,6 +70,7 @@ services:
       GROWCAST_TIMELAPSE_ENV: /data/timelapse.env
     volumes:
       - ./data:/data
+      - ./extensions/GrowCast-Timelapse/GrowCast-Timelapse:/opt/legacy-timelapse:ro
       - ./extensions/GrowCast-Timelapse/snapshots:/app/GrowCast-Timelapse/snapshots
       - ./extensions/GrowCast-Timelapse/timelapse:/app/GrowCast-Timelapse/timelapse
       - ./docker/timelapse-run.sh:/opt/growcast/timelapse-run.sh:ro
