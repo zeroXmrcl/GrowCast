@@ -3,6 +3,7 @@ import {readFileSync} from "node:fs";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {INSTALLER_COPY} from "../app/setup/installer-copy.ts";
+import {passwordLineMet, passwordLineScale} from "../app/setup/password-line.ts";
 
 describe("installer copy", () => {
     it("locks the approved lines", () => {
@@ -18,6 +19,17 @@ describe("installer copy", () => {
         assert.equal(INSTALLER_COPY.twitch.line, "Creator Dashboard -> Settings -> Stream.");
         assert.equal(INSTALLER_COPY.timelapse.line, "Use the camera’s rtsp:// address.");
         assert.equal(INSTALLER_COPY.done.line, "You can change any of this later in admin settings.");
+    });
+});
+
+describe("password line", () => {
+    it("fills the admin password line across 12 characters", () => {
+        assert.equal(passwordLineScale(""), 0);
+        assert.equal(passwordLineScale("123456"), 0.5);
+        assert.equal(passwordLineScale("123456789012"), 1);
+        assert.equal(passwordLineScale("123456789012345"), 1);
+        assert.equal(passwordLineMet("12345678901"), false);
+        assert.equal(passwordLineMet("123456789012"), true);
     });
 });
 
