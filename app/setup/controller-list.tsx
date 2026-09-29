@@ -15,13 +15,19 @@ function shortSerial(serial: string): string {
 
 export function ControllerList({controllers, selected, onSelect}: ControllerListProps) {
     return (
-        <ul style={{listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8}}>
+        <ul
+            role="radiogroup"
+            aria-label="Controllers"
+            style={{listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8}}
+        >
             {controllers.map((controller) => {
                 const isSelected = controller.serial === selected;
                 return (
                     <li key={controller.serial}>
                         <button
                             type="button"
+                            role="radio"
+                            aria-checked={isSelected}
                             onClick={() => onSelect(controller.serial)}
                             style={{
                                 display: "flex",

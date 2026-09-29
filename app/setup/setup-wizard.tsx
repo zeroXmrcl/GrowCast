@@ -1,7 +1,7 @@
 "use client";
 
 import {useRouter} from "next/navigation";
-import {useState, type FormEvent, type ReactNode} from "react";
+import {useEffect, useRef, useState, type FormEvent, type ReactNode} from "react";
 import {
     createSetupAdminAction,
     finishSetupAction,
@@ -24,10 +24,6 @@ import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
 
 type WizardStep = InstallerStepId | "climate-list" | "done";
 type SkippableStep = "climate" | "camera" | "twitch" | "timelapse";
-
-function wait(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function prefersReducedMotion(): boolean {
     return typeof window !== "undefined"
@@ -60,6 +56,11 @@ function stepCopy(step: WizardStep): {eyebrow: string; title: string; line: stri
 
 export function SetupWizard() {
     const router = useRouter();
+    const runGate = useRef(false);
+    const goGeneration = useRef(0);
+    const goTimeouts = useRef<number[]>([]);
+    const goRafs = useRef<number[]>([]);
+
     const [step, setStep] = useState<WizardStep>("admin");
     const [finished, setFinished] = useState<ReadonlySet<InstallerStepId>>(() => new Set());
     const [skipped, setSkipped] = useState<string[]>([]);
@@ -92,19 +93,49 @@ export function SetupWizard() {
     const adminReady = usernameOk(username) && passwordLineMet(password);
     const locked = busy || saving;
 
+    useEffect(() => {
+        return () => {
+            goGeneration.current += 1;
+            for (const id of goTimeouts.current) window.clearTimeout(id);
+            for (const id of goRafs.current) window.cancelAnimationFrame(id);
+            goTimeouts.current = [];
+            goRafs.current = [];
+        };
+    }, []);
+
+    function clearGoTimers() {
+        for (const id of goTimeouts.current) window.clearTimeout(id);
+        for (const id of goRafs.current) window.cancelAnimationFrame(id);
+        goTimeouts.current = [];
+        goRafs.current = [];
+    }
+
+    function waitTracked(ms: number): Promise<void> {
+        return new Promise((resolve) => {
+            const id = window.setTimeout(resolve, ms);
+            goTimeouts.current.push(id);
+        });
+    }
+
     function markFinished(id: InstallerStepId) {
         setFinished((prev) => new Set(prev).add(id));
     }
 
     async function go(next: WizardStep, withSaving: boolean) {
+        const generation = ++goGeneration.current;
+        clearGoTimers();
         const reduce = prefersReducedMotion();
         if (withSaving) {
             setSaving(true);
-            if (!reduce) await wait(200);
+            if (!reduce) {
+                await waitTracked(200);
+                if (generation !== goGeneration.current) return;
+            }
         } else {
             setSaving(false);
         }
         if (reduce) {
+            if (generation !== goGeneration.current) return;
             setStep(next);
             setMessage("");
             setSaving(false);
@@ -112,32 +143,42 @@ export function SetupWizard() {
             return;
         }
         setCopyClass("installer-copy leave");
-        await wait(420);
+        await waitTracked(420);
+        if (generation !== goGeneration.current) return;
         setStep(next);
         setMessage("");
         setSaving(false);
         setCopyClass("installer-copy enter");
-        requestAnimationFrame(() => {
+        const raf = window.requestAnimationFrame(() => {
+            if (generation !== goGeneration.current) return;
             setCopyClass("installer-copy enter show");
         });
+        goRafs.current.push(raf);
     }
 
     async function skip(id: SkippableStep, next: WizardStep) {
-        if (locked) return;
+        if (runGate.current) return;
+        runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
-            await skipInstallerStepAction(id);
+            const result = await skipInstallerStepAction(id);
+            if (!result.ok) {
+                setMessage(result.message);
+                return;
+            }
             setSkipped((prev) => (prev.includes(id) ? prev : [...prev, id]));
             await go(next, false);
         } finally {
+            runGate.current = false;
             setBusy(false);
         }
     }
 
     async function onAdmin(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (locked || !adminReady) return;
+        if (runGate.current || !adminReady) return;
+        runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
@@ -153,13 +194,15 @@ export function SetupWizard() {
             markFinished("admin");
             await go("climate", true);
         } finally {
+            runGate.current = false;
             setBusy(false);
         }
     }
 
     async function onClimate(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (locked) return;
+        if (runGate.current) return;
+        runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
@@ -181,13 +224,15 @@ export function SetupWizard() {
             }
             setMessage(result.message);
         } finally {
+            runGate.current = false;
             setBusy(false);
         }
     }
 
     async function onClimatePick(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (locked || !selectedSerial) return;
+        if (runGate.current || !selectedSerial) return;
+        runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
@@ -205,13 +250,15 @@ export function SetupWizard() {
             markFinished("climate");
             await go("camera", true);
         } finally {
+            runGate.current = false;
             setBusy(false);
         }
     }
 
     async function onCamera(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (locked) return;
+        if (runGate.current) return;
+        runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
@@ -226,13 +273,15 @@ export function SetupWizard() {
             markFinished("camera");
             await go("twitch", true);
         } finally {
+            runGate.current = false;
             setBusy(false);
         }
     }
 
     async function onTwitch(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (locked) return;
+        if (runGate.current) return;
+        runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
@@ -248,13 +297,15 @@ export function SetupWizard() {
             markFinished("twitch");
             await go("timelapse", true);
         } finally {
+            runGate.current = false;
             setBusy(false);
         }
     }
 
     async function onTimelapse(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        if (locked) return;
+        if (runGate.current) return;
+        runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
@@ -271,12 +322,14 @@ export function SetupWizard() {
             markFinished("timelapse");
             await go("done", true);
         } finally {
+            runGate.current = false;
             setBusy(false);
         }
     }
 
     async function onFinish() {
-        if (locked) return;
+        if (runGate.current) return;
+        runGate.current = true;
         setBusy(true);
         setMessage("");
         try {
@@ -287,6 +340,7 @@ export function SetupWizard() {
             }
             router.push("/");
         } finally {
+            runGate.current = false;
             setBusy(false);
         }
     }
@@ -344,8 +398,9 @@ export function SetupWizard() {
 
                     {step === "admin" ? (
                         <form className="mt-8 space-y-5" onSubmit={onAdmin}>
-                            <InstallerField label="Username" value={username}>
+                            <InstallerField label="Username" value={username} htmlFor="installer-username">
                                 <InstallerInput
+                                    id="installer-username"
                                     name="username"
                                     autoComplete="username"
                                     value={username}
@@ -353,8 +408,9 @@ export function SetupWizard() {
                                 />
                             </InstallerField>
                             <div>
-                                <InstallerField label="Password" value={password}>
+                                <InstallerField label="Password" value={password} htmlFor="installer-password">
                                     <InstallerInput
+                                        id="installer-password"
                                         name="password"
                                         type="password"
                                         autoComplete="new-password"
@@ -374,8 +430,9 @@ export function SetupWizard() {
 
                     {step === "climate" ? (
                         <form className="mt-8 space-y-5" onSubmit={onClimate}>
-                            <InstallerField label="Email" value={sfEmail}>
+                            <InstallerField label="Email" value={sfEmail} htmlFor="installer-sf-email">
                                 <InstallerInput
+                                    id="installer-sf-email"
                                     name="sfEmail"
                                     type="email"
                                     autoComplete="username"
@@ -383,8 +440,9 @@ export function SetupWizard() {
                                     onChange={setSfEmail}
                                 />
                             </InstallerField>
-                            <InstallerField label="Password" value={sfPassword}>
+                            <InstallerField label="Password" value={sfPassword} htmlFor="installer-sf-password">
                                 <InstallerInput
+                                    id="installer-sf-password"
                                     name="sfPassword"
                                     type="password"
                                     autoComplete="current-password"
@@ -419,8 +477,9 @@ export function SetupWizard() {
 
                     {step === "camera" ? (
                         <form className="mt-8 space-y-5" onSubmit={onCamera}>
-                            <InstallerField label="Stream URL" value={streamUrl}>
+                            <InstallerField label="Stream URL" value={streamUrl} htmlFor="installer-stream-url">
                                 <InstallerInput
+                                    id="installer-stream-url"
                                     name="streamUrl"
                                     autoComplete="off"
                                     value={streamUrl}
@@ -438,8 +497,9 @@ export function SetupWizard() {
 
                     {step === "twitch" ? (
                         <form className="mt-8 space-y-5" onSubmit={onTwitch}>
-                            <InstallerField label="Stream key" value={twitchKey}>
+                            <InstallerField label="Stream key" value={twitchKey} htmlFor="installer-twitch-key">
                                 <InstallerInput
+                                    id="installer-twitch-key"
                                     name="twitchKey"
                                     type="password"
                                     autoComplete="off"
@@ -447,8 +507,9 @@ export function SetupWizard() {
                                     onChange={setTwitchKey}
                                 />
                             </InstallerField>
-                            <InstallerField label="Twitch channel" value={twitchLogin}>
+                            <InstallerField label="Twitch channel" value={twitchLogin} htmlFor="installer-twitch-login">
                                 <InstallerInput
+                                    id="installer-twitch-login"
                                     name="twitchLogin"
                                     autoComplete="off"
                                     value={twitchLogin}
@@ -466,16 +527,18 @@ export function SetupWizard() {
 
                     {step === "timelapse" ? (
                         <form className="mt-8 space-y-5" onSubmit={onTimelapse}>
-                            <InstallerField label="Camera RTSP URL" value={rtspStream}>
+                            <InstallerField label="Camera RTSP URL" value={rtspStream} htmlFor="installer-rtsp">
                                 <InstallerInput
+                                    id="installer-rtsp"
                                     name="rtspStream"
                                     autoComplete="off"
                                     value={rtspStream}
                                     onChange={setRtspStream}
                                 />
                             </InstallerField>
-                            <InstallerField label="Interval (minutes)" value={interval}>
+                            <InstallerField label="Interval (minutes)" value={interval} htmlFor="installer-interval">
                                 <InstallerInput
+                                    id="installer-interval"
                                     name="interval"
                                     type="number"
                                     autoComplete="off"
@@ -483,8 +546,9 @@ export function SetupWizard() {
                                     onChange={setIntervalMinutes}
                                 />
                             </InstallerField>
-                            <InstallerField label="Timezone" value={timezone}>
+                            <InstallerField label="Timezone" value={timezone} htmlFor="installer-timezone">
                                 <InstallerInput
+                                    id="installer-timezone"
                                     name="timezone"
                                     autoComplete="off"
                                     value={timezone}
@@ -533,10 +597,12 @@ export function SetupWizard() {
 function InstallerField({
     label,
     value,
+    htmlFor,
     children,
 }: {
     label: string;
     value: string;
+    htmlFor: string;
     children: ReactNode;
 }) {
     return (
@@ -546,6 +612,7 @@ function InstallerField({
         >
             <label
                 className="installer-label"
+                htmlFor={htmlFor}
                 style={{
                     position: "absolute",
                     left: 0,
@@ -565,12 +632,14 @@ function InstallerField({
 
 function InstallerInput({
     name,
+    id,
     value,
     onChange,
     type = "text",
     autoComplete,
 }: {
     name: string;
+    id: string;
     value: string;
     onChange: (value: string) => void;
     type?: string;
@@ -578,6 +647,7 @@ function InstallerInput({
 }) {
     return (
         <input
+            id={id}
             name={name}
             type={type}
             autoComplete={autoComplete}
