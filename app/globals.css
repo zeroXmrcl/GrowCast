@@ -664,3 +664,35 @@ html[data-admin-save-bar] .admin-toast {
 @media (prefers-reduced-motion: reduce) {
   .installer-password-line { transition: none; }
 }
+
+.installer-copy.leave {
+  opacity: 0;
+  transform: translateX(-32px);
+  transition: opacity 420ms cubic-bezier(0.16, 1, 0.3, 1), transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.installer-copy.enter { opacity: 0; transform: translateX(32px); }
+.installer-copy.enter.show {
+  opacity: 1;
+  transform: none;
+  transition: opacity 420ms cubic-bezier(0.16, 1, 0.3, 1), transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.installer-label {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), font-size 200ms ease, color 200ms ease;
+}
+.installer-field.filled .installer-label,
+.installer-field:focus-within .installer-label {
+  transform: translateY(-22px);
+  font-size: 12px;
+  color: #f3f4f6;
+}
+.installer-save.saving { transform: scale(0.98); }
+@media (prefers-reduced-motion: reduce) {
+  .installer-copy.leave,
+  .installer-copy.enter,
+  .installer-copy.enter.show,
+  .installer-label,
+  .installer-save.saving {
+    transition: none;
+    transform: none;
+  }
+}

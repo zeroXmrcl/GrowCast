@@ -42,3 +42,9 @@ describe("installer rail", () => {
         assert.doesNotMatch(src, /✓|checkmark|#3d9a33/);
     });
 });
+
+it("uses the admin rail ease for installer motion", () => {
+    const css = readFileSync(path.join(process.cwd(), "app", "globals.css"), "utf8");
+    assert.match(css, /\.installer-copy\.leave[\s\S]*cubic-bezier\(0\.16, 1, 0\.3, 1\)/);
+    assert.match(css, /prefers-reduced-motion: reduce/);
+});
