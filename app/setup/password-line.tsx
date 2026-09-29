@@ -15,6 +15,7 @@ export function PasswordLine({value}: {value: string}) {
             }}
         >
             <div
+                className="installer-password-line"
                 style={{
                     width: "100%",
                     height: "100%",
