@@ -59,6 +59,12 @@ const ARCHIVE_EDITOR_BANDS = [
     {id: "danger", label: "Danger Zone"},
 ];
 
+const SECURITY_BANDS = [
+    {id: "authenticator", label: "Authenticator"},
+    {id: "recovery", label: "Recovery"},
+    {id: "turn-off", label: "Turn off"},
+];
+
 function bandsFor(pathname: string, href: string): Array<{id: string; label: string}> {
     if (href === "/admin") {
         return GROW_BANDS;
@@ -74,6 +80,9 @@ function bandsFor(pathname: string, href: string): Array<{id: string; label: str
     }
     if (href === "/admin/archives") {
         return pathname === "/admin/archives" ? ARCHIVE_LIST_BANDS : ARCHIVE_EDITOR_BANDS;
+    }
+    if (href === "/admin/security") {
+        return SECURITY_BANDS;
     }
     return [];
 }

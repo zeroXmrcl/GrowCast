@@ -55,6 +55,14 @@ export const REDACT_PATHS: string[] = [
   "*.authorization",
   "*.cookie",
   "*.secret",
+  "totp",
+  "otp",
+  "recoveryCode",
+  "recovery_code",
+  "*.totp",
+  "*.otp",
+  "*.recoveryCode",
+  "*.recovery_code",
 ];
 
 export function sanitizeError(error: unknown): SanitizedError {

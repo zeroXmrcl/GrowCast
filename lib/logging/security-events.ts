@@ -24,6 +24,42 @@ export function logAuthLoginDisabled(
   logSecurityEvent("auth.login.disabled", fields, "warn");
 }
 
+export function logAuthLoginTotpFailed(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("auth.login.totp_failed", fields, "warn");
+}
+
+export function logAuthLoginTotpRateLimited(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("auth.login.totp_rate_limited", fields, "warn");
+}
+
+export function logAuthTotpEnrolled(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("auth.totp.enrolled", fields, "info");
+}
+
+export function logAuthTotpDisabled(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("auth.totp.disabled", fields, "info");
+}
+
+export function logAuthTotpRecoveryUsed(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("auth.totp.recovery_used", fields, "info");
+}
+
+export function logAuthTotpUnavailable(
+  fields: Record<string, unknown> = {},
+): void {
+  logSecurityEvent("auth.totp.unavailable", fields, "warn");
+}
+
 export function logAuthLogout(fields: Record<string, unknown> = {}): void {
   logSecurityEvent("auth.logout", fields, "info");
 }

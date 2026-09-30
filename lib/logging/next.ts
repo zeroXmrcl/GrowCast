@@ -11,7 +11,12 @@ export async function withNextRequestLogContext<T>(
     return fn();
   }
 
-  const h = await headers();
+  let h: Headers;
+  try {
+    h = await headers();
+  } catch {
+    h = new Headers();
+  }
   const context = buildContextFromHeaders(h, routePattern, method, routePattern);
   return runWithContext(context, fn);
 }

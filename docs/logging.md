@@ -112,6 +112,12 @@ Emitted via `logSecurityEvent` / helpers in `lib/logging/security-events.ts`. Th
 | `auth.login.failed` | `warn` | Invalid credentials or bad input shape | `reason` (`invalid_credentials`), client fields |
 | `auth.login.rate_limited` | `warn` | Login rate limit hit | `reason`, `retry_after_seconds`, client fields |
 | `auth.login.disabled` | `warn` | Admin auth not configured | `reason` (`login_disabled`), client fields |
+| `auth.login.totp_failed` | `warn` | Authenticator step failed or the pending sign-in expired | `reason` (`totp_invalid`, `pending_expired`), client fields. Never the code. |
+| `auth.login.totp_rate_limited` | `warn` | Authenticator attempt limit hit | `reason`, `retry_after_seconds`, client fields |
+| `auth.totp.enrolled` | `info` | Admin confirmed authenticator setup | client fields |
+| `auth.totp.disabled` | `info` | Admin turned authenticator off | client fields |
+| `auth.totp.recovery_used` | `info` | A one-time recovery code was accepted | client fields. Never the code. |
+| `auth.totp.unavailable` | `warn` | Authenticator file is unreadable, or it belongs to a different password hash | `reason` (`corrupt` blocks sign-in, `account_mismatch` does not), client fields |
 | `auth.logout` | `info` | Admin logout | client fields |
 | `auth.session.invalid` | `warn` | Session cookie/token rejected | `reason` (`invalid_token`, `token_expired`, `session_not_found`, `session_expired`), client fields |
 | `authz.denied` | `warn` | Unauthenticated access to protected admin action | `reason` (`unauthenticated`), `resource` (`admin`), client fields |
@@ -298,11 +304,11 @@ These are **example** queries / rules for common aggregators. Adapt field names 
 
 ### 1. Spike in failed admin logins
 
-**Condition:** count of `event = "auth.login.failed"` or `auth.login.rate_limited` per client IP (or global) exceeds threshold in a window.
+**Condition:** count of `auth.login.failed`, `auth.login.rate_limited`, `auth.login.totp_failed`, or `auth.login.totp_rate_limited` per client IP (or global) exceeds threshold in a window.
 
 ```text
 # Conceptual filter
-channel:security AND event:(auth.login.failed OR auth.login.rate_limited)
+channel:security AND event:(auth.login.failed OR auth.login.rate_limited OR auth.login.totp_failed OR auth.login.totp_rate_limited)
 
 # Alert if
 count() > 10 in 5m   # global

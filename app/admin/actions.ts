@@ -3,7 +3,7 @@
 import {revalidatePath} from "next/cache";
 import {headers} from "next/headers";
 import {redirect} from "next/navigation";
-import {loginAdmin, requireAdmin} from "@/lib/admin-auth";
+import {clearPendingAdminLogin, loginAdmin, requireAdmin, verifyAdminSecondFactor} from "@/lib/admin-auth";
 import {
     parseAdminSettingsForm,
     parseCompleteGrowForm,
@@ -39,7 +39,7 @@ import {
     resolveChannelLogin,
     streamKeyForChannelLookup,
 } from "@/lib/restream/twitch-helix";
-import {loginRateLimitKey} from "@/lib/request-trust";
+import {loginRateLimitKey, secondFactorRateLimitKey} from "@/lib/request-trust";
 import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 import {
     logAdminGrowArchiveFailed,
@@ -60,6 +60,14 @@ export async function loginAction(formData: FormData): Promise<void> {
     const result = await loginAdmin(username, password, clientKey);
 
     if (!result.ok) {
+        if (result.code === "totp_required") {
+            redirect("/admin?step=totp");
+        }
+
+        if (result.code === "totp_unavailable") {
+            redirect("/admin?error=totp_unavailable");
+        }
+
         if (result.code === "rate_limited") {
             redirect(`/admin?error=rate_limited&retry=${result.retryAfterSeconds ?? 900}`);
         }
@@ -71,6 +79,34 @@ export async function loginAction(formData: FormData): Promise<void> {
         redirect("/admin?error=invalid_credentials");
     }
 
+    redirect("/admin");
+}
+
+export async function verifySecondFactorAction(formData: FormData): Promise<void> {
+    const h = await headers();
+    const clientKey = secondFactorRateLimitKey(h);
+    const code = String(formData.get("code") ?? "");
+    const kind = formData.get("kind") === "recovery" ? "recovery" : "totp";
+    const result = await verifyAdminSecondFactor(code, kind, clientKey);
+
+    if (!result.ok) {
+        if (result.code === "rate_limited") {
+            redirect(`/admin?error=rate_limited&retry=${result.retryAfterSeconds ?? 900}`);
+        }
+        if (result.code === "totp_unavailable") {
+            redirect("/admin?error=totp_unavailable");
+        }
+        if (result.code === "pending_expired" || result.code === "login_disabled") {
+            redirect("/admin?error=signin_expired");
+        }
+        redirect("/admin?step=totp&error=totp_invalid");
+    }
+
+    redirect("/admin");
+}
+
+export async function cancelSecondFactorAction(): Promise<void> {
+    await clearPendingAdminLogin();
     redirect("/admin");
 }
 

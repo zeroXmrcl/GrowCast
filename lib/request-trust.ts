@@ -84,6 +84,20 @@ export function loginRateLimitKey(
     return `admin-login:${clientIdentityKey(headers, env)}`;
 }
 
+export function secondFactorRateLimitKey(
+    headers: Headers | Record<string, string | string[] | undefined>,
+    env: NodeJS.ProcessEnv = process.env,
+): string {
+    return `admin-totp:${clientIdentityKey(headers, env)}`;
+}
+
+export function securityRateLimitKey(
+    headers: Headers | Record<string, string | string[] | undefined>,
+    env: NodeJS.ProcessEnv = process.env,
+): string {
+    return `admin-security:${clientIdentityKey(headers, env)}`;
+}
+
 export function shouldUseSecureCookie(
     headers: Headers | Record<string, string | string[] | undefined>,
     env: NodeJS.ProcessEnv = process.env,

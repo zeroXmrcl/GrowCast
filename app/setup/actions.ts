@@ -2,7 +2,7 @@
 
 import {randomBytes} from "node:crypto";
 import {headers} from "next/headers";
-import {isAdminAuthenticated, loginAdmin, needsSetupWizard} from "@/lib/admin-auth";
+import {isAdminAuthenticated, loginAdmin, needsSetupWizard, clearPendingAdminLogin, type LoginResult} from "@/lib/admin-auth";
 import {
     hashAdminPassword,
     normalizeUsernameInput,
@@ -57,9 +57,23 @@ function setupCodeRejected(): SetupStepResult {
     };
 }
 
-async function loginDuringSetup(username: string, password: string) {
+async function loginDuringSetup(username: string, password: string): Promise<LoginResult> {
     const clientKey = loginRateLimitKey(await headers());
-    return loginAdmin(username, password, clientKey);
+    const login = await loginAdmin(username, password, clientKey);
+    if (!login.ok && (login.code === "totp_required" || login.code === "totp_unavailable")) {
+        await clearPendingAdminLogin();
+    }
+    return login;
+}
+
+function setupLoginError(login: Exclude<LoginResult, {ok: true}>): string {
+    if (login.code === "totp_required") {
+        return "This account uses an authenticator. Finish sign-in on the admin page after setup. If the setup wizard is still open, delete data/setup/totp.json and sign in again.";
+    }
+    if (login.code === "totp_unavailable") {
+        return "Authenticator data could not be read. Delete data/setup/totp.json and sign in again.";
+    }
+    return "That password does not match the admin account.";
 }
 
 export async function confirmSetupCodeAction(setupCode: string): Promise<SetupStepResult> {
@@ -100,6 +114,9 @@ export async function createSetupAdminAction(formData: FormData): Promise<SetupS
     if (decision === "sign-in") {
         const login = await loginDuringSetup(username, password);
         if (!login.ok) {
+            if (login.code === "totp_required" || login.code === "totp_unavailable") {
+                return {ok: false, message: setupLoginError(login)};
+            }
             return {ok: false, message: "That password does not match the admin account."};
         }
         return {ok: true};
@@ -111,6 +128,9 @@ export async function createSetupAdminAction(formData: FormData): Promise<SetupS
     });
     const login = await loginDuringSetup(username, password);
     if (!login.ok) {
+        if (login.code === "totp_required" || login.code === "totp_unavailable") {
+            return {ok: false, message: setupLoginError(login)};
+        }
         return {ok: false, message: "The account was saved, but sign-in did not complete. Try again."};
     }
     return {ok: true};

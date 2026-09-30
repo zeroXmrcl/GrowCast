@@ -5,20 +5,32 @@ import {
     AdminNotice,
     AdminPanel,
 } from "@/components/admin/ui";
+import {LoginSecondFactorForm} from "@/app/admin/login-second-factor";
 
 type LoginFormProps = {
     error?: string;
+    mode?: "password" | "totp";
     canLogin: boolean;
     warnings: string[];
     loginAction: (formData: FormData) => Promise<void>;
+    verifyAction: (formData: FormData) => Promise<void>;
+    cancelAction: () => Promise<void>;
 };
 
-export function AdminLoginForm({error, canLogin, warnings, loginAction}: LoginFormProps) {
+export function AdminLoginForm({
+    error,
+    mode = "password",
+    canLogin,
+    warnings,
+    loginAction,
+    verifyAction,
+    cancelAction,
+}: LoginFormProps) {
     return (
         <div className="admin-theme min-h-screen bg-(--admin-bg) text-(--admin-text)">
             <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-4 py-8">
                 <div className="w-full space-y-4">
-                    <AdminPanel title="Sign In">
+                    <AdminPanel title={mode === "totp" ? "Authenticator" : "Sign In"}>
                         <div className="space-y-4">
                             {error === "invalid_credentials" ? (
                                 <AdminNotice tone="danger" title="Authentication failed">
@@ -44,6 +56,18 @@ export function AdminLoginForm({error, canLogin, warnings, loginAction}: LoginFo
                                 </AdminNotice>
                             ) : null}
 
+                            {error === "signin_expired" ? (
+                                <AdminNotice tone="warning" title="Sign-in expired">
+                                    Enter your password again.
+                                </AdminNotice>
+                            ) : null}
+
+                            {error === "totp_unavailable" ? (
+                                <AdminNotice tone="danger" title="Authenticator data unreadable">
+                                    Delete data/setup/totp.json on the server, then sign in with your password.
+                                </AdminNotice>
+                            ) : null}
+
                             {!canLogin ? (
                                 <AdminNotice tone="warning" title="Configuration issues">
                                     <ul className="space-y-1">
@@ -54,38 +78,46 @@ export function AdminLoginForm({error, canLogin, warnings, loginAction}: LoginFo
                                 </AdminNotice>
                             ) : null}
 
-                            <form action={loginAction} className="space-y-4">
-                                <AdminField label="Username">
-                                    <AdminInput
-                                        name="username"
-                                        placeholder="Username"
-                                        type="text"
-                                        required
-                                        disabled={!canLogin}
-                                        autoComplete="username"
-                                    />
-                                </AdminField>
+                            {mode === "totp" ? (
+                                <LoginSecondFactorForm
+                                    error={error}
+                                    verifyAction={verifyAction}
+                                    cancelAction={cancelAction}
+                                />
+                            ) : (
+                                <form action={loginAction} className="space-y-4">
+                                    <AdminField label="Username">
+                                        <AdminInput
+                                            name="username"
+                                            placeholder="Username"
+                                            type="text"
+                                            required
+                                            disabled={!canLogin}
+                                            autoComplete="username"
+                                        />
+                                    </AdminField>
 
-                                <AdminField label="Password">
-                                    <AdminInput
-                                        name="password"
-                                        type="password"
-                                        placeholder="Password"
-                                        required
-                                        disabled={!canLogin}
-                                        autoComplete="current-password"
-                                    />
-                                </AdminField>
+                                    <AdminField label="Password">
+                                        <AdminInput
+                                            name="password"
+                                            type="password"
+                                            placeholder="Password"
+                                            required
+                                            disabled={!canLogin}
+                                            autoComplete="current-password"
+                                        />
+                                    </AdminField>
 
-                                <AdminButton
-                                    type="submit"
-                                    tone="primary"
-                                    disabled={!canLogin}
-                                    className="w-full"
-                                >
-                                    Sign In
-                                </AdminButton>
-                            </form>
+                                    <AdminButton
+                                        type="submit"
+                                        tone="primary"
+                                        disabled={!canLogin}
+                                        className="w-full"
+                                    >
+                                        Sign In
+                                    </AdminButton>
+                                </form>
+                            )}
                         </div>
                     </AdminPanel>
                 </div>

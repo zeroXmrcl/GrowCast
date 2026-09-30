@@ -242,6 +242,8 @@ This app uses Next.js route handlers and local filesystem storage.
 - Default `setup:admin` and the wizard require a 12-character password; `--allow-insecure` is local/dev only
 - Login verifies the stored scrypt hash (non-empty + max length); it does not re-apply the 12-character setup minimum
 - Signed cookie-based sessions (24-hour TTL)
+- Optional authenticator (TOTP) and one-time recovery codes in `data/setup/totp.json`, turned on from Admin → Security. Sign-in stays password-only until that file is confirmed.
+- If the phone and the recovery codes are both lost, stop GrowCast and delete `data/setup/totp.json`. The next sign-in is password-only. Rotating `ADMIN_SESSION_SECRET` also makes that file unreadable; delete it and turn the authenticator on again.
 - In-memory session store (single-node deploy). Recreating the container with `docker compose up --build` signs you out.
 
 

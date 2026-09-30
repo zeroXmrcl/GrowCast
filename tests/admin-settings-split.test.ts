@@ -32,22 +32,24 @@ describe("admin settings split", () => {
         }
     });
 
-    it("lists five admin page routes instead of 14 hashes", () => {
+    it("lists admin page routes instead of hash links", () => {
         const chromeSrc = src(path.join("app", "admin", "admin-chrome.tsx"));
         assert.match(chromeSrc, /href: "\/admin"/);
         assert.match(chromeSrc, /href: "\/admin\/stream"/);
         assert.match(chromeSrc, /href: "\/admin\/timelapse"/);
         assert.match(chromeSrc, /href: "\/admin\/ggs"/);
         assert.match(chromeSrc, /href: "\/admin\/archives"/);
+        assert.match(chromeSrc, /href: "\/admin\/security"/);
         assert.match(chromeSrc, /label: "Grow"/);
         assert.match(chromeSrc, /label: "Broadcast"/);
         assert.match(chromeSrc, /label: "Timelapse"/);
         assert.match(chromeSrc, /label: "GGS"/);
         assert.match(chromeSrc, /label: "Archives"/);
+        assert.match(chromeSrc, /label: "Security"/);
         assert.doesNotMatch(chromeSrc, /href: "#[a-z]+"/);
         assert.doesNotMatch(chromeSrc, /hidden lg:block/);
         assert.match(chromeSrc, /AdminSectionNav/);
-        assert.equal([...chromeSrc.matchAll(/href: "\/admin(?:\/[a-z]+)?"/g)].length, 5);
+        assert.equal([...chromeSrc.matchAll(/href: "\/admin(?:\/[a-z]+)?"/g)].length, 6);
     });
 
     it("keeps stream/overlay/twitch/timelapse/energy/complete-grow off the Grow form", () => {

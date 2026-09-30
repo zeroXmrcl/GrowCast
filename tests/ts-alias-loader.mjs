@@ -5,8 +5,17 @@ import path from "node:path";
 import {fileURLToPath, pathToFileURL} from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const nextHeadersStub = pathToFileURL(path.join(root, "tests/next-headers-stub.mjs")).href;
+const nextNavigationStub = pathToFileURL(path.join(root, "tests/next-navigation-stub.mjs")).href;
 
 export async function resolve(specifier, context, nextResolve) {
+    if (specifier === "next/headers" || specifier === "next/headers.js") {
+        return {url: nextHeadersStub, shortCircuit: true};
+    }
+    if (specifier === "next/navigation" || specifier === "next/navigation.js") {
+        return {url: nextNavigationStub, shortCircuit: true};
+    }
+
     let next = specifier;
 
     if (next.startsWith("@/")) {
