@@ -9,14 +9,16 @@ import {getCurrentGrow} from "@/lib/db";
 import {isTimelapsePluginInstalled} from "@/lib/extension-status";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 import {SITE_FRAME_CLASS} from "@/lib/site-frame";
+import {readCameraLook} from "@/lib/restream/camera-look-store";
 import {safeHttpUrlOrEmpty} from "@/lib/url-policy";
 
 export default async function SiteLayout({children}: {children: ReactNode}) {
     if (needsSetupWizard()) {
         redirect("/setup");
     }
-    const [grow, showEnergy, showGallery, archives] = await Promise.all([
+    const [grow, look, showEnergy, showGallery, archives] = await Promise.all([
         getCurrentGrow(),
+        readCameraLook(),
         hasGgsLiveUi(),
         isTimelapsePluginInstalled(),
         listArchivedGrows(),
@@ -36,6 +38,7 @@ export default async function SiteLayout({children}: {children: ReactNode}) {
                         streamUrl={safeHttpUrlOrEmpty(grow.streamUrl)}
                         growName={grow.name}
                         showGrowName={grow.showGrowName}
+                        look={look}
                     >
                         {children}
                     </WorkspaceFrame>

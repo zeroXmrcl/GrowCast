@@ -8,6 +8,7 @@ import SiteFooter from "@/components/site-footer";
 import {BroadcastToast} from "@/components/broadcast-toast";
 import EnergyScoreboard from "@/components/energy-scoreboard";
 import {useWorkspaceNav} from "@/components/workspace-nav";
+import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/lib/restream/camera-look";
 import {isWorkspacePath, WORKSPACE_AREA, WORKSPACE_BOARD_CLASS, WORKSPACE_VT} from "@/lib/workspace";
 
 type WorkspaceFrameProps = {
@@ -15,6 +16,7 @@ type WorkspaceFrameProps = {
     streamUrl: string;
     growName: string;
     showGrowName: boolean;
+    look?: CameraLook;
 };
 
 export default function WorkspaceFrame({
@@ -22,6 +24,7 @@ export default function WorkspaceFrame({
     streamUrl,
     growName,
     showGrowName,
+    look = EMPTY_CAMERA_LOOK,
 }: WorkspaceFrameProps) {
     const pathname = usePathname();
     const {view} = useWorkspaceNav();
@@ -49,7 +52,7 @@ export default function WorkspaceFrame({
                 ) : null}
                 <div className={`${WORKSPACE_AREA.cam} ${WORKSPACE_VT.cam} aspect-video overflow-hidden bg-zinc-900`}>
                     {streamUrl ? (
-                        <OverlayCamera streamUrl={streamUrl} />
+                        <OverlayCamera streamUrl={streamUrl} look={look} />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center bg-zinc-800 text-zinc-100">
                             <p>No Stream configured</p>

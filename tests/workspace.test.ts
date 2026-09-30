@@ -58,7 +58,9 @@ describe("workspace morph", () => {
         const home = src(path.join("app", "(site)", "page.tsx"));
         const energy = src(path.join("app", "(site)", "energy", "page.tsx"));
         assert.match(layout, /WorkspaceFrame/);
+        assert.match(layout, /readCameraLook/);
         assert.match(frame, /OverlayCamera/);
+        assert.match(frame, /look=\{look\}/);
         assert.match(frame, /isWorkspacePath\(pathname\)/);
         assert.match(frame, /EnergyScoreboard/);
         assert.match(frame, /growcast-dash-slot/);
