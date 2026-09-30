@@ -11,6 +11,7 @@ import {
     ADMIN_PENDING_COOKIE,
     ADMIN_SESSION_COOKIE,
     PENDING_TTL_SECONDS,
+    gateAdminPassword,
     isAdminAuthenticated,
     loginAdmin,
     secondFactorAttemptKey,
@@ -330,6 +331,24 @@ describe("admin totp", {concurrency: 1}, () => {
             assert.equal(first.ok, true);
             const second = await consumeSecondFactor(account(fixture), fixture.sessionSecret, code, "totp", later);
             assert.equal(second.ok, false);
+        });
+    });
+
+    it("allows ten password re-checks before the security lockout", async () => {
+        await withAdmin(async (fixture) => {
+            const key = "admin-security:password-limit";
+            for (let attempt = 1; attempt <= 10; attempt += 1) {
+                const result = gateAdminPassword("wrong-password", key);
+                assert.equal(result.ok, false);
+                if (!result.ok) {
+                    assert.equal(result.code, "rejected");
+                }
+            }
+            const blocked = gateAdminPassword(fixture.password, key);
+            assert.equal(blocked.ok, false);
+            if (!blocked.ok) {
+                assert.equal(blocked.code, "rate_limited");
+            }
         });
     });
 

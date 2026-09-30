@@ -574,7 +574,7 @@ export function gateAdminPassword(password: string, clientKey: string): Password
   if (!status.canLogin) {
     return { ok: false, code: "login_disabled" };
   }
-  const rateLimit = consumeLoginAttempt(clientKey, SECOND_FACTOR_ATTEMPT_LIMIT);
+  const rateLimit = consumeLoginAttempt(clientKey, PASSWORD_ATTEMPT_LIMIT);
   if (!rateLimit.allowed) {
     return {
       ok: false,
