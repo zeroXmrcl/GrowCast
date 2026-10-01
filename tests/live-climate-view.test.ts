@@ -5,12 +5,10 @@ import {describe, it} from "node:test";
 import {airVpdKPa} from "../lib/air-vpd.ts";
 import {EMPTY_LIVE_PUBLIC, GGS_PLUGIN_ID, GGS_STALE_AFTER_MS, type GgsLivePublic} from "../lib/ggs-live.ts";
 import {
-    climateBadge,
     climateMetricAlerts,
     climateMetrics,
     formatHumidityPct,
     formatHumidityPctTenths,
-    formatRelativeAge,
     formatTempC,
     formatVpd,
     isClimateStale,
@@ -86,9 +84,10 @@ describe("homepage live-climate gate", () => {
             "utf8",
         );
         assert.match(card, /growcast-alert-pulse/);
+        assert.match(card, /growcast-stale-pulse/);
         assert.match(card, /climateMetricAlerts/);
-        assert.match(card, /text-emerald-600/);
-        assert.doesNotMatch(card, /badge\.kind === "live"[\s\S]*growcast-alert-pulse/);
+        assert.doesNotMatch(card, /LIVE/);
+        assert.doesNotMatch(card, /text-emerald-600/);
         assert.match(card, /ClimatePickerValue/);
         assert.match(card, /climateTick === "picker"/);
         assert.match(card, /size="dash"/);
@@ -388,26 +387,6 @@ describe("actuatorCountsTowardEnergy", () => {
 });
 
 describe("climate freshness", () => {
-    it("formats relative age in seconds then minutes", () => {
-        const origin = Date.parse("2026-08-22T18:00:00.000Z");
-        assert.equal(formatRelativeAge("2026-08-22T18:00:00.000Z", origin + 8_000), "8s ago");
-        assert.equal(formatRelativeAge("2026-08-22T18:00:00.000Z", origin + 59_000), "59s ago");
-        assert.equal(formatRelativeAge("2026-08-22T18:00:00.000Z", origin + 60_000), "1m ago");
-        assert.equal(formatRelativeAge("2026-08-22T18:00:00.000Z", origin + 120_000), "2m ago");
-    });
-
-    it("shows LIVE when fresh and stale · relative when stale", () => {
-        const origin = Date.parse("2026-08-22T18:00:00.000Z");
-        assert.deepEqual(climateBadge(false, "2026-08-22T18:00:00.000Z", origin), {
-            kind: "live",
-            text: "LIVE",
-        });
-        assert.deepEqual(climateBadge(true, "2026-08-22T18:00:00.000Z", origin + 8_000), {
-            kind: "stale",
-            text: "stale · 8s ago",
-        });
-    });
-
     it("treats server stale, aged updatedAt, and quiet SSE as stale", () => {
         const now = Date.parse("2026-08-22T18:02:00.000Z");
         assert.equal(isClimateStale(snapshot({stale: true}), now, now), true);

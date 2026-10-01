@@ -54,12 +54,14 @@ html:has([data-overlay-root]) body {
   }
 }
 
-.growcast-alert-pulse {
+.growcast-alert-pulse,
+.growcast-stale-pulse {
   animation: growcast-alert-pulse 1.1s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .growcast-alert-pulse {
+  .growcast-alert-pulse,
+  .growcast-stale-pulse {
     animation: none;
   }
 }

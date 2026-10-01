@@ -90,7 +90,8 @@ describe("overlay picker wiring", () => {
         assert.match(picker, /"use client"/);
         assert.match(picker, /useSyncExternalStore/);
         assert.match(picker, /prefers-reduced-motion/);
-        assert.match(picker, /translateY/);
+        assert.match(picker, /translateY\(calc\(\(1 - /);
+        assert.doesNotMatch(picker, /clientHeight/);
         assert.doesNotMatch(picker, /filter:/);
         assert.doesNotMatch(picker, /cubic-bezier\(0\.16,\s*1,\s*0\.3,\s*1\)/);
 

@@ -41,7 +41,7 @@ export default function OverlayHud({
     const [energy, setEnergy] = useState<EnergyPublicDto | null>(null);
     const [heldSnapshot, setHeldSnapshot] = useState<GgsLivePublic | null>(null);
     const [heldEnergy, setHeldEnergy] = useState<EnergyPublicDto | null>(null);
-    const {snapshot, stale, nowMs} = useLiveClimate();
+    const {snapshot, stale} = useLiveClimate();
     const showClimateGear = overlayClimateGearVisible(snapshot);
     const showEnergy = overlayEnergyVisible(energy);
     const layout = grow.overlayLayout;
@@ -127,7 +127,6 @@ export default function OverlayHud({
                     <OverlayClimate
                         snapshot={heldSnapshot}
                         stale={stale}
-                        nowMs={nowMs}
                         climateTick={grow.climateTick}
                     />
                 ) : null}

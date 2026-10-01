@@ -43,31 +43,18 @@ export default function ClimatePickerValue({
     size?: "overlay" | "dash";
 }) {
     const reduced = usePrefersReducedMotion();
-    const wheelRef = useRef<HTMLDivElement>(null);
-    const stripRef = useRef<HTMLDivElement>(null);
     const lastIndex = useRef<number | null>(null);
     const labels = climateTickLabels(kind);
     const dash = size === "dash";
+    const idx = value === null ? null : climateTickIndex(kind, value);
+    const prev = lastIndex.current;
+    const dist = idx === null || prev === null ? 0 : Math.abs(idx - prev);
 
     useLayoutEffect(() => {
-        const wheel = wheelRef.current;
-        const strip = stripRef.current;
-        if (!wheel || !strip || value === null) {
-            return;
+        if (idx !== null) {
+            lastIndex.current = idx;
         }
-        const row = strip.firstElementChild as HTMLElement | null;
-        if (!row) {
-            return;
-        }
-        const idx = climateTickIndex(kind, value);
-        const y = wheel.clientHeight / 2 - row.clientHeight / 2 - idx * row.clientHeight;
-        const prev = lastIndex.current;
-        const dist = prev === null ? 0 : Math.abs(idx - prev);
-        lastIndex.current = idx;
-        strip.style.transitionDuration = `${climateTickDurationMs(dist, reduced)}ms`;
-        strip.style.transitionTimingFunction = CLIMATE_TICK_EASING;
-        strip.style.transform = `translateY(${y}px)`;
-    }, [kind, reduced, value]);
+    }, [idx]);
 
     if (value === null) {
         return (
@@ -79,11 +66,17 @@ export default function ClimatePickerValue({
 
     return (
         <div
-            ref={wheelRef}
             className={dash ? "growcast-climate-wheel growcast-climate-wheel-dash" : "growcast-climate-wheel"}
             aria-hidden="true"
         >
-            <div ref={stripRef} className="growcast-climate-wheel-strip">
+            <div
+                className="growcast-climate-wheel-strip"
+                style={{
+                    transform: `translateY(calc((1 - ${idx}) * var(--row)))`,
+                    transitionDuration: `${climateTickDurationMs(dist, reduced)}ms`,
+                    transitionTimingFunction: CLIMATE_TICK_EASING,
+                }}
+            >
                 {labels.map((label) => (
                     <div className="growcast-climate-wheel-row" key={label}>
                         {label}

@@ -21,7 +21,7 @@ export default function LiveTentRow({
     climateTick?: ClimateTick;
     devicesDesign?: DevicesDesign;
 }) {
-    const {snapshot, stale, nowMs} = useLiveClimate();
+    const {snapshot, stale} = useLiveClimate();
     const [climateTick, setClimateTick] = useState(initialTick);
     const [devicesDesign, setDevicesDesign] = useState(initialDesign);
 
@@ -70,7 +70,6 @@ export default function LiveTentRow({
             <LiveClimateCard
                 snapshot={snapshot}
                 stale={stale}
-                nowMs={nowMs}
                 climateTick={climateTick}
             />
             <LiveDevicesCard snapshot={snapshot} devicesDesign={devicesDesign}/>

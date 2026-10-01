@@ -29,10 +29,6 @@ export type ClimateMetricAlerts = {
     vpd: boolean;
 };
 
-export type ClimateBadge =
-    | {kind: "live"; text: "LIVE"}
-    | {kind: "stale"; text: string};
-
 function finiteNumber(value: unknown): number | null {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -136,33 +132,6 @@ export function formatHumidityPctTenths(value: number | null): string {
 
 export function formatVpd(value: number | null): string {
     return value === null ? "—" : value.toFixed(2);
-}
-
-export function formatRelativeAge(updatedAt: string | null, nowMs: number): string {
-    if (!updatedAt) {
-        return "";
-    }
-    const ts = Date.parse(updatedAt);
-    if (!Number.isFinite(ts)) {
-        return "";
-    }
-    const seconds = Math.max(0, Math.floor((nowMs - ts) / 1000));
-    if (seconds < 60) {
-        return `${seconds}s ago`;
-    }
-    return `${Math.floor(seconds / 60)}m ago`;
-}
-
-export function climateBadge(
-    stale: boolean,
-    updatedAt: string | null,
-    nowMs: number,
-): ClimateBadge {
-    if (!stale) {
-        return {kind: "live", text: "LIVE"};
-    }
-    const relative = formatRelativeAge(updatedAt, nowMs);
-    return {kind: "stale", text: relative ? `stale · ${relative}` : "stale"};
 }
 
 export function actuatorLabel(actuator: Pick<GgsActuator, "id" | "kind" | "label">): string {

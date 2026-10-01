@@ -190,6 +190,8 @@ describe("overlay chrome", () => {
         );
         assert.doesNotMatch(climateSrc, /overlay-live-dot/);
         assert.doesNotMatch(climateSrc, /["']LIVE["']/);
+        assert.doesNotMatch(climateSrc, /climateBadge/);
+        assert.match(climateSrc, /growcast-stale-pulse/);
         assert.match(climateSrc, /formatHumidityPctTenths/);
         assert.doesNotMatch(climateSrc, /formatHumidityPct\(/);
         assert.match(climateSrc, /growcast-alert-pulse/);
