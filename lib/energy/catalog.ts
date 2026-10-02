@@ -45,9 +45,13 @@ export const HUMIDIFIER_GEAR_ML_PER_HOUR: Readonly<Record<string, number>> = {
     "4": 450,
 };
 
-/** GGS dehumidifier 1 = LOW, 2 = HIGH. */
+/**
+ * GGS dehumidifier gear is the live `level`, not a percent.
+ * Current firmware: 0 = LOW, 1 = HIGH. Level 2 is kept for older snapshots.
+ */
 export const DEHUMIDIFIER_WATTS: Readonly<Record<string, number>> = {
-    "1": 215,
+    "0": 215,
+    "1": 230,
     "2": 230,
 };
 

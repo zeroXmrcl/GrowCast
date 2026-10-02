@@ -41,8 +41,10 @@ describe("energy catalog", () => {
         assert.equal(catalogHumidifierMlPerHour("3"), 360);
         assert.equal(catalogHumidifierMlPerHour("4"), 450);
         assert.equal(catalogHumidifierMlPerHour("5"), 0);
-        assert.equal(catalogWatts("dehumidifier", "dehumidifier", "1", true), 215);
+        assert.equal(catalogWatts("dehumidifier", "dehumidifier", "0", true), 215);
+        assert.equal(catalogWatts("dehumidifier", "dehumidifier", "1", true), 230);
         assert.equal(catalogWatts("dehumidifier", "dehumidifier", "2", true), 230);
+        assert.equal(catalogWatts("dehumidifier", "dehumidifier", "0", false), 0);
         assert.equal(catalogWatts("outlet", "outlet-1", "1", true), 0);
         assert.equal(catalogWatts("fan", "fan", "11", true), 0);
     });

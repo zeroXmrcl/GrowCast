@@ -282,8 +282,8 @@ describe("mapDeviceTiles", () => {
                         {id: "humidifier", label: "Humidifier", kind: "humidifier", on: true, level: 1},
                         {id: "humidifier-4", label: "Humidifier", kind: "humidifier", on: true, level: 4},
                         {id: "fan", label: "Fan", kind: "fan", on: true, level: 5},
-                        {id: "dehumidifier", label: "Dehumidifier", kind: "dehumidifier", on: true, level: 1},
-                        {id: "dehumidifier-high", label: "Dehumidifier", kind: "dehumidifier", on: true, level: 2},
+                        {id: "dehumidifier", label: "Dehumidifier", kind: "dehumidifier", on: true, level: 0},
+                        {id: "dehumidifier-high", label: "Dehumidifier", kind: "dehumidifier", on: true, level: 1},
                         {id: "blower", label: "Blower", kind: "blower", on: true, level: 25},
                         {id: "light", label: "Light", kind: "light", on: true, level: 11},
                     ],
@@ -296,11 +296,30 @@ describe("mapDeviceTiles", () => {
         assert.equal(tiles[2].levelText, "100%");
         assert.equal(tiles[3].levelText, "50%");
         assert.equal(tiles[4].levelText, "LOW");
+        assert.equal(tiles[4].running, true);
         assert.equal(tiles[4].accessibleName, "Dehumidifier: on LOW");
         assert.equal(tiles[5].levelText, "HIGH");
         assert.equal(tiles[5].accessibleName, "Dehumidifier: on HIGH");
         assert.equal(tiles[6].levelText, "25%");
         assert.equal(tiles[7].levelText, "11%");
+    });
+
+    it("keeps a stored dehumidifier gear of 2 as HIGH and shows OFF when switched off", () => {
+        const tiles = mapDeviceTiles(snapshot({
+            devices: [
+                {
+                    ...snapshot().devices[0],
+                    actuators: [
+                        {id: "dehumidifier", label: "Dehumidifier", kind: "dehumidifier", on: true, level: 2},
+                        {id: "dehumidifier-off", label: "Dehumidifier", kind: "dehumidifier", on: false, level: 0},
+                    ],
+                },
+            ],
+        }));
+        assert.equal(tiles[0].levelText, "HIGH");
+        assert.equal(tiles[0].running, true);
+        assert.equal(tiles[1].levelText, "OFF");
+        assert.equal(tiles[1].running, false);
     });
 
     it("overrides running copy with EMPTY when the humidifier tank alarm is set", () => {
@@ -382,6 +401,16 @@ describe("actuatorCountsTowardEnergy", () => {
                 alarm: 6,
             }),
             false,
+        );
+        assert.equal(
+            actuatorCountsTowardEnergy({
+                id: "dehumidifier",
+                label: "Dehumidifier",
+                kind: "dehumidifier",
+                on: true,
+                level: 0,
+            }),
+            true,
         );
     });
 });

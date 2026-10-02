@@ -189,15 +189,12 @@ function tileLevelText(actuator: GgsActuator): string {
     if (actuator.kind === "dehumidifier") {
         const speed = Math.round(level);
         if (speed === 0) {
-            return "OFF";
-        }
-        if (speed === 1) {
             return "LOW";
         }
-        if (speed === 2) {
+        if (speed === 1 || speed === 2) {
             return "HIGH";
         }
-        return actuator.on ? "on" : "off";
+        return "on";
     }
     const rounded = Math.round(displayPercent(actuator.kind, level));
     return rounded === 0 ? "OFF" : `${rounded}%`;
