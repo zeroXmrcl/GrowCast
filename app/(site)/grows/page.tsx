@@ -2,6 +2,7 @@ import path from "node:path";
 import Link from "next/link";
 import {archiveMediaDir, archiveMediaUrl, getArchiveSnapshotFiles, listArchivedGrows, type ArchivedGrow} from "@/lib/archives";
 import {snapshotFileVersion, snapshotThumbSrc} from "@/lib/snapshot-thumb";
+import {PUBLIC_FOCUS, PUBLIC_PAGE_LEAD, PUBLIC_PAGE_TITLE} from "@/lib/public-ui";
 import {formatDateDisplay, growDurationDays} from "./format";
 
 export const dynamic = "force-dynamic";
@@ -37,9 +38,9 @@ export default async function GrowsPage() {
 
     if (cards.length === 0) {
         return (
-            <main className="flex flex-1 flex-col py-10 text-zinc-900 dark:text-zinc-100">
-                <h1 className="text-3xl font-bold tracking-tight">Past Grows</h1>
-                <p className="mt-3 max-w-2xl text-zinc-600 dark:text-zinc-300">
+            <main className="flex flex-1 flex-col py-10">
+                <h1 className={PUBLIC_PAGE_TITLE}>Past Grows</h1>
+                <p className={PUBLIC_PAGE_LEAD}>
                     No grows have been archived yet. Once a grow is completed, it shows up
                     here with its details, snapshots and timelapse.
                 </p>
@@ -48,10 +49,10 @@ export default async function GrowsPage() {
     }
 
     return (
-        <main className="flex flex-1 flex-col gap-8 py-10 text-zinc-900 dark:text-zinc-100">
+        <main className="flex flex-1 flex-col gap-8 py-10">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Past Grows</h1>
-                    <p className="mt-2 text-zinc-600 dark:text-zinc-300">
+                    <h1 className={PUBLIC_PAGE_TITLE}>Past Grows</h1>
+                    <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                         {cards.length} completed {cards.length === 1 ? "grow" : "grows"}
                     </p>
                 </div>
@@ -71,7 +72,7 @@ export default async function GrowsPage() {
                             <Link
                                 key={archive.archiveId}
                                 href={`/grows/${archive.archiveId}`}
-                                className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+                                className={`${PUBLIC_FOCUS} group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700`}
                             >
                                 <div className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                                     {thumbnailUrl ? (

@@ -1,4 +1,5 @@
 import {getTimelapseFiles} from "@/lib/extension-status";
+import {PUBLIC_EMPTY_BODY, PUBLIC_EMPTY_TITLE} from "@/lib/public-ui";
 import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
 
 type TimelapsePlayerProps = {
@@ -23,11 +24,11 @@ export default async function TimelapsePlayer({videoUrl, sheet = false}: Timelap
 
     if (!resolvedUrl) {
         return (
-            <section className={sheet ? `border-b p-4 ${WORKSPACE_HAIRLINE}` : "p-4"}>
-                <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
+            <section className={sheet ? `border-b p-4 sm:p-6 ${WORKSPACE_HAIRLINE}` : "p-4 sm:p-6"}>
+                <h2 className={PUBLIC_EMPTY_TITLE}>
                     Timelapse
                 </h2>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                <p className={PUBLIC_EMPTY_BODY}>
                     No timelapse created yet.
                 </p>
             </section>

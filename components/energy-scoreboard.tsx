@@ -20,9 +20,17 @@ import type {
     EnergyWindow,
 } from "@/lib/energy/types";
 import {
+    PUBLIC_AXIS_LABEL,
+    PUBLIC_CHIP_OFF,
+    PUBLIC_CHIP_ON,
+    PUBLIC_EMPTY_BODY,
+    PUBLIC_FOCUS_INSET,
+} from "@/lib/public-ui";
+import {
     WORKSPACE_AREA,
     WORKSPACE_HAIRLINE,
     WORKSPACE_PAD,
+    WORKSPACE_TITLE,
     WORKSPACE_VT,
 } from "@/lib/workspace";
 
@@ -104,7 +112,11 @@ function DeviceTable({dto, flush = false}: {dto: EnergyPublicDto; flush?: boolea
                     : "overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
             }
         >
-            <table className="w-full text-left text-sm">
+            <div className={`${WORKSPACE_PAD} pb-0`}>
+                <h2 className={`${WORKSPACE_TITLE} mb-0`}>Device totals</h2>
+            </div>
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-[36rem] text-left text-sm">
                 <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
                     <tr>
                         <th className="px-4 py-3 font-semibold">Device</th>
@@ -152,7 +164,8 @@ function DeviceTable({dto, flush = false}: {dto: EnergyPublicDto; flush?: boolea
                         ))
                     )}
                 </tbody>
-            </table>
+                </table>
+            </div>
         </section>
     );
 }
@@ -296,7 +309,7 @@ function EnergyWattsPlot({series}: {series: EnergySeries}) {
         <div>
             <div className="flex">
                 <div
-                    className="flex w-9 shrink-0 flex-col justify-between pr-1 text-right text-[10px] leading-none text-zinc-400"
+                    className={`flex w-9 shrink-0 flex-col justify-between pr-1 text-right ${PUBLIC_AXIS_LABEL}`}
                     style={{height: PLOT_H}}
                 >
                     <span>{peakLabel}</span>
@@ -375,7 +388,7 @@ function EnergyWattsPlot({series}: {series: EnergySeries}) {
                                     key={point.t ?? index}
                                     type="button"
                                     aria-label={label}
-                                    className="group relative z-[1] h-full min-w-0 flex-1 border-0 bg-transparent p-0 outline-none"
+                                    className={`group relative z-[1] h-full min-w-0 flex-1 border-0 bg-transparent p-0 ${PUBLIC_FOCUS_INSET}`}
                                 >
                                     <span className="pointer-events-none absolute inset-y-0 left-1/2 hidden w-px -translate-x-1/2 bg-zinc-900/40 group-hover:block group-focus:block dark:bg-zinc-100/40"/>
                                     <span className="pointer-events-none absolute left-1/2 top-1 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs tabular-nums text-white group-hover:block group-focus:block dark:bg-zinc-100 dark:text-zinc-900">
@@ -387,7 +400,7 @@ function EnergyWattsPlot({series}: {series: EnergySeries}) {
                     </div>
                 </div>
             </div>
-            <div className="mt-1 flex justify-between pl-9 text-[10px] leading-none text-zinc-400">
+            <div className={`mt-2 flex justify-between pl-9 ${PUBLIC_AXIS_LABEL}`}>
                 <span>{labels.start}</span>
                 <span>{labels.mid}</span>
                 <span>{labels.end}</span>
@@ -409,6 +422,9 @@ function EnergyGraphCard({
 
     return (
         <section className={`${WORKSPACE_AREA.watts} ${WORKSPACE_VT.mid} ${WORKSPACE_PAD}`}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 className={`${WORKSPACE_TITLE} mb-0`}>Power</h2>
+            </div>
             <div className="relative z-10 mb-4 flex flex-wrap gap-2">
                 {CHIPS.map((chip) => {
                     const pressed = chip.key === windowKey;
@@ -422,11 +438,7 @@ function EnergyGraphCard({
                                 onWindowKey(chip.key);
                             }}
                             onClick={() => onWindowKey(chip.key)}
-                            className={
-                                pressed
-                                    ? "rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-                                    : "rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
-                            }
+                            className={pressed ? PUBLIC_CHIP_ON : PUBLIC_CHIP_OFF}
                         >
                             {chip.label}
                         </button>
@@ -480,7 +492,13 @@ export default function EnergyScoreboard({dto: initial = null}: {dto?: EnergyPub
     if (!dto) {
         return (
             <>
-                <section className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} ${WORKSPACE_PAD}`} />
+                <section
+                    className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} ${WORKSPACE_PAD}`}
+                    aria-busy="true"
+                >
+                    <h2 className={WORKSPACE_TITLE}>Energy</h2>
+                    <p className={PUBLIC_EMPTY_BODY}>Loading live energy…</p>
+                </section>
                 <section className={`${WORKSPACE_AREA.watts} ${WORKSPACE_VT.mid} ${WORKSPACE_PAD}`} />
                 <section className={`${WORKSPACE_AREA.flow} ${WORKSPACE_VT.flow} ${WORKSPACE_PAD}`} />
                 <section className={`${WORKSPACE_AREA.water} ${WORKSPACE_VT.water} ${WORKSPACE_PAD}`} />
@@ -491,9 +509,12 @@ export default function EnergyScoreboard({dto: initial = null}: {dto?: EnergyPub
     return (
         <>
             {dto.empty ? (
-                <p className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} ${WORKSPACE_PAD} text-sm text-zinc-600 dark:text-zinc-300`}>
-                    Energy starts when live devices are flowing.
-                </p>
+                <section className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} ${WORKSPACE_PAD}`}>
+                    <h2 className={WORKSPACE_TITLE}>Energy</h2>
+                    <p className={PUBLIC_EMPTY_BODY}>
+                        Energy starts when live devices are flowing.
+                    </p>
+                </section>
             ) : dto.windows ? (
                 <>
                     <section className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} grid h-full grid-cols-2 lg:grid-cols-5`}>

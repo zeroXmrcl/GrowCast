@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {PUBLIC_FOCUS} from "@/lib/public-ui";
 
 export default function NotFound() {
     return (
@@ -18,7 +19,7 @@ export default function NotFound() {
                 </div>
                 <Link
                     href="/"
-                    className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-medium text-zinc-900 transition-all duration-300 hover:border-emerald-400/70 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-emerald-500/70"
+                    className={`${PUBLIC_FOCUS} group relative inline-flex min-h-11 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-medium text-zinc-900 transition-all duration-300 hover:border-emerald-400/70 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-emerald-500/70`}
                 >
                     <span className="relative z-10 flex items-center gap-3">
                         <span>Return to Home</span>

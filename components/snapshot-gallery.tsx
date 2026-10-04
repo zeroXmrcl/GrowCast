@@ -1,5 +1,6 @@
 import path from "node:path";
 import { getSnapshotFiles, SNAPSHOT_DIR } from "@/lib/extension-status";
+import {PUBLIC_EMPTY_BODY, PUBLIC_EMPTY_TITLE, PUBLIC_FOCUS, PUBLIC_MEDIA_LINK} from "@/lib/public-ui";
 import {snapshotFileVersion, snapshotThumbSrc} from "@/lib/snapshot-thumb";
 import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
 
@@ -31,11 +32,11 @@ export default async function SnapshotGallery({ snapshots, sheet = false }: Snap
 
     if (resolved.length === 0) {
         return (
-            <section className={sheet ? "p-4" : "border-t border-zinc-200 p-4 pt-15 dark:border-zinc-800"}>
-                <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
+            <section className={sheet ? "p-4 sm:p-6" : "border-t border-zinc-200 p-4 pt-8 dark:border-zinc-800 sm:p-6"}>
+                <h2 className={PUBLIC_EMPTY_TITLE}>
                     Snapshots
                 </h2>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                <p className={PUBLIC_EMPTY_BODY}>
                     No snapshots taken yet.
                 </p>
             </section>
@@ -51,7 +52,7 @@ export default async function SnapshotGallery({ snapshots, sheet = false }: Snap
                         href={snapshot.url}
                         target="_blank"
                         rel="noreferrer"
-                        className={`overflow-hidden border-b border-r ${WORKSPACE_HAIRLINE}`}
+                        className={`${PUBLIC_MEDIA_LINK} overflow-hidden border-b border-r ${WORKSPACE_HAIRLINE}`}
                     >
                         <div className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -86,7 +87,7 @@ export default async function SnapshotGallery({ snapshots, sheet = false }: Snap
                         href={snapshot.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+                        className={`${PUBLIC_FOCUS} group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700`}
                     >
                         <div className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                             {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -245,7 +245,7 @@ describe("overlay chrome", () => {
         assert.match(frame, /streamUrl=\{streamUrl\}/);
         assert.match(frame, /isWorkspacePath/);
         assert.doesNotMatch(frame, /<iframe/);
-        assert.match(frame, /No Stream configured/);
+        assert.match(frame, /No stream is configured/);
         assert.doesNotMatch(home, /OverlayCamera/);
         assert.doesNotMatch(home, /<iframe/);
         assert.doesNotMatch(home, /look=/);
