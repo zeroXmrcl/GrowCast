@@ -15,6 +15,7 @@ import {
 } from "@/lib/archives";
 import {snapshotFileVersion} from "@/lib/snapshot-thumb";
 import {buildEnergyDto} from "@/lib/energy/scoreboard";
+import {PUBLIC_FOCUS, PUBLIC_TEXT_LINK} from "@/lib/public-ui";
 import {formatDateDisplay, growDurationDays} from "../format";
 
 export const dynamic = "force-dynamic";
@@ -102,11 +103,11 @@ export default async function ArchivedGrowPage({
                 <div>
                     <Link
                         href="/grows"
-                        className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        className={`${PUBLIC_TEXT_LINK} -ml-1`}
                     >
                         &larr; Past Grows
                     </Link>
-                    <h1 className="mt-2 text-3xl font-bold tracking-tight">{grow.name}</h1>
+                    <h1 className="mt-2 text-3xl font-semibold tracking-tight">{grow.name}</h1>
                     {subtitle ? (
                         <p className="mt-1 text-zinc-600 dark:text-zinc-300">{subtitle}</p>
                     ) : null}
@@ -191,7 +192,7 @@ export default async function ArchivedGrowPage({
                                     href={picture.url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+                                    className={`${PUBLIC_FOCUS} group overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700`}
                                 >
                                     <div className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}

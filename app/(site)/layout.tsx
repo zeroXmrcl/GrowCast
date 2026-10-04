@@ -1,6 +1,7 @@
 import {redirect} from "next/navigation";
 import type {ReactNode} from "react";
 import {needsSetupWizard} from "@/lib/admin-auth";
+import SiteFooter from "@/components/site-footer";
 import SiteHeader from "@/components/site-header";
 import WorkspaceFrame from "@/components/workspace-frame";
 import {WorkspaceNavProvider} from "@/components/workspace-nav";
@@ -42,6 +43,7 @@ export default async function SiteLayout({children}: {children: ReactNode}) {
                     >
                         {children}
                     </WorkspaceFrame>
+                    <SiteFooter />
                 </div>
             </div>
         </WorkspaceNavProvider>

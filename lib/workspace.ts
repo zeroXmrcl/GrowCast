@@ -14,8 +14,8 @@ export const WORKSPACE_HAIRLINE = "border-zinc-200 dark:border-zinc-800";
 export const WORKSPACE_SPLIT_B = `border-b ${WORKSPACE_HAIRLINE}`;
 export const WORKSPACE_SPLIT_R = `border-r ${WORKSPACE_HAIRLINE}`;
 export const WORKSPACE_SPLIT_MID = `max-lg:border-b lg:border-r ${WORKSPACE_HAIRLINE}`;
-export const WORKSPACE_PAD = "p-4 sm:p-[18px]";
-export const WORKSPACE_TITLE = "mb-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100";
+export const WORKSPACE_PAD = "p-4 sm:p-6";
+export const WORKSPACE_TITLE = "mb-3 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100";
 
 export const WORKSPACE_AREA = {
     name: "growcast-area-name",
