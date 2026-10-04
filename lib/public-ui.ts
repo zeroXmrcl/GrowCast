@@ -1,17 +1,17 @@
 /** Shared public-site chrome. Garden ink, not a Vercel restyle. */
 
 export const PUBLIC_FOCUS =
-    "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 dark:focus-visible:outline-emerald-400";
+    "outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 dark:focus-visible:ring-emerald-400";
 
 export const PUBLIC_FOCUS_INSET =
-    "outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-700 dark:focus-visible:outline-emerald-400";
+    "outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-700 dark:focus-visible:ring-emerald-400";
 
 export const PUBLIC_HIT = "inline-flex min-h-11 min-w-11 items-center justify-center";
 
-export const PUBLIC_NAV_LINK = `${PUBLIC_HIT} shrink-0 rounded-md px-3 text-sm ${PUBLIC_FOCUS}`;
+export const PUBLIC_NAV_LINK = `${PUBLIC_HIT} relative shrink-0 rounded-md px-3 text-sm ${PUBLIC_FOCUS}`;
 
 export const PUBLIC_NAV_LINK_ACTIVE =
-    `${PUBLIC_NAV_LINK} bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100`;
+    `${PUBLIC_NAV_LINK} bg-emerald-50 font-medium text-emerald-950 dark:bg-emerald-950/50 dark:text-emerald-100`;
 
 export const PUBLIC_NAV_LINK_IDLE =
     `${PUBLIC_NAV_LINK} text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100`;

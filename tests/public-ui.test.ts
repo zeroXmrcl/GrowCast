@@ -15,7 +15,7 @@ function src(rel: string): string {
 
 describe("public UI chrome", () => {
     it("uses garden focus rings and 44px hit areas, not Vercel blue", () => {
-        assert.match(PUBLIC_FOCUS, /focus-visible:outline-emerald-700/);
+        assert.match(PUBLIC_FOCUS, /focus-visible:ring-emerald-700/);
         assert.equal(PUBLIC_FOCUS.includes("#0070f3") || PUBLIC_FOCUS.includes("blue"), false);
         assert.match(PUBLIC_HIT, /min-h-11/);
         assert.match(PUBLIC_CHIP, /min-h-11/);

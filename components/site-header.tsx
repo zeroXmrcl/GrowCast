@@ -103,7 +103,7 @@ export default function SiteHeader({
                     </Link>
                 )}
 
-                <nav aria-label="Site" className="-mr-1 flex min-w-0 items-center justify-end gap-1 overflow-x-auto">
+                <nav aria-label="Site" className="-mr-1 flex min-w-0 items-center justify-end gap-1 overflow-x-auto p-1">
                     {navItems.map((item) => {
                         const active = navItemIsActive(view, item.href);
                         const className = active ? PUBLIC_NAV_LINK_ACTIVE : PUBLIC_NAV_LINK_IDLE;
