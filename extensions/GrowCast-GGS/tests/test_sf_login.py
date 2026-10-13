@@ -87,6 +87,7 @@ class MailLoginTests(unittest.TestCase):
                 mqtt_pwd="brokerpass-22-characters",
                 user_id="42",
                 via="mail",
+                token="rest-token",
             ),
         )
 

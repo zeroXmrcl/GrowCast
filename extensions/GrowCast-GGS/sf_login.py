@@ -29,6 +29,7 @@ class BrokerLogin:
     mqtt_pwd: str
     user_id: str
     via: str
+    token: str = ""
 
 
 def _pkcs7(raw: bytes) -> bytes:
@@ -98,7 +99,13 @@ def session_from_login(payload: dict[str, Any]) -> BrokerLogin:
     if not mqtt_name or not mqtt_pwd:
         raise LoginError("000", "missing mqtt credentials")
     user_id = str(data.get("userId") or "").strip() or "175391"
-    return BrokerLogin(mqtt_name=mqtt_name, mqtt_pwd=mqtt_pwd, user_id=user_id, via="mail")
+    return BrokerLogin(
+        mqtt_name=mqtt_name,
+        mqtt_pwd=mqtt_pwd,
+        user_id=user_id,
+        via="mail",
+        token=str(data.get("token") or "").strip(),
+    )
 
 
 def decode_response(text: str) -> dict[str, Any]:

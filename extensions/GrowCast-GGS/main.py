@@ -12,6 +12,8 @@ from typing import Any
 from growcast_push import GrowCastPush
 from normalize import device_snapshot, display_name, live_ingest
 from sf_client import ReadOnlyMqtt
+from sf_login import resolve_broker_login
+from thp import fetch_thp
 
 log = logging.getLogger("growcast.ggs")
 
@@ -90,6 +92,18 @@ def main() -> None:
             continue
         mqtt.add_device("LC", serial, "Lights", "SF-GGS-LC")
 
+    def pull_history() -> None:
+        try:
+            session = resolve_broker_login(os.environ)
+            if not session.token:
+                log.info("climate history skipped: no rest token")
+                return
+            points = fetch_thp(session.token, env["SF_SERIAL"])
+            if points:
+                pusher.post_history(points)
+        except Exception:
+            log.exception("climate history pull failed")
+
     stop = False
 
     def handle_stop(_signum: int, _frame: Any) -> None:
@@ -103,6 +117,7 @@ def main() -> None:
     while not stop:
         try:
             mqtt.connect()
+            pull_history()
             while not stop:
                 mqtt.poll_watchdog()
                 pusher.flush()

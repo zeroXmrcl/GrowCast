@@ -11,7 +11,9 @@ log = logging.getLogger("growcast.ggs")
 
 class GrowCastPush:
     def __init__(self, url: str, token: str, debounce_s: float = 2.0) -> None:
-        self._url = url.rstrip("/") + "/api/mesh/growcast.ggs/state"
+        origin = url.rstrip("/")
+        self._url = origin + "/api/mesh/growcast.ggs/state"
+        self._history_url = origin + "/api/mesh/growcast.ggs/history"
         self._token = token
         self._debounce_s = debounce_s
         self._last_post = 0.0
@@ -55,3 +57,18 @@ class GrowCastPush:
             log.warning("growcast post status=%s", response.status_code)
             return
         log.warning("growcast post status=%s body=%s", response.status_code, response.text[:200])
+
+    def post_history(self, points: list[dict[str, Any]]) -> None:
+        try:
+            response = requests.post(
+                self._history_url,
+                json={"points": points},
+                headers={"Authorization": f"Bearer {self._token}"},
+                timeout=20,
+            )
+        except requests.RequestException as exc:
+            log.warning("growcast history post failed: %s", exc)
+            return
+        if response.status_code != 204:
+            log.warning("growcast history post status=%s", response.status_code)
+            return
