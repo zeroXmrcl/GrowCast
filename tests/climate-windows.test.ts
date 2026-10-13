@@ -88,6 +88,31 @@ describe("climate windows", () => {
         assert.equal(history["30d"].runs.flat().filter((row) => row.tempC === 19).length, 1);
     });
 
+    it("computes 24h stats for large histories without stack overflow", () => {
+        const dayAgo = NOW - 24 * 60 * 60 * 1000;
+        const startMs = dayAgo + 1;
+        const endMs = NOW - 1;
+        const count = 150_000;
+        const points: ClimatePoint[] = [];
+        for (let i = 0; i < count; i += 1) {
+            const ms = startMs + Math.floor((i * (endMs - startMs)) / (count - 1));
+            let tempC = 10;
+            if (i === count - 1) {
+                tempC = 40;
+            } else if (i === Math.floor(count / 2)) {
+                tempC = 5;
+            }
+            points.push(point(new Date(ms).toISOString(), tempC));
+        }
+        const days = new Map<string, ClimateDayFile>([
+            ["2026-10-13", day("2026-10-13", points)],
+        ]);
+        const history = buildClimateHistory(days, NOW, "");
+        assert.equal(history["24h"].stats?.tempC.last, 40);
+        assert.equal(history["24h"].stats?.tempC.min, 5);
+        assert.equal(history["24h"].stats?.tempC.max, 40);
+    });
+
     it("keeps a sample exactly at now in 24h and the last 7d shelf", () => {
         const days = new Map<string, ClimateDayFile>([
             ["2026-10-13", day("2026-10-13", [

@@ -9,29 +9,33 @@ import type {ClimateDayFile, ClimateHistoryPublic, ClimatePoint, ClimateWindow} 
 
 const EMPTY_SEED = "2001-01-01";
 
-function inSpan(point: ClimatePoint, startMs: number, endMs: number): boolean {
-    const ms = Date.parse(point.t);
+type TimedClimatePoint = {
+    point: ClimatePoint;
+    ms: number;
+};
+
+function inSpanMs(ms: number, startMs: number, endMs: number): boolean {
     return ms >= startMs && ms <= endMs;
 }
 
-function inBucket(point: ClimatePoint, startMs: number, endMs: number, closedEnd: boolean): boolean {
-    const ms = Date.parse(point.t);
+function inBucketMs(ms: number, startMs: number, endMs: number, closedEnd: boolean): boolean {
     if (ms < startMs) {
         return false;
     }
     return closedEnd ? ms <= endMs : ms < endMs;
 }
 
-function pointsIn(days: Map<string, ClimateDayFile>, startMs: number, endMs: number): ClimatePoint[] {
-    const rows: ClimatePoint[] = [];
+function pointsIn(days: Map<string, ClimateDayFile>, startMs: number, endMs: number): TimedClimatePoint[] {
+    const rows: TimedClimatePoint[] = [];
     for (const day of days.values()) {
         for (const point of day.points) {
-            if (inSpan(point, startMs, endMs)) {
-                rows.push(point);
+            const ms = Date.parse(point.t);
+            if (inSpanMs(ms, startMs, endMs)) {
+                rows.push({point, ms});
             }
         }
     }
-    return rows.sort((a, b) => a.t < b.t ? -1 : a.t > b.t ? 1 : 0);
+    return rows.sort((a, b) => a.ms - b.ms || (a.point.t < b.point.t ? -1 : a.point.t > b.point.t ? 1 : 0));
 }
 
 function mean(points: ClimatePoint[], t: string): ClimatePoint {
@@ -54,19 +58,31 @@ function statsOf(points: ClimatePoint[]): ClimateWindow["stats"] {
         return null;
     }
     const last = points[points.length - 1];
-    const metric = (read: (point: ClimatePoint) => number) => {
-        const values = points.map(read);
-        return {
-            last: read(last),
-            min: Math.min(...values),
-            max: Math.max(...values),
-            avg: values.reduce((sum, value) => sum + value, 0) / values.length,
-        };
-    };
+    let tempMin = Infinity;
+    let tempMax = -Infinity;
+    let tempSum = 0;
+    let humidityMin = Infinity;
+    let humidityMax = -Infinity;
+    let humiditySum = 0;
+    let vpdMin = Infinity;
+    let vpdMax = -Infinity;
+    let vpdSum = 0;
+    for (const point of points) {
+        tempMin = Math.min(tempMin, point.tempC);
+        tempMax = Math.max(tempMax, point.tempC);
+        tempSum += point.tempC;
+        humidityMin = Math.min(humidityMin, point.humidityPct);
+        humidityMax = Math.max(humidityMax, point.humidityPct);
+        humiditySum += point.humidityPct;
+        vpdMin = Math.min(vpdMin, point.vpd);
+        vpdMax = Math.max(vpdMax, point.vpd);
+        vpdSum += point.vpd;
+    }
+    const n = points.length;
     return {
-        tempC: metric((point) => point.tempC),
-        humidityPct: metric((point) => point.humidityPct),
-        vpd: metric((point) => point.vpd),
+        tempC: {last: last.tempC, min: tempMin, max: tempMax, avg: tempSum / n},
+        humidityPct: {last: last.humidityPct, min: humidityMin, max: humidityMax, avg: humiditySum / n},
+        vpd: {last: last.vpd, min: vpdMin, max: vpdMax, avg: vpdSum / n},
     };
 }
 
@@ -95,17 +111,22 @@ function windowFromRuns(runs: ClimatePoint[][], raw: ClimatePoint[]): ClimateWin
     };
 }
 
-function singleRun(points: ClimatePoint[]): ClimatePoint[][] {
-    return points.length === 0 ? [] : [points];
+function singleRun(timed: TimedClimatePoint[]): ClimatePoint[][] {
+    return timed.length === 0 ? [] : [timed.map((row) => row.point)];
 }
 
-function bucketed(spans: {start: number; end: number; t: string}[], raw: ClimatePoint[]): ClimateWindow {
+function bucketed(spans: {start: number; end: number; t: string}[], raw: TimedClimatePoint[]): ClimateWindow {
     const runs: ClimatePoint[][] = [];
     let current: ClimatePoint[] = [];
     for (let i = 0; i < spans.length; i += 1) {
         const span = spans[i];
         const closedEnd = i === spans.length - 1;
-        const inside = raw.filter((point) => inBucket(point, span.start, span.end, closedEnd));
+        const inside: ClimatePoint[] = [];
+        for (const row of raw) {
+            if (inBucketMs(row.ms, span.start, span.end, closedEnd)) {
+                inside.push(row.point);
+            }
+        }
         if (inside.length === 0) {
             if (current.length > 0) {
                 runs.push(current);
@@ -118,7 +139,7 @@ function bucketed(spans: {start: number; end: number; t: string}[], raw: Climate
     if (current.length > 0) {
         runs.push(current);
     }
-    return windowFromRuns(runs, raw);
+    return windowFromRuns(runs, raw.map((row) => row.point));
 }
 
 function sixHourSpans(nowMs: number): {start: number; end: number; t: string}[] {
@@ -183,7 +204,7 @@ export function buildClimateHistory(
         )
         : null;
     return {
-        "24h": windowFromRuns(singleRun(recent), recent),
+        "24h": windowFromRuns(singleRun(recent), recent.map((row) => row.point)),
         "7d": bucketed(sixHourSpans(nowMs), week),
         "30d": bucketed(daySpans(monthDates, nowMs), month),
         grow,
