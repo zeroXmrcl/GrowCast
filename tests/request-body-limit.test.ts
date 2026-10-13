@@ -90,6 +90,7 @@ describe("next proxy body clone vs media route", () => {
         assert.match(nextConfig, /proxyClientMaxBodySize:\s*"1mb"/);
         assert.match(proxy, /api\/admin\/media/);
         assert.match(proxy, /api\/admin\/music/);
+        assert.match(proxy, /api\/mesh\/growcast\.ggs\/history/);
         assert.match(proxy, /isBodyMethod/);
     });
 });

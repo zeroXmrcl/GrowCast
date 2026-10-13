@@ -4,6 +4,10 @@ import {GGS_PLUGIN_ID} from "@/lib/ggs-live";
 import {withRequestLog} from "@/lib/logging";
 import {logMeshPluginUnknown} from "@/lib/logging/security-events";
 import {requireMeshAuthThrottled} from "@/lib/mesh-throttle";
+import {
+    CLIMATE_HISTORY_MAX_BODY_BYTES,
+    contentLengthExceedsCap,
+} from "@/lib/request-body-limit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +27,15 @@ export async function POST(request: Request, {params}: HistoryRouteContext) {
         if (pluginId !== GGS_PLUGIN_ID) {
             logMeshPluginUnknown({plugin_id: pluginId});
             return Response.json({error: "Unknown plugin"}, {status: 404, headers: {"Cache-Control": "no-store"}});
+        }
+        if (contentLengthExceedsCap(request.headers.get("content-length"), CLIMATE_HISTORY_MAX_BODY_BYTES)) {
+            return new Response("Payload Too Large", {
+                status: 413,
+                headers: {
+                    "Content-Type": "text/plain; charset=utf-8",
+                    "Cache-Control": "no-store",
+                },
+            });
         }
         let raw: unknown;
         try {
