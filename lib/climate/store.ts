@@ -110,6 +110,16 @@ export async function mergeClimatePoints(points: ClimatePoint[]): Promise<void> 
 
 export async function resetClimateCurrent(): Promise<void> {
     await withClimateLock(async () => {
-        await rm(climateCurrentDir(), {recursive: true, force: true});
+        let lastError: unknown;
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+            try {
+                await rm(climateCurrentDir(), {recursive: true, force: true});
+                return;
+            } catch (error) {
+                lastError = error;
+                await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+            }
+        }
+        throw lastError;
     });
 }
