@@ -137,6 +137,19 @@ class ResolveTests(unittest.TestCase):
             {"SF_MQTT_NAME": "user", "SF_MQTT_PWD": "pwd", "SF_USER_ID": "175391"}
         )
         self.assertEqual(got, BrokerLogin("user", "pwd", "175391", "env"))
+        self.assertEqual(got.token, "")
+
+    def test_mqtt_env_rest_token(self) -> None:
+        got = resolve_broker_login(
+            {
+                "SF_MQTT_NAME": "user",
+                "SF_MQTT_PWD": "pwd",
+                "SF_USER_ID": "175391",
+                "SF_REST_TOKEN": "rest-token",
+            }
+        )
+        self.assertEqual(got.token, "rest-token")
+        self.assertEqual(got.via, "env")
 
     def test_email_without_password_uses_mqtt_env(self) -> None:
         got = resolve_broker_login(

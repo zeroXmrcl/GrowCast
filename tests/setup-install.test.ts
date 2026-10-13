@@ -102,6 +102,7 @@ describe("fresh install helpers", () => {
             const env = await readFile(path.join(dir, "ggs.env"), "utf8");
             assert.match(env, /^SF_SERIAL=ABC123$/m);
             assert.match(env, /^SF_PREFIX=CB$/m);
+            assert.match(env, /^SF_REST_TOKEN=rest$/m);
             assert.equal(env.includes("secret-password"), false);
 
             const many: typeof fetch = async (url, init) => {

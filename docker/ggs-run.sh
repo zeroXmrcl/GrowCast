@@ -44,7 +44,8 @@ load_env() {
   SF_PREFIX=$(value_of "$ENV_FILE" SF_PREFIX || true)
   SF_LC_SERIALS=$(value_of "$ENV_FILE" SF_LC_SERIALS || true)
   SF_EMAIL=$(value_of "$ENV_FILE" SF_EMAIL || true)
-  export SF_MQTT_NAME SF_MQTT_PWD SF_USER_ID SF_SERIAL SF_PREFIX SF_LC_SERIALS SF_EMAIL
+  SF_REST_TOKEN=$(value_of "$ENV_FILE" SF_REST_TOKEN || true)
+  export SF_MQTT_NAME SF_MQTT_PWD SF_USER_ID SF_SERIAL SF_PREFIX SF_LC_SERIALS SF_EMAIL SF_REST_TOKEN
   if [ -f "$TOKEN_FILE" ]; then
     token=$(tr -d "\r\n" < "$TOKEN_FILE" || true)
     if [ -n "$token" ]; then

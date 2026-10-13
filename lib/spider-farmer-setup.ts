@@ -66,6 +66,7 @@ export async function prepareSpiderFarmer(input: {
             prefix: chosen.prefix,
             lcSerials,
             meshToken,
+            restToken: broker.restToken,
         });
         await clearStoredControllers();
         return {ok: true, account: email, serial: chosen.serial, name: chosen.name};

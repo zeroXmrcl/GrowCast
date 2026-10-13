@@ -159,4 +159,5 @@ def resolve_broker_login(
     if not mqtt_name or not mqtt_pwd:
         raise ValueError("need SF_EMAIL and SF_PASSWORD, or SF_MQTT_NAME and SF_MQTT_PWD")
     user_id = environ.get("SF_USER_ID", "").strip() or "175391"
-    return BrokerLogin(mqtt_name=mqtt_name, mqtt_pwd=mqtt_pwd, user_id=user_id, via="env")
+    token = environ.get("SF_REST_TOKEN", "").strip()
+    return BrokerLogin(mqtt_name=mqtt_name, mqtt_pwd=mqtt_pwd, user_id=user_id, via="env", token=token)

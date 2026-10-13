@@ -117,8 +117,9 @@ def main() -> None:
     while not stop:
         try:
             mqtt.connect()
-            pull_history()
             while not stop:
+                if mqtt.take_history_due():
+                    pull_history()
                 mqtt.poll_watchdog()
                 pusher.flush()
                 time.sleep(1)

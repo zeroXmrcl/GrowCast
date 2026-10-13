@@ -8,6 +8,12 @@ import requests
 
 log = logging.getLogger("growcast.ggs")
 
+HISTORY_BATCH_SIZE = 8_000
+
+
+def history_batches(points: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    return [points[start:start + HISTORY_BATCH_SIZE] for start in range(0, len(points), HISTORY_BATCH_SIZE)]
+
 
 class GrowCastPush:
     def __init__(self, url: str, token: str, debounce_s: float = 2.0) -> None:
@@ -59,16 +65,17 @@ class GrowCastPush:
         log.warning("growcast post status=%s body=%s", response.status_code, response.text[:200])
 
     def post_history(self, points: list[dict[str, Any]]) -> None:
-        try:
-            response = requests.post(
-                self._history_url,
-                json={"points": points},
-                headers={"Authorization": f"Bearer {self._token}"},
-                timeout=20,
-            )
-        except requests.RequestException as exc:
-            log.warning("growcast history post failed: %s", exc)
-            return
-        if response.status_code != 204:
-            log.warning("growcast history post status=%s", response.status_code)
-            return
+        for batch in history_batches(points):
+            try:
+                response = requests.post(
+                    self._history_url,
+                    json={"points": batch},
+                    headers={"Authorization": f"Bearer {self._token}"},
+                    timeout=20,
+                )
+            except requests.RequestException as exc:
+                log.warning("growcast history post failed: %s", exc)
+                continue
+            if response.status_code != 204:
+                log.warning("growcast history post status=%s", response.status_code)
+                continue

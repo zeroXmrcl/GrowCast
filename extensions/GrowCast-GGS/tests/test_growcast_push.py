@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import requests
 
-from growcast_push import GrowCastPush
+from growcast_push import GrowCastPush, history_batches
 
 BODY = {"pluginId": "growcast.ggs", "online": True, "devices": []}
 
@@ -70,6 +70,31 @@ class FlushDebounceTests(unittest.TestCase):
                 pusher.flush()
                 self.assertEqual(post.call_count, 1)
                 self.assertIsNone(pusher._pending)
+
+
+class HistoryBatchTests(unittest.TestCase):
+    def test_eight_thousand_one_points_are_two_batches(self) -> None:
+        points = [{"n": index} for index in range(8_001)]
+        batches = history_batches(points)
+        self.assertEqual(len(batches), 2)
+        self.assertEqual(len(batches[0]), 8_000)
+        self.assertEqual(len(batches[1]), 1)
+
+    def test_post_history_continues_after_a_rejected_batch(self) -> None:
+        pusher = GrowCastPush("http://127.0.0.1:3000", "mesh-token")
+        rejected = MagicMock()
+        rejected.status_code = 413
+        ok = MagicMock()
+        ok.status_code = 204
+        points = [{"n": index} for index in range(8_001)]
+        with patch("growcast_push.requests.post", side_effect=[rejected, ok]) as post:
+            pusher.post_history(points)
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(len(post.call_args_list[0].kwargs["json"]["points"]), 8_000)
+        self.assertEqual(len(post.call_args_list[1].kwargs["json"]["points"]), 1)
+        self.assertEqual(pusher._pending, None)
+        joined = " ".join(str(call.kwargs.get("json")) for call in post.call_args_list)
+        self.assertNotIn("mesh-token", joined)
 
 
 if __name__ == "__main__":

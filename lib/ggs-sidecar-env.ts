@@ -19,6 +19,7 @@ export type SpiderFarmerEnvWrite = {
     prefix?: string;
     lcSerials?: string;
     meshToken?: string;
+    restToken?: string;
 };
 
 export function ggsSidecarEnvFile(): string {
@@ -57,6 +58,10 @@ export function mergeGgsSidecarEnv(source: string, values: SpiderFarmerEnvWrite)
     }
     if (values.meshToken !== undefined && values.meshToken.length > 0) {
         updates.GROWCAST_MESH_TOKEN = values.meshToken;
+    }
+    if (values.restToken) {
+        assertEnvToken(values.restToken);
+        updates.SF_REST_TOKEN = values.restToken;
     }
     const seen = new Set<string>();
     const next: string[] = [];

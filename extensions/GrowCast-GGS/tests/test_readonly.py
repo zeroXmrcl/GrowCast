@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sf_client import (
     MQTT_HOST,
+    ReadOnlyMqtt,
     assert_read_only,
     configure_tls,
     default_ca_file,
@@ -74,6 +75,29 @@ class ReadOnlyTests(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             configure_tls(Dummy(), MQTT_HOST, ca_certs=str(Path("/no/such/mqtt-ca.pem")))  # type: ignore[arg-type]
+
+
+class HistoryDueTests(unittest.TestCase):
+    def _client(self) -> ReadOnlyMqtt:
+        return ReadOnlyMqtt(
+            mqtt_name="user",
+            mqtt_pwd="pwd",
+            user_id="1",
+            on_status=lambda *_args: None,
+        )
+
+    def test_successful_session_is_due_once_and_again_on_reconnect(self) -> None:
+        client = self._client()
+        client._on_connect(None, None, None, 0)  # type: ignore[arg-type]
+        self.assertTrue(client.take_history_due())
+        self.assertFalse(client.take_history_due())
+        client._on_connect(None, None, None, 0)  # type: ignore[arg-type]
+        self.assertTrue(client.take_history_due())
+
+    def test_failed_session_is_not_due(self) -> None:
+        client = self._client()
+        client._on_connect(None, None, None, 5)  # type: ignore[arg-type]
+        self.assertFalse(client.take_history_due())
 
 
 if __name__ == "__main__":

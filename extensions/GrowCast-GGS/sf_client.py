@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import ssl
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -94,6 +95,8 @@ class ReadOnlyMqtt:
         self._last_up: dict[str, float] = {}
         self._sub_mids: dict[int, str] = {}
         self._connected = False
+        self._history_due = False
+        self._history_lock = threading.Lock()
 
     def add_device(self, prefix: str, serial: str, name: str, product_type: str) -> None:
         serial = serial.replace(":", "").upper()
@@ -108,7 +111,15 @@ class ReadOnlyMqtt:
         serial = serial.replace(":", "").upper()
         self._devices.pop(serial, None)
 
+    def take_history_due(self) -> bool:
+        with self._history_lock:
+            due = self._history_due
+            self._history_due = False
+            return due
+
     def connect(self) -> None:
+        with self._history_lock:
+            self._history_due = False
         client = make_client(self._user_id)
         configure_tls(client, MQTT_HOST)
         client.username_pw_set(self._mqtt_name, self._mqtt_pwd)
@@ -172,6 +183,8 @@ class ReadOnlyMqtt:
             self._connected = False
             return
         self._connected = True
+        with self._history_lock:
+            self._history_due = True
         log.info("mqtt connected")
         for meta in list(self._devices.values()):
             up, _down = topics(meta["prefix"], meta["serial"])

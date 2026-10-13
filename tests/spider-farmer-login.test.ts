@@ -107,6 +107,7 @@ describe("sidecar env write", () => {
         assert.match(next, /^SF_EMAIL=grower@example.com$/m);
         assert.match(next, /^GROWCAST_MESH_TOKEN=mesh$/m);
         assert.equal(next.includes("SF_PASSWORD"), false);
+        assert.equal(next.includes("SF_REST_TOKEN"), false);
         assert.equal(next.includes("app-secret"), false);
         const status = spiderFarmerStatusFromEnv(next);
         assert.equal(status.configured, true);
@@ -122,8 +123,20 @@ describe("sidecar env write", () => {
             const text = await readFile(file, "utf8");
             assert.match(text, /^SF_MQTT_PWD=broker-secret-value$/m);
             assert.equal(text.includes("SF_PASSWORD"), false);
+            assert.equal(text.includes("SF_REST_TOKEN"), false);
         } finally {
             await rm(dir, {recursive: true, force: true});
         }
+    });
+
+    it("writes a rest token when login returned one and keeps it off the admin status", () => {
+        const next = mergeGgsSidecarEnv("SF_PASSWORD=app-secret\n", {
+            ...WRITE,
+            restToken: "rest-token",
+        });
+        assert.match(next, /^SF_REST_TOKEN=rest-token$/m);
+        assert.equal(next.includes("SF_PASSWORD"), false);
+        assert.equal(next.includes("app-secret"), false);
+        assert.equal(JSON.stringify(spiderFarmerStatusFromEnv(next)).includes("rest-token"), false);
     });
 });
