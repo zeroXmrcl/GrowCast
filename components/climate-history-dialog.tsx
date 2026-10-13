@@ -3,6 +3,7 @@
 import {memo, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent} from "react";
 import {
     findStepSegment,
+    layoutStepAxis,
     layoutStepRuns,
     type StepRunPath,
     type StepSample,
@@ -304,6 +305,14 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
             vpd: samplesFor(view.runs, (point) => point.vpd),
         };
     }, [view]);
+    const axisLabels = useMemo(
+        () => layoutStepAxis(
+            view.runs.map((run) => run.map((point) => ({t: point.t, value: point.tempC}))),
+            PLOT_W,
+            PLOT_H,
+        ),
+        [view],
+    );
 
     function onHover(event: PointerEvent<HTMLDivElement>) {
         const rect = event.currentTarget.getBoundingClientRect();
@@ -377,10 +386,22 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
                                     />
                                 ))}
                             </div>
-                            <div className="mt-1 flex justify-between gap-2 text-[10px] leading-none text-zinc-400">
-                                <span>{view.axis[0]}</span>
-                                <span className="text-center">{view.axis[1]}</span>
-                                <span className="text-right">{view.axis[2]}</span>
+                            <div className="relative mt-1 h-[10px] text-[10px] leading-none text-zinc-400">
+                                {axisLabels.map((label, index) => (
+                                    <span
+                                        key={`${label.t}-${index}`}
+                                        className={`absolute whitespace-nowrap ${
+                                            index === axisLabels.length - 1
+                                                ? "-translate-x-full"
+                                                : index === 1
+                                                    ? "-translate-x-1/2"
+                                                    : ""
+                                        }`}
+                                        style={{left: `${(label.x / PLOT_W) * 100}%`}}
+                                    >
+                                        {whenLabel(label.t)}
+                                    </span>
+                                ))}
                             </div>
                         </div>
                     )}

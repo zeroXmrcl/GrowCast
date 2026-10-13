@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {describe, it} from "node:test";
-import {stepPath} from "../lib/climate/plot.ts";
+import {layoutStepAxis, stepPath} from "../lib/climate/plot.ts";
 
 describe("climate history dialog", () => {
     it("draws a step between two values", () => {
@@ -9,6 +9,18 @@ describe("climate history dialog", () => {
         assert.match(path, /^M0 /);
         assert.match(path, /H50/);
         assert.match(path, /H100/);
+    });
+
+    it("centers the middle label on the span, not the median sample", () => {
+        const width = 300;
+        const labels = layoutStepAxis([
+            [{t: "2026-10-11T00:00:00.000Z", value: 20}],
+            [{t: "2026-10-13T00:00:00.000Z", value: 22}],
+        ], width, 160);
+        assert.equal(labels[1].t, "2026-10-12T00:00:00.000Z");
+        assert.notEqual(labels[1].t, labels[0].t);
+        assert.equal(labels[1].x, width / 2);
+        assert.equal(labels[2].x, width);
     });
 
     it("keeps the overlay out of the board grid", () => {

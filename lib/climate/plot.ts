@@ -15,6 +15,11 @@ export type StepRunPath = {
     segments: StepSegment[];
 };
 
+export type StepAxisLabel = {
+    t: string;
+    x: number;
+};
+
 function stepY(value: number, min: number, span: number, height: number): string {
     return (2 + (1 - (value - min) / span) * (height - 4)).toFixed(2);
 }
@@ -137,6 +142,31 @@ export function layoutStepRuns(runs: StepSample[][], width: number, height: numb
         laid.push({d, segments});
     }
     return laid;
+}
+
+export function layoutStepAxis(runs: StepSample[][], width: number, height: number): StepAxisLabel[] {
+    let first: StepSegment | null = null;
+    let last: StepSegment | null = null;
+    for (const run of layoutStepRuns(runs, width, height)) {
+        for (const segment of run.segments) {
+            const ms = msOf(segment.t);
+            if (!first || ms < msOf(first.t)) {
+                first = segment;
+            }
+            if (!last || ms >= msOf(last.t)) {
+                last = segment;
+            }
+        }
+    }
+    if (!first || !last) {
+        return [];
+    }
+    const midMs = (msOf(first.t) + msOf(last.t)) / 2;
+    return [
+        {t: first.t, x: first.x0},
+        {t: new Date(midMs).toISOString(), x: (first.x0 + last.x1) / 2},
+        {t: last.t, x: last.x1},
+    ];
 }
 
 export function findStepSegment(segments: StepSegment[], x: number): StepSegment | null {
