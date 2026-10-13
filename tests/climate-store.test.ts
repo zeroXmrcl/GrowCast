@@ -3,6 +3,7 @@ import {mkdtemp, readFile, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {afterEach, beforeEach, describe, it} from "node:test";
+import {parseClimateHistoryBody} from "../lib/climate/ingest.ts";
 import {recordClimateFromLive} from "../lib/climate/live.ts";
 import {mergeClimatePoints, readClimateDays} from "../lib/climate/store.ts";
 import type {ClimatePoint} from "../lib/climate/types.ts";
@@ -95,5 +96,16 @@ describe("climate day store", () => {
     it("skips a live snapshot missing humidity", async () => {
         await recordClimateFromLive(ingest(24.8, null));
         assert.equal((await readClimateDays()).size, 0);
+    });
+
+    it("parses a history post and rejects a body without points", () => {
+        const parsed = parseClimateHistoryBody({
+            points: [point("2026-10-13T11:00:00.000Z", 20)],
+        });
+        assert.equal(parsed.ok, true);
+        if (parsed.ok) {
+            assert.equal(parsed.points.length, 1);
+        }
+        assert.equal(parseClimateHistoryBody({points: "nope"}).ok, false);
     });
 });
