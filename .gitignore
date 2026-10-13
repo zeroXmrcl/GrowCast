@@ -58,6 +58,7 @@ __pycache__/
 /extensions/GrowCast-Timelapse/**/snapshots/
 /extensions/GrowCast-Timelapse/**/timelapse/
 .superpowers/
+.worktrees/
 .env.local.bak.*
 
 # typescript
