@@ -20,7 +20,7 @@ type LiveClimateCardProps = {
 };
 
 const HISTORY_CHIP_ON =
-    "rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900";
+    "rounded-full border border-transparent bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900";
 const HISTORY_CHIP_OFF =
     "rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300";
 
