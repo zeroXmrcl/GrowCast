@@ -390,13 +390,7 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
                                 {axisLabels.map((label, index) => (
                                     <span
                                         key={`${label.t}-${index}`}
-                                        className={`absolute whitespace-nowrap ${
-                                            index === axisLabels.length - 1
-                                                ? "-translate-x-full"
-                                                : index === 1
-                                                    ? "-translate-x-1/2"
-                                                    : ""
-                                        }`}
+                                        className={`absolute whitespace-nowrap ${index === 0 ? "" : "-translate-x-1/2"}`}
                                         style={{left: `${(label.x / PLOT_W) * 100}%`}}
                                     >
                                         {whenLabel(label.t)}

@@ -164,8 +164,8 @@ export function layoutStepAxis(runs: StepSample[][], width: number, height: numb
     const midMs = (msOf(first.t) + msOf(last.t)) / 2;
     return [
         {t: first.t, x: first.x0},
-        {t: new Date(midMs).toISOString(), x: (first.x0 + last.x1) / 2},
-        {t: last.t, x: last.x1},
+        {t: new Date(midMs).toISOString(), x: (first.x0 + last.x0) / 2},
+        {t: last.t, x: last.x0},
     ];
 }
 

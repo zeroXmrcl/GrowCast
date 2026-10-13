@@ -11,16 +11,18 @@ describe("climate history dialog", () => {
         assert.match(path, /H100/);
     });
 
-    it("centers the middle label on the span, not the median sample", () => {
+    it("places each axis label on the time it names", () => {
         const width = 300;
         const labels = layoutStepAxis([
             [{t: "2026-10-11T00:00:00.000Z", value: 20}],
             [{t: "2026-10-13T00:00:00.000Z", value: 22}],
         ], width, 160);
+        assert.equal(labels[0].x, 0);
         assert.equal(labels[1].t, "2026-10-12T00:00:00.000Z");
         assert.notEqual(labels[1].t, labels[0].t);
-        assert.equal(labels[1].x, width / 2);
-        assert.equal(labels[2].x, width);
+        assert.equal(labels[1].x, width / 3);
+        assert.equal(labels[2].t, "2026-10-13T00:00:00.000Z");
+        assert.equal(labels[2].x, (2 * width) / 3);
     });
 
     it("keeps the overlay out of the board grid", () => {
