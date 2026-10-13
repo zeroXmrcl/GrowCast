@@ -9,8 +9,12 @@ export const MEDIA_MAX_BODY_BYTES = 40 * 1024 * 1024;
 /** Admin music POST may include a batch of tracks (up to 30 files, 20 MiB each) plus multipart overhead. Cap matches typical Cloudflare request size. */
 export const MUSIC_MAX_BODY_BYTES = 100 * 1024 * 1024;
 
+/** Sidecar climate history may POST up to 20_000 compact points (~1.5–1.7 MiB). */
+export const CLIMATE_HISTORY_MAX_BODY_BYTES = 2 * 1024 * 1024;
+
 const MEDIA_PATH = "/api/admin/media";
 const MUSIC_PATH = "/api/admin/music";
+const CLIMATE_HISTORY_PATH = "/api/mesh/growcast.ggs/history";
 
 function normalizePathname(pathname: string): string {
     if (pathname.length > 1 && pathname.endsWith("/")) {
@@ -32,6 +36,9 @@ export function maxBodyBytesFor(method: string, pathname: string): number {
         }
         if (path === MUSIC_PATH) {
             return MUSIC_MAX_BODY_BYTES;
+        }
+        if (path === CLIMATE_HISTORY_PATH) {
+            return CLIMATE_HISTORY_MAX_BODY_BYTES;
         }
     }
     return DEFAULT_MAX_BODY_BYTES;

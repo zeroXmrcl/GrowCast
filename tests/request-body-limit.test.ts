@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {
+    CLIMATE_HISTORY_MAX_BODY_BYTES,
     DEFAULT_MAX_BODY_BYTES,
     MEDIA_MAX_BODY_BYTES,
     MUSIC_MAX_BODY_BYTES,
@@ -29,6 +30,26 @@ describe("maxBodyBytesFor", () => {
         assert.equal(maxBodyBytesFor("POST", "/api/admin/music"), MUSIC_MAX_BODY_BYTES);
         assert.equal(maxBodyBytesFor("POST", "/api/admin/music/"), MUSIC_MAX_BODY_BYTES);
         assert.equal(maxBodyBytesFor("GET", "/api/admin/music"), DEFAULT_MAX_BODY_BYTES);
+    });
+
+    it("allows the climate history cap only on POST mesh history", () => {
+        assert.equal(CLIMATE_HISTORY_MAX_BODY_BYTES, 2 * 1024 * 1024);
+        assert.equal(
+            maxBodyBytesFor("POST", "/api/mesh/growcast.ggs/history"),
+            CLIMATE_HISTORY_MAX_BODY_BYTES,
+        );
+        assert.equal(
+            maxBodyBytesFor("POST", "/api/mesh/growcast.ggs/history/"),
+            CLIMATE_HISTORY_MAX_BODY_BYTES,
+        );
+        assert.equal(
+            maxBodyBytesFor("POST", "/api/mesh/growcast.ggs/state"),
+            DEFAULT_MAX_BODY_BYTES,
+        );
+        assert.equal(
+            maxBodyBytesFor("GET", "/api/mesh/growcast.ggs/history"),
+            DEFAULT_MAX_BODY_BYTES,
+        );
     });
 });
 
