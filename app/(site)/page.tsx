@@ -1,6 +1,8 @@
 import {getCurrentGrow} from "@/lib/db";
 import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
+import {readClimateDays} from "@/lib/climate/store";
+import {buildClimateHistory} from "@/lib/climate/windows";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
@@ -66,11 +68,13 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
 }
 
 export default async function Home() {
-    const [grow, setupImages, showLiveClimate] = await Promise.all([
+    const [grow, setupImages, showLiveClimate, climateDays] = await Promise.all([
         getCurrentGrow(),
         listMediaUrls("setup"),
         hasGgsLiveUi(),
+        readClimateDays(),
     ]);
+    const history = buildClimateHistory(climateDays, Date.now(), grow.details.seededAt);
     const details = grow.details;
     const socialLinks = [
         {
@@ -158,7 +162,7 @@ export default async function Home() {
             </aside>
 
             {showLiveClimate ? (
-                <LiveTentRow climateTick={grow.climateTick} devicesDesign={grow.devicesDesign}/>
+                <LiveTentRow climateTick={grow.climateTick} devicesDesign={grow.devicesDesign} history={history}/>
             ) : null}
 
             <section className={`${WORKSPACE_AREA.run} ${WORKSPACE_VT.flow} grid lg:grid-cols-2`}>

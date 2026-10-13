@@ -8,7 +8,7 @@ export const WORKSPACE_EASING = OVERLAY_EASING_ENTER;
 export const WORKSPACE_CAM_ENERGY_PX = 320;
 
 export const WORKSPACE_BOARD_CLASS =
-    "growcast-board overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950";
+    "growcast-board relative overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950";
 
 export const WORKSPACE_HAIRLINE = "border-zinc-200 dark:border-zinc-800";
 export const WORKSPACE_SPLIT_B = `border-b ${WORKSPACE_HAIRLINE}`;
