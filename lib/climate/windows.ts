@@ -14,6 +14,14 @@ function inSpan(point: ClimatePoint, startMs: number, endMs: number): boolean {
     return ms >= startMs && ms <= endMs;
 }
 
+function inBucket(point: ClimatePoint, startMs: number, endMs: number, closedEnd: boolean): boolean {
+    const ms = Date.parse(point.t);
+    if (ms < startMs) {
+        return false;
+    }
+    return closedEnd ? ms <= endMs : ms < endMs;
+}
+
 function pointsIn(days: Map<string, ClimateDayFile>, startMs: number, endMs: number): ClimatePoint[] {
     const rows: ClimatePoint[] = [];
     for (const day of days.values()) {
@@ -94,8 +102,10 @@ function singleRun(points: ClimatePoint[]): ClimatePoint[][] {
 function bucketed(spans: {start: number; end: number; t: string}[], raw: ClimatePoint[]): ClimateWindow {
     const runs: ClimatePoint[][] = [];
     let current: ClimatePoint[] = [];
-    for (const span of spans) {
-        const inside = raw.filter((point) => inSpan(point, span.start, span.end));
+    for (let i = 0; i < spans.length; i += 1) {
+        const span = spans[i];
+        const closedEnd = i === spans.length - 1;
+        const inside = raw.filter((point) => inBucket(point, span.start, span.end, closedEnd));
         if (inside.length === 0) {
             if (current.length > 0) {
                 runs.push(current);

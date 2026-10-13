@@ -61,4 +61,41 @@ describe("climate windows", () => {
         assert.equal(shelf?.tempC, 21);
         assert.equal(history["30d"].runs.flat().some((row) => row.tempC === 0), false);
     });
+
+    it("counts a shelf boundary sample in one 7d bucket only", () => {
+        const days = new Map<string, ClimateDayFile>([
+            ["2026-10-13", day("2026-10-13", [
+                point("2026-10-13T10:00:00.000Z", 20),
+                point("2026-10-13T11:00:00.000Z", 22),
+            ])],
+        ]);
+        const history = buildClimateHistory(days, NOW, "");
+        const boundaryShelves = history["7d"].runs.flat().filter(
+            (row) => row.tempC === 20 || row.tempC === 21,
+        );
+        assert.equal(boundaryShelves.length, 1);
+        assert.equal(boundaryShelves[0]?.tempC, 21);
+        assert.equal(history["7d"].runs.flat().filter((row) => row.tempC === 20).length, 0);
+    });
+
+    it("counts a midnight Berlin sample in one 30d bucket only", () => {
+        const days = new Map<string, ClimateDayFile>([
+            ["2026-10-12", day("2026-10-12", [
+                point("2026-10-11T22:00:00.000Z", 19),
+            ])],
+        ]);
+        const history = buildClimateHistory(days, NOW, "");
+        assert.equal(history["30d"].runs.flat().filter((row) => row.tempC === 19).length, 1);
+    });
+
+    it("keeps a sample exactly at now in 24h and the last 7d shelf", () => {
+        const days = new Map<string, ClimateDayFile>([
+            ["2026-10-13", day("2026-10-13", [
+                point("2026-10-13T13:00:00.000Z", 25),
+            ])],
+        ]);
+        const history = buildClimateHistory(days, NOW, "");
+        assert.equal(history["24h"].runs.flat().some((row) => row.tempC === 25), true);
+        assert.equal(history["7d"].runs.flat().at(-1)?.tempC, 25);
+    });
 });
