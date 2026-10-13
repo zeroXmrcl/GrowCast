@@ -62,7 +62,7 @@ export function BroadcastToast() {
             href={`https://twitch.tv/${payload.login}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="fixed right-4 bottom-4 z-40 flex items-center gap-3 rounded-lg px-4 py-3 text-white shadow-lg"
+            className="fixed right-4 bottom-4 z-40 flex min-h-11 items-center gap-3 rounded-lg px-4 py-3 text-white shadow-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             style={{backgroundColor: "#9146FF"}}
         >
             <TwitchGlitchIcon/>

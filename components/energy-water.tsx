@@ -4,7 +4,13 @@ import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/lib/energy/berlin";
 import {formatKwh} from "@/lib/energy/format";
 import type {EnergyWaterView, EnergyWaterWindows} from "@/lib/energy/types";
-import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
+import {
+    PUBLIC_AXIS_LABEL,
+    PUBLIC_CHIP_OFF,
+    PUBLIC_CHIP_ON,
+    PUBLIC_FOCUS_INSET,
+} from "@/lib/public-ui";
+import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_TITLE, WORKSPACE_VT} from "@/lib/workspace";
 
 const PLOT_H = 160;
 const PLOT_W = 600;
@@ -132,7 +138,7 @@ export default function EnergyWater({
             }
         >
             <div className="mb-4 flex items-baseline justify-between gap-3">
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Water Usage</h2>
+                <h2 className={`${WORKSPACE_TITLE} mb-0`}>Water Usage</h2>
                 <p className="text-sm tabular-nums text-zinc-600 dark:text-zinc-300">
                     {formatKwh(selected.liters)} L
                 </p>
@@ -150,11 +156,7 @@ export default function EnergyWater({
                                 onWindowKey(chip.key);
                             }}
                             onClick={() => onWindowKey(chip.key)}
-                            className={
-                                pressed
-                                    ? "rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-                                    : "rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
-                            }
+                            className={pressed ? PUBLIC_CHIP_ON : PUBLIC_CHIP_OFF}
                         >
                             {chip.label}
                         </button>
@@ -163,7 +165,7 @@ export default function EnergyWater({
             </div>
             <div className="flex">
                 <div
-                    className="flex w-12 shrink-0 flex-col justify-between pr-1 text-right text-[10px] leading-none text-zinc-400"
+                    className={`flex w-12 shrink-0 flex-col justify-between pr-1 text-right ${PUBLIC_AXIS_LABEL}`}
                     style={{height: PLOT_H}}
                 >
                     <span>{formatAxisLiters(maxLiters)}</span>
@@ -214,7 +216,7 @@ export default function EnergyWater({
                                     key={selected.columns[index]?.t ?? index}
                                     type="button"
                                     aria-label={label}
-                                    className="group relative z-[1] flex h-full min-w-0 flex-1 items-end border-0 bg-transparent p-0 outline-none"
+                                    className={`group relative z-[1] flex h-full min-w-0 flex-1 items-end border-0 bg-transparent p-0 ${PUBLIC_FOCUS_INSET}`}
                                 >
                                     {pct > 0 ? (
                                         <div
@@ -232,7 +234,7 @@ export default function EnergyWater({
                 </div>
             </div>
             {selected.columns.length > 0 ? (
-                <div className="mt-1 flex justify-between pl-12 font-mono text-[10px] leading-none text-zinc-400">
+                <div className={`mt-2 flex justify-between pl-12 font-mono ${PUBLIC_AXIS_LABEL}`}>
                     <span>{labels.start}</span>
                     <span>{labels.mid}</span>
                     <span>{labels.end}</span>

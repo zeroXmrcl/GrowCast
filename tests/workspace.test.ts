@@ -55,6 +55,8 @@ describe("workspace morph", () => {
     it("keeps OverlayCamera in the site shell and LiveTentRow on home", () => {
         const layout = src(path.join("app", "(site)", "layout.tsx"));
         const frame = src(path.join("components", "workspace-frame.tsx"));
+        assert.match(layout, /SiteFooter/);
+        assert.doesNotMatch(frame, /SiteFooter/);
         const home = src(path.join("app", "(site)", "page.tsx"));
         const energy = src(path.join("app", "(site)", "energy", "page.tsx"));
         assert.match(layout, /WorkspaceFrame/);

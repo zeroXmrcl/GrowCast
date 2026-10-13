@@ -1,4 +1,5 @@
 import {listMediaUrls} from "@/lib/media-library";
+import {PUBLIC_MEDIA_LINK} from "@/lib/public-ui";
 import {WORKSPACE_AREA, WORKSPACE_HAIRLINE, WORKSPACE_VT} from "@/lib/workspace";
 
 export default async function DashPictures() {
@@ -21,7 +22,7 @@ export default async function DashPictures() {
                             href={snapshot}
                             target="_blank"
                             rel="noreferrer"
-                            className={`group overflow-hidden ${last ? "" : `border-r ${WORKSPACE_HAIRLINE}`}`}
+                            className={`${PUBLIC_MEDIA_LINK} group overflow-hidden ${last ? "" : `border-r ${WORKSPACE_HAIRLINE}`}`}
                         >
                             <div className="aspect-video w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
