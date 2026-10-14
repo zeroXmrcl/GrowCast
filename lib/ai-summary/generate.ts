@@ -4,7 +4,7 @@ import {hasXaiApiKey} from "@/lib/ai-summary/config";
 import {requestGrowSummary} from "@/lib/ai-summary/client";
 import {loadNewestSnapshotStill} from "@/lib/ai-summary/image";
 import {logAiSummary} from "@/lib/ai-summary/log";
-import {buildMosaic, emptyMosaic} from "@/lib/ai-summary/mosaic";
+import {buildMosaic, emptyMosaic, verdictsFromMosaic} from "@/lib/ai-summary/mosaic";
 import {buildAiSummaryUserPrompt, promptContainsForbiddenTargets} from "@/lib/ai-summary/prompt";
 import {stageContextFromGrow} from "@/lib/ai-summary/stage";
 import {
@@ -86,14 +86,15 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
         return {ok: false, reason: "request_failed"};
     }
 
+    const mosaic = still || points.length > 0 ? buildMosaic(points, windowStartMs, ai.ranges) : emptyMosaic();
     const record: AiSummaryRecord = {
         date,
         generatedAt: new Date(nowMs).toISOString(),
         growId: grow.id,
         stage,
         stats,
-        ai,
-        mosaic: still || points.length > 0 ? buildMosaic(points, windowStartMs, ai.ranges) : emptyMosaic(),
+        ai: {...ai, verdicts: verdictsFromMosaic(mosaic, ai.verdicts)},
+        mosaic,
         imageUsed: still !== null,
     };
     try {

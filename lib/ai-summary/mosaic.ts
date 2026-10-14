@@ -1,5 +1,11 @@
 import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/lib/climate/types";
-import {AI_SUMMARY_MOSAIC_SLOTS, type AiSummaryPayload, type MosaicCell} from "@/lib/ai-summary/types";
+import {
+    AI_SUMMARY_MOSAIC_SLOTS,
+    type AiMetricJudgment,
+    type AiSummaryPayload,
+    type MetricVerdict,
+    type MosaicCell,
+} from "@/lib/ai-summary/types";
 
 export function mosaicSlotIndex(tMs: number, windowStartMs: number): number | null {
     const index = Math.floor((tMs - windowStartMs) / CLIMATE_SLOT_MS);
@@ -123,13 +129,79 @@ export function buildMosaic(
             if (!range) {
                 continue;
             }
-            rows[key][index] = cellForValue(point[key], range.min, range.max);
+            rows[key][index] = scoreSample(key, point, range);
         }
     }
 
     return Object.fromEntries(
         CLIMATE_METRIC_KEYS.map((key) => [key, encodeMosaicRow(rows[key])]),
     ) as Record<ClimateMetricKey, string>;
+}
+
+/** Lights-off PPFD is not a miss. Every other sample is scored against the one band. */
+export function scoreSample(
+    key: ClimateMetricKey,
+    point: ClimatePoint,
+    range: {min: number; max: number},
+): MosaicCell {
+    if (key === "ppfd" && point.isDay === false) {
+        return 0;
+    }
+    return cellForValue(point[key], range.min, range.max);
+}
+
+const IN_RANGE_SHARE = 80;
+const CLOSE_SHARE = 60;
+
+function verdictForShare(share: number | null): MetricVerdict {
+    if (share === null) {
+        return "unknown";
+    }
+    if (share >= IN_RANGE_SHARE) {
+        return "in_range";
+    }
+    if (share >= CLOSE_SHARE) {
+        return "slightly_off";
+    }
+    return "off";
+}
+
+function shareFromRow(row: string): number | null {
+    let scored = 0;
+    let inside = 0;
+    for (const cell of parseMosaicRow(row)) {
+        if (cell === 0) {
+            continue;
+        }
+        scored += 1;
+        if (cell === 1) {
+            inside += 1;
+        }
+    }
+    if (scored === 0) {
+        return null;
+    }
+    return Math.round((inside / scored) * 100);
+}
+
+/** Percent and verdict follow the stored samples. The model's note stays. */
+export function verdictsFromMosaic(
+    mosaic: Record<ClimateMetricKey, string>,
+    current: Record<ClimateMetricKey, AiMetricJudgment>,
+): Record<ClimateMetricKey, AiMetricJudgment> {
+    return Object.fromEntries(
+        CLIMATE_METRIC_KEYS.map((key) => {
+            const pctInRange = shareFromRow(mosaic[key] ?? "");
+            return [
+                key,
+                {
+                    verdict: verdictForShare(pctInRange),
+                    pctInRange,
+                    note: current[key]?.note ?? "",
+                },
+            ];
+        }),
+    ) as Record<ClimateMetricKey, AiMetricJudgment>;
 }
 
 export function emptyMosaic(): Record<ClimateMetricKey, string> {

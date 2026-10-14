@@ -5,9 +5,9 @@ import path from "node:path";
 import {describe, it} from "node:test";
 import {deriveGrowPhase, stageContextFromGrow} from "../lib/ai-summary/stage.ts";
 import {aggregateClimateWindow, percentile, summarizeValues} from "../lib/ai-summary/stats.ts";
-import {buildMosaic, cellForValue, foldMosaicRow, mosaicDetail, parseMosaicRow} from "../lib/ai-summary/mosaic.ts";
+import {buildMosaic, cellForValue, foldMosaicRow, mosaicDetail, parseMosaicRow, verdictsFromMosaic} from "../lib/ai-summary/mosaic.ts";
 import {extractJsonObject, parseAiSummaryPayload} from "../lib/ai-summary/schema.ts";
-import {buildAiSummaryUserPrompt, promptContainsForbiddenTargets} from "../lib/ai-summary/prompt.ts";
+import {AI_SUMMARY_SYSTEM_PROMPT, buildAiSummaryUserPrompt, promptContainsForbiddenTargets} from "../lib/ai-summary/prompt.ts";
 import {isAiSummaryDue, tryHoldLeaderLease} from "../lib/ai-summary/scheduler.ts";
 import {aiSummaryDemoMode, aiSummaryWidgetEnabled} from "../lib/ai-summary/config.ts";
 import {assertPublicSafe, readAiSummaryPublic, toPublicAiSummary} from "../lib/ai-summary/public.ts";
@@ -211,6 +211,39 @@ describe("ai summary stage and stats", () => {
             validAi().ranges,
         );
         assert.equal(mosaic.tempC[0], "1");
+        const withNight = buildMosaic(
+            [
+                {
+                    t: "2026-10-13T08:00:00.000Z",
+                    tempC: 24,
+                    humidityPct: 60,
+                    vpd: 1,
+                    co2: 800,
+                    ppfd: 400,
+                    isDay: true,
+                },
+                {
+                    t: "2026-10-13T20:00:00.000Z",
+                    tempC: 18,
+                    humidityPct: 60,
+                    vpd: 1,
+                    co2: 800,
+                    ppfd: 0,
+                    isDay: false,
+                },
+            ],
+            Date.parse("2026-10-13T08:00:00.000Z"),
+            validAi().ranges,
+        );
+        const nightIndex = (12 * 60) / 5;
+        assert.equal(withNight.ppfd[nightIndex], "0");
+        assert.equal(withNight.tempC[nightIndex], "4");
+        const judged = verdictsFromMosaic(withNight, validAi().verdicts);
+        assert.equal(judged.ppfd.pctInRange, 100);
+        assert.equal(judged.ppfd.verdict, "in_range");
+        assert.equal(judged.ppfd.note, "on target");
+        assert.equal(judged.tempC.pctInRange, 50);
+        assert.equal(judged.tempC.verdict, "off");
     });
 
     it("folds a half hour to the worst sample and keeps a side over a legacy digit", () => {
@@ -237,6 +270,10 @@ describe("ai summary schema and prompt", () => {
         assert.equal(parsed?.score, 82);
         assert.equal(parseAiSummaryPayload({...validAi(), score: 200})?.score, 100);
         assert.equal(parseAiSummaryPayload({...validAi(), headline: ""}), null);
+        assert.equal(
+            parseAiSummaryPayload({...validAi(), ranges: {...validAi().ranges, tempC: {min: 0, max: 80}}}),
+            null,
+        );
         assert.equal(parseAiSummaryPayload(extractJsonObject("noise {\"score\":1} trailing")), null);
         const extracted = extractJsonObject(`prefix ${JSON.stringify(validAi())} suffix`);
         assert.ok(parseAiSummaryPayload(extracted));
@@ -249,8 +286,12 @@ describe("ai summary schema and prompt", () => {
             imageUsed: true,
         });
         assert.match(prompt, /Derived phase: veg/);
+        assert.match(prompt, /one band for both/);
         assert.equal(promptContainsForbiddenTargets(prompt), false);
         assert.doesNotMatch(prompt, /temperatureDay|humidityNight/);
+        assert.doesNotMatch(AI_SUMMARY_SYSTEM_PROMPT, /day\/night/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /one min and max/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /Lights-off samples are ignored/);
     });
 });
 

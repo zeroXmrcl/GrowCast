@@ -98,13 +98,25 @@ function asFinite(value: unknown): number | null {
     return null;
 }
 
-function parseRange(raw: unknown): DerivedRange | null {
+const RANGE_LIMITS: Record<ClimateMetricKey, {lo: number; hi: number; maxWidth: number}> = {
+    tempC: {lo: 0, hi: 45, maxWidth: 25},
+    humidityPct: {lo: 0, hi: 100, maxWidth: 80},
+    vpd: {lo: 0, hi: 5, maxWidth: 3},
+    co2: {lo: 200, hi: 3000, maxWidth: 2500},
+    ppfd: {lo: 0, hi: 2500, maxWidth: 2000},
+};
+
+function parseRange(key: ClimateMetricKey, raw: unknown): DerivedRange | null {
     if (!isRecord(raw)) {
         return null;
     }
     const min = asFinite(raw.min);
     const max = asFinite(raw.max);
-    if (min === null || max === null || max < min) {
+    const limit = RANGE_LIMITS[key];
+    if (min === null || max === null || max <= min) {
+        return null;
+    }
+    if (min < limit.lo || max > limit.hi || max - min > limit.maxWidth) {
         return null;
     }
     return {min, max};
@@ -154,7 +166,7 @@ export function parseAiSummaryPayload(raw: unknown): AiSummaryPayload | null {
     const ranges = {} as Record<ClimateMetricKey, DerivedRange>;
     const verdicts = {} as Record<ClimateMetricKey, AiMetricJudgment>;
     for (const key of CLIMATE_METRIC_KEYS) {
-        const range = parseRange(raw.ranges[key]);
+        const range = parseRange(key, raw.ranges[key]);
         const verdict = parseVerdict(raw.verdicts[key]);
         if (!range || !verdict) {
             return null;
