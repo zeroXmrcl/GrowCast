@@ -525,6 +525,84 @@ html[data-admin-save-bar] .admin-toast {
   border-bottom: 1px solid var(--growcast-hair);
 }
 
+.growcast-ai-arc {
+  stroke-dasharray: var(--growcast-score) 100;
+  stroke-dashoffset: var(--growcast-score);
+  animation: growcast-ai-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.growcast-ai-row {
+  animation: growcast-ai-slide 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--growcast-i) * 45ms);
+}
+
+.growcast-ai-mosaic:hover .growcast-ai-row {
+  opacity: 0.38;
+  transition: opacity 180ms linear;
+}
+
+.growcast-ai-mosaic .growcast-ai-row:hover {
+  opacity: 1;
+}
+
+.growcast-ai-tick {
+  transform: scaleY(0);
+  transform-origin: center;
+  animation: growcast-ai-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(var(--growcast-i) * 14ms);
+}
+
+.growcast-ai-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 8px;
+  background: #18181b;
+  color: #fafafa;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), opacity 80ms linear;
+}
+
+.growcast-ai-tip.is-on {
+  opacity: 1;
+}
+
+@keyframes growcast-ai-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes growcast-ai-slide {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes growcast-ai-rise {
+  to { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-ai-arc,
+  .growcast-ai-row,
+  .growcast-ai-tick {
+    animation: none;
+  }
+
+  .growcast-ai-arc { stroke-dashoffset: 0; }
+  .growcast-ai-row { opacity: 1; transform: none; }
+  .growcast-ai-tick { transform: none; }
+  .growcast-ai-tip,
+  .growcast-ai-mosaic:hover .growcast-ai-row { transition: none; }
+}
+
 .growcast-area-pics {
   grid-area: pics;
   border-bottom: 1px solid var(--growcast-hair);

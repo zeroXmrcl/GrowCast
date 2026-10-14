@@ -6,11 +6,12 @@ import type {AiSummaryPublic} from "@/lib/ai-summary/types";
 
 type AiSummaryPanelProps = {
     configured: boolean;
+    demoMode: boolean;
     summary: AiSummaryPublic | null;
     regenerateAction: (formData: FormData) => Promise<AdminActionResult>;
 };
 
-export function AiSummaryPanel({configured, summary, regenerateAction}: AiSummaryPanelProps) {
+export function AiSummaryPanel({configured, demoMode, summary, regenerateAction}: AiSummaryPanelProps) {
     return (
         <AdminImmediateForm action={regenerateAction}>
             <AdminBand id="ai-summary" title="AI Assessment">
@@ -21,6 +22,9 @@ export function AiSummaryPanel({configured, summary, regenerateAction}: AiSummar
                         card. Hard cap: 5 xAI calls per Berlin day (job + regenerate).
                     </p>
                     <p>xAI key: {configured ? "set" : "missing (XAI_API_KEY)"}</p>
+                    {!configured && demoMode ? (
+                        <p className="text-(--admin-muted)">Demo mode is on. No xAI calls are made.</p>
+                    ) : null}
                     {summary ? (
                         <p>
                             Latest: {summary.date} · score {summary.score} · {summary.rating}

@@ -1,8 +1,8 @@
 import {redirect} from "next/navigation";
 import {regenerateAiSummaryAction, saveEnergyAction} from "@/app/admin/actions";
 import {AiSummaryPanel} from "@/app/admin/ai-summary-panel";
-import {hasXaiApiKey} from "@/lib/ai-summary/config";
-import {readAiSummaryPublic} from "@/lib/ai-summary/public";
+import {aiSummaryDemoMode, hasXaiApiKey} from "@/lib/ai-summary/config";
+import {readStoredAiSummaryPublic} from "@/lib/ai-summary/public";
 import {AdminBand, AdminBandGroup} from "@/app/admin/admin-band";
 import {AdminSaveForm} from "@/app/admin/admin-save-form";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
@@ -30,7 +30,7 @@ export default async function AdminGgsPage() {
             pathKind: "missing" as const,
         })),
         readStoredControllers(),
-        readAiSummaryPublic(),
+        readStoredAiSummaryPublic(),
     ]);
     const view = live ? withStale(live) : null;
 
@@ -74,6 +74,7 @@ export default async function AdminGgsPage() {
                 </AdminBand>
                 <AiSummaryPanel
                     configured={hasXaiApiKey()}
+                    demoMode={aiSummaryDemoMode()}
                     summary={aiSummary}
                     regenerateAction={regenerateAiSummaryAction}
                 />

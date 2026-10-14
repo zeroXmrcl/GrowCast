@@ -35,11 +35,11 @@ export function buildMockMosaic(): Record<ClimateMetricKey, string> {
         const afternoon = hour >= 14 && hour < 17;
         const lateNight = hour < 5 || hour >= 22;
 
-        rows.tempC[slot] = isDay ? (afternoon && slot % 17 === 0 ? 2 : 1) : lateNight && slot % 23 === 0 ? 2 : 1;
-        rows.humidityPct[slot] = isDay ? 1 : slot % 11 === 0 ? 2 : 1;
-        rows.vpd[slot] = isDay ? (afternoon && slot % 9 === 0 ? 2 : 1) : 1;
-        rows.co2[slot] = isDay ? (slot % 31 === 0 ? 2 : 1) : slot % 7 === 0 ? 3 : 2;
-        rows.ppfd[slot] = isDay ? (hour === 6 || hour === 23 ? 2 : 1) : 0;
+        rows.tempC[slot] = isDay ? (afternoon && slot % 17 === 0 ? 5 : 1) : lateNight && slot % 23 === 0 ? 4 : 1;
+        rows.humidityPct[slot] = isDay ? 1 : slot % 11 === 0 ? 4 : 1;
+        rows.vpd[slot] = isDay ? (afternoon && slot % 9 === 0 ? 5 : 1) : 1;
+        rows.co2[slot] = isDay ? (slot % 31 === 0 ? 5 : 1) : slot % 7 === 0 ? 7 : 5;
+        rows.ppfd[slot] = isDay ? (hour === 6 || hour === 23 ? 4 : 1) : 0;
     }
 
     return Object.fromEntries(

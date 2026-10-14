@@ -79,6 +79,7 @@ Notes:
 - Optional, Broadcast channel lookup and Twitch EventSub alerts (GrowCast `.env.local`, not the restream sidecar): `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. EventSub webhooks also need `GROWCAST_PUBLIC_URL` (the public HTTPS origin, e.g. the Cloudflare Tunnel hostname).
 - Optional daily **AI Assessment** (xAI / Grok). Server-only; visitors cannot trigger the API:
   - `XAI_API_KEY` — required to generate summaries. Never expose this to the browser.
+  - `AI_SUMMARY_DEMO` — `1` or `true` shows a sample assessment on the dashboard without calling xAI. A saved summary still wins when one exists. When this and `XAI_API_KEY` are both unset, the dashboard widget is hidden.
   - `XAI_MODEL` — vision-capable Grok model. Default `grok-4.3` (image input, cheaper than `grok-4.7`).
   - `XAI_API_BASE` — default `https://api.x.ai/v1`.
   - The job runs in-process around 08:00 Europe/Berlin, survives restarts, and is idempotent per Berlin day. Admin can regenerate from **GGS** (1/10 min, same-origin). Hard cap: **5 xAI calls per Berlin day** (scheduler + regenerate, persisted in `data/ai-summary/usage.json`). Requests use a 60s timeout, `max_tokens=1536`, and a 400 KB vision still. See `.env.example`.

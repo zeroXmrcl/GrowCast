@@ -18,7 +18,72 @@ export function cellForValue(value: number | null, min: number, max: number): Mo
     }
     const width = Math.max(0.0001, max - min);
     const distance = value < min ? min - value : value - max;
-    return distance <= width * 0.25 ? 2 : 3;
+    const close = distance <= width * 0.25;
+    if (value < min) {
+        return close ? 4 : 6;
+    }
+    return close ? 5 : 7;
+}
+
+const FOLD_WIDTH = 6;
+
+function mosaicRank(cell: MosaicCell): number {
+    if (cell === 3 || cell === 6 || cell === 7) {
+        return 3;
+    }
+    if (cell === 2 || cell === 4 || cell === 5) {
+        return 2;
+    }
+    if (cell === 1) {
+        return 1;
+    }
+    return 0;
+}
+
+function mosaicOutranks(next: MosaicCell, best: MosaicCell): boolean {
+    const nextRank = mosaicRank(next);
+    const bestRank = mosaicRank(best);
+    if (nextRank > bestRank) {
+        return true;
+    }
+    if (nextRank === bestRank && nextRank > 0) {
+        return next >= 4 || best < 4;
+    }
+    return false;
+}
+
+/** Six stored 5-minute digits become one 30-minute cell. */
+export function foldMosaicRow(cells: MosaicCell[]): MosaicCell[] {
+    const slots = Math.ceil(AI_SUMMARY_MOSAIC_SLOTS / FOLD_WIDTH);
+    const folded: MosaicCell[] = [];
+    for (let slot = 0; slot < slots; slot += 1) {
+        let best: MosaicCell = 0;
+        for (let offset = 0; offset < FOLD_WIDTH; offset += 1) {
+            const value = cells[slot * FOLD_WIDTH + offset] ?? 0;
+            if (mosaicOutranks(value, best)) {
+                best = value;
+            }
+        }
+        folded.push(best);
+    }
+    return folded;
+}
+
+export function mosaicDetail(cell: MosaicCell): {word: "OK" | "ABOVE" | "BELOW"; tone: "ok" | "near" | "far"} | null {
+    switch (cell) {
+        case 1:
+            return {word: "OK", tone: "ok"};
+        case 4:
+            return {word: "BELOW", tone: "near"};
+        case 5:
+            return {word: "ABOVE", tone: "near"};
+        case 6:
+            return {word: "BELOW", tone: "far"};
+        case 7:
+            return {word: "ABOVE", tone: "far"};
+        default:
+            return null;
+    }
 }
 
 export function encodeMosaicRow(cells: MosaicCell[]): string {
@@ -29,7 +94,7 @@ export function parseMosaicRow(row: string): MosaicCell[] {
     const cells: MosaicCell[] = [];
     for (let i = 0; i < AI_SUMMARY_MOSAIC_SLOTS; i += 1) {
         const char = row[i];
-        if (char === "1" || char === "2" || char === "3") {
+        if (char === "1" || char === "2" || char === "3" || char === "4" || char === "5" || char === "6" || char === "7") {
             cells.push(Number(char) as MosaicCell);
         } else {
             cells.push(0);

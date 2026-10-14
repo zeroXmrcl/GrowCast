@@ -2,6 +2,7 @@ import {getCurrentGrow} from "@/lib/db";
 import AiSummaryCard from "@/components/ai-summary-card";
 import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
+import {aiSummaryWidgetEnabled} from "@/lib/ai-summary/config";
 import {readAiSummaryPublic} from "@/lib/ai-summary/public";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
@@ -68,11 +69,12 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
 }
 
 export default async function Home() {
-    const [grow, setupImages, showLiveClimate, aiSummary] = await Promise.all([
+    const showAiSummary = aiSummaryWidgetEnabled();
+    const [grow, setupImages, showLiveClimate, aiSummaryRead] = await Promise.all([
         getCurrentGrow(),
         listMediaUrls("setup"),
         hasGgsLiveUi(),
-        readAiSummaryPublic(),
+        showAiSummary ? readAiSummaryPublic() : Promise.resolve({summary: null, demo: false}),
     ]);
     const details = grow.details;
     const socialLinks = [
@@ -198,7 +200,9 @@ export default async function Home() {
                 </article>
             </section>
 
-            <AiSummaryCard summary={aiSummary} />
+            {showAiSummary ? (
+                <AiSummaryCard summary={aiSummaryRead.summary} demo={aiSummaryRead.demo} />
+            ) : null}
 
             <DashPictures />
 

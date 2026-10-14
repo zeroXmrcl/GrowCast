@@ -78,7 +78,7 @@ export type AiSummaryPayload = {
     confidence: number;
 };
 
-export type MosaicCell = 0 | 1 | 2 | 3;
+export type MosaicCell = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export type AiSummaryRecord = {
     date: string;

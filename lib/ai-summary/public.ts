@@ -1,9 +1,18 @@
+import {berlinDateOnly, shiftDateOnly} from "@/lib/energy/berlin";
 import {CLIMATE_METRIC_KEYS} from "@/lib/climate/types";
+import {aiSummaryDemoMode} from "@/lib/ai-summary/config";
+import {buildMockAiSummaryRecord} from "@/lib/ai-summary/mock";
 import {readLatestAiSummary, readScoreHistory} from "@/lib/ai-summary/store";
-import type {AiSummaryPublic, AiSummaryRecord} from "@/lib/ai-summary/types";
+import type {AiSummaryPublic, AiSummaryRecord, AiSummaryScorePoint} from "@/lib/ai-summary/types";
 
-export async function toPublicAiSummary(record: AiSummaryRecord): Promise<AiSummaryPublic> {
-    const scoreHistory = await readScoreHistory(record.date);
+const DEMO_SCORE_DAYS = 7;
+
+export type AiSummaryPublicRead = {
+    summary: AiSummaryPublic | null;
+    demo: boolean;
+};
+
+function publicFromRecord(record: AiSummaryRecord, scoreHistory: AiSummaryScorePoint[]): AiSummaryPublic {
     return {
         date: record.date,
         generatedAt: record.generatedAt,
@@ -25,12 +34,46 @@ export async function toPublicAiSummary(record: AiSummaryRecord): Promise<AiSumm
     };
 }
 
-export async function readAiSummaryPublic(): Promise<AiSummaryPublic | null> {
+function demoScoreHistory(endDate: string, score: number): AiSummaryScorePoint[] {
+    const points: AiSummaryScorePoint[] = [];
+    for (let ago = DEMO_SCORE_DAYS - 1; ago >= 0; ago -= 1) {
+        points.push({
+            date: shiftDateOnly(endDate, -ago),
+            score: Math.max(0, score - (ago % 3) * 3),
+        });
+    }
+    return points;
+}
+
+function demoPublicAiSummary(nowMs: number = Date.now()): AiSummaryPublic {
+    const date = berlinDateOnly(nowMs);
+    const record = buildMockAiSummaryRecord({date});
+    return publicFromRecord(record, demoScoreHistory(date, record.ai.score));
+}
+
+export async function toPublicAiSummary(record: AiSummaryRecord): Promise<AiSummaryPublic> {
+    return publicFromRecord(record, await readScoreHistory(record.date));
+}
+
+export async function readStoredAiSummaryPublic(): Promise<AiSummaryPublic | null> {
     const latest = await readLatestAiSummary();
     if (!latest) {
         return null;
     }
     return toPublicAiSummary(latest);
+}
+
+export async function readAiSummaryPublic(
+    env: NodeJS.ProcessEnv = process.env,
+): Promise<AiSummaryPublicRead> {
+    const stored = await readStoredAiSummaryPublic();
+    if (stored) {
+        return {summary: stored, demo: false};
+    }
+    if (!aiSummaryDemoMode(env)) {
+        return {summary: null, demo: false};
+    }
+    return {summary: demoPublicAiSummary(), demo: true};
 }
 
 export function assertPublicSafe(body: AiSummaryPublic): void {

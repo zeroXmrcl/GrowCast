@@ -5,12 +5,13 @@ import path from "node:path";
 import {describe, it} from "node:test";
 import {deriveGrowPhase, stageContextFromGrow} from "../lib/ai-summary/stage.ts";
 import {aggregateClimateWindow, percentile, summarizeValues} from "../lib/ai-summary/stats.ts";
-import {buildMosaic, cellForValue} from "../lib/ai-summary/mosaic.ts";
+import {buildMosaic, cellForValue, foldMosaicRow, mosaicDetail, parseMosaicRow} from "../lib/ai-summary/mosaic.ts";
 import {extractJsonObject, parseAiSummaryPayload} from "../lib/ai-summary/schema.ts";
 import {buildAiSummaryUserPrompt, promptContainsForbiddenTargets} from "../lib/ai-summary/prompt.ts";
 import {isAiSummaryDue, tryHoldLeaderLease} from "../lib/ai-summary/scheduler.ts";
-import {toPublicAiSummary} from "../lib/ai-summary/public.ts";
-import {parseAiSummaryRecord, writeAiSummaryRecord, _resetAiSummaryLockForTests} from "../lib/ai-summary/store.ts";
+import {aiSummaryDemoMode, aiSummaryWidgetEnabled} from "../lib/ai-summary/config.ts";
+import {assertPublicSafe, readAiSummaryPublic, toPublicAiSummary} from "../lib/ai-summary/public.ts";
+import {parseAiSummaryRecord, readLatestAiSummary, writeAiSummaryRecord, _resetAiSummaryLockForTests} from "../lib/ai-summary/store.ts";
 import {allowAiSummaryRegenerate, _resetAiSummaryRateLimitForTests} from "../lib/ai-summary/rate-limit.ts";
 import {generateDailyAiSummary} from "../lib/ai-summary/generate.ts";
 import {requestGrowSummary, XAI_MAX_OUTPUT_TOKENS} from "../lib/ai-summary/client.ts";
@@ -189,8 +190,10 @@ describe("ai summary stage and stats", () => {
 
     it("colors mosaic cells from AI-derived ranges", () => {
         assert.equal(cellForValue(24, 20, 28), 1);
-        assert.equal(cellForValue(29, 20, 28), 2);
-        assert.equal(cellForValue(40, 20, 28), 3);
+        assert.equal(cellForValue(29, 20, 28), 5);
+        assert.equal(cellForValue(19, 20, 28), 4);
+        assert.equal(cellForValue(40, 20, 28), 7);
+        assert.equal(cellForValue(10, 20, 28), 6);
         assert.equal(cellForValue(null, 20, 28), 0);
         const mosaic = buildMosaic(
             [
@@ -208,6 +211,22 @@ describe("ai summary stage and stats", () => {
             validAi().ranges,
         );
         assert.equal(mosaic.tempC[0], "1");
+    });
+
+    it("folds a half hour to the worst sample and keeps a side over a legacy digit", () => {
+        const first = parseMosaicRow(`${"145670"}23${"0".repeat(280)}`);
+        assert.equal(first[3], 6);
+        assert.equal(first[6], 2);
+        assert.deepEqual(foldMosaicRow(first).slice(0, 2), [7, 3]);
+        assert.equal(foldMosaicRow(parseMosaicRow(`73${"0".repeat(286)}`))[0], 7);
+        assert.equal(foldMosaicRow(parseMosaicRow(`37${"0".repeat(286)}`))[0], 7);
+        assert.equal(foldMosaicRow(parseMosaicRow(`45${"0".repeat(286)}`))[0], 5);
+        assert.equal(foldMosaicRow(parseMosaicRow("0".repeat(288)))[0], 0);
+        assert.equal(mosaicDetail(5)?.word, "ABOVE");
+        assert.equal(mosaicDetail(4)?.word, "BELOW");
+        assert.equal(mosaicDetail(2), null);
+        assert.equal(mosaicDetail(3), null);
+        assert.equal(foldMosaicRow(parseMosaicRow("1".repeat(288))).length, 48);
     });
 });
 
@@ -293,7 +312,7 @@ describe("ai summary scheduler and public payload", () => {
         const mosaic = buildMockMosaic();
         assert.equal(mosaic.tempC.length, AI_SUMMARY_MOSAIC_SLOTS);
         assert.match(mosaic.ppfd, /0/);
-        assert.match(mosaic.co2, /3/);
+        assert.match(mosaic.co2, /7/);
         assert.match(mosaic.tempC, /1/);
     });
 
@@ -333,6 +352,70 @@ describe("ai summary scheduler and public payload", () => {
             assert.equal(pub.score, 82);
             assert.equal(pub.scoreHistory[0]?.score, 82);
             assert.ok(parseAiSummaryRecord(record));
+        });
+    });
+
+    it("treats 1 and true as demo mode and enables the widget from a key or demo", () => {
+        assert.equal(aiSummaryDemoMode({AI_SUMMARY_DEMO: "1"} as NodeJS.ProcessEnv), true);
+        assert.equal(aiSummaryDemoMode({AI_SUMMARY_DEMO: "true"} as NodeJS.ProcessEnv), true);
+        assert.equal(aiSummaryDemoMode({AI_SUMMARY_DEMO: "TRUE"} as NodeJS.ProcessEnv), true);
+        assert.equal(aiSummaryDemoMode({} as NodeJS.ProcessEnv), false);
+        assert.equal(aiSummaryDemoMode({AI_SUMMARY_DEMO: ""} as NodeJS.ProcessEnv), false);
+        assert.equal(aiSummaryDemoMode({AI_SUMMARY_DEMO: "0"} as NodeJS.ProcessEnv), false);
+        assert.equal(aiSummaryWidgetEnabled({} as NodeJS.ProcessEnv), false);
+        assert.equal(aiSummaryWidgetEnabled({XAI_API_KEY: "k"} as NodeJS.ProcessEnv), true);
+        assert.equal(aiSummaryWidgetEnabled({AI_SUMMARY_DEMO: "1"} as NodeJS.ProcessEnv), true);
+        assert.equal(
+            aiSummaryWidgetEnabled({XAI_API_KEY: "", AI_SUMMARY_DEMO: "0"} as NodeJS.ProcessEnv),
+            false,
+        );
+    });
+
+    it("serves an in-memory mock when demo mode is on and nothing is stored", async () => {
+        await withTempDataDir(async () => {
+            const off = await readAiSummaryPublic({} as NodeJS.ProcessEnv);
+            assert.equal(off.summary, null);
+            assert.equal(off.demo, false);
+
+            const on = await readAiSummaryPublic({AI_SUMMARY_DEMO: "1"} as NodeJS.ProcessEnv);
+            assert.equal(on.demo, true);
+            assert.ok(on.summary);
+            assert.equal(on.summary.score, 78);
+            assert.equal(on.summary.headline, "Veg climate mostly in range, night CO₂ a bit high");
+            assert.equal(typeof on.summary.mosaic.tempC, "string");
+            assert.ok(on.summary.mosaic.tempC.length > 0);
+            assert.ok(on.summary.scoreHistory.length > 0);
+            const text = JSON.stringify(on.summary);
+            assert.equal(text.includes("growId"), false);
+            assert.equal(text.includes("grow-mock"), false);
+            assertPublicSafe(on.summary);
+            assert.equal(await readLatestAiSummary(), null);
+        });
+    });
+
+    it("keeps a stored summary when demo mode is also on", async () => {
+        await withTempDataDir(async () => {
+            const record: AiSummaryRecord = {
+                date: "2026-10-14",
+                generatedAt: "2026-10-14T06:00:00.000Z",
+                growId: "grow-secret",
+                stage: stage(),
+                stats: emptyStats(),
+                ai: validAi(),
+                mosaic: {
+                    tempC: "1".repeat(288),
+                    humidityPct: "0".repeat(288),
+                    vpd: "0".repeat(288),
+                    co2: "0".repeat(288),
+                    ppfd: "0".repeat(288),
+                },
+                imageUsed: true,
+            };
+            await writeAiSummaryRecord(record);
+            const read = await readAiSummaryPublic({AI_SUMMARY_DEMO: "1"} as NodeJS.ProcessEnv);
+            assert.equal(read.demo, false);
+            assert.equal(read.summary?.score, 82);
+            assert.equal(JSON.stringify(read.summary).includes("grow-secret"), false);
         });
     });
 });
