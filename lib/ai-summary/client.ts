@@ -5,7 +5,8 @@ import {extractJsonObject, GROW_SUMMARY_JSON_SCHEMA, parseAiSummaryPayload} from
 import type {AiSummaryPayload} from "@/lib/ai-summary/types";
 import type {SummaryStill} from "@/lib/ai-summary/image";
 
-const REQUEST_TIMEOUT_MS = 120_000;
+export const XAI_REQUEST_TIMEOUT_MS = 60_000;
+export const XAI_MAX_OUTPUT_TOKENS = 1536;
 
 export type XaiChatMessage = {
     role: "system" | "user";
@@ -70,6 +71,7 @@ export async function requestGrowSummary(input: {
     const body = {
         model: xaiModel(env),
         temperature: 0.3,
+        max_tokens: XAI_MAX_OUTPUT_TOKENS,
         messages: buildXaiMessages(input.userText, input.still),
         response_format: {
             type: "json_schema",
@@ -81,7 +83,7 @@ export async function requestGrowSummary(input: {
         },
     };
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), XAI_REQUEST_TIMEOUT_MS);
     try {
         const response = await fetchImpl(`${xaiApiBase(env)}/chat/completions`, {
             method: "POST",

@@ -8,11 +8,15 @@ import {aggregateClimateWindow, percentile, summarizeValues} from "../lib/ai-sum
 import {buildMosaic, cellForValue} from "../lib/ai-summary/mosaic.ts";
 import {extractJsonObject, parseAiSummaryPayload} from "../lib/ai-summary/schema.ts";
 import {buildAiSummaryUserPrompt, promptContainsForbiddenTargets} from "../lib/ai-summary/prompt.ts";
-import {isAiSummaryDue} from "../lib/ai-summary/scheduler.ts";
+import {isAiSummaryDue, tryHoldLeaderLease} from "../lib/ai-summary/scheduler.ts";
 import {toPublicAiSummary} from "../lib/ai-summary/public.ts";
 import {parseAiSummaryRecord, writeAiSummaryRecord, _resetAiSummaryLockForTests} from "../lib/ai-summary/store.ts";
 import {allowAiSummaryRegenerate, _resetAiSummaryRateLimitForTests} from "../lib/ai-summary/rate-limit.ts";
 import {generateDailyAiSummary} from "../lib/ai-summary/generate.ts";
+import {requestGrowSummary, XAI_MAX_OUTPUT_TOKENS} from "../lib/ai-summary/client.ts";
+import {reserveAiApiCall, readAiApiUsage} from "../lib/ai-summary/usage.ts";
+import {buildMockMosaic} from "../lib/ai-summary/mock.ts";
+import {AI_SUMMARY_DAILY_API_CAP, AI_SUMMARY_MOSAIC_SLOTS} from "../lib/ai-summary/types.ts";
 import {completeCurrentGrow} from "../lib/archives.ts";
 import {updateCurrentGrow} from "../lib/db.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
@@ -245,6 +249,52 @@ describe("ai summary scheduler and public payload", () => {
         assert.equal(isAiSummaryDue(before, idle), false);
         assert.equal(isAiSummaryDue(after, idle), true);
         assert.equal(isAiSummaryDue(after, {...idle, lastSuccessDate: "2026-10-14"}), false);
+        assert.equal(
+            isAiSummaryDue(after, {
+                ...idle,
+                lastAttemptDate: "2026-10-14",
+                lastStatus: "skipped_daily_cap",
+                attemptsOnDate: 1,
+            }),
+            false,
+        );
+        assert.equal(
+            isAiSummaryDue(after, {
+                ...idle,
+                lastAttemptDate: "2026-10-14",
+                lastAttemptAt: "2026-10-14T12:00:00.000Z",
+                lastStatus: "failed",
+                attemptsOnDate: 1,
+            }),
+            false,
+        );
+        assert.equal(
+            isAiSummaryDue(Date.parse("2026-10-14T06:20:00.000Z"), {
+                ...idle,
+                lastAttemptDate: "2026-10-14",
+                lastAttemptAt: "2026-10-14T06:01:00.000Z",
+                lastStatus: "failed",
+                attemptsOnDate: 1,
+            }),
+            true,
+        );
+        assert.equal(
+            isAiSummaryDue(after, {
+                ...idle,
+                lastAttemptDate: "2026-10-14",
+                lastStatus: "failed",
+                attemptsOnDate: 2,
+            }),
+            false,
+        );
+    });
+
+    it("builds a full-day mock mosaic", () => {
+        const mosaic = buildMockMosaic();
+        assert.equal(mosaic.tempC.length, AI_SUMMARY_MOSAIC_SLOTS);
+        assert.match(mosaic.ppfd, /0/);
+        assert.match(mosaic.co2, /3/);
+        assert.match(mosaic.tempC, /1/);
     });
 
     it("rate-limits regenerate to one call per window", () => {
@@ -342,6 +392,86 @@ describe("ai summary generate and archive", () => {
                 process.env.XAI_API_KEY = previousKey;
             }
         });
+    });
+
+    it("reserves a slot before the HTTP call and hard-caps 5 xAI calls per Berlin day", async () => {
+        await withTempDataDir(async () => {
+            const previousKey = process.env.XAI_API_KEY;
+            process.env.XAI_API_KEY = "test-key";
+            const nowMs = Date.parse("2026-10-14T10:00:00.000Z");
+            let calls = 0;
+            const fetchImpl: typeof fetch = async () => {
+                calls += 1;
+                return Response.json({
+                    choices: [{message: {content: JSON.stringify(validAi())}}],
+                });
+            };
+            for (let i = 0; i < AI_SUMMARY_DAILY_API_CAP; i += 1) {
+                const result = await generateDailyAiSummary({nowMs, force: true, fetchImpl});
+                assert.equal(result.ok, true);
+            }
+            assert.equal(calls, AI_SUMMARY_DAILY_API_CAP);
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, AI_SUMMARY_DAILY_API_CAP);
+
+            const blocked = await generateDailyAiSummary({nowMs, force: true, fetchImpl});
+            assert.equal(blocked.ok, false);
+            if (!blocked.ok) {
+                assert.equal(blocked.reason, "daily_cap");
+            }
+            assert.equal(calls, AI_SUMMARY_DAILY_API_CAP);
+
+            const reused = await generateDailyAiSummary({nowMs, fetchImpl});
+            assert.equal(reused.ok, true);
+            if (reused.ok) {
+                assert.equal(reused.reused, true);
+            }
+            assert.equal(calls, AI_SUMMARY_DAILY_API_CAP);
+
+            if (previousKey === undefined) {
+                delete process.env.XAI_API_KEY;
+            } else {
+                process.env.XAI_API_KEY = previousKey;
+            }
+        });
+    });
+
+    it("keeps per-day usage across a clock rollback to a previous Berlin date", async () => {
+        await withTempDataDir(async () => {
+            for (let i = 0; i < AI_SUMMARY_DAILY_API_CAP; i += 1) {
+                assert.equal((await reserveAiApiCall("2026-10-14")).ok, true);
+            }
+            assert.equal((await reserveAiApiCall("2026-10-14")).ok, false);
+            assert.equal((await reserveAiApiCall("2026-10-13")).ok, true);
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, AI_SUMMARY_DAILY_API_CAP);
+            assert.equal((await readAiApiUsage("2026-10-13")).calls, 1);
+        });
+    });
+
+    it("elects one scheduler leader and refuses a live peer", async () => {
+        await withTempDataDir(async () => {
+            const now = Date.parse("2026-10-14T08:00:00.000Z");
+            assert.equal(await tryHoldLeaderLease(now, "owner-a"), true);
+            assert.equal(await tryHoldLeaderLease(now + 1_000, "owner-b"), false);
+            assert.equal(await tryHoldLeaderLease(now + 1_000, "owner-a"), true);
+            assert.equal(await tryHoldLeaderLease(now + 200_000, "owner-b"), true);
+        });
+    });
+
+    it("sends max_tokens on the xAI body", async () => {
+        let body: {max_tokens?: number} = {};
+        const parsed = await requestGrowSummary({
+            userText: "stage only",
+            still: null,
+            env: {XAI_API_KEY: "test-key", XAI_MODEL: "grok-4.3"} as unknown as NodeJS.ProcessEnv,
+            fetchImpl: async (_url, init) => {
+                body = JSON.parse(String(init?.body)) as {max_tokens?: number};
+                return Response.json({
+                    choices: [{message: {content: JSON.stringify(validAi())}}],
+                });
+            },
+        });
+        assert.ok(parsed);
+        assert.equal(body.max_tokens, XAI_MAX_OUTPUT_TOKENS);
     });
 
     it("copies climate and summaries into the grow archive and resets current/", async () => {

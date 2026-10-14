@@ -18,7 +18,7 @@ export function AiSummaryPanel({configured, summary, regenerateAction}: AiSummar
                     <p className="text-(--admin-muted)">
                         Täglich gegen 08:00 Europe/Berlin. Die KI bekommt Stadium und Messwerte, nicht deine
                         Klima-Sollwerte. Das Timelapse-Foto geht nur an xAI und erscheint nicht auf der
-                        öffentlichen Karte.
+                        öffentlichen Karte. Hartes Limit: 5 xAI-Aufrufe pro Berlin-Tag (Job + Neu erzeugen).
                     </p>
                     <p>xAI-Schlüssel: {configured ? "gesetzt" : "fehlt (XAI_API_KEY)"}</p>
                     {summary ? (

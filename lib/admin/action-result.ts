@@ -36,6 +36,7 @@ const KEEP_PAGE: ReadonlySet<AdminNoticeId> = new Set([
     "ai_summary_failed",
     "ai_summary_rate_limited",
     "ai_summary_no_key",
+    "ai_summary_daily_cap",
 ]);
 
 export function adminNoticeRefreshes(notice: AdminNoticeId): boolean {

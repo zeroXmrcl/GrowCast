@@ -34,6 +34,7 @@ describe("admin notice query", () => {
         assert.equal(isAdminNoticeId("ai_summary_failed"), true);
         assert.equal(isAdminNoticeId("ai_summary_rate_limited"), true);
         assert.equal(isAdminNoticeId("ai_summary_no_key"), true);
+        assert.equal(isAdminNoticeId("ai_summary_daily_cap"), true);
         assert.equal(isAdminNoticeId("not-a-notice"), false);
         assert.equal(isAdminNoticeId(""), false);
     });

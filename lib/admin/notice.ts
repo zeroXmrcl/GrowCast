@@ -56,6 +56,7 @@ export const ADMIN_NOTICE_IDS = [
     "ai_summary_failed",
     "ai_summary_rate_limited",
     "ai_summary_no_key",
+    "ai_summary_daily_cap",
 ] as const;
 
 export type AdminNoticeId = (typeof ADMIN_NOTICE_IDS)[number];

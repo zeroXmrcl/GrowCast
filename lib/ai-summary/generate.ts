@@ -17,6 +17,7 @@ import {
     withAiSummaryLock,
     writeAiSummaryRecord,
 } from "@/lib/ai-summary/store";
+import {reserveAiApiCall} from "@/lib/ai-summary/usage";
 import type {AiSummaryRecord, GenerateResult} from "@/lib/ai-summary/types";
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -63,6 +64,18 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
         return {ok: false, reason: "invalid_response"};
     }
 
+    let reserved: Awaited<ReturnType<typeof reserveAiApiCall>>;
+    try {
+        reserved = await reserveAiApiCall(date);
+    } catch {
+        logAiSummary("usage_lock_timeout", {date});
+        return {ok: false, reason: "locked"};
+    }
+    if (!reserved.ok) {
+        logAiSummary("daily_cap", {date, calls: reserved.usage.calls}, "info");
+        return {ok: false, reason: "daily_cap"};
+    }
+
     const ai = await requestGrowSummary({
         userText,
         still,
@@ -83,7 +96,12 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
         mosaic: still || points.length > 0 ? buildMosaic(points, windowStartMs, ai.ranges) : emptyMosaic(),
         imageUsed: still !== null,
     };
-    await writeAiSummaryRecord(record);
+    try {
+        await writeAiSummaryRecord(record);
+    } catch {
+        logAiSummary("write_failed", {date});
+        return {ok: false, reason: "write_failed"};
+    }
     logAiSummary("generated", {date, score: ai.score, imageUsed: record.imageUsed}, "info");
     return {ok: true, record, reused: false};
 }

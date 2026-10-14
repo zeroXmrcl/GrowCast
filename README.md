@@ -81,7 +81,7 @@ Notes:
   - `XAI_API_KEY` — required to generate summaries. Never expose this to the browser.
   - `XAI_MODEL` — vision-capable Grok model. Default `grok-4.3` (image input, cheaper than `grok-4.7`).
   - `XAI_API_BASE` — default `https://api.x.ai/v1`.
-  - The job runs in-process around 08:00 Europe/Berlin, survives restarts, and is idempotent per Berlin day. Admin can regenerate from **GGS**. See `.env.example`.
+  - The job runs in-process around 08:00 Europe/Berlin, survives restarts, and is idempotent per Berlin day. Admin can regenerate from **GGS** (1/10 min, same-origin). Hard cap: **5 xAI calls per Berlin day** (scheduler + regenerate, persisted in `data/ai-summary/usage.json`). Requests use a 60s timeout, `max_tokens=1536`, and a 400 KB vision still. See `.env.example`.
 
 ### Logging
 

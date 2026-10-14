@@ -116,14 +116,33 @@ export type AiSummaryPublic = {
     lightHours: number | null;
 };
 
+export type SchedulerStatus =
+    | "success"
+    | "failed"
+    | "skipped_no_key"
+    | "skipped_exists"
+    | "skipped_not_due"
+    | "skipped_daily_cap"
+    | "skipped_not_leader";
+
 export type SchedulerState = {
     lastSuccessDate: string | null;
     lastAttemptDate: string | null;
     lastAttemptAt: string | null;
-    lastStatus: "success" | "failed" | "skipped_no_key" | "skipped_exists" | "skipped_not_due";
+    lastStatus: SchedulerStatus;
     attemptsOnDate: number;
 };
 
+export type GenerateReason =
+    | "no_key"
+    | "invalid_response"
+    | "request_failed"
+    | "locked"
+    | "daily_cap"
+    | "write_failed";
+
 export type GenerateResult =
     | {ok: true; record: AiSummaryRecord; reused: boolean}
-    | {ok: false; reason: "no_key" | "invalid_response" | "request_failed" | "locked"};
+    | {ok: false; reason: GenerateReason};
+
+export const AI_SUMMARY_DAILY_API_CAP = 5;

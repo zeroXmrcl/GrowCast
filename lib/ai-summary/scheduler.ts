@@ -1,16 +1,43 @@
+import {randomBytes} from "node:crypto";
+import {readFile} from "node:fs/promises";
 import {berlinDateOnly, berlinHour} from "@/lib/energy/berlin";
+import {asNumber, asString, isRecord} from "@/lib/coerce";
+import {atomicWriteFile} from "@/lib/atomic-file";
 import {hasXaiApiKey} from "@/lib/ai-summary/config";
 import {generateDailyAiSummary} from "@/lib/ai-summary/generate";
 import {logAiSummary} from "@/lib/ai-summary/log";
+import {aiSummaryLeaderFile} from "@/lib/ai-summary/paths";
 import {readSchedulerState, writeSchedulerState} from "@/lib/ai-summary/store";
 import {AI_SUMMARY_JOB_HOUR, type SchedulerState} from "@/lib/ai-summary/types";
 
 const TICK_MS = 60_000;
 const RETRY_GAP_MS = 15 * 60_000;
 const MAX_ATTEMPTS = 2;
+export const AI_SUMMARY_LEADER_STALE_MS = 150_000;
 
-let timer: ReturnType<typeof setInterval> | null = null;
-let ticking = false;
+type SchedulerRuntime = {
+    timer: ReturnType<typeof setInterval> | null;
+    ticking: boolean;
+    ownerId: string;
+};
+
+type LeaderLease = {
+    ownerId: string;
+    pid: number;
+    heartbeatAt: string;
+};
+
+function schedulerRuntime(): SchedulerRuntime {
+    const g = globalThis as typeof globalThis & {__growcastAiSummaryScheduler?: SchedulerRuntime};
+    if (!g.__growcastAiSummaryScheduler) {
+        g.__growcastAiSummaryScheduler = {
+            timer: null,
+            ticking: false,
+            ownerId: `${process.pid}-${randomBytes(4).toString("hex")}`,
+        };
+    }
+    return g.__growcastAiSummaryScheduler;
+}
 
 export function berlinMinutesSinceMidnight(ms: number): number {
     const hourFormatter = new Intl.DateTimeFormat("en-US", {
@@ -34,7 +61,11 @@ export function isAiSummaryDue(nowMs: number, state: SchedulerState): boolean {
         return false;
     }
     if (state.lastAttemptDate === date) {
-        if (state.lastStatus === "skipped_exists" || state.lastStatus === "skipped_no_key") {
+        if (
+            state.lastStatus === "skipped_exists" ||
+            state.lastStatus === "skipped_no_key" ||
+            state.lastStatus === "skipped_daily_cap"
+        ) {
             return false;
         }
         if (state.lastStatus === "failed") {
@@ -42,7 +73,7 @@ export function isAiSummaryDue(nowMs: number, state: SchedulerState): boolean {
                 return false;
             }
             const lastAt = state.lastAttemptAt ? Date.parse(state.lastAttemptAt) : 0;
-            if (Number.isFinite(lastAt) && nowMs - lastAt < RETRY_GAP_MS) {
+            if (!Number.isFinite(lastAt) || nowMs - lastAt < RETRY_GAP_MS) {
                 return false;
             }
         }
@@ -50,9 +81,57 @@ export function isAiSummaryDue(nowMs: number, state: SchedulerState): boolean {
     return true;
 }
 
+function parseLeaderLease(raw: unknown): LeaderLease | null {
+    if (!isRecord(raw)) {
+        return null;
+    }
+    const ownerId = asString(raw.ownerId, "");
+    const heartbeatAt = asString(raw.heartbeatAt, "");
+    if (!ownerId || !Number.isFinite(Date.parse(heartbeatAt))) {
+        return null;
+    }
+    return {
+        ownerId,
+        pid: Math.max(0, Math.round(asNumber(raw.pid, 0))),
+        heartbeatAt,
+    };
+}
+
+export async function tryHoldLeaderLease(nowMs: number, ownerId: string): Promise<boolean> {
+    let existing: LeaderLease | null = null;
+    try {
+        existing = parseLeaderLease(JSON.parse(await readFile(aiSummaryLeaderFile(), "utf8")));
+    } catch {
+        existing = null;
+    }
+    const lastBeat = existing ? Date.parse(existing.heartbeatAt) : 0;
+    const stale = !existing || !Number.isFinite(lastBeat) || nowMs - lastBeat >= AI_SUMMARY_LEADER_STALE_MS;
+    if (existing && existing.ownerId !== ownerId && !stale) {
+        return false;
+    }
+    await atomicWriteFile(
+        aiSummaryLeaderFile(),
+        JSON.stringify(
+            {
+                ownerId,
+                pid: process.pid,
+                heartbeatAt: new Date(nowMs).toISOString(),
+            },
+            null,
+            2,
+        ),
+    );
+    return true;
+}
+
 export async function runAiSummaryTick(nowMs: number = Date.now()): Promise<SchedulerState> {
     const current = await readSchedulerState();
     const date = berlinDateOnly(nowMs);
+    const runtime = schedulerRuntime();
+    const leader = await tryHoldLeaderLease(nowMs, runtime.ownerId);
+    if (!leader) {
+        return current;
+    }
     if (!isAiSummaryDue(nowMs, current)) {
         return current;
     }
@@ -86,7 +165,12 @@ export async function runAiSummaryTick(nowMs: number = Date.now()): Promise<Sche
         lastSuccessDate: current.lastSuccessDate,
         lastAttemptDate: date,
         lastAttemptAt: new Date(nowMs).toISOString(),
-        lastStatus: result.reason === "no_key" ? "skipped_no_key" : "failed",
+        lastStatus:
+            result.reason === "no_key"
+                ? "skipped_no_key"
+                : result.reason === "daily_cap"
+                  ? "skipped_daily_cap"
+                  : "failed",
         attemptsOnDate,
     };
     await writeSchedulerState(next);
@@ -95,35 +179,38 @@ export async function runAiSummaryTick(nowMs: number = Date.now()): Promise<Sche
 }
 
 async function safeTick(): Promise<void> {
-    if (ticking) {
+    const runtime = schedulerRuntime();
+    if (runtime.ticking) {
         return;
     }
-    ticking = true;
+    runtime.ticking = true;
     try {
         await runAiSummaryTick();
     } catch (error) {
         logAiSummary("tick_error");
         void error;
     } finally {
-        ticking = false;
+        runtime.ticking = false;
     }
 }
 
 export function startAiSummaryScheduler(): void {
-    if (timer) {
+    const runtime = schedulerRuntime();
+    if (runtime.timer) {
         return;
     }
     void safeTick();
-    timer = setInterval(() => {
+    runtime.timer = setInterval(() => {
         void safeTick();
     }, TICK_MS);
-    timer.unref?.();
+    runtime.timer.unref?.();
 }
 
 export function _resetAiSummarySchedulerForTests(): void {
-    if (timer) {
-        clearInterval(timer);
-        timer = null;
+    const runtime = schedulerRuntime();
+    if (runtime.timer) {
+        clearInterval(runtime.timer);
+        runtime.timer = null;
     }
-    ticking = false;
+    runtime.ticking = false;
 }

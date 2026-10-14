@@ -21,6 +21,18 @@ export function aiSummarySchedulerFile(): string {
     return path.join(aiSummaryDir(), "scheduler.json");
 }
 
+export function aiSummaryUsageFile(): string {
+    return path.join(aiSummaryDir(), "usage.json");
+}
+
+export function aiSummaryUsageLockFile(): string {
+    return path.join(aiSummaryDir(), "usage.lock");
+}
+
+export function aiSummaryLeaderFile(): string {
+    return path.join(aiSummaryDir(), "leader.json");
+}
+
 export function archiveAiSummaryFile(archiveId: string): string {
     return path.join(growcastDataDir(), "archives", archiveId, "ai-summary.json");
 }

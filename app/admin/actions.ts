@@ -401,7 +401,13 @@ export async function regenerateAiSummaryAction(formData: FormData): Promise<Adm
         }
         const result = await generateDailyAiSummary({force: true});
         if (!result.ok) {
-            return {notice: result.reason === "no_key" ? "ai_summary_no_key" : "ai_summary_failed"};
+            if (result.reason === "no_key") {
+                return {notice: "ai_summary_no_key"};
+            }
+            if (result.reason === "daily_cap") {
+                return {notice: "ai_summary_daily_cap"};
+            }
+            return {notice: "ai_summary_failed"};
         }
         revalidatePath("/");
         revalidatePath("/admin/ggs");

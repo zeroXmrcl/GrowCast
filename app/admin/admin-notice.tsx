@@ -278,6 +278,11 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "XAI_API_KEY fehlt",
         body: "Setze XAI_API_KEY in .env.local (nur Server) und starte GrowCast neu.",
     },
+    ai_summary_daily_cap: {
+        tone: "warning",
+        title: "Tageslimit erreicht",
+        body: "Höchstens 5 xAI-Aufrufe pro Berlin-Tag (Scheduler und Neu erzeugen zusammen). Morgen erneut oder Logs prüfen.",
+    },
 };
 
 export function adminNoticeContent(notice: string): NoticeContent | null {

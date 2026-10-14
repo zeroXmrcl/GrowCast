@@ -29,6 +29,14 @@ describe("ai summary surface", () => {
         assert.match(client, /XAI_API_KEY|xaiApiKey/);
         assert.match(config, /api\.x\.ai/);
         assert.match(client, /chat\/completions/);
+        assert.match(client, /max_tokens/);
+        assert.match(client, /XAI_REQUEST_TIMEOUT_MS|AbortController/);
+        assert.match(generate, /reserveAiApiCall/);
+        assert.match(generate, /daily_cap/);
+        assert.match(src(path.join("lib", "ai-summary", "usage.ts")), /AI_SUMMARY_DAILY_API_CAP/);
+        assert.match(src(path.join("lib", "ai-summary", "image.ts")), /MAX_VISION_BYTES/);
+        assert.match(src(path.join("lib", "ai-summary", "scheduler.ts")), /__growcastAiSummaryScheduler/);
+        assert.match(src(path.join("lib", "ai-summary", "scheduler.ts")), /tryHoldLeaderLease/);
         assert.match(publicApi, /export async function GET/);
         assert.doesNotMatch(publicApi, /export async function POST/);
         assert.match(action, /requireAdmin/);
