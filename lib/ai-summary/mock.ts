@@ -85,10 +85,10 @@ export function buildMockAiSummaryRecord(input: {
         },
         ai: {
             score,
-            rating: score >= 80 ? "gut" : score >= 65 ? "solide" : "gemischt",
-            headline: "Veg-Klima weitgehend im Ziel, CO₂ nachts etwas hoch",
+            rating: score >= 80 ? "good" : score >= 65 ? "fair" : "mixed",
+            headline: "Veg climate mostly in range, night CO₂ a bit high",
             summary:
-                "Über die letzten 24 Stunden lagen Temperatur und VPD tagsüber im für die vegetative Phase sinnvollen Bereich. Die Luftfeuchte war stabil. CO₂ war nachts zeitweise höher als nötig, PPFD deckte die Lichtstunden ab.",
+                "Over the last 24 hours, daytime temperature and VPD sat in a sensible veg range. Humidity was steady. Night CO₂ ran higher than needed at times, and PPFD covered the light hours.",
             ranges: {
                 tempC: {min: 22, max: 28},
                 humidityPct: {min: 55, max: 70},
@@ -97,18 +97,18 @@ export function buildMockAiSummaryRecord(input: {
                 ppfd: {min: 250, max: 600},
             },
             verdicts: {
-                tempC: {verdict: "in_range", pctInRange: 91, note: "Tagestemperatur passt zur Veg."},
-                humidityPct: {verdict: "in_range", pctInRange: 88, note: "RH überwiegend im Ziel."},
-                vpd: {verdict: "slightly_off", pctInRange: 74, note: "Einzelne Peaks nachmittags."},
-                co2: {verdict: "slightly_off", pctInRange: 69, note: "Nachts unnötig hoch."},
-                ppfd: {verdict: "in_range", pctInRange: 86, note: "Lichtstunden abgedeckt."},
+                tempC: {verdict: "in_range", pctInRange: 91, note: "Daytime temperature fits veg."},
+                humidityPct: {verdict: "in_range", pctInRange: 88, note: "RH mostly in range."},
+                vpd: {verdict: "slightly_off", pctInRange: 74, note: "A few afternoon peaks."},
+                co2: {verdict: "slightly_off", pctInRange: 69, note: "Unnecessarily high at night."},
+                ppfd: {verdict: "in_range", pctInRange: 86, note: "Light hours covered."},
             },
             plantObservation:
-                "Blätter wirken turgeszent, keine offensichtlichen Mangel- oder Stresszeichen im Bild.",
+                "Leaves look turgid, with no obvious deficiency or stress in the frame.",
             recommendations: [
-                "Nacht-CO₂ nicht weiter anheben.",
-                "VPD-Spitzen nachmittags mit etwas mehr Luftwechsel dämpfen.",
-                "Lichtplan 18/6 beibehalten.",
+                "Do not raise night CO₂ further.",
+                "Ease afternoon VPD spikes with a bit more air exchange.",
+                "Keep the 18/6 light schedule.",
             ],
             confidence: 72,
         },

@@ -9,6 +9,7 @@ export function isUsableSeededAt(value: string): boolean {
     return isDateOnly(value) && value !== PLACEHOLDER_SEEDED;
 }
 
+/** Reads flower week from grower stage text (English or common German labels). */
 function parseFlowerWeek(stage: string): number | null {
     const match =
         /(?:blüte|bluete|flower(?:ing)?|bloom)\s*(?:w(?:oche)?|week)?\s*(\d{1,2})\b/i.exec(stage)

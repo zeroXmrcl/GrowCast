@@ -25,7 +25,7 @@ describe("ai summary surface", () => {
         assert.match(archives, /stageAiSummaryArchive/);
         assert.match(generate, /stageContextFromGrow/);
         assert.doesNotMatch(generate, /temperatureDay|humidityNight/);
-        assert.match(prompt, /KEINE Zielwerte/);
+        assert.match(prompt, /NOT given the grower's target values/);
         assert.match(client, /XAI_API_KEY|xaiApiKey/);
         assert.match(config, /api\.x\.ai/);
         assert.match(client, /chat\/completions/);
@@ -44,5 +44,8 @@ describe("ai summary surface", () => {
         assert.match(action, /allowAiSummaryRegenerate/);
         assert.doesNotMatch(publicApi, /XAI_API_KEY/);
         assert.doesNotMatch(src(path.join("components", "ai-summary-card.tsx")), /\/api\/snapshots\//);
+        assert.match(src(path.join("components", "ai-summary-card.tsx")), /AI Assessment/);
+        assert.doesNotMatch(src(path.join("components", "ai-summary-card.tsx")), /KI-Einschätzung/);
+        assert.doesNotMatch(prompt, /Deutsch|Du bist|KEINE Zielwerte/);
     });
 });

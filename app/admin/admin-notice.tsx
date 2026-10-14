@@ -260,28 +260,28 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     },
     ai_summary_ready: {
         tone: "success",
-        title: "KI-Einschätzung aktualisiert",
-        body: "Die öffentliche Karte zeigt die neue Bewertung. Das Pflanzenfoto wird nicht veröffentlicht.",
+        title: "AI Assessment updated",
+        body: "The public card now shows the new score. The plant photo is not published.",
     },
     ai_summary_failed: {
         tone: "danger",
-        title: "KI-Einschätzung fehlgeschlagen",
-        body: "xAI hat nicht geantwortet oder das JSON war ungültig. Logs prüfen und später erneut versuchen.",
+        title: "AI Assessment failed",
+        body: "xAI did not answer or the JSON was invalid. Check the logs and try again later.",
     },
     ai_summary_rate_limited: {
         tone: "warning",
-        title: "Bitte warten",
-        body: "Neu erzeugen ist auf einmal in 10 Minuten begrenzt, damit keine unnötigen API-Kosten entstehen.",
+        title: "Please wait",
+        body: "Regenerate is limited to once every 10 minutes so unused API spend stays low.",
     },
     ai_summary_no_key: {
         tone: "warning",
-        title: "XAI_API_KEY fehlt",
-        body: "Setze XAI_API_KEY in .env.local (nur Server) und starte GrowCast neu.",
+        title: "XAI_API_KEY is missing",
+        body: "Set XAI_API_KEY in .env.local (server only) and restart GrowCast.",
     },
     ai_summary_daily_cap: {
         tone: "warning",
-        title: "Tageslimit erreicht",
-        body: "Höchstens 5 xAI-Aufrufe pro Berlin-Tag (Scheduler und Neu erzeugen zusammen). Morgen erneut oder Logs prüfen.",
+        title: "Daily cap reached",
+        body: "At most 5 xAI calls per Berlin day (scheduler and regenerate combined). Try again tomorrow or check the logs.",
     },
 };
 

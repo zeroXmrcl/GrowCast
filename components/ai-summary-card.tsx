@@ -54,9 +54,9 @@ function MosaicSvg({summary}: {summary: AiSummaryPublic}) {
             viewBox={`0 0 ${width} ${height}`}
             className="h-auto w-full"
             role="img"
-            aria-label="Klima der letzten 24 Stunden, ein Punkt je 5 Minuten"
+            aria-label="Last 24 hours of climate, one dot per 5 minutes"
         >
-            <title>Klimamosaik der letzten 24 Stunden</title>
+            <title>24-hour climate mosaic</title>
             {CLIMATE_METRIC_KEYS.map((key, row) => {
                 const y = row * (rowHeight + rowGap);
                 const cells = parseMosaicRow(summary.mosaic[key] ?? "");
@@ -82,7 +82,7 @@ function MosaicSvg({summary}: {summary: AiSummaryPublic}) {
                                 className={cellValue === 0 ? "fill-zinc-200 dark:fill-zinc-700" : undefined}
                                 fill={cellValue === 0 ? undefined : CELL_FILL[cellValue]}
                             >
-                                <title>{`${METRIC_LABELS[key]} Slot ${index + 1}`}</title>
+                                <title>{`${METRIC_LABELS[key]} slot ${index + 1}`}</title>
                             </rect>
                         ))}
                     </g>
@@ -113,9 +113,9 @@ function ScoreMatrix({history}: {history: AiSummaryPublic["scoreHistory"]}) {
             viewBox={`0 0 ${width} ${size}`}
             className="h-3 w-full max-w-md"
             role="img"
-            aria-label="Score der letzten 30 Tage"
+            aria-label="Score for the last 30 days"
         >
-            <title>30-Tage-Score</title>
+            <title>30-day score</title>
             {cells.map((cell, index) => (
                 <rect
                     key={cell.date}
@@ -128,7 +128,7 @@ function ScoreMatrix({history}: {history: AiSummaryPublic["scoreHistory"]}) {
                     fill={cell.score === null ? undefined : scoreFill(cell.score)}
                 >
                     <title>
-                        {cell.score === null ? `${cell.date}: kein Score` : `${cell.date}: ${cell.score}`}
+                        {cell.score === null ? `${cell.date}: no score` : `${cell.date}: ${cell.score}`}
                     </title>
                 </rect>
             ))}
@@ -139,13 +139,13 @@ function ScoreMatrix({history}: {history: AiSummaryPublic["scoreHistory"]}) {
 function verdictLabel(verdict: string): string {
     switch (verdict) {
         case "in_range":
-            return "im Ziel";
+            return "in range";
         case "slightly_off":
-            return "knapp daneben";
+            return "slightly off";
         case "off":
-            return "außerhalb";
+            return "off";
         default:
-            return "unbekannt";
+            return "unknown";
     }
 }
 
@@ -153,12 +153,12 @@ export default function AiSummaryCard({summary}: {summary: AiSummaryPublic | nul
     return (
         <section className={`${WORKSPACE_AREA.ai} ${WORKSPACE_VT.ai} ${WORKSPACE_PAD}`}>
             <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-                <h2 className={`${WORKSPACE_TITLE} mb-0`}>KI-Einschätzung</h2>
+                <h2 className={`${WORKSPACE_TITLE} mb-0`}>AI Assessment</h2>
                 {summary ? (
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
                         {summary.date}
                         {summary.stageLabel ? ` · ${summary.stageLabel}` : ""}
-                        {summary.daysSinceSeeding !== null ? ` · Tag ${summary.daysSinceSeeding}` : ""}
+                        {summary.daysSinceSeeding !== null ? ` · Day ${summary.daysSinceSeeding}` : ""}
                     </p>
                 ) : null}
             </div>
@@ -186,18 +186,18 @@ export default function AiSummaryCard({summary}: {summary: AiSummaryPublic | nul
 
                     {summary.plantObservation ? (
                         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                            <span className="font-medium text-zinc-700 dark:text-zinc-300">Pflanze: </span>
+                            <span className="font-medium text-zinc-700 dark:text-zinc-300">Plant: </span>
                             {summary.plantObservation}
                         </p>
                     ) : null}
 
                     <div>
                         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                            24h-Mosaik · 5-Minuten-Slots
+                            24h mosaic · 5-minute slots
                         </p>
                         <MosaicSvg summary={summary} />
                         <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-500">
-                            Grün im KI-Ziel, gelb knapp, rot außerhalb, grau ohne Messwert.
+                            Green is in the AI range, yellow is close, red is outside, grey has no sample.
                         </p>
                     </div>
 
@@ -236,15 +236,15 @@ export default function AiSummaryCard({summary}: {summary: AiSummaryPublic | nul
 
                     <div>
                         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                            30-Tage-Score
+                            30-day score
                         </p>
                         <ScoreMatrix history={summary.scoreHistory} />
                     </div>
                 </div>
             ) : (
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    Noch keine Einschätzung. Die tägliche Auswertung läuft gegen 08:00 (Europe/Berlin),
-                    sobald ein xAI-Schlüssel gesetzt ist.
+                    No assessment yet. The daily job runs around 08:00 (Europe/Berlin) once an xAI key
+                    is set.
                 </p>
             )}
         </section>

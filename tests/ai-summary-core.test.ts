@@ -52,12 +52,12 @@ function emptyStats(): ClimateWindowStats {
 
 function validAi() {
     const range = {min: 20, max: 28};
-    const verdict = {verdict: "in_range" as const, pctInRange: 90, note: "passt"};
+    const verdict = {verdict: "in_range" as const, pctInRange: 90, note: "on target"};
     return {
         score: 82,
-        rating: "gut",
-        headline: "Stabiles Veg-Klima",
-        summary: "Temperatur und VPD passen zur Veg.",
+        rating: "good",
+        headline: "Stable veg climate",
+        summary: "Temperature and VPD fit veg.",
         ranges: {
             tempC: range,
             humidityPct: {min: 55, max: 70},
@@ -72,8 +72,8 @@ function validAi() {
             co2: verdict,
             ppfd: verdict,
         },
-        plantObservation: "Blätter wirken vital.",
-        recommendations: ["Luftfeuchte nachts nicht unter 55%."],
+        plantObservation: "Leaves look vigorous.",
+        recommendations: ["Keep night humidity above 55%."],
         confidence: 70,
     };
 }
@@ -229,7 +229,7 @@ describe("ai summary schema and prompt", () => {
             stats: emptyStats(),
             imageUsed: true,
         });
-        assert.match(prompt, /Abgeleitete Phase: veg/);
+        assert.match(prompt, /Derived phase: veg/);
         assert.equal(promptContainsForbiddenTargets(prompt), false);
         assert.doesNotMatch(prompt, /temperatureDay|humidityNight/);
     });

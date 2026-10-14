@@ -135,7 +135,7 @@ describe("workspace morph", () => {
         assert.match(home, /WORKSPACE_VT\.flow/);
         assert.match(home, /WORKSPACE_VT\.table/);
         assert.match(home, /WORKSPACE_VT\.socials/);
-        assert.match(aiCard, /KI-Einschätzung/);
+        assert.match(aiCard, /AI Assessment/);
         assert.match(aiCard, /WORKSPACE_AREA\.ai/);
         assert.match(aiCard, /WORKSPACE_VT\.ai/);
         assert.match(css, /growcast-area-ai/);

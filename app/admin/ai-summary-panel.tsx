@@ -13,23 +13,23 @@ type AiSummaryPanelProps = {
 export function AiSummaryPanel({configured, summary, regenerateAction}: AiSummaryPanelProps) {
     return (
         <AdminImmediateForm action={regenerateAction}>
-            <AdminBand id="ai-summary" title="KI-Einschätzung">
+            <AdminBand id="ai-summary" title="AI Assessment">
                 <div className="space-y-3 text-sm text-(--admin-text)">
                     <p className="text-(--admin-muted)">
-                        Täglich gegen 08:00 Europe/Berlin. Die KI bekommt Stadium und Messwerte, nicht deine
-                        Klima-Sollwerte. Das Timelapse-Foto geht nur an xAI und erscheint nicht auf der
-                        öffentlichen Karte. Hartes Limit: 5 xAI-Aufrufe pro Berlin-Tag (Job + Neu erzeugen).
+                        Daily around 08:00 Europe/Berlin. The model gets stage and measured stats, not your
+                        climate targets. The timelapse still goes to xAI only and is not shown on the public
+                        card. Hard cap: 5 xAI calls per Berlin day (job + regenerate).
                     </p>
-                    <p>xAI-Schlüssel: {configured ? "gesetzt" : "fehlt (XAI_API_KEY)"}</p>
+                    <p>xAI key: {configured ? "set" : "missing (XAI_API_KEY)"}</p>
                     {summary ? (
                         <p>
-                            Letzte Bewertung: {summary.date} · Score {summary.score} · {summary.rating}
+                            Latest: {summary.date} · score {summary.score} · {summary.rating}
                         </p>
                     ) : (
-                        <p className="text-(--admin-muted)">Noch keine gespeicherte Bewertung.</p>
+                        <p className="text-(--admin-muted)">No saved assessment yet.</p>
                     )}
                     <AdminButton type="submit" tone="secondary">
-                        Heute neu erzeugen
+                        Regenerate today
                     </AdminButton>
                 </div>
             </AdminBand>
