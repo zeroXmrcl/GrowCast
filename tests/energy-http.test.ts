@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {completeCurrentGrow} from "../lib/archives.ts";
-import {energyGetResponse} from "../lib/energy/http.ts";
+import {energyGetResponse, tariffKindForEnergyGet} from "../lib/energy/http.ts";
 import {listCurrentEnergyDates, writeEnergyCursor, writeEnergyDay} from "../lib/energy/store.ts";
 import {energyCursorFile, energyDayFile} from "../lib/energy/paths.ts";
 import {writeEnergySettings} from "../lib/energy/settings.ts";
@@ -36,6 +36,14 @@ function requestFor(grow: string): Request {
 }
 
 describe("GET /api/data/energy", () => {
+    it("keeps the owner's tariff on the board and forces public for the overlay", () => {
+        const board = new Request("http://localhost/api/data/energy?grow=current");
+        const overlay = new Request("http://localhost/api/data/energy?grow=current&tariff=public");
+        assert.equal(tariffKindForEnergyGet(true, board), "private");
+        assert.equal(tariffKindForEnergyGet(false, board), "public");
+        assert.equal(tariffKindForEnergyGet(true, overlay), "public");
+    });
+
     it("returns 200 for current with no serials and only the viewer tariff", async () => {
         await withTempDataDir(async () => {
             await writeEnergySettings({

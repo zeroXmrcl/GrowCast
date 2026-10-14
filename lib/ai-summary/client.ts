@@ -1,7 +1,8 @@
 import {hasXaiApiKey, xaiApiBase, xaiApiKey, xaiModel} from "@/lib/ai-summary/config";
 import {logAiSummary} from "@/lib/ai-summary/log";
 import {AI_SUMMARY_SYSTEM_PROMPT} from "@/lib/ai-summary/prompt";
-import {extractJsonObject, GROW_SUMMARY_JSON_SCHEMA, parseAiSummaryPayload} from "@/lib/ai-summary/schema";
+import type {ClimateMetricKey} from "@/lib/climate/types";
+import {extractJsonObject, GROW_SUMMARY_JSON_SCHEMA, parseModelSummary} from "@/lib/ai-summary/schema";
 import type {AiSummaryPayload} from "@/lib/ai-summary/types";
 import type {SummaryStill} from "@/lib/ai-summary/image";
 
@@ -56,16 +57,20 @@ function messageText(payload: unknown): string {
     return "";
 }
 
+export type GrowSummaryRequest =
+    | {ok: true; ai: AiSummaryPayload; illegal: ClimateMetricKey[]}
+    | {ok: false; reason: "transport" | "invalid"};
+
 export async function requestGrowSummary(input: {
     userText: string;
     still: SummaryStill | null;
     fetchImpl?: typeof fetch;
     env?: NodeJS.ProcessEnv;
-}): Promise<AiSummaryPayload | null> {
+}): Promise<GrowSummaryRequest> {
     const env = input.env ?? process.env;
     const apiKey = xaiApiKey(env);
     if (!apiKey) {
-        return null;
+        return {ok: false, reason: "transport"};
     }
     const fetchImpl = input.fetchImpl ?? fetch;
     const body = {
@@ -96,17 +101,18 @@ export async function requestGrowSummary(input: {
         });
         if (!response.ok) {
             logAiSummary("xai_http_failed", {status: response.status});
-            return null;
+            return {ok: false, reason: "transport"};
         }
         const payload: unknown = await response.json();
-        const parsed = parseAiSummaryPayload(extractJsonObject(messageText(payload)));
+        const parsed = parseModelSummary(extractJsonObject(messageText(payload)));
         if (!parsed) {
             logAiSummary("xai_invalid_json");
+            return {ok: false, reason: "invalid"};
         }
-        return parsed;
+        return {ok: true, ai: parsed.ai, illegal: parsed.illegal};
     } catch {
         logAiSummary("xai_request_failed");
-        return null;
+        return {ok: false, reason: "transport"};
     } finally {
         clearTimeout(timer);
     }

@@ -71,7 +71,7 @@ export type AiSummaryPayload = {
     rating: string;
     headline: string;
     summary: string;
-    ranges: Record<ClimateMetricKey, DerivedRange>;
+    ranges: Record<ClimateMetricKey, DerivedRange | null>;
     verdicts: Record<ClimateMetricKey, AiMetricJudgment>;
     plantObservation: string;
     recommendations: string[];
@@ -106,7 +106,7 @@ export type AiSummaryPublic = {
     plantObservation: string;
     recommendations: string[];
     confidence: number;
-    ranges: Record<ClimateMetricKey, DerivedRange>;
+    ranges: Record<ClimateMetricKey, DerivedRange | null>;
     verdicts: Record<ClimateMetricKey, AiMetricJudgment>;
     mosaic: Record<ClimateMetricKey, string>;
     scoreHistory: AiSummaryScorePoint[];
@@ -123,7 +123,8 @@ export type SchedulerStatus =
     | "skipped_exists"
     | "skipped_not_due"
     | "skipped_daily_cap"
-    | "skipped_not_leader";
+    | "skipped_not_leader"
+    | "rejected";
 
 export type SchedulerState = {
     lastSuccessDate: string | null;

@@ -275,7 +275,7 @@ export default function AiSummaryCard({
                                                     {METRIC_LABELS[key]}
                                                 </span>
                                                 <span className="text-right text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
-                                                    {formatRange(key, range.min, range.max)}
+                                                    {range ? formatRange(key, range.min, range.max) : null}
                                                     {percent !== null ? (
                                                         <>
                                                             {" · "}

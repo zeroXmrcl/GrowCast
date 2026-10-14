@@ -3,7 +3,7 @@ import {asBoolean, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import type {GgsActuator, GgsActuatorKind, GgsDeviceSnapshot, GgsPrefix} from "@/lib/ggs-live";
 import {logEnergy} from "@/lib/energy/log";
-import {energyCurrentDir, energyCursorFile, energyDayFile} from "@/lib/energy/paths";
+import {energyCurrentDir, energyCursorFile, energyDayFile, energyPendingCursorFile} from "@/lib/energy/paths";
 import type {EnergyCursor, EnergyDayFile, EnergyDayHours} from "@/lib/energy/types";
 
 const DAY_FILE_NAME = /^(\d{4}-\d{2}-\d{2})\.json$/;
@@ -234,6 +234,47 @@ export async function writeEnergyCursor(cursor: EnergyCursor): Promise<void> {
         throw new Error("injected_cursor_write_failure");
     }
     await atomicWriteFile(energyCursorFile(), JSON.stringify(cursor, null, 2));
+}
+
+export type EnergyPendingRead =
+    | {status: "missing"}
+    | {status: "invalid"}
+    | {status: "ok"; cursor: EnergyCursor};
+
+export async function readEnergyPending(): Promise<EnergyPendingRead> {
+    try {
+        const raw = JSON.parse(await readFile(energyPendingCursorFile(), "utf8")) as unknown;
+        if (!isRecord(raw)) {
+            return {status: "invalid"};
+        }
+        const cursor = parseCursor(raw.cursor);
+        if (!cursor) {
+            return {status: "invalid"};
+        }
+        return {status: "ok", cursor};
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            return {status: "missing"};
+        }
+        return {status: "invalid"};
+    }
+}
+
+export async function writeEnergyPending(cursor: EnergyCursor, additions: unknown): Promise<void> {
+    await atomicWriteFile(
+        energyPendingCursorFile(),
+        JSON.stringify({cursor, additions}, null, 2),
+    );
+}
+
+export async function removeEnergyPending(): Promise<void> {
+    try {
+        await unlink(energyPendingCursorFile());
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+            throw error;
+        }
+    }
 }
 
 export async function energyCursorExists(): Promise<boolean> {

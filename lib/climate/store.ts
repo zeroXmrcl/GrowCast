@@ -127,6 +127,9 @@ export async function inspectClimateDay(dateOnly: string): Promise<ClimateDayIns
         if (!parsed) {
             return {status: "corrupt"};
         }
+        if (isRecord(raw) && Array.isArray(raw.points) && raw.points.length !== parsed.points.length) {
+            return {status: "corrupt"};
+        }
         return {status: "ok", day: parsed};
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") {

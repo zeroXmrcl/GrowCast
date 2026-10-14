@@ -3,10 +3,10 @@ import {mkdir, mkdtemp, readFile, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {deriveGrowPhase, stageContextFromGrow} from "../lib/ai-summary/stage.ts";
+import {deriveGrowPhase, growAgeDays, stageContextFromGrow} from "../lib/ai-summary/stage.ts";
 import {aggregateClimateWindow, percentile, summarizeValues} from "../lib/ai-summary/stats.ts";
 import {buildMosaic, cellForValue, foldMosaicRow, mosaicDetail, parseMosaicRow, verdictsFromMosaic} from "../lib/ai-summary/mosaic.ts";
-import {extractJsonObject, parseAiSummaryPayload} from "../lib/ai-summary/schema.ts";
+import {applyUnmeasuredRanges, extractJsonObject, parseAiSummaryPayload, parseModelSummary} from "../lib/ai-summary/schema.ts";
 import {AI_SUMMARY_SYSTEM_PROMPT, buildAiSummaryUserPrompt, promptContainsForbiddenTargets} from "../lib/ai-summary/prompt.ts";
 import {isAiSummaryDue, tryHoldLeaderLease} from "../lib/ai-summary/scheduler.ts";
 import {aiSummaryDemoMode, aiSummaryWidgetEnabled} from "../lib/ai-summary/config.ts";
@@ -122,6 +122,8 @@ describe("ai summary stage and stats", () => {
         assert.equal(deriveGrowPhase("Seed"), "seed");
         assert.equal(deriveGrowPhase("Sämling"), "seedling");
         assert.equal(deriveGrowPhase("Ernte"), "harvest");
+        assert.equal(growAgeDays("2001-01-01"), null);
+        assert.equal(typeof growAgeDays("2026-10-01"), "number");
         const context = stageContextFromGrow({
             plant: "Basil",
             details: {
@@ -274,6 +276,37 @@ describe("ai summary schema and prompt", () => {
             parseAiSummaryPayload({...validAi(), ranges: {...validAi().ranges, tempC: {min: 0, max: 80}}}),
             null,
         );
+        const unmeasuredCo2 = emptyStats();
+        unmeasuredCo2.metrics = {
+            tempC: {...unmeasuredCo2.metrics.tempC, all: {...unmeasuredCo2.metrics.tempC.all, count: 4}},
+            humidityPct: {...unmeasuredCo2.metrics.humidityPct, all: {...unmeasuredCo2.metrics.humidityPct.all, count: 4}},
+            vpd: {...unmeasuredCo2.metrics.vpd, all: {...unmeasuredCo2.metrics.vpd.all, count: 4}},
+            co2: unmeasuredCo2.metrics.co2,
+            ppfd: {...unmeasuredCo2.metrics.ppfd, all: {...unmeasuredCo2.metrics.ppfd.all, count: 4}},
+        };
+        const illegalCo2 = parseModelSummary({
+            ...validAi(),
+            ranges: {...validAi().ranges, co2: {min: 0, max: 80}},
+        });
+        assert.ok(illegalCo2);
+        const kept = illegalCo2 ? applyUnmeasuredRanges(illegalCo2.ai, illegalCo2.illegal, unmeasuredCo2) : null;
+        assert.equal(kept?.ranges.co2, null);
+        assert.equal(kept?.ranges.tempC?.min, 20);
+        assert.equal(kept?.headline, "Stable veg climate");
+        const measured = emptyStats();
+        measured.metrics = {
+            ...measured.metrics,
+            tempC: {...measured.metrics.tempC, all: {...measured.metrics.tempC.all, count: 4}},
+        };
+        const illegalTemp = parseModelSummary({
+            ...validAi(),
+            ranges: {...validAi().ranges, tempC: {min: 0, max: 80}},
+        });
+        assert.ok(illegalTemp);
+        assert.equal(
+            illegalTemp ? applyUnmeasuredRanges(illegalTemp.ai, illegalTemp.illegal, measured) : null,
+            null,
+        );
         assert.equal(parseAiSummaryPayload(extractJsonObject("noise {\"score\":1} trailing")), null);
         const extracted = extractJsonObject(`prefix ${JSON.stringify(validAi())} suffix`);
         assert.ok(parseAiSummaryPayload(extracted));
@@ -324,6 +357,16 @@ describe("ai summary scheduler and public payload", () => {
                 lastAttemptDate: "2026-10-14",
                 lastAttemptAt: "2026-10-14T12:00:00.000Z",
                 lastStatus: "failed",
+                attemptsOnDate: 1,
+            }),
+            false,
+        );
+        assert.equal(
+            isAiSummaryDue(after, {
+                ...idle,
+                lastAttemptDate: "2026-10-14",
+                lastAttemptAt: "2026-10-14T06:01:00.000Z",
+                lastStatus: "rejected",
                 attemptsOnDate: 1,
             }),
             false,
@@ -571,6 +614,61 @@ describe("ai summary generate and archive", () => {
         });
     });
 
+    it("returns the reserved slot when the xAI call fails", async () => {
+        await withTempDataDir(async () => {
+            const previousKey = process.env.XAI_API_KEY;
+            process.env.XAI_API_KEY = "test-key";
+            const nowMs = Date.parse("2026-10-14T10:00:00.000Z");
+            const failed = await generateDailyAiSummary({
+                nowMs,
+                fetchImpl: async () => new Response("{}", {status: 500}),
+            });
+            assert.equal(failed.ok, false);
+            if (!failed.ok) {
+                assert.equal(failed.reason, "request_failed");
+            }
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, 0);
+
+            await writeClimateDay({
+                date: "2026-10-14",
+                points: [
+                    {
+                        t: "2026-10-14T08:00:00.000Z",
+                        tempC: 24,
+                        humidityPct: 60,
+                        vpd: 1,
+                        co2: null,
+                        ppfd: null,
+                        isDay: true,
+                    },
+                ],
+            });
+            const rejected = await generateDailyAiSummary({
+                nowMs,
+                fetchImpl: async () => Response.json({
+                    choices: [{
+                        message: {
+                            content: JSON.stringify({
+                                ...validAi(),
+                                ranges: {...validAi().ranges, tempC: {min: 0, max: 80}},
+                            }),
+                        },
+                    }],
+                }),
+            });
+            assert.equal(rejected.ok, false);
+            if (!rejected.ok) {
+                assert.equal(rejected.reason, "invalid_response");
+            }
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, 0);
+            if (previousKey === undefined) {
+                delete process.env.XAI_API_KEY;
+            } else {
+                process.env.XAI_API_KEY = previousKey;
+            }
+        });
+    });
+
     it("elects one scheduler leader and refuses a live peer", async () => {
         await withTempDataDir(async () => {
             const now = Date.parse("2026-10-14T08:00:00.000Z");
@@ -594,7 +692,7 @@ describe("ai summary generate and archive", () => {
                 });
             },
         });
-        assert.ok(parsed);
+        assert.equal(parsed.ok, true);
         assert.equal(body.max_tokens, XAI_MAX_OUTPUT_TOKENS);
     });
 

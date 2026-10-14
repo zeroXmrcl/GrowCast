@@ -1,6 +1,12 @@
 import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
 import {isRecord} from "@/lib/coerce";
-import type {AiMetricJudgment, AiSummaryPayload, DerivedRange, MetricVerdict} from "@/lib/ai-summary/types";
+import type {
+    AiMetricJudgment,
+    AiSummaryPayload,
+    ClimateWindowStats,
+    DerivedRange,
+    MetricVerdict,
+} from "@/lib/ai-summary/types";
 
 const VERDICTS = new Set<MetricVerdict>(["in_range", "slightly_off", "off", "unknown"]);
 
@@ -106,20 +112,31 @@ const RANGE_LIMITS: Record<ClimateMetricKey, {lo: number; hi: number; maxWidth: 
     ppfd: {lo: 0, hi: 2500, maxWidth: 2000},
 };
 
-function parseRange(key: ClimateMetricKey, raw: unknown): DerivedRange | null {
+type RangeDecision =
+    | {kind: "range"; range: DerivedRange}
+    | {kind: "absent"}
+    | {kind: "illegal"};
+
+function decideRange(key: ClimateMetricKey, raw: unknown): RangeDecision {
+    if (raw === null || raw === undefined) {
+        return {kind: "absent"};
+    }
     if (!isRecord(raw)) {
-        return null;
+        return {kind: "illegal"};
+    }
+    if (raw.min === null && raw.max === null) {
+        return {kind: "absent"};
     }
     const min = asFinite(raw.min);
     const max = asFinite(raw.max);
     const limit = RANGE_LIMITS[key];
     if (min === null || max === null || max <= min) {
-        return null;
+        return {kind: "illegal"};
     }
     if (min < limit.lo || max > limit.hi || max - min > limit.maxWidth) {
-        return null;
+        return {kind: "illegal"};
     }
-    return {min, max};
+    return {kind: "range", range: {min, max}};
 }
 
 function parseVerdict(raw: unknown): AiMetricJudgment | null {
@@ -144,7 +161,10 @@ function parseVerdict(raw: unknown): AiMetricJudgment | null {
     };
 }
 
-export function parseAiSummaryPayload(raw: unknown): AiSummaryPayload | null {
+function parseSummary(
+    raw: unknown,
+    tolerateIllegal: boolean,
+): {ai: AiSummaryPayload; illegal: ClimateMetricKey[]} | null {
     if (!isRecord(raw)) {
         return null;
     }
@@ -163,15 +183,24 @@ export function parseAiSummaryPayload(raw: unknown): AiSummaryPayload | null {
     if (!isRecord(raw.ranges) || !isRecord(raw.verdicts)) {
         return null;
     }
-    const ranges = {} as Record<ClimateMetricKey, DerivedRange>;
+    const ranges = {} as Record<ClimateMetricKey, DerivedRange | null>;
     const verdicts = {} as Record<ClimateMetricKey, AiMetricJudgment>;
+    const illegal: ClimateMetricKey[] = [];
     for (const key of CLIMATE_METRIC_KEYS) {
-        const range = parseRange(key, raw.ranges[key]);
+        const decision = decideRange(key, raw.ranges[key]);
         const verdict = parseVerdict(raw.verdicts[key]);
-        if (!range || !verdict) {
+        if (!verdict) {
             return null;
         }
-        ranges[key] = range;
+        if (decision.kind === "illegal") {
+            if (!tolerateIllegal) {
+                return null;
+            }
+            illegal.push(key);
+            ranges[key] = null;
+        } else {
+            ranges[key] = decision.kind === "range" ? decision.range : null;
+        }
         verdicts[key] = verdict;
     }
     const recommendations: string[] = [];
@@ -187,16 +216,49 @@ export function parseAiSummaryPayload(raw: unknown): AiSummaryPayload | null {
         }
     }
     return {
-        score: Math.round(Math.min(100, Math.max(0, score))),
-        rating,
-        headline,
-        summary,
-        ranges,
-        verdicts,
-        plantObservation,
-        recommendations,
-        confidence: Math.round(Math.min(100, Math.max(0, confidence))),
+        illegal,
+        ai: {
+            score: Math.round(Math.min(100, Math.max(0, score))),
+            rating,
+            headline,
+            summary,
+            ranges,
+            verdicts,
+            plantObservation,
+            recommendations,
+            confidence: Math.round(Math.min(100, Math.max(0, confidence))),
+        },
     };
+}
+
+export function parseAiSummaryPayload(raw: unknown): AiSummaryPayload | null {
+    const parsed = parseSummary(raw, false);
+    return parsed ? parsed.ai : null;
+}
+
+export function parseModelSummary(raw: unknown): {ai: AiSummaryPayload; illegal: ClimateMetricKey[]} | null {
+    return parseSummary(raw, true);
+}
+
+/** Unmeasured metrics keep a null range. A measured metric still needs a legal band. */
+export function applyUnmeasuredRanges(
+    ai: AiSummaryPayload,
+    illegal: ClimateMetricKey[],
+    stats: ClimateWindowStats,
+): AiSummaryPayload | null {
+    const illegalKeys = new Set(illegal);
+    const ranges = {...ai.ranges};
+    for (const key of CLIMATE_METRIC_KEYS) {
+        const count = stats.metrics[key]?.all.count ?? 0;
+        if (count === 0) {
+            ranges[key] = null;
+            continue;
+        }
+        if (illegalKeys.has(key) || ranges[key] === null) {
+            return null;
+        }
+    }
+    return {...ai, ranges};
 }
 
 export function extractJsonObject(text: string): unknown {

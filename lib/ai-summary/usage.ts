@@ -132,3 +132,22 @@ export async function reserveAiApiCall(
         return {ok: true, usage: next};
     });
 }
+
+export async function releaseAiApiCall(date: string): Promise<void> {
+    if (!isDateOnly(date)) {
+        return;
+    }
+    await withUsageLock(async () => {
+        let previous: UsageFile = {date: "", calls: 0, days: {}};
+        try {
+            previous = parseUsageFile(JSON.parse(await readFile(aiSummaryUsageFile(), "utf8")));
+        } catch {
+            return;
+        }
+        const calls = previous.days[date] ?? 0;
+        if (calls <= 0) {
+            return;
+        }
+        await writeAiApiUsage(date, calls - 1, previous);
+    });
+}

@@ -10,10 +10,13 @@ import {
     mergeDayAlerts,
     mergeDaySeconds,
     readEnergyCursor,
+    removeEnergyPending,
     resetEnergyCurrent,
     restoreEnergyDayWrites,
+    readEnergyPending,
     writeEnergyCursor,
     writeEnergyDay,
+    writeEnergyPending,
     type EnergyDayWriteSnapshot,
 } from "@/lib/energy/store";
 import type {EnergyCursor, EnergyDayFile} from "@/lib/energy/types";
@@ -282,11 +285,18 @@ export async function persistAccruePlan(plan: AccruePlan): Promise<void> {
         }
         return;
     }
+    try {
+        await writeEnergyPending(plan.cursor, plan.additions);
+    } catch {
+        logEnergy("bucket_write_failed");
+        return;
+    }
     let daySnapshots: EnergyDayWriteSnapshot[] = [];
     if (plan.additions.length > 0) {
         try {
             daySnapshots = await persistAdditions(plan.additions);
         } catch (error) {
+            await removeEnergyPending().catch(() => undefined);
             if (!(error instanceof CorruptEnergyDayError)) {
                 logEnergy("bucket_write_failed");
             }
@@ -298,10 +308,30 @@ export async function persistAccruePlan(plan: AccruePlan): Promise<void> {
     }
     try {
         await writeEnergyCursor(plan.cursor);
+        await removeEnergyPending();
     } catch {
         logEnergy("bucket_write_failed");
         await restoreEnergyDayWrites(daySnapshots);
+        await removeEnergyPending().catch(() => undefined);
     }
+}
+
+export async function recoverPendingEnergyCursor(): Promise<void> {
+    const pending = await readEnergyPending();
+    if (pending.status === "missing") {
+        return;
+    }
+    if (pending.status === "invalid") {
+        await removeEnergyPending();
+        return;
+    }
+    const cursor = await readEnergyCursor();
+    const pendingMs = Date.parse(pending.cursor.lastAccruedAt);
+    const cursorMs = cursor ? Date.parse(cursor.lastAccruedAt) : Number.NaN;
+    if (!cursor || !Number.isFinite(cursorMs) || cursorMs < pendingMs) {
+        await writeEnergyCursor(pending.cursor);
+    }
+    await removeEnergyPending();
 }
 
 async function accrueUnlocked(options: {
@@ -309,6 +339,7 @@ async function accrueUnlocked(options: {
     newDevices: GgsDeviceSnapshot[];
 }): Promise<void> {
     const grow = await getCurrentGrow();
+    await recoverPendingEnergyCursor();
     let cursor = await readEnergyCursor();
     if (cursor && cursor.growId !== grow.id) {
         try {

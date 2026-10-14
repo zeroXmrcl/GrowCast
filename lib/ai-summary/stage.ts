@@ -9,6 +9,13 @@ export function isUsableSeededAt(value: string): boolean {
     return isDateOnly(value) && value !== PLACEHOLDER_SEEDED;
 }
 
+export function growAgeDays(seededAt: string): number | null {
+    if (!isUsableSeededAt(seededAt)) {
+        return null;
+    }
+    return getDaysSince(seededAt);
+}
+
 /** Reads flower week from grower stage text (English or common German labels). */
 function parseFlowerWeek(stage: string): number | null {
     const match =

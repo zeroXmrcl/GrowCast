@@ -206,6 +206,7 @@ export function parseSchedulerState(raw: unknown): SchedulerState {
         "skipped_not_due",
         "skipped_daily_cap",
         "skipped_not_leader",
+        "rejected",
     ]);
     return {
         lastSuccessDate: asString(raw.lastSuccessDate, "") || null,

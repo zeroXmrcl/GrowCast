@@ -4,6 +4,7 @@ import type {EnergyPublicDto} from "@/lib/energy/types";
 /** Live snapshots land about every 15s. Faster polls repeat the same watts. */
 export const ENERGY_POLL_MS = 15_000;
 export const ENERGY_POLL_PATH = "/api/data/energy?grow=current";
+export const ENERGY_PUBLIC_POLL_PATH = "/api/data/energy?grow=current&tariff=public";
 
 let energyPollInFlight = false;
 
@@ -31,13 +32,14 @@ export function parseEnergyPollBody(raw: unknown): EnergyPublicDto | null {
 
 export async function fetchEnergyDto(
     fetcher: typeof fetch = fetch,
+    path: string = ENERGY_POLL_PATH,
 ): Promise<EnergyPublicDto | null> {
     if (energyPollInFlight) {
         return null;
     }
     energyPollInFlight = true;
     try {
-        const response = await fetcher(ENERGY_POLL_PATH, {
+        const response = await fetcher(path, {
             credentials: "same-origin",
             cache: "no-store",
         });

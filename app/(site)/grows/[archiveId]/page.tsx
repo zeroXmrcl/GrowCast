@@ -3,7 +3,6 @@ import {notFound} from "next/navigation";
 import {EnergyArchiveSection} from "@/components/energy-scoreboard";
 import SnapshotGallery from "@/components/snapshot-gallery";
 import TimelapsePlayer from "@/components/timelapse-player";
-import {isAdminAuthenticated} from "@/lib/admin-auth";
 import path from "node:path";
 import {
     archiveMediaDir,
@@ -58,14 +57,13 @@ export default async function ArchivedGrowPage({
         notFound();
     }
 
-    const isAdmin = await isAdminAuthenticated();
     const [snapshotFiles, pictureFiles, timelapseFile, energy] = await Promise.all([
         getArchiveSnapshotFiles(archiveId),
         getArchivePictureFiles(archiveId),
         getArchiveTimelapseFile(archiveId),
         buildEnergyDto({
             grow: archiveId,
-            tariffKind: isAdmin ? "private" : "public",
+            tariffKind: "public",
         }),
     ]);
 

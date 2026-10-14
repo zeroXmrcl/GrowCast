@@ -8,7 +8,7 @@ import OverlayIdentity from "@/components/overlay-identity";
 import OverlayMotionItem from "@/components/overlay-motion-item";
 import OverlayShell from "@/components/overlay-shell";
 import {useLiveClimate} from "@/hooks/use-live-climate";
-import {ENERGY_POLL_MS, fetchEnergyDto} from "@/lib/energy/poll";
+import {ENERGY_POLL_MS, ENERGY_PUBLIC_POLL_PATH, fetchEnergyDto} from "@/lib/energy/poll";
 import type {EnergyPublicDto} from "@/lib/energy/types";
 import type {GgsLivePublic} from "@/lib/ggs-live";
 import {
@@ -84,7 +84,7 @@ export default function OverlayHud({
         let cancelled = false;
 
         async function tick() {
-            const next = await fetchEnergyDto();
+            const next = await fetchEnergyDto(fetch, ENERGY_PUBLIC_POLL_PATH);
             if (!cancelled) {
                 setEnergy((current) => applyOverlayEnergyPoll(current, next));
             }

@@ -64,7 +64,8 @@ export function isAiSummaryDue(nowMs: number, state: SchedulerState): boolean {
         if (
             state.lastStatus === "skipped_exists" ||
             state.lastStatus === "skipped_no_key" ||
-            state.lastStatus === "skipped_daily_cap"
+            state.lastStatus === "skipped_daily_cap" ||
+            state.lastStatus === "rejected"
         ) {
             return false;
         }
@@ -170,7 +171,9 @@ export async function runAiSummaryTick(nowMs: number = Date.now()): Promise<Sche
                 ? "skipped_no_key"
                 : result.reason === "daily_cap"
                   ? "skipped_daily_cap"
-                  : "failed",
+                  : result.reason === "invalid_response"
+                    ? "rejected"
+                    : "failed",
         attemptsOnDate,
     };
     await writeSchedulerState(next);

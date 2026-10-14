@@ -37,6 +37,13 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
     volumes:
       - ./data:/data
+      # Hide host credentials. ggs.env and mesh.token stay on /data.
+      - /data/setup
+      - /data/restream
+      - /data/energy
+      - /data/climate
+      - /data/ai-summary
+      - /data/archives
       - ./extensions/GrowCast-GGS:/opt/legacy-ggs:ro
       - ./docker/ggs-run.sh:/opt/growcast/ggs-run.sh:ro
     entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /opt/growcast/ggs-run.sh > /tmp/ggs-run.sh && exec /bin/sh /tmp/ggs-run.sh"]
@@ -70,6 +77,13 @@ services:
       GROWCAST_TIMELAPSE_ENV: /data/timelapse.env
     volumes:
       - ./data:/data
+      # Hide host credentials. timelapse.env, mesh.token, and data/mesh stay on /data.
+      - /data/setup
+      - /data/restream
+      - /data/energy
+      - /data/climate
+      - /data/ai-summary
+      - /data/archives
       - ./extensions/GrowCast-Timelapse/GrowCast-Timelapse:/opt/legacy-timelapse:ro
       - ./extensions/GrowCast-Timelapse/snapshots:/app/GrowCast-Timelapse/snapshots
       - ./extensions/GrowCast-Timelapse/timelapse:/app/GrowCast-Timelapse/timelapse

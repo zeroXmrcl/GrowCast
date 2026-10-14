@@ -9,6 +9,17 @@ function noStoreJson(body: unknown, status = 200): Response {
     });
 }
 
+export function tariffKindForEnergyGet(
+    isAdmin: boolean,
+    request: Request,
+): "public" | "private" {
+    const tariff = new URL(request.url).searchParams.get("tariff");
+    if (tariff === "public") {
+        return "public";
+    }
+    return isAdmin ? "private" : "public";
+}
+
 export async function energyGetResponse(
     request: Request,
     tariffKind: "public" | "private",

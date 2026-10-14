@@ -6,6 +6,7 @@ import {loadNewestSnapshotStill} from "@/lib/ai-summary/image";
 import {logAiSummary} from "@/lib/ai-summary/log";
 import {buildMosaic, emptyMosaic, verdictsFromMosaic} from "@/lib/ai-summary/mosaic";
 import {buildAiSummaryUserPrompt, promptContainsForbiddenTargets} from "@/lib/ai-summary/prompt";
+import {applyUnmeasuredRanges} from "@/lib/ai-summary/schema";
 import {stageContextFromGrow} from "@/lib/ai-summary/stage";
 import {
     aggregateClimateWindow,
@@ -17,10 +18,19 @@ import {
     withAiSummaryLock,
     writeAiSummaryRecord,
 } from "@/lib/ai-summary/store";
-import {reserveAiApiCall} from "@/lib/ai-summary/usage";
-import type {AiSummaryRecord, GenerateResult} from "@/lib/ai-summary/types";
+import {releaseAiApiCall, reserveAiApiCall} from "@/lib/ai-summary/usage";
+import type {AiSummaryRecord, GenerateReason, GenerateResult} from "@/lib/ai-summary/types";
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
+
+async function releaseReserved(date: string, reason: GenerateReason): Promise<GenerateResult> {
+    try {
+        await releaseAiApiCall(date);
+    } catch {
+        logAiSummary("usage_release_failed", {date});
+    }
+    return {ok: false, reason};
+}
 
 export type GenerateOptions = {
     nowMs?: number;
@@ -76,14 +86,18 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
         return {ok: false, reason: "daily_cap"};
     }
 
-    const ai = await requestGrowSummary({
+    const requested = await requestGrowSummary({
         userText,
         still,
         fetchImpl: options.fetchImpl,
         env,
     });
+    if (!requested.ok) {
+        return releaseReserved(date, requested.reason === "invalid" ? "invalid_response" : "request_failed");
+    }
+    const ai = applyUnmeasuredRanges(requested.ai, requested.illegal, stats);
     if (!ai) {
-        return {ok: false, reason: "request_failed"};
+        return releaseReserved(date, "invalid_response");
     }
 
     const mosaic = still || points.length > 0 ? buildMosaic(points, windowStartMs, ai.ranges) : emptyMosaic();
@@ -101,7 +115,7 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
         await writeAiSummaryRecord(record);
     } catch {
         logAiSummary("write_failed", {date});
-        return {ok: false, reason: "write_failed"};
+        return releaseReserved(date, "write_failed");
     }
     logAiSummary("generated", {date, score: ai.score, imageUsed: record.imageUsed}, "info");
     return {ok: true, record, reused: false};

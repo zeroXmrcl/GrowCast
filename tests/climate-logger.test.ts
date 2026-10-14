@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import {readFile} from "node:fs/promises";
-import {mkdtemp, rm} from "node:fs/promises";
+import {mkdir, mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
@@ -129,6 +128,37 @@ describe("climate logger", () => {
             const removed = await pruneClimateDays("2026-10-01");
             assert.equal(removed, 1);
             await assert.rejects(readFile(climateDayFile("2026-01-01"), "utf8"));
+        });
+    });
+
+    it("leaves a corrupt day and a day with a bad point untouched", async () => {
+        await withTempDataDir(async () => {
+            const corruptPath = climateDayFile("2026-10-13");
+            await writeClimateDay({date: "2026-10-12", points: []});
+            await writeFile(corruptPath, "{", "utf8");
+            const before = await readFile(corruptPath, "utf8");
+            await recordClimateOnIngest(ingest({updatedAt: "2026-10-13T12:03:10.000Z"}), Date.parse("2026-10-13T12:03:10.000Z"));
+            assert.equal(await readFile(corruptPath, "utf8"), before);
+
+            const dropped = {
+                date: "2026-10-14",
+                points: [
+                    {
+                        t: "2026-10-14T12:00:00.000Z",
+                        tempC: 24,
+                        humidityPct: 60,
+                        vpd: 1,
+                        co2: 800,
+                        ppfd: 400,
+                        isDay: true,
+                    },
+                    {t: "not-a-time"},
+                ],
+            };
+            const droppedPath = climateDayFile("2026-10-14");
+            await writeFile(droppedPath, JSON.stringify(dropped), "utf8");
+            await recordClimateOnIngest(ingest({updatedAt: "2026-10-14T12:05:00.000Z", tempC: 26}), Date.parse("2026-10-14T12:05:00.000Z"));
+            assert.equal(await readFile(droppedPath, "utf8"), JSON.stringify(dropped));
         });
     });
 });

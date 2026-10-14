@@ -10,9 +10,9 @@ import {
 } from "@/lib/climate/types";
 import {logClimate} from "@/lib/climate/log";
 import {
+    inspectClimateDay,
     mergeClimatePoint,
     pruneClimateDays,
-    readClimateDay,
     withClimateWriteLock,
     writeClimateDay,
 } from "@/lib/climate/store";
@@ -88,7 +88,12 @@ export async function recordClimateOnIngest(
     }
     await withClimateWriteLock(async () => {
         const date = berlinDateOnly(Date.parse(point.t));
-        const existing = (await readClimateDay(date)) ?? {date, points: [] satisfies ClimatePoint[]};
+        const inspected = await inspectClimateDay(date);
+        if (inspected.status === "corrupt") {
+            logClimate("corrupt_climate_day", {date});
+            return;
+        }
+        const existing = inspected.status === "ok" ? inspected.day : {date, points: [] satisfies ClimatePoint[]};
         const next: ClimateDayFile = mergeClimatePoint(existing, point);
         await writeClimateDay(next);
         await pruneClimateDays(climateRetentionStartDate(berlinDateOnly(serverNowMs)));
