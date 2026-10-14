@@ -424,6 +424,7 @@ html[data-admin-save-bar] .admin-toast {
     "cam details"
     "live live"
     "run run"
+    "ai ai"
     "pics pics"
     "setup setup"
     "socials socials";
@@ -435,6 +436,7 @@ html[data-admin-save-bar] .admin-toast {
     "cam details"
     "live live"
     "run run"
+    "ai ai"
     "pics pics"
     "setup setup"
     "socials socials";
@@ -464,6 +466,7 @@ html[data-admin-save-bar] .admin-toast {
       "details"
       "live"
       "run"
+      "ai"
       "pics"
       "setup"
       "socials";
@@ -475,6 +478,7 @@ html[data-admin-save-bar] .admin-toast {
       "details"
       "live"
       "run"
+      "ai"
       "pics"
       "setup"
       "socials";
@@ -513,6 +517,11 @@ html[data-admin-save-bar] .admin-toast {
 
 .growcast-area-run {
   grid-area: run;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-ai {
+  grid-area: ai;
   border-bottom: 1px solid var(--growcast-hair);
 }
 
@@ -571,6 +580,7 @@ html[data-admin-save-bar] .admin-toast {
 .vt-side { view-transition-name: vt-side; }
 .vt-mid { view-transition-name: vt-mid; }
 .vt-flow { view-transition-name: vt-flow; }
+.vt-ai { view-transition-name: vt-ai; }
 .vt-water { view-transition-name: vt-water; }
 .vt-table { view-transition-name: vt-table; }
 .vt-socials { view-transition-name: vt-socials; }
@@ -605,6 +615,7 @@ html[data-admin-save-bar] .admin-toast {
 ::view-transition-old(vt-side),
 ::view-transition-old(vt-mid),
 ::view-transition-old(vt-flow),
+::view-transition-old(vt-ai),
 ::view-transition-old(vt-water),
 ::view-transition-old(vt-table),
 ::view-transition-old(vt-name),
@@ -615,6 +626,7 @@ html[data-admin-save-bar] .admin-toast {
 ::view-transition-new(vt-side),
 ::view-transition-new(vt-mid),
 ::view-transition-new(vt-flow),
+::view-transition-new(vt-ai),
 ::view-transition-new(vt-water),
 ::view-transition-new(vt-table),
 ::view-transition-new(vt-name),

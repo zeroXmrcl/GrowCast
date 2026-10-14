@@ -30,6 +30,10 @@ describe("admin notice query", () => {
         assert.equal(isAdminNoticeId("spider_farmer_connected"), true);
         assert.equal(isAdminNoticeId("spider_farmer_bad_password"), true);
         assert.equal(isAdminNoticeId("spider_farmer_unknown_account"), true);
+        assert.equal(isAdminNoticeId("ai_summary_ready"), true);
+        assert.equal(isAdminNoticeId("ai_summary_failed"), true);
+        assert.equal(isAdminNoticeId("ai_summary_rate_limited"), true);
+        assert.equal(isAdminNoticeId("ai_summary_no_key"), true);
         assert.equal(isAdminNoticeId("not-a-notice"), false);
         assert.equal(isAdminNoticeId(""), false);
     });

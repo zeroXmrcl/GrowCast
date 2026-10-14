@@ -5,6 +5,7 @@ import {
     withStale,
     type GgsLivePublic,
 } from "@/lib/ggs-live";
+import {recordClimateOnIngestBestEffort} from "@/lib/climate/writer";
 import {accrueEnergyOnIngest} from "@/lib/energy/accrue";
 import {logEnergy} from "@/lib/energy/log";
 import {readGgsLive, saveGgsLive} from "@/lib/ggs-live-store";
@@ -187,6 +188,7 @@ export async function liveClimateIngestResponse(
     }
 
     await saveGgsLive(parsed.value);
+    await recordClimateOnIngestBestEffort(parsed.value);
     try {
         await accrueEnergyOnIngest(parsed.value);
     } catch {

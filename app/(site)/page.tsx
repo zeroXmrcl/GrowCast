@@ -1,6 +1,8 @@
 import {getCurrentGrow} from "@/lib/db";
+import AiSummaryCard from "@/components/ai-summary-card";
 import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
+import {readAiSummaryPublic} from "@/lib/ai-summary/public";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
@@ -66,10 +68,11 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
 }
 
 export default async function Home() {
-    const [grow, setupImages, showLiveClimate] = await Promise.all([
+    const [grow, setupImages, showLiveClimate, aiSummary] = await Promise.all([
         getCurrentGrow(),
         listMediaUrls("setup"),
         hasGgsLiveUi(),
+        readAiSummaryPublic(),
     ]);
     const details = grow.details;
     const socialLinks = [
@@ -194,6 +197,8 @@ export default async function Home() {
                     </div>
                 </article>
             </section>
+
+            <AiSummaryCard summary={aiSummary} />
 
             <DashPictures />
 

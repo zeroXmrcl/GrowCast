@@ -33,6 +33,9 @@ const KEEP_PAGE: ReadonlySet<AdminNoticeId> = new Set([
     "music_invalid_file",
     "music_too_many_files",
     "music_payload_too_large",
+    "ai_summary_failed",
+    "ai_summary_rate_limited",
+    "ai_summary_no_key",
 ]);
 
 export function adminNoticeRefreshes(notice: AdminNoticeId): boolean {

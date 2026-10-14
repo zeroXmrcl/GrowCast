@@ -34,6 +34,8 @@ export const REDACT_PATHS: string[] = [
   "mqtt_password",
   "client_secret",
   "TWITCH_CLIENT_SECRET",
+  "XAI_API_KEY",
+  "xai_api_key",
   "*.mqttPwd",
   "*.mqttName",
   "*.client_secret",

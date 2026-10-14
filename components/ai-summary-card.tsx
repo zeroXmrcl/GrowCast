@@ -1,0 +1,249 @@
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
+import {parseMosaicRow} from "@/lib/ai-summary/mosaic";
+import {AI_SUMMARY_MOSAIC_SLOTS, AI_SUMMARY_SCORE_DAYS, type AiSummaryPublic} from "@/lib/ai-summary/types";
+import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_TITLE, WORKSPACE_VT} from "@/lib/workspace";
+
+const METRIC_LABELS: Record<ClimateMetricKey, string> = {
+    tempC: "Temp",
+    humidityPct: "RH",
+    vpd: "VPD",
+    co2: "CO₂",
+    ppfd: "PPFD",
+};
+
+const METRIC_UNITS: Record<ClimateMetricKey, string> = {
+    tempC: "°C",
+    humidityPct: "%",
+    vpd: "kPa",
+    co2: "ppm",
+    ppfd: "µmol",
+};
+
+const CELL_FILL = ["#d4d4d8", "#10b981", "#f59e0b", "#ef4444"] as const;
+
+function scoreFill(score: number): string {
+    if (score >= 80) {
+        return "#10b981";
+    }
+    if (score >= 60) {
+        return "#84cc16";
+    }
+    if (score >= 40) {
+        return "#f59e0b";
+    }
+    return "#ef4444";
+}
+
+function formatRange(key: ClimateMetricKey, min: number, max: number): string {
+    const digits = key === "vpd" ? 2 : key === "tempC" || key === "humidityPct" ? 1 : 0;
+    return `${min.toFixed(digits)}–${max.toFixed(digits)} ${METRIC_UNITS[key]}`;
+}
+
+function MosaicSvg({summary}: {summary: AiSummaryPublic}) {
+    const labelWidth = 36;
+    const rowHeight = 8;
+    const gap = 2;
+    const width = labelWidth + AI_SUMMARY_MOSAIC_SLOTS;
+    const height = CLIMATE_METRIC_KEYS.length * (rowHeight + gap) - gap;
+
+    return (
+        <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="h-auto w-full"
+            role="img"
+            aria-label="Klima der letzten 24 Stunden, ein Punkt je 5 Minuten"
+        >
+            <title>Klimamosaik der letzten 24 Stunden</title>
+            {CLIMATE_METRIC_KEYS.map((key, row) => {
+                const y = row * (rowHeight + gap);
+                const cells = parseMosaicRow(summary.mosaic[key] ?? "");
+                return (
+                    <g key={key}>
+                        <text
+                            x={0}
+                            y={y + rowHeight - 1.5}
+                            className="fill-zinc-500 dark:fill-zinc-400"
+                            fontSize="6"
+                            fontFamily="ui-sans-serif, system-ui, sans-serif"
+                        >
+                            {METRIC_LABELS[key]}
+                        </text>
+                        {cells.map((cell, index) => (
+                            <rect
+                                key={`${key}-${index}`}
+                                x={labelWidth + index}
+                                y={y + 0.6}
+                                width={0.9}
+                                height={rowHeight - 1.2}
+                                rx={0.25}
+                                className={cell === 0 ? "fill-zinc-200 dark:fill-zinc-700" : undefined}
+                                fill={cell === 0 ? undefined : CELL_FILL[cell]}
+                            >
+                                <title>{`${METRIC_LABELS[key]} Slot ${index + 1}`}</title>
+                            </rect>
+                        ))}
+                    </g>
+                );
+            })}
+        </svg>
+    );
+}
+
+function ScoreMatrix({history}: {history: AiSummaryPublic["scoreHistory"]}) {
+    const byDate = new Map(history.map((point) => [point.date, point.score]));
+    const cells: Array<{date: string; score: number | null}> = [];
+    const newest = history[history.length - 1]?.date;
+    if (!newest) {
+        return null;
+    }
+    const [year, month, day] = newest.split("-").map(Number);
+    for (let i = AI_SUMMARY_SCORE_DAYS - 1; i >= 0; i -= 1) {
+        const utc = new Date(Date.UTC(year, month - 1, day - i));
+        const date = `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, "0")}-${String(utc.getUTCDate()).padStart(2, "0")}`;
+        cells.push({date, score: byDate.get(date) ?? null});
+    }
+    const size = 10;
+    const gap = 3;
+    const width = AI_SUMMARY_SCORE_DAYS * (size + gap) - gap;
+    return (
+        <svg
+            viewBox={`0 0 ${width} ${size}`}
+            className="h-3 w-full max-w-md"
+            role="img"
+            aria-label="Score der letzten 30 Tage"
+        >
+            <title>30-Tage-Score</title>
+            {cells.map((cell, index) => (
+                <rect
+                    key={cell.date}
+                    x={index * (size + gap)}
+                    y={0}
+                    width={size}
+                    height={size}
+                    rx={2}
+                    className={cell.score === null ? "fill-zinc-200 dark:fill-zinc-800" : undefined}
+                    fill={cell.score === null ? undefined : scoreFill(cell.score)}
+                >
+                    <title>
+                        {cell.score === null ? `${cell.date}: kein Score` : `${cell.date}: ${cell.score}`}
+                    </title>
+                </rect>
+            ))}
+        </svg>
+    );
+}
+
+function verdictLabel(verdict: string): string {
+    switch (verdict) {
+        case "in_range":
+            return "im Ziel";
+        case "slightly_off":
+            return "knapp daneben";
+        case "off":
+            return "außerhalb";
+        default:
+            return "unbekannt";
+    }
+}
+
+export default function AiSummaryCard({summary}: {summary: AiSummaryPublic | null}) {
+    return (
+        <section className={`${WORKSPACE_AREA.ai} ${WORKSPACE_VT.ai} ${WORKSPACE_PAD}`}>
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+                <h2 className={`${WORKSPACE_TITLE} mb-0`}>KI-Einschätzung</h2>
+                {summary ? (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        {summary.date}
+                        {summary.stageLabel ? ` · ${summary.stageLabel}` : ""}
+                        {summary.daysSinceSeeding !== null ? ` · Tag ${summary.daysSinceSeeding}` : ""}
+                    </p>
+                ) : null}
+            </div>
+
+            {summary ? (
+                <div className="space-y-4">
+                    <div className="flex flex-wrap items-end gap-4">
+                        <p
+                            className="text-4xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-100"
+                            style={{color: scoreFill(summary.score)}}
+                        >
+                            {summary.score}
+                        </p>
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                {summary.rating}
+                            </p>
+                            <p className="text-sm text-zinc-700 dark:text-zinc-300">{summary.headline}</p>
+                        </div>
+                    </div>
+
+                    <p className="text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                        {summary.summary}
+                    </p>
+
+                    {summary.plantObservation ? (
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                            <span className="font-medium text-zinc-700 dark:text-zinc-300">Pflanze: </span>
+                            {summary.plantObservation}
+                        </p>
+                    ) : null}
+
+                    <div>
+                        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                            24h-Mosaik · 5-Minuten-Slots
+                        </p>
+                        <MosaicSvg summary={summary} />
+                        <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-500">
+                            Grün im KI-Ziel, gelb knapp, rot außerhalb, grau ohne Messwert.
+                        </p>
+                    </div>
+
+                    <dl className="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-5">
+                        {CLIMATE_METRIC_KEYS.map((key) => {
+                            const range = summary.ranges[key];
+                            const verdict = summary.verdicts[key];
+                            return (
+                                <div
+                                    key={key}
+                                    className="rounded-md border border-zinc-200 px-2 py-2 dark:border-zinc-800"
+                                >
+                                    <dt className="font-medium text-zinc-700 dark:text-zinc-300">
+                                        {METRIC_LABELS[key]}
+                                    </dt>
+                                    <dd className="mt-1 text-zinc-500 dark:text-zinc-400">
+                                        {formatRange(key, range.min, range.max)}
+                                        <br />
+                                        {verdictLabel(verdict.verdict)}
+                                        {verdict.pctInRange !== null
+                                            ? ` · ${Math.round(verdict.pctInRange)}%`
+                                            : ""}
+                                    </dd>
+                                </div>
+                            );
+                        })}
+                    </dl>
+
+                    {summary.recommendations.length > 0 ? (
+                        <ul className="list-disc space-y-1 pl-5 text-sm text-zinc-700 dark:text-zinc-300">
+                            {summary.recommendations.map((item) => (
+                                <li key={item}>{item}</li>
+                            ))}
+                        </ul>
+                    ) : null}
+
+                    <div>
+                        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                            30-Tage-Score
+                        </p>
+                        <ScoreMatrix history={summary.scoreHistory} />
+                    </div>
+                </div>
+            ) : (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    Noch keine Einschätzung. Die tägliche Auswertung läuft gegen 08:00 (Europe/Berlin),
+                    sobald ein xAI-Schlüssel gesetzt ist.
+                </p>
+            )}
+        </section>
+    );
+}

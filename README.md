@@ -77,6 +77,11 @@ Notes:
 - Admin passwords must be at least **12 characters** (`npm run setup:admin` and the wizard enforce this). For local/dev only, use `npm run setup:admin:insecure` (or `npm run setup:admin -- --allow-insecure`).
 - Admin sessions last **24 hours** and live in memory. `docker compose up --build` recreates the website container and signs you out. Sign in again.
 - Optional, Broadcast channel lookup and Twitch EventSub alerts (GrowCast `.env.local`, not the restream sidecar): `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. EventSub webhooks also need `GROWCAST_PUBLIC_URL` (the public HTTPS origin, e.g. the Cloudflare Tunnel hostname).
+- Optional daily **KI-Einschätzung** (xAI / Grok). Server-only; visitors cannot trigger the API:
+  - `XAI_API_KEY` — required to generate summaries. Never expose this to the browser.
+  - `XAI_MODEL` — vision-capable Grok model. Default `grok-4.3` (image input, cheaper than `grok-4.7`).
+  - `XAI_API_BASE` — default `https://api.x.ai/v1`.
+  - The job runs in-process around 08:00 Europe/Berlin, survives restarts, and is idempotent per Berlin day. Admin can regenerate from **GGS**. See `.env.example`.
 
 ### Logging
 
@@ -162,6 +167,8 @@ data/
   mesh.token                   # Shared sidecar token, created on first boot
   ggs.env                      # Climate credentials written by the wizard
   timelapse.env                # Camera URL written by the wizard
+  climate/current/             # 5-min climate day files (gitignored)
+  ai-summary/                  # Daily KI summaries + scheduler state (gitignored)
 ```
 
 ## 6. Camera (MediaMTX)

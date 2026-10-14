@@ -258,6 +258,26 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "No controller found",
         body: "Spider Farmer accepted the login and returned no controllers.",
     },
+    ai_summary_ready: {
+        tone: "success",
+        title: "KI-Einschätzung aktualisiert",
+        body: "Die öffentliche Karte zeigt die neue Bewertung. Das Pflanzenfoto wird nicht veröffentlicht.",
+    },
+    ai_summary_failed: {
+        tone: "danger",
+        title: "KI-Einschätzung fehlgeschlagen",
+        body: "xAI hat nicht geantwortet oder das JSON war ungültig. Logs prüfen und später erneut versuchen.",
+    },
+    ai_summary_rate_limited: {
+        tone: "warning",
+        title: "Bitte warten",
+        body: "Neu erzeugen ist auf einmal in 10 Minuten begrenzt, damit keine unnötigen API-Kosten entstehen.",
+    },
+    ai_summary_no_key: {
+        tone: "warning",
+        title: "XAI_API_KEY fehlt",
+        body: "Setze XAI_API_KEY in .env.local (nur Server) und starte GrowCast neu.",
+    },
 };
 
 export function adminNoticeContent(notice: string): NoticeContent | null {

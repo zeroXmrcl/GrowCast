@@ -39,7 +39,10 @@ import {
     resolveChannelLogin,
     streamKeyForChannelLookup,
 } from "@/lib/restream/twitch-helix";
-import {loginRateLimitKey, secondFactorRateLimitKey} from "@/lib/request-trust";
+import {clientIdentityKey, loginRateLimitKey, secondFactorRateLimitKey} from "@/lib/request-trust";
+import {hasXaiApiKey} from "@/lib/ai-summary/config";
+import {generateDailyAiSummary} from "@/lib/ai-summary/generate";
+import {allowAiSummaryRegenerate} from "@/lib/ai-summary/rate-limit";
 import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 import {
     logAdminGrowArchiveFailed,
@@ -381,6 +384,28 @@ export async function completeGrowAction(formData: FormData): Promise<AdminActio
                   ? "archived_cleanup_warning"
                   : "archived";
         return {notice};
+    });
+}
+
+export async function regenerateAiSummaryAction(formData: FormData): Promise<AdminActionResult> {
+    void formData;
+    return withNextRequestLogContext("/admin/ggs", async () => {
+        await requireAdmin();
+        const h = await headers();
+        const limited = allowAiSummaryRegenerate(`ai-summary-regen:${clientIdentityKey(h)}`);
+        if (!limited.ok) {
+            return {notice: "ai_summary_rate_limited"};
+        }
+        if (!hasXaiApiKey()) {
+            return {notice: "ai_summary_no_key"};
+        }
+        const result = await generateDailyAiSummary({force: true});
+        if (!result.ok) {
+            return {notice: result.reason === "no_key" ? "ai_summary_no_key" : "ai_summary_failed"};
+        }
+        revalidatePath("/");
+        revalidatePath("/admin/ggs");
+        return {notice: "ai_summary_ready"};
     });
 }
 
