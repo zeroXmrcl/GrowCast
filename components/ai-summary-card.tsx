@@ -40,11 +40,14 @@ function formatRange(key: ClimateMetricKey, min: number, max: number): string {
 }
 
 function MosaicSvg({summary}: {summary: AiSummaryPublic}) {
-    const labelWidth = 36;
-    const rowHeight = 8;
-    const gap = 2;
-    const width = labelWidth + AI_SUMMARY_MOSAIC_SLOTS;
-    const height = CLIMATE_METRIC_KEYS.length * (rowHeight + gap) - gap;
+    const labelWidth = 28;
+    const rowHeight = 6;
+    const rowGap = 3;
+    const cell = 2.2;
+    const colGap = 0.55;
+    const stride = cell + colGap;
+    const width = labelWidth + AI_SUMMARY_MOSAIC_SLOTS * stride;
+    const height = CLIMATE_METRIC_KEYS.length * (rowHeight + rowGap) - rowGap;
 
     return (
         <svg
@@ -55,29 +58,29 @@ function MosaicSvg({summary}: {summary: AiSummaryPublic}) {
         >
             <title>Klimamosaik der letzten 24 Stunden</title>
             {CLIMATE_METRIC_KEYS.map((key, row) => {
-                const y = row * (rowHeight + gap);
+                const y = row * (rowHeight + rowGap);
                 const cells = parseMosaicRow(summary.mosaic[key] ?? "");
                 return (
                     <g key={key}>
                         <text
                             x={0}
-                            y={y + rowHeight - 1.5}
+                            y={y + rowHeight - 0.6}
                             className="fill-zinc-500 dark:fill-zinc-400"
-                            fontSize="6"
+                            fontSize="5.5"
                             fontFamily="ui-sans-serif, system-ui, sans-serif"
                         >
                             {METRIC_LABELS[key]}
                         </text>
-                        {cells.map((cell, index) => (
+                        {cells.map((cellValue, index) => (
                             <rect
                                 key={`${key}-${index}`}
-                                x={labelWidth + index}
-                                y={y + 0.6}
-                                width={0.9}
-                                height={rowHeight - 1.2}
-                                rx={0.25}
-                                className={cell === 0 ? "fill-zinc-200 dark:fill-zinc-700" : undefined}
-                                fill={cell === 0 ? undefined : CELL_FILL[cell]}
+                                x={labelWidth + index * stride}
+                                y={y + 0.5}
+                                width={cell}
+                                height={rowHeight - 1}
+                                rx={0.7}
+                                className={cellValue === 0 ? "fill-zinc-200 dark:fill-zinc-700" : undefined}
+                                fill={cellValue === 0 ? undefined : CELL_FILL[cellValue]}
                             >
                                 <title>{`${METRIC_LABELS[key]} Slot ${index + 1}`}</title>
                             </rect>
