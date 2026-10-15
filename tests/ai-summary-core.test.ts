@@ -776,13 +776,14 @@ describe("ai summary generate and archive", () => {
     });
 
     it("refuses the global fetch in tests when no fetchImpl is given", async () => {
-        const previousEnv = process.env.NODE_ENV;
-        process.env.NODE_ENV = "test";
+        const env = process.env as {NODE_ENV?: string};
+        const previousEnv = env.NODE_ENV;
+        env.NODE_ENV = "test";
         try {
             const result = await requestGrowSummary({
                 userText: "stage only",
                 still: null,
-                env: {XAI_API_KEY: "test-key"} as NodeJS.ProcessEnv,
+                env: {XAI_API_KEY: "test-key"} as unknown as NodeJS.ProcessEnv,
             });
             assert.equal(result.ok, false);
             if (!result.ok) {
@@ -790,9 +791,9 @@ describe("ai summary generate and archive", () => {
             }
         } finally {
             if (previousEnv === undefined) {
-                delete process.env.NODE_ENV;
+                delete env.NODE_ENV;
             } else {
-                process.env.NODE_ENV = previousEnv;
+                env.NODE_ENV = previousEnv;
             }
         }
     });
