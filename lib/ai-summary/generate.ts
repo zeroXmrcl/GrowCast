@@ -1,6 +1,6 @@
 import {berlinDateOnly} from "@/lib/energy/berlin";
 import {getCurrentGrow} from "@/lib/db";
-import {hasXaiApiKey} from "@/lib/ai-summary/config";
+import {xaiApiKey} from "@/lib/ai-summary/config";
 import {requestGrowSummary} from "@/lib/ai-summary/client";
 import {loadNewestSnapshotStill} from "@/lib/ai-summary/image";
 import {logAiSummary} from "@/lib/ai-summary/log";
@@ -47,7 +47,8 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
     const nowMs = options.nowMs ?? Date.now();
     const env = options.env ?? process.env;
     const date = berlinDateOnly(nowMs);
-    if (!hasXaiApiKey(env)) {
+    const apiKey = xaiApiKey(env);
+    if (!apiKey) {
         return {ok: false, reason: "no_key"};
     }
     if (!options.force) {
@@ -89,6 +90,7 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
     const requested = await requestGrowSummary({
         userText,
         still,
+        apiKey,
         fetchImpl: options.fetchImpl,
         env,
     });

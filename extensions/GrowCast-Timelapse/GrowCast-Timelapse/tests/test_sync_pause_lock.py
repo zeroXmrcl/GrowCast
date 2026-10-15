@@ -188,6 +188,13 @@ class AtomicApplyTests(unittest.TestCase):
             self.assertTrue(state.paused)
 
 class LockTests(unittest.TestCase):
+    def test_lock_uses_fcntl_flock_not_excl_create(self):
+        text = (ROOT / "instance_lock.py").read_text(encoding="utf-8")
+        self.assertIn("fcntl.flock", text)
+        self.assertIn("LOCK_EX", text)
+        self.assertIn("LOCK_NB", text)
+        self.assertNotIn("O_EXCL", text)
+
     def test_second_acquire_fails_while_holder_live(self):
         with tempfile.TemporaryDirectory() as tmp:
             lock_path = Path(tmp) / ".timelapse.lock"
@@ -220,6 +227,17 @@ class LockTests(unittest.TestCase):
             finally:
                 release_instance_lock(lock_path)
 
+    def test_lock_file_containing_pid_1_is_acquirable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            lock_path = Path(tmp) / ".timelapse.lock"
+            lock_path.write_text("1\n", encoding="utf-8")
+            acquired = acquire_instance_lock(lock_path, install_handlers=False)
+            try:
+                self.assertEqual(acquired, lock_path)
+                self.assertEqual(read_lock_pid(lock_path), os.getpid())
+            finally:
+                release_instance_lock(lock_path)
+
     def test_exclusive_create_prevents_double_owner_without_stale(self):
         with tempfile.TemporaryDirectory() as tmp:
             lock_path = Path(tmp) / ".timelapse.lock"
@@ -234,11 +252,7 @@ class LockTests(unittest.TestCase):
                     )
                 self.assertEqual(ctx.exception.holder_pid, 111)
             finally:
-                if lock_path.exists():
-                    lock_path.unlink()
-                import instance_lock as il
-
-                il._held_lock_path = None
+                release_instance_lock(lock_path)
 
 class NoCatchUpTests(unittest.TestCase):
     def test_no_catchup_symbols_in_shipped_modules(self):

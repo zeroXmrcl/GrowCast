@@ -26,11 +26,15 @@ describe("ai summary surface", () => {
         assert.match(generate, /stageContextFromGrow/);
         assert.doesNotMatch(generate, /temperatureDay|humidityNight/);
         assert.match(prompt, /NOT given the grower's target values/);
-        assert.match(client, /XAI_API_KEY|xaiApiKey/);
+        assert.match(generate, /xaiApiKey/);
+        assert.match(client, /apiKey/);
+        assert.doesNotMatch(client, /xaiApiKey\(/);
+        assert.doesNotMatch(client, /XAI_API_KEY/);
         assert.match(config, /api\.x\.ai/);
         assert.match(client, /chat\/completions/);
         assert.match(client, /max_tokens/);
         assert.match(client, /XAI_REQUEST_TIMEOUT_MS|AbortController/);
+        assert.match(generate, /apiKey,/);
         assert.match(generate, /reserveAiApiCall/);
         assert.match(generate, /daily_cap/);
         assert.match(src(path.join("lib", "ai-summary", "usage.ts")), /AI_SUMMARY_DAILY_API_CAP/);

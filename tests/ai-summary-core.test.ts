@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {mkdir, mkdtemp, readFile, rm} from "node:fs/promises";
+import {mkdir, mkdtemp, readdir, readFile, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
@@ -16,6 +16,7 @@ import {allowAiSummaryRegenerate, _resetAiSummaryRateLimitForTests} from "../lib
 import {generateDailyAiSummary} from "../lib/ai-summary/generate.ts";
 import {requestGrowSummary, XAI_MAX_OUTPUT_TOKENS} from "../lib/ai-summary/client.ts";
 import {reserveAiApiCall, readAiApiUsage} from "../lib/ai-summary/usage.ts";
+import {aiSummaryCurrentDir, aiSummaryUsageFile} from "../lib/ai-summary/paths.ts";
 import {buildMockMosaic} from "../lib/ai-summary/mock.ts";
 import {AI_SUMMARY_DAILY_API_CAP, AI_SUMMARY_MOSAIC_SLOTS} from "../lib/ai-summary/types.ts";
 import {completeCurrentGrow} from "../lib/archives.ts";
@@ -775,6 +776,71 @@ describe("ai summary generate and archive", () => {
         });
     });
 
+    it("does not call xAI or write files when the key is empty or whitespace", async () => {
+        for (const key of ["", "   "]) {
+            await withTempDataDir(async () => {
+                const previousKey = process.env.XAI_API_KEY;
+                process.env.XAI_API_KEY = key;
+                const usagePath = aiSummaryUsageFile();
+                await mkdir(path.dirname(usagePath), {recursive: true});
+                const priorUsage = "{\n  \"date\": \"2026-10-13\",\n  \"calls\": 2,\n  \"days\": {\n    \"2026-10-13\": 2\n  }\n}\n";
+                await writeFile(usagePath, priorUsage, "utf8");
+                let calls = 0;
+                const fetchImpl: typeof fetch = async () => {
+                    calls += 1;
+                    throw new Error("xAI must not be called");
+                };
+                try {
+                    const result = await generateDailyAiSummary({
+                        nowMs: Date.parse("2026-10-14T10:00:00.000Z"),
+                        fetchImpl,
+                        env: {XAI_API_KEY: key} as unknown as NodeJS.ProcessEnv,
+                    });
+                    assert.equal(result.ok, false);
+                    if (!result.ok) {
+                        assert.equal(result.reason, "no_key");
+                    }
+                    assert.equal(calls, 0);
+                    let currentNames: string[] = [];
+                    try {
+                        currentNames = await readdir(aiSummaryCurrentDir());
+                    } catch (error) {
+                        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+                            throw error;
+                        }
+                    }
+                    assert.deepEqual(currentNames, []);
+                    assert.equal(await readFile(usagePath, "utf8"), priorUsage);
+                } finally {
+                    if (previousKey === undefined) {
+                        delete process.env.XAI_API_KEY;
+                    } else {
+                        process.env.XAI_API_KEY = previousKey;
+                    }
+                }
+            });
+        }
+    });
+
+    it("refuses fetch when the passed apiKey is empty even if env has a key", async () => {
+        let calls = 0;
+        const result = await requestGrowSummary({
+            userText: "stage only",
+            still: null,
+            apiKey: "   ",
+            env: {XAI_API_KEY: "must-not-be-read"} as unknown as NodeJS.ProcessEnv,
+            fetchImpl: async () => {
+                calls += 1;
+                return new Response("nope", {status: 500});
+            },
+        });
+        assert.equal(result.ok, false);
+        if (!result.ok) {
+            assert.equal(result.reason, "transport");
+        }
+        assert.equal(calls, 0);
+    });
+
     it("refuses the global fetch in tests when no fetchImpl is given", async () => {
         const env = process.env as {NODE_ENV?: string};
         const previousEnv = env.NODE_ENV;
@@ -783,6 +849,7 @@ describe("ai summary generate and archive", () => {
             const result = await requestGrowSummary({
                 userText: "stage only",
                 still: null,
+                apiKey: "test-key",
                 env: {XAI_API_KEY: "test-key"} as unknown as NodeJS.ProcessEnv,
             });
             assert.equal(result.ok, false);
@@ -813,6 +880,7 @@ describe("ai summary generate and archive", () => {
         const parsed = await requestGrowSummary({
             userText: "stage only",
             still: null,
+            apiKey: "test-key",
             env: {XAI_API_KEY: "test-key", XAI_MODEL: "grok-4.3"} as unknown as NodeJS.ProcessEnv,
             fetchImpl: async (_url, init) => {
                 body = JSON.parse(String(init?.body)) as {max_tokens?: number};

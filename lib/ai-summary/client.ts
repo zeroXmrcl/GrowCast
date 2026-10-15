@@ -1,4 +1,4 @@
-import {hasXaiApiKey, xaiApiBase, xaiApiKey, xaiModel} from "@/lib/ai-summary/config";
+import {hasXaiApiKey, xaiApiBase, xaiModel} from "@/lib/ai-summary/config";
 import {logAiSummary} from "@/lib/ai-summary/log";
 import {AI_SUMMARY_SYSTEM_PROMPT} from "@/lib/ai-summary/prompt";
 import type {ClimateMetricKey} from "@/lib/climate/types";
@@ -98,6 +98,7 @@ export function isPreConnectNetworkError(error: unknown): boolean {
 export async function requestGrowSummary(input: {
     userText: string;
     still: SummaryStill | null;
+    apiKey: string;
     fetchImpl?: typeof fetch;
     env?: NodeJS.ProcessEnv;
 }): Promise<GrowSummaryRequest> {
@@ -106,10 +107,6 @@ export async function requestGrowSummary(input: {
         return {ok: false, reason: "transport"};
     }
     const env = input.env ?? process.env;
-    const apiKey = xaiApiKey(env);
-    if (!apiKey) {
-        return {ok: false, reason: "transport"};
-    }
     const fetchImpl = input.fetchImpl ?? fetch;
     const body = {
         model: xaiModel(env),
@@ -129,6 +126,10 @@ export async function requestGrowSummary(input: {
     const timer = setTimeout(() => controller.abort(), XAI_REQUEST_TIMEOUT_MS);
     let sawResponse = false;
     try {
+        const apiKey = input.apiKey.trim();
+        if (!apiKey) {
+            return {ok: false, reason: "transport"};
+        }
         const response = await fetchImpl(`${xaiApiBase(env)}/chat/completions`, {
             method: "POST",
             headers: {
