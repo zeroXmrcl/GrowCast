@@ -34,7 +34,7 @@ The proposed solution: a **thin Next.js client** + **TypeScript BFF** (`/rest/*`
 
 **How to use this document (product owner, 2026-09-18).** This spec’s **primary job** is **UI / Motion-UI design**: chrome, layout, motion, empty/loading/error, signed-out vs signed-in information architecture, and component regions. It is later **inspiration for a different web app**, not a ship of grok.com. That app does **not** need to be fully functional (no real billing, guest-inference geos, SKU math, webhook plan gates). Start from **Visual / UX system** and **Major views**. Backend/BFF/quota/security/PR Plan remain as a **reconstruction appendix** — keep them; do not treat slices A–K as the inspiration build order.
 
-**Reconstruction note.** Live **signed-in** chrome (sidebar, usage chip, files library, connector catalog, Build publish sheet, Settings tabs) was **not Observed** (no session). Those surfaces are Specified from public FAQ/news/docs. Unsigned behavior below was re-verified 2026-09-18 (`lang=de`).
+**Reconstruction note.** Live **signed-in** chrome (sidebar, usage chip, files library, connector catalog, Build publish sheet, Settings tabs) was **not Observed** (no session). Those surfaces are Specified from public FAQ/news/docs. Unsigned behavior below was re-verified 2026-09-18.
 
 ---
 
@@ -46,36 +46,36 @@ The proposed solution: a **thin Next.js client** + **TypeScript BFF** (`/rest/*`
 
 **Observed on signed-out grok.com:**
 
-- Skip-to-content link targeting `#grok-content-area` (German locale in this session: “Zum Hauptinhalt springen”).
+- Skip-to-content link targeting `#grok-content-area` (“Skip to main content”).
 - Logo home `/`, Imagine `/imagine`, Sign in `/sign-in?return_to=%2F`, Sign up `/sign-up?return_to=%2F`.
-- H1: “Was sollen wir erkunden?” / English equivalent “What should we explore?”
+- H1: “What should we explore?”
 - Composer: multiline textbox, attach button, model picker, disabled submit until input.
-- Model picker (from `#server-client-data-modes`): `fast` (default, `available`), plus `auto`, `expert` (“Denkt scharf nach · Grok 4.6”), `heavy` (“Expertenteam · Grok 4.6”), **`build`** (`title: Build`, `badgeText: Beta`, `description: Build apps and sites · Grok 4.6`, `iconHint: hammer`, `requiresUpgrade` when unsigned). Menu also has “Erweiterte Funktionen freischalten / Anmelden”.
-- Composer accessible name is **`Ask Grok anything`** even when `lang=de` (not the German placeholder).
-- Unsigned Fast **compose** works; **send does not infer**. Submitting `"hello"` inserts the user bubble then an in-thread wall **“Dein Gespräch fortsetzen”** / “Melde dich an, um nahtlos Groks volle Leistung zu nutzen” with **“Kostenlos registrieren”** (benefits: Imagine, Skills & Connectors, generated files, chat history). No assistant tokens, no `/c/:id` navigation. (Re-verified 2026-09-18, this locale.)
-- Attach menu (unsigned): **Datei hochladen** / **Zum Projekt hinzufügen** / **Zuletzt verwendete Dateien**.
+- Model picker (from `#server-client-data-modes`): `fast` (default, `available`), plus `auto`, `expert` (“Thinks hard · Grok 4.6”), `heavy` (“Expert team · Grok 4.6”), **`build`** (`title: Build`, `badgeText: Beta`, `description: Build apps and sites · Grok 4.6`, `iconHint: hammer`, `requiresUpgrade` when unsigned). Menu also has “Unlock advanced features / Sign in”.
+- Composer accessible name is **`Ask Grok anything`** even when the page locale is not English (do not keep a non-English placeholder).
+- Unsigned Fast **compose** works; **send does not infer**. Submitting `"hello"` inserts the user bubble then an in-thread wall **“Continue your conversation”** / “Sign in to use Grok's full capabilities seamlessly” with **“Sign up for free”** (benefits: Imagine, Skills & Connectors, generated files, chat history). No assistant tokens, no `/c/:id` navigation. (Re-verified 2026-09-18.)
+- Attach menu (unsigned): **Upload file** / **Add to project** / **Recent files**.
 - Messaging footer agrees to [Terms](https://x.ai/legal/terms-of-service) and [Privacy](https://x.ai/legal/privacy-policy); “Your privacy choices”; OneTrust cookie dialog.
 - Settings (unsigned): Light / Dark / System, Language, Feedback.
 - Fonts: Universal Sans, Universal Sans Display, IBM Plex Mono, Inter, Vazirmatn. Tailwind tokens: `bg-surface-base`, `text-fg-primary`, `scheme-light dark:scheme-dark`.
 - Drag-and-drop: `data-testid="drop-container"` / `drop-ui`.
 - Home also loads Stripe.js / `m.stripe.network` (Observed third-party debt vs the performance budget).
 
-**Observed Imagine `/imagine`:** sibling chrome (Chat link back to `/`), H1 “Was sollen wir Imagine?”, template gallery, composer with Image / Video / Agent radios, Speed / Quality 2.0, aspect-ratio menu (`2:3`, `3:2`, `1:1`, `9:16`, `16:9` only), upload, Text Edit (BETA) and Precise Edit.
+**Observed Imagine `/imagine`:** sibling chrome (Chat link back to `/`), H1 “What should we Imagine?”, template gallery, composer with Image / Video / Agent radios, Speed / Quality 2.0, aspect-ratio menu (`2:3`, `3:2`, `1:1`, `9:16`, `16:9` only), upload, Text Edit (BETA) and Precise Edit.
 
-**Observed Imagine `/imagine/agent`:** live route, document title **“Imagine-Agenten-Modus”**. Unsigned empty state **Projekte** + **Neues Projekt** (Projects are visible while logged out). Composer still has Image/Video/Agent radios.
+**Observed Imagine `/imagine/agent`:** live route, document title **“Imagine Agent Mode”**. Unsigned empty state **Projects** + **New project** (Projects are visible while logged out). Composer still has Image/Video/Agent radios.
 
 **Observed marketing / auth-wall landings (unsigned):**
 
 | Route | Behavior |
 | --- | --- |
 | `/connectors`, `/skills`, `/automations` | “Power Grok with X” hero + Sign in / Get started |
-| `/skills-and-connectors?tab=connectors` | Combined manager title “Skills und Konnektoren”; unsigned still shows connectors hero |
+| `/skills-and-connectors?tab=connectors` | Combined manager title “Skills and Connectors”; unsigned still shows connectors hero |
 | `/manage-connectors` | **Redirects** to `/skills-and-connectors?tab=connectors` |
-| `/files` | In-app 404 “Seite nicht gefunden” |
-| `/history` | **Auth wall** (not 404): “Melde dich an, um deine bisherigen Gespräche…” + Sign up / Sign in |
+| `/files` | In-app 404 “Page not found” |
+| `/history` | **Auth wall** (not 404): “Sign in to view and manage your past conversations…” + Sign up / Sign in |
 | `/plans` | Individual: Lite / SuperGrok / Heavy — **no Plus card** |
 | `/plans/business` | SuperGrok Business + Enterprise |
-| `/c/:id` | Conversation route; unknown id: “Diese Unterhaltung konnte nicht geladen werden” + Retry |
+| `/c/:id` | Conversation route; unknown id: “This conversation could not be loaded” + Retry |
 | `/supergrok` | Still linked from x.ai/pricing CTAs (not the in-app compare grid) |
 
 ### Pain points this spec addresses
@@ -111,7 +111,7 @@ The proposed solution: a **thin Next.js client** + **TypeScript BFF** (`/rest/*`
 
 1. **Inspiration (primary).** Capture grok.com **chrome, layout, motion, empty/loading/error, signed-out vs signed-in IA, and component regions** well enough that another web app can use this document as visual/IA/motion reference. That app need not be fully functional.
 2. **Reconstruction (appendix).** Specify unsigned shell, BFF contracts, and signed-in *behavior* as documented so a team *could* reconstruct grok.com without xAI’s private repo. **Signed-in pixel chrome is blocked on auth** (Appendix A). Not a 28-PR milestone to “finish grok.com.”
-3. Preserve the live information architecture: Chat is home; Imagine is a sibling app (`/imagine`, `/imagine/agent`); Build is a **chat mode** in the same picker; marketing routes vs signed-in **Skills und Konnektoren** manager; Files unsigned 404; History unsigned auth wall; `/plans` is the in-app paywall.
+3. Preserve the live information architecture: Chat is home; Imagine is a sibling app (`/imagine`, `/imagine/agent`); Build is a **chat mode** in the same picker; marketing routes vs signed-in **Skills and Connectors** manager; Files unsigned 404; History unsigned auth wall; `/plans` is the in-app paywall.
 4. Keep the **model catalog data-driven**. Modes include Fast/Auto/Expert/Heavy/**Build**. Do not freeze `grok-4.6` as the only expert model.
 5. Make signed-out vs signed-in, empty/loading/error, and entitlement **gates as UI** explicit (Chat in-thread wall, Imagine dialog) — functional SKU/geo forks are reconstruction defaults, not inspiration-app work.
 
@@ -143,7 +143,7 @@ Each decision is **choice + rationale**. These remain the reconstruction default
 | KD-3 | **Shell IA** | One chrome system: top nav (logo, Imagine, settings, account), left sidebar when signed in (history, **Chat Projects**, workspaces). First-class routes: `/`, `/c/:id`, `/imagine`, `/imagine/agent`, `/imagine/template/:slug`, `/plans`, `/plans/business`, `/history`, `/files`, `/connectors`, `/skills`, `/automations` (unsigned marketing), **`/skills-and-connectors`** (signed-in combined manager; `/manage-connectors` alias), `/share/:token`, `/share-links`. `/supergrok` is a **legacy/pricing CTA alias** that should redirect to `/plans` (or `/plans?target=`). | Observed routes 2026-09-18. |
 | KD-4 | **Chat vs Imagine vs Build** | **Chat** = `/`. **Imagine** = sibling app. **Build** = **chat mode** in the same picker (Observed `id: build`, Beta badge), also `?mode=build`. **Voice** = overlay on Chat. | Observed picker includes Build; news CTA `?mode=build`. |
 | KD-5 | **Auth** | Central IdP **accounts.x.ai**. Providers: Google, X, Apple, email, GitHub. grok.com session via **authorization-code exchange on grok.com** after IdP redirect (cookie is first-party `grok.com`, not assumed `.x.ai`). `GET /api/auth/session` probe. `return_to` same-origin relative only. | Observed IdP + session stub; cookie domain is the hard hop. |
-| KD-6 | **Guest usage** | **Compose vs send split.** Unsigned users may draft. **Send requires an account** (Observed locale). **Two gates, not one component:** Chat `/` = in-thread wall “Dein Gespräch fortsetzen” / “Kostenlos registrieren” (user bubble stays, no SSE, no `/c/:id`). Imagine `/imagine` = **`dialog` titled “Grok Imagine”** with **Registrieren** / **Anmelden** (no user bubble, no job). `return_to` is the current path (`/` vs `/imagine`) plus draft in `sessionStorage`. `guest_inference` default **off**. | Chat submit `"hello"` and Imagine submit `"a red apple"` re-verified 2026-09-18. |
+| KD-6 | **Guest usage** | **Compose vs send split.** Unsigned users may draft. **Send requires an account** (Observed locale). **Two gates, not one component:** Chat `/` = in-thread wall “Continue your conversation” / “Sign up for free” (user bubble stays, no SSE, no `/c/:id`). Imagine `/imagine` = **`dialog` titled “Grok Imagine”** with **Sign up** / **Sign in** (no user bubble, no job). `return_to` is the current path (`/` vs `/imagine`) plus draft in `sessionStorage`. `guest_inference` default **off**. | Chat submit `"hello"` and Imagine submit `"a red apple"` re-verified 2026-09-18. |
 | KD-7 | **Streaming protocol** | **Chat:** SSE from grok.com BFF only. **Imagine jobs:** client **polls** `GET /rest/imagine/jobs/:id` (BFF polls api.x.ai). **Voice:** browser WebSocket **only to grok.com voice gateway**; gateway proxies to `wss://api.x.ai/v1/realtime` with server credentials. Browser **never** holds ephemeral api.x.ai tokens and **never** opens `api.x.ai`. **Reconnect:** refetch `GET /rest/conversations/:id` (no Last-Event-ID SSE resume URL). | Aligns KD-23; avoids dual resume mechanisms; poll matches public video API. |
 | KD-8 | **Conversation persistence** | Server-side conversations keyed by `conversation_id` (UUID). Signed-in default: persist + title + history. **Private Chat** (ghost): omit from history; delete from systems within 30 days unless legal/safety hold. Build Mode **cannot** use Private Chat (**Documented**). | FAQ + privacy policy + Build Mode retention note. |
 | KD-9 | **Usage / quota** | One **weekly usage pool** per subscription, spendable across Chat, Imagine, Voice, Build. Free-tier Chat/Voice limits are **separate** and still available after paid pool exhaustion. Extra Usage Credits (web, min $5, 1-year expiry) and Auto Top Up. Usage UI: Settings → Usage. | Documented FAQ June 2026. Exact unit costs per action are **Assumption** (compute-weighted); expose as catalog from billing service. |
@@ -157,13 +157,13 @@ Each decision is **choice + rationale**. These remain the reconstruction default
 | KD-17 | **Workspaces & sharing** | Personal vs Team. Org may **disable personal workspace**. Sharing is a **per-resource ladder**: Private / Team / Organization / Public. Public = conversations only; projects & skills cap at Organization. Defaults: conversations+projects Organization, skills Private. Tightening restricts existing shares. History `?tab=shared-with-me`. | [User guide](https://docs.x.ai/grok/user-guide) + [management Sharing policy](https://docs.x.ai/grok/management). |
 | KD-18 | **Billing / plans** | **BFF catalog is the only in-app plan source.** In-app paywall is **`/plans`** (Individual: Lite $10 / SuperGrok $30 / Heavy $300) and **`/plans/business`**. Stripe Observed products: Lite, SuperGrok, Heavy, plus **Grok Teams** (`prod_S4qOT32nvkToDq`, `PRODUCT_TIER_UNKNOWN`, no prices). **SuperGrok Plus is marketing-only** on x.ai/pricing until it appears in Stripe **and** `/plans`. `/supergrok` CTAs redirect to `/plans`. Manage: Settings → Billing or `/?_s=billing`. | Live `/plans` vs x.ai/pricing conflict. |
 | KD-19 | **Safety** | Classifiers on every turn from slice A onward (not a junk-drawer PR). Imagine: persist/show asset only when moderation **passed** (`respect_moderation: true` on the API object). Age assurance (DOB, AU 18+) in rollout. | API field meaning; AUP. |
-| KD-20 | **i18n** | Locale from Accept-Language + Settings. Chrome catalogs for all shipped UI locales, not only en/de. Textbox `aria-label` must be localized (live debt: English name on `lang=de`). Vazirmatn already on the font stack. | Observed a11y mismatch. |
+| KD-20 | **i18n** | Locale from Accept-Language + Settings. Chrome catalogs for all shipped UI locales, not only English. Textbox `aria-label` must be localized (live debt: English name on a non-English page). Vazirmatn already on the font stack. | Observed a11y mismatch. |
 | KD-21 | **Feature flags** | `guest_inference`, `imagine`, `imagine_agent`, `imagine_video_1080p`, `imagine_video_extend`, `voice`, `build`, `connectors`, `skills`, `automations`, `automations_email_trigger`, `automations_webhook_trigger`, `chat_projects`, `age_assurance`. No `memory` flag for grok.com until OQ-8. | Match live product forks. |
 | KD-22 | **Explicitly out of scope** | Grok Build TUI (`/memory`, `/dream`, `/dashboard`), Grok Bot UI, API-only console, Grok-on-X, Companions, Studio. | Bound the system. |
 | KD-23 | **Browser never talks to api.x.ai** | Includes REST, SSE, **and voice WebSocket**. All inference credentials stay on grok.com. | Closes the ephemeral-token leak surface. |
 | KD-24 | **Reconnect** | Chat: persist partial assistant message; on drop, **GET conversation** and reconcile by `response_id`. Do not implement a second SSE resume URL. Voice: documented `conversation_id` resumption, 30 min, **via the grok.com gateway**. | One mechanism. |
 | KD-25 | **Search** | Signed-in history FTS. Imagine library search (Documented). Web search is a **tool**. | Unchanged. |
-| KD-26 | **Chat Projects vs Imagine Projects** | Two entities. **Chat Project**: grouping of conversations + files (Observed attach “Zum Projekt hinzufügen”; FAQ Projects missing on grok.x.ai). **Imagine Project**: creative library/agent workspace (Observed `/imagine/agent` “Neues Projekt”). Do not collapse them. | Issue 5. |
+| KD-26 | **Chat Projects vs Imagine Projects** | Two entities. **Chat Project**: grouping of conversations + files (Observed attach “Add to project”; FAQ Projects missing on grok.x.ai). **Imagine Project**: creative library/agent workspace (Observed `/imagine/agent` “New project”). Do not collapse them. | Issue 5. |
 | KD-27 | **Skills+Connectors manager** | Signed-in canonical UI: `/skills-and-connectors?tab=connectors|skills`. Keep `/connectors` `/skills` as unsigned marketing (and redirects when signed in). `/manage-connectors` alias. Automations stay `/automations`. | Observed redirect. |
 | KD-28 | **BFF language** | **TypeScript on Node** (same org as `apps/web`). Independently reviewable `services/bff` package. JSON over HTTP; no protobuf in v1. Mobile uses the same JSON with `x-grok-client: ios|android` and tighter upload caps. | Stops “Go/TypeScript” waffle. |
 | KD-29 | **Imagine job transport** | Client **polls**. No requirement for job WebSockets in v1. | Matches public video API; simpler than dual transport. |
@@ -295,13 +295,13 @@ flowchart TB
 A **mode** is a serving policy, not a model ID.
 
 ```ts
-// Observed (de locale) plus specified fields
+// Observed plus specified fields
 type ModeId = "auto" | "fast" | "expert" | "heavy" | "build";
 
 interface ModeDescriptor {
   id: ModeId;
-  title: string;            // "Schnell" | "Auto" | "Experte" | "Schwer" | "Build"
-  description: string;      // "Schnellantworten" | "Wählt Schnell- oder Experten-Modus" | ...
+  title: string;            // "Fast" | "Auto" | "Expert" | "Heavy" | "Build"
+  description: string;      // "Quick answers" | "Chooses Fast or Expert mode" | ...
   badgeText?: string;
   iconHint: string;         // rocket | lightning | lightbulb | connected_apps | hammer
   tags: Array<"TAG_COMPUTER" | "TAG_PRIMARY" | "TAG_BUILD">;
@@ -319,10 +319,10 @@ interface ModeDescriptor {
 
 | Mode | User-facing | Typical backend | Notes |
 | --- | --- | --- | --- |
-| `fast` | Fast / Schnell | low-latency chat variant of current flagship family | Default unsigned **compose**; send still hits signup wall (KD-6) |
+| `fast` | Fast | low-latency chat variant of current flagship family | Default unsigned **compose**; send still hits signup wall (KD-6) |
 | `auto` | Auto | router chooses fast vs expert | `requiresUpgrade` unsigned |
-| `expert` | Expert / Experte | Grok 4.6 (or current flagship) with reasoning | Observed copy |
-| `heavy` | Heavy / Schwer | multi-agent / “Expertenteam · Grok 4.6” | Highest compute weight |
+| `expert` | Expert | Grok 4.6 (or current flagship) with reasoning | Observed copy |
+| `heavy` | Heavy | multi-agent / “Expert team · Grok 4.6” | Highest compute weight |
 | `build` | Build (Beta) | coding/agentic stack + preview | **Observed in picker**; Private Chat disabled |
 
 Imagine uses a **separate** model pair: `grok-imagine-image-2.0` (Quality), speed image model, `grok-imagine-video-1.5` (**Documented**). Voice uses `grok-voice-think-fast-2.0` / `grok-voice-latest`.
@@ -378,7 +378,7 @@ Footer unsigned: Terms + Privacy + privacy choices
 | --- | --- | --- |
 | Top-right | Settings, Sign in, Sign up | Settings, usage chip, avatar |
 | Sidebar | Hidden | History, projects, workspace |
-| Model picker | Fast available; Auto / Expert / Heavy / **Build (Beta)** `requiresUpgrade` + “Erweiterte Funktionen freischalten / Anmelden” (Observed) | Full catalog per entitlement |
+| Model picker | Fast available; Auto / Expert / Heavy / **Build (Beta)** `requiresUpgrade` + “Unlock advanced features / Sign in” (Observed) | Full catalog per entitlement |
 | Attach | Menu may open; upload of private files requires auth | Full upload + connectors + skills |
 | Persistence | **No guest inference** (Chat in-thread wall; Imagine **Grok Imagine** dialog). No history. | Conversations + Chat Projects sync |
 | `/files` | In-app 404 (Observed) | Library (Specified; unverified signed-in) |
@@ -401,13 +401,13 @@ Footer unsigned: Terms + Privacy + privacy choices
 | 429 | Toast + retry-after; disable send until window. |
 | Safety block | Inline error. Imagine: **do not show** the asset unless API `respect_moderation === true` (passed). Report. |
 | Network drop | Resume chip on the last assistant message. |
-| In-app 404 | Observed `/files` unsigned: “Seite nicht gefunden” + home link. |
+| In-app 404 | Observed `/files` unsigned: “Page not found” + home link. |
 | Auth required | Redirect `/sign-in?return_to=` or modal. |
 
 ### Accessibility (specified, grounded in Observed skip link)
 
 - Skip link to `#grok-content-area` on every view (Observed).
-- Composer is a real textbox. Observed `aria-label` is **“Ask Grok anything”** even on `lang=de` — **Specified:** localize this name; do not copy the live English-on-German debt.
+- Composer is a real textbox. Observed `aria-label` is **“Ask Grok anything”** even on a non-English page — **Specified:** localize this name; do not copy the live English-label-on-localized-page debt.
 - Model picker and attach are `button` + `menu` / `menuitemradio` (Observed Radix).
 - Notifications live region `aria-live="polite"` (Observed).
 - Cookie dialog is a modal with labelled buttons (Observed).
@@ -430,7 +430,7 @@ Footer unsigned: Terms + Privacy + privacy choices
 **Composer controls (Observed + specified):**
 
 - Textarea (multiline, IME-safe).
-- Attach (`aria-label` Anhängen / “Conversation attachments”) — files, photos, connectors shortcut, skills mention.
+- Attach (`aria-label` Attach / “Conversation attachments”) — files, photos, connectors shortcut, skills mention.
 - Mode picker (`#model-select-trigger`).
 - Submit (`data-testid="chat-submit"`) disabled when empty.
 - **Specified when signed in:** Voice mic, Private Chat ghost in chrome, `@` mention connectors/skills.
@@ -438,14 +438,14 @@ Footer unsigned: Terms + Privacy + privacy choices
 **Submit rules (KD-6, Chat `/` only — Imagine uses a different gate, §4):**
 
 1. Empty → no-op (submit disabled).
-2. Unsigned **any mode including Fast** → insert user bubble, then **in-thread signup wall** (“Dein Gespräch fortsetzen” / “Kostenlos registrieren”). Do not POST SSE. CTA → `/sign-up?return_to=%2F` with draft in `sessionStorage`.
+2. Unsigned **any mode including Fast** → insert user bubble, then **in-thread signup wall** (“Continue your conversation” / “Sign up for free”). Do not POST SSE. CTA → `/sign-up?return_to=%2F` with draft in `sessionStorage`.
 3. If `guest_inference` geo flag is ever on: only then stream Fast without account (OQ-10). Default **off**.
 4. Oversize attachments → inline error before POST.
 5. Signed-in: create `/c/:id` if needed and start stream.
 
 ### 2. Thread — `/c/:conversationId`
 
-**Observed** route (unknown id: “Diese Unterhaltung konnte nicht geladen werden” + Retry). Signed-in list/header **Specified** (unverified): sticky composer, title, share, overflow (rename, delete, report).
+**Observed** route (unknown id: “This conversation could not be loaded” + Retry). Signed-in list/header **Specified** (unverified): sticky composer, title, share, overflow (rename, delete, report).
 
 **Message types:**
 
@@ -459,7 +459,7 @@ Footer unsigned: Terms + Privacy + privacy choices
 
 ### 3. History — `/history`
 
-**Observed unsigned:** first-class route with **auth wall** (“Melde dich an, um deine bisherigen Gespräche mit Grok zu sehen und zu verwalten”) + Sign up / Sign in — not a 404.  
+**Observed unsigned:** first-class route with **auth wall** (“Sign in to view and manage your past conversations with Grok”) + Sign up / Sign in — not a 404.  
 **Documented signed-in:** icon “three lines + magnifying glass” (FAQ). Tabs: All | Shared with me (`?tab=shared-with-me`). Search. Delete one / bulk. Open thread. **Specified** pixel details in Appendix A.
 
 ### 4. Imagine — `/imagine`
@@ -468,13 +468,13 @@ Footer unsigned: Terms + Privacy + privacy choices
 
 **Templates Observed (non-exhaustive):** Reimagine, Photo Collage, Icon Maker, Emoji Creator, Editorial Product Poster, Props & UI Kit, Smart Resize, Profile Picture, Product Color Change, Mascot Maker, Room staging, Photo Edit, BG Removal & Change, E-Commerce Photos, Hero Product Reveal, Character Sprite, UGC Photos, Professional Headshot. Assets on `imagine-public.x.ai` / GCS.
 
-**Library / Projects.** **Observed** on `/imagine/agent` while **unsigned**: heading Projekte, button **Neues Projekt**. **Documented** June 2026: sidebar Projects, parallel agents, library search. Creating/persisting a project still requires auth (Imagine **dialog**, not the Chat wall) — **Specified**. Do not hide the Projects chrome when logged out.
+**Library / Projects.** **Observed** on `/imagine/agent` while **unsigned**: heading Projects, button **New project**. **Documented** June 2026: sidebar Projects, parallel agents, library search. Creating/persisting a project still requires auth (Imagine **dialog**, not the Chat wall) — **Specified**. Do not hide the Projects chrome when logged out.
 
-**Agent.** **Observed** `/imagine/agent` (title “Imagine-Agenten-Modus”). Alias `/imagine?mode=agent`. Multi-step orchestrator (multiple jobs).
+**Agent.** **Observed** `/imagine/agent` (title “Imagine Agent Mode”). Alias `/imagine?mode=agent`. Multi-step orchestrator (multiple jobs).
 
-**Unsigned send (Observed, not Chat’s wall).** Submitting a Speed image (e.g. `"a red apple"`) opens a **`dialog` titled “Grok Imagine”** with **Registrieren** and **Anmelden**. No job, no user bubble. Preserve prompt, Image/Video/Agent, Speed/Quality, aspect in `sessionStorage`; `return_to=/imagine` (or `/imagine/agent`). OQ-1: unsigned generate default **no**.
+**Unsigned send (Observed, not Chat’s wall).** Submitting a Speed image (e.g. `"a red apple"`) opens a **`dialog` titled “Grok Imagine”** with **Sign up** and **Sign in**. No job, no user bubble. Preserve prompt, Image/Video/Agent, Speed/Quality, aspect in `sessionStorage`; `return_to=/imagine` (or `/imagine/agent`). OQ-1: unsigned generate default **no**.
 
-**Video length.** Public API generate = 1–15s; **extend `duration` is the added tail, not the total** ([Video Extension](https://docs.x.ai/developers/model-capabilities/video/extension): 10s in + `duration` 5 → **15s out**). Live `/plans` SuperGrok: **HD 720p, 30 Sekunden Video**. UI may offer 1–`videoMaxSeconds` (catalog; SuperGrok marketing 30). BFF mapper below — never send `duration: 30` to generate or extend.
+**Video length.** Public API generate = 1–15s; **extend `duration` is the added tail, not the total** ([Video Extension](https://docs.x.ai/developers/model-capabilities/video/extension): 10s in + `duration` 5 → **15s out**). Live `/plans` SuperGrok: **HD 720p, 30-second video**. UI may offer 1–`videoMaxSeconds` (catalog; SuperGrok marketing 30). BFF mapper below — never send `duration: 30` to generate or extend.
 
 **1080p.** `Entitlements.videoMaxResolution` is the only switch. Observed `/plans` SuperGrok = 720p; Heavy copy does **not** mention 1080p; 1080p appears on x.ai/pricing **Plus** (marketing-only). Do not unlock 1080p for Heavy because Plus is absent. OQ-15.
 
@@ -547,12 +547,12 @@ Age: collect DOB when required (Privacy Policy). Australia: 18+ media gate (ToS 
 
 ### 12. Plans / paywall — `/plans` and `/plans/business`
 
-**Observed `/plans` Individual** (German session, 2026-09-18):
+**Observed `/plans` Individual** (2026-09-18 session):
 
 | Plan | Position | Live bullets (translated) |
 | --- | --- | --- |
 | SuperGrok Lite | First | Keep chatting with basic access; apps from a prompt; one-tap web deploy; **2× longer chats**; Expert; latest model; try image & video; higher limits at normal speed |
-| SuperGrok | “Beliebteste” | Exclusive **Grok Bot**; all Lite; **5× longer chats**; smarter Expert; best model higher limits; stunning image & video; **HD 720p, 30-second video**; longer Voice; faster replies; stronger coding tools |
+| SuperGrok | “Most popular” | Exclusive **Grok Bot**; all Lite; **5× longer chats**; smarter Expert; best model higher limits; stunning image & video; **HD 720p, 30-second video**; longer Voice; faster replies; stronger coding tools |
 | SuperGrok Heavy | Third | Everything SuperGrok; highest usage at fastest speed; hardest problems; larger agent team; **X Premium+ included if you connect 𝕏**; personal support & early access |
 
 **No SuperGrok Plus card** on `/plans`. **Observed `/plans/business`:** SuperGrok Business (team create, sharing, central billing, analytics, domain verify, **excluded from training by default**) + Enterprise (SSO, SCIM, custom RBAC, custom retention, unlimited users).
@@ -1289,7 +1289,7 @@ Layers:
 
 ## i18n / a11y / performance (extra)
 
-**i18n Specified:** message catalogs per locale; server sends `ModeDescriptor` already localized (Observed German titles). Dates in user timezone (automations). Voice language hint from UI locale. Legal pages stay on x.ai (may be English).
+**i18n Specified:** message catalogs per locale; server sends `ModeDescriptor` already localized (Observed English titles). Dates in user timezone (automations). Voice language hint from UI locale. Legal pages stay on x.ai (may be English).
 
 **a11y extra:** contrast ≥ 4.5:1 in both themes; don’t rely on color for quota; captions for Imagine videos when speech present (best-effort, specified as follow-up flag `imagine_captions`).
 
@@ -1485,7 +1485,7 @@ Flags default **off** in greenfield, **on** to match production. Order matches s
 
 | ID | Question | Reconstruction default (kept) | Resolution |
 | --- | --- | --- | --- |
-| OQ-1 | Does unsigned Imagine ever generate (any geo)? | **No** in Observed locale. Gate is the **Grok Imagine dialog** (Registrieren / Anmelden), not Chat’s in-thread wall. | **Resolved (2026-09-18, product owner).** Visual gate is the reference; unsigned generate is out of inspiration scope. |
+| OQ-1 | Does unsigned Imagine ever generate (any geo)? | **No** in Observed locale. Gate is the **Grok Imagine dialog** (Sign up / Sign in), not Chat’s in-thread wall. | **Resolved (2026-09-18, product owner).** Visual gate is the reference; unsigned generate is out of inspiration scope. |
 | OQ-2 | Exact free-tier numeric limits | **Unknown.** UI uses catalog % / generic “limit reached”. Do not ship invented 20/5/20 caps. | **Resolved.** SKU math out of inspiration scope; keep default. |
 | OQ-3 | Weekly pool micros per plan | Billing catalog only | **Resolved.** Keep default. |
 | OQ-4 | Chat-inline image vs Imagine | Inline card + “Edit in Imagine” | **Resolved.** Keep default as IA/motion reference. |
