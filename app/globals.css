@@ -363,8 +363,6 @@ html[data-admin-save-bar] .admin-toast {
 .growcast-board {
   --growcast-hair: rgb(228 228 231);
   --growcast-cam-w: 320px;
-  /* zinc-500: ≥3:1 on white and zinc-950, same token as muted card text */
-  --growcast-ai-empty: #71717a;
   display: grid;
   view-transition-name: vt-board;
 }
@@ -553,8 +551,41 @@ html[data-admin-save-bar] .admin-toast {
   animation-delay: calc(var(--growcast-i) * 14ms);
 }
 
-.growcast-ai-tick-empty {
-  background-color: var(--growcast-ai-empty, #71717a);
+.growcast-ai-reading {
+  transition: color 180ms linear;
+}
+
+.growcast-ai-confidence {
+  position: relative;
+  cursor: help;
+}
+
+.growcast-ai-confidence-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  width: max-content;
+  max-width: 16rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #18181b;
+  color: #fafafa;
+  border: 1px solid #3f3f46;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 80ms linear, transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.growcast-ai-confidence:hover .growcast-ai-confidence-tip,
+.growcast-ai-confidence:focus-visible .growcast-ai-confidence-tip {
+  opacity: 1;
+  transform: none;
 }
 
 .growcast-ai-tip {
@@ -605,8 +636,11 @@ html[data-admin-save-bar] .admin-toast {
   .growcast-ai-arc { stroke-dashoffset: 0; }
   .growcast-ai-row { opacity: 1; transform: none; }
   .growcast-ai-tick { transform: none; }
+  .growcast-ai-reading,
+  .growcast-ai-confidence-tip,
   .growcast-ai-tip,
   .growcast-ai-mosaic:hover .growcast-ai-row { transition: none; }
+  .growcast-ai-confidence-tip { transform: none; }
 }
 
 .growcast-area-pics {

@@ -1,10 +1,16 @@
 "use client";
 
-import {useRef} from "react";
-import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
+import {useId, useRef} from "react";
+import {useLiveClimate} from "@/hooks/use-live-climate";
+import {
+    formatMetricReading,
+    liveReadingsFromSnapshot,
+    mergeLiveMetrics,
+} from "@/lib/ai-summary/live-metrics";
 import {foldMosaicRow, mosaicDetail, parseMosaicRow} from "@/lib/ai-summary/mosaic";
 import {AI_SUMMARY_SCORE_DAYS, type AiSummaryPublic, type MosaicCell} from "@/lib/ai-summary/types";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
 import {WORKSPACE_AREA, WORKSPACE_HAIRLINE, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
 
@@ -23,6 +29,12 @@ const METRIC_UNITS: Record<ClimateMetricKey, string> = {
     co2: "ppm",
     ppfd: "µmol",
 };
+
+/** Empty climate-mosaic cells and empty 30-day ticks share this grey. */
+const STRIP_EMPTY_CLASS = "bg-zinc-200 dark:bg-zinc-700";
+
+const CONFIDENCE_TIP =
+    "How sure the model is in its score, given 24-hour sample coverage, whether a camera image was used, and data gaps or anomalies.";
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const HALF_HOUR_MS = 30 * 60 * 1000;
@@ -82,6 +94,13 @@ function detailLabel(time: string, word: string): string {
     return word ? `${time} ${word}`.trim() : time;
 }
 
+function formatAsOf(date: string, generatedAt: string): string {
+    const ms = Date.parse(generatedAt);
+    const time = Number.isFinite(ms) ? BERLIN_CLOCK.format(ms) : "";
+    const day = formatDateDisplay(date);
+    return time ? `as of ${day} ${time}` : `as of ${day}`;
+}
+
 function scoreWindow(history: AiSummaryPublic["scoreHistory"]): Array<{date: string; score: number | null}> {
     const newest = history[history.length - 1]?.date;
     if (!newest) {
@@ -109,6 +128,8 @@ export default function AiSummaryCard({
     summary: AiSummaryPublic | null;
     demo?: boolean;
 }) {
+    const live = useLiveClimate();
+    const confidenceTipId = useId();
     const tipRef = useRef<HTMLDivElement>(null);
     const whenRef = useRef<HTMLSpanElement>(null);
     const markRef = useRef<HTMLSpanElement>(null);
@@ -174,14 +195,26 @@ export default function AiSummaryCard({
 
     const windowStart = summary ? Date.parse(summary.generatedAt) - WINDOW_MS : Number.NaN;
     const scores = summary ? scoreWindow(summary.scoreHistory) : [];
-    const meta = summary
+    const liveBundle = liveReadingsFromSnapshot(live.snapshot);
+    const merged = summary
+        ? mergeLiveMetrics({
+            ranges: summary.ranges,
+            verdicts: summary.verdicts,
+            mosaic: summary.mosaic,
+            readings: summary.readings,
+            generatedAt: summary.generatedAt,
+            liveValues: liveBundle.values,
+            liveFresh: !live.stale,
+            isDay: liveBundle.isDay,
+        })
+        : null;
+    const metaParts = summary
         ? [
             formatDateDisplay(summary.date),
             summary.stageLabel || null,
             summary.daysSinceSeeding !== null ? `Day ${summary.daysSinceSeeding}` : null,
-            `confidence ${summary.confidence}`,
-        ].filter((part) => part).join(" · ")
-        : "";
+        ].filter((part): part is string => Boolean(part))
+        : [];
 
     return (
         <section
@@ -189,7 +222,7 @@ export default function AiSummaryCard({
             onPointerMove={summary ? onPointerMove : undefined}
             onPointerLeave={summary ? hideTip : undefined}
         >
-            {summary ? (
+            {summary && merged ? (
                 <>
                     <div className="grid lg:grid-cols-2">
                         <div className={WORKSPACE_PAD}>
@@ -234,7 +267,29 @@ export default function AiSummaryCard({
                                         ) : null}
                                     </div>
                                     <p className="text-sm text-zinc-700 dark:text-zinc-300">{summary.headline}</p>
-                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">{meta}</p>
+                                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                        {metaParts.map((part, index) => (
+                                            <span key={part}>
+                                                {index > 0 ? " · " : null}
+                                                {part}
+                                            </span>
+                                        ))}
+                                        {metaParts.length > 0 ? " · " : null}
+                                        <span
+                                            className="growcast-ai-confidence"
+                                            tabIndex={0}
+                                            aria-describedby={confidenceTipId}
+                                        >
+                                            Confidence {summary.confidence}%
+                                            <span
+                                                id={confidenceTipId}
+                                                role="tooltip"
+                                                className="growcast-ai-confidence-tip"
+                                            >
+                                                {CONFIDENCE_TIP}
+                                            </span>
+                                        </span>
+                                    </p>
                                 </div>
                             </div>
                             <p className="mt-4 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
@@ -260,9 +315,9 @@ export default function AiSummaryCard({
                             <div className="growcast-ai-mosaic flex h-full flex-1 flex-col justify-between gap-2.5">
                                 {CLIMATE_METRIC_KEYS.map((key, row) => {
                                     const range = summary.ranges[key];
-                                    const verdict = summary.verdicts[key];
+                                    const metric = merged[key];
                                     const cells = foldMosaicRow(parseMosaicRow(summary.mosaic[key] ?? ""));
-                                    const percent = verdict.pctInRange === null ? null : Math.round(verdict.pctInRange);
+                                    const percent = metric.pctInRange === null ? null : Math.round(metric.pctInRange);
                                     return (
                                         <div
                                             key={key}
@@ -270,16 +325,28 @@ export default function AiSummaryCard({
                                             style={{"--growcast-i": row} as React.CSSProperties}
                                             onAnimationEnd={clearMotion}
                                         >
-                                            <div className="mb-1 flex items-baseline justify-between gap-3">
-                                                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                                                    {METRIC_LABELS[key]}
+                                            <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                                                <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
+                                                    <span className="text-zinc-500 dark:text-zinc-400">
+                                                        {METRIC_LABELS[key]}
+                                                    </span>
+                                                    <span
+                                                        className={`growcast-ai-reading tabular-nums ${percentClass(metric.valueVerdict)}`}
+                                                    >
+                                                        {formatMetricReading(key, metric.value)}
+                                                    </span>
+                                                    {metric.asOf ? (
+                                                        <span className="text-zinc-500 dark:text-zinc-400">
+                                                            {formatAsOf(summary.date, metric.asOf)}
+                                                        </span>
+                                                    ) : null}
                                                 </span>
                                                 <span className="text-right text-xs tabular-nums text-zinc-700 dark:text-zinc-300">
                                                     {range ? formatRange(key, range.min, range.max) : null}
                                                     {percent !== null ? (
                                                         <>
                                                             {" · "}
-                                                            <span className={percentClass(verdict.verdict)}>{percent}%</span>
+                                                            <span className={percentClass(metric.pctVerdict)}>{percent}%</span>
                                                         </>
                                                     ) : null}
                                                 </span>
@@ -299,7 +366,11 @@ export default function AiSummaryCard({
                                                     return (
                                                         <div
                                                             key={`${key}-${index}`}
-                                                            className={fill ? "h-full min-w-0" : "h-full min-w-0 bg-zinc-200 dark:bg-zinc-700"}
+                                                            className={
+                                                                fill
+                                                                    ? "h-full min-w-0"
+                                                                    : `h-full min-w-0 ${STRIP_EMPTY_CLASS}`
+                                                            }
                                                             style={fill ? {backgroundColor: fill} : undefined}
                                                             data-time={time}
                                                             data-word={word}
@@ -334,7 +405,7 @@ export default function AiSummaryCard({
                                                 key={cell.date}
                                                 className={
                                                     cell.score === null
-                                                        ? "growcast-ai-tick growcast-ai-tick-empty h-full rounded-[2px]"
+                                                        ? `growcast-ai-tick growcast-ai-tick-empty ${STRIP_EMPTY_CLASS} h-full rounded-[2px]`
                                                         : "growcast-ai-tick h-full rounded-[2px]"
                                                 }
                                                 style={

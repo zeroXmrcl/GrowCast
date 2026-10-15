@@ -34,7 +34,6 @@ function contrastRatio(a: string, b: string): number {
 }
 
 const BOARD_DARK = "#09090b";
-const BOARD_LIGHT = "#ffffff";
 const SCORE_FILLS = ["#10b981", "#84cc16", "#f59e0b", "#ef4444"];
 
 describe("ai summary 30-day score strip", () => {
@@ -63,15 +62,14 @@ describe("ai summary 30-day score strip", () => {
         assert.doesNotMatch(card, /dark:bg-zinc-800/);
     });
 
-    it("gives empty days a zinc token with at least 3:1 non-text contrast", () => {
+    it("paints empty day ticks with the same zinc as empty climate-mosaic cells", () => {
         const css = src(path.join("app", "globals.css"));
-        const emptyRule = ruleBody(css, ".growcast-ai-tick-empty");
-        const token = css.match(/--growcast-ai-empty:\s*(#[0-9a-fA-F]{6})/);
-        assert.ok(token, "missing --growcast-ai-empty hex token");
-        assert.equal(token[1].toLowerCase(), "#71717a");
-        assert.match(emptyRule, /var\(--growcast-ai-empty/);
-        assert.ok(contrastRatio(token[1], BOARD_DARK) >= 3);
-        assert.ok(contrastRatio(token[1], BOARD_LIGHT) >= 3);
+        const card = src(path.join("components", "ai-summary-card.tsx"));
+        assert.match(card, /STRIP_EMPTY_CLASS = "bg-zinc-200 dark:bg-zinc-700"/);
+        assert.match(card, /h-full min-w-0 \$\{STRIP_EMPTY_CLASS\}/);
+        assert.match(card, /growcast-ai-tick-empty \$\{STRIP_EMPTY_CLASS\}/);
+        assert.doesNotMatch(css, /--growcast-ai-empty/);
+        assert.doesNotMatch(css, /\.growcast-ai-tick-empty \{[^}]*background-color/);
         for (const fill of SCORE_FILLS) {
             assert.ok(
                 contrastRatio(fill, BOARD_DARK) >= 3,

@@ -67,7 +67,14 @@ describe("ai summary surface", () => {
         assert.match(card, /ABOVE|mosaicDetail/);
         assert.match(card, /Demo/);
         assert.match(card, /No assessment yet\. The daily job runs around 08:00 \(Europe\/Berlin\)\./);
+        assert.match(card, /useLiveClimate/);
+        assert.match(card, /mergeLiveMetrics/);
+        assert.match(card, /Confidence \{summary\.confidence\}%/);
+        assert.match(card, /role="tooltip"/);
+        assert.match(card, /as of/);
+        assert.match(card, /bg-zinc-200 dark:bg-zinc-700/);
         assert.doesNotMatch(card, /xAI key/);
+        assert.doesNotMatch(card, /XAI_API_KEY|xaiApiKey|requestGrowSummary/);
         assert.doesNotMatch(src(path.join("components", "ai-summary-card.tsx")), /KI-Einschätzung/);
         assert.doesNotMatch(prompt, /Deutsch|Du bist|KEINE Zielwerte/);
     });

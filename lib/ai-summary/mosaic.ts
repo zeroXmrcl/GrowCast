@@ -153,7 +153,7 @@ export function scoreSample(
 const IN_RANGE_SHARE = 80;
 const CLOSE_SHARE = 60;
 
-function verdictForShare(share: number | null): MetricVerdict {
+export function verdictForShare(share: number | null): MetricVerdict {
     if (share === null) {
         return "unknown";
     }
@@ -166,7 +166,7 @@ function verdictForShare(share: number | null): MetricVerdict {
     return "off";
 }
 
-function shareFromRow(row: string): number | null {
+export function shareFromRow(row: string): number | null {
     let scored = 0;
     let inside = 0;
     for (const cell of parseMosaicRow(row)) {

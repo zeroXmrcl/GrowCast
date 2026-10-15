@@ -109,6 +109,7 @@ export type AiSummaryPublic = {
     ranges: Record<ClimateMetricKey, DerivedRange | null>;
     verdicts: Record<ClimateMetricKey, AiMetricJudgment>;
     mosaic: Record<ClimateMetricKey, string>;
+    readings: Record<ClimateMetricKey, number | null>;
     scoreHistory: AiSummaryScorePoint[];
     daysSinceSeeding: number | null;
     stageLabel: string;

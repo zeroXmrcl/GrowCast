@@ -12,7 +12,11 @@ export const AI_SUMMARY_SYSTEM_PROMPT = [
     "If an image is present, describe only visible plant health (color, turgor, stress, flowers).",
     "Write headline, summary, plantObservation, recommendations, and notes in English.",
     "Keep rating short in English (e.g. excellent, good, fair, poor, critical).",
-    "score and confidence 0–100. At most three concrete recommendations.",
+    "score is 0–100.",
+    "confidence is 0–100: how sure you are in the score, given the data quality.",
+    "Base confidence on 24h sample coverage, whether a camera image was used, and data gaps or anomalies.",
+    "Anchors: 90+ = full 24h data plus image; 50–89 = minor gaps or no image; below 50 = sparse data or no image.",
+    "At most three concrete recommendations.",
     "Still send pctInRange and verdict. The server replaces both from the measured samples.",
 ].join(" ");
 

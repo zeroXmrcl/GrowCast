@@ -15,11 +15,16 @@ function emptyMetric() {
     };
 }
 
-function metric(all: number, day: number, night: number) {
+function metric(
+    all: number,
+    day: number,
+    night: number,
+    values: {min: number; max: number; avg: number; p10: number; p50: number; p90: number; trend: number},
+) {
     return {
-        all: {...emptyMetric(), count: all, min: 20, max: 28, avg: 24, p10: 21, p50: 24, p90: 26, trend: 0.1},
-        day: {...emptyMetric(), count: day, min: 23, max: 28, avg: 25, p10: 23, p50: 25, p90: 27, trend: 0.1},
-        night: {...emptyMetric(), count: night, min: 20, max: 23, avg: 21.5, p10: 20, p50: 21, p90: 23, trend: 0},
+        all: {...emptyMetric(), count: all, ...values},
+        day: {...emptyMetric(), count: day, ...values},
+        night: {...emptyMetric(), count: night, ...values},
     };
 }
 
@@ -76,11 +81,51 @@ export function buildMockAiSummaryRecord(input: {
             lightHours: 18,
             alarmCount: 1,
             metrics: {
-                tempC: metric(288, 216, 72),
-                humidityPct: metric(288, 216, 72),
-                vpd: metric(288, 216, 72),
-                co2: metric(288, 216, 72),
-                ppfd: metric(216, 216, 0),
+                tempC: metric(288, 216, 72, {
+                    min: 20.4,
+                    max: 28.1,
+                    avg: 24.4,
+                    p10: 21.2,
+                    p50: 24.6,
+                    p90: 27.1,
+                    trend: 0.2,
+                }),
+                humidityPct: metric(288, 216, 72, {
+                    min: 54,
+                    max: 71,
+                    avg: 62.1,
+                    p10: 57,
+                    p50: 62.4,
+                    p90: 68,
+                    trend: 0,
+                }),
+                vpd: metric(288, 216, 72, {
+                    min: 0.72,
+                    max: 1.41,
+                    avg: 1.05,
+                    p10: 0.85,
+                    p50: 1.04,
+                    p90: 1.22,
+                    trend: 0.05,
+                }),
+                co2: metric(288, 216, 72, {
+                    min: 620,
+                    max: 1400,
+                    avg: 890,
+                    p10: 700,
+                    p50: 840,
+                    p90: 1200,
+                    trend: 20,
+                }),
+                ppfd: metric(216, 216, 0, {
+                    min: 240,
+                    max: 580,
+                    avg: 410,
+                    p10: 280,
+                    p50: 430,
+                    p90: 540,
+                    trend: 0,
+                }),
             },
         },
         ai: {

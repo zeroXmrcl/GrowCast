@@ -326,6 +326,13 @@ describe("ai summary schema and prompt", () => {
         assert.doesNotMatch(AI_SUMMARY_SYSTEM_PROMPT, /day\/night/);
         assert.match(AI_SUMMARY_SYSTEM_PROMPT, /one min and max/);
         assert.match(AI_SUMMARY_SYSTEM_PROMPT, /Lights-off samples are ignored/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /how sure you are in the score/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /24h sample coverage/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /camera image/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /90\+/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /50–89/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /sparse data or no image/);
+        assert.match(AI_SUMMARY_SYSTEM_PROMPT, /confidence is 0–100/);
     });
 });
 
@@ -436,6 +443,7 @@ describe("ai summary scheduler and public payload", () => {
             assert.equal(text.includes("temperatureDay"), false);
             assert.equal(pub.score, 82);
             assert.equal(pub.scoreHistory[0]?.score, 82);
+            assert.equal("readings" in pub, true);
             assert.ok(parseAiSummaryRecord(record));
         });
     });
@@ -501,6 +509,8 @@ describe("ai summary scheduler and public payload", () => {
             assert.ok(on.summary);
             assert.equal(on.summary.score, 78);
             assert.equal(on.summary.headline, "Veg climate mostly in range, night CO₂ a bit high");
+            assert.equal(on.summary.readings.tempC, 24.6);
+            assert.equal(on.summary.readings.vpd, 1.04);
             assert.equal(typeof on.summary.mosaic.tempC, "string");
             assert.ok(on.summary.mosaic.tempC.length > 0);
             assert.ok(on.summary.scoreHistory.length > 0);

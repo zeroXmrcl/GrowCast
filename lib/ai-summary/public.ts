@@ -1,6 +1,7 @@
 import {berlinDateOnly, shiftDateOnly} from "@/lib/energy/berlin";
 import {CLIMATE_METRIC_KEYS} from "@/lib/climate/types";
 import {aiSummaryDemoMode} from "@/lib/ai-summary/config";
+import {readingsFromStats} from "@/lib/ai-summary/live-metrics";
 import {buildMockAiSummaryRecord} from "@/lib/ai-summary/mock";
 import {readLatestAiSummary, readScoreHistory} from "@/lib/ai-summary/store";
 import type {AiSummaryPublic, AiSummaryRecord, AiSummaryScorePoint} from "@/lib/ai-summary/types";
@@ -26,6 +27,7 @@ function publicFromRecord(record: AiSummaryRecord, scoreHistory: AiSummaryScoreP
         ranges: record.ai.ranges,
         verdicts: record.ai.verdicts,
         mosaic: record.mosaic,
+        readings: readingsFromStats(record.stats),
         scoreHistory,
         daysSinceSeeding: record.stage.daysSinceSeeding,
         stageLabel: record.stage.stageLabel,
@@ -89,6 +91,7 @@ export const AI_SUMMARY_PUBLIC_KEYS = [
     "ranges",
     "verdicts",
     "mosaic",
+    "readings",
     "scoreHistory",
     "daysSinceSeeding",
     "stageLabel",
