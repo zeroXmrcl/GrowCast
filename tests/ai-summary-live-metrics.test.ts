@@ -63,12 +63,21 @@ function snapshot(sensor: {
     };
 }
 
+function emptySplit() {
+    const blank = () => ({
+        count: 0,
+        min: null as number | null,
+        max: null as number | null,
+        avg: null as number | null,
+        p10: null as number | null,
+        p50: null as number | null,
+        p90: null as number | null,
+        trend: null as number | null,
+    });
+    return {all: blank(), day: blank(), night: blank()};
+}
+
 function emptyStats(): ClimateWindowStats {
-    const metric = {
-        all: {count: 0, min: null, max: null, avg: null, p10: null, p50: null, p90: null, trend: null},
-        day: {count: 0, min: null, max: null, avg: null, p10: null, p50: null, p90: null, trend: null},
-        night: {count: 0, min: null, max: null, avg: null, p10: null, p50: null, p90: null, trend: null},
-    };
     return {
         windowStart: "2026-10-14T06:00:00.000Z",
         windowEnd: "2026-10-15T06:00:00.000Z",
@@ -79,13 +88,22 @@ function emptyStats(): ClimateWindowStats {
         lightHours: null,
         alarmCount: 0,
         metrics: {
-            tempC: metric,
-            humidityPct: metric,
-            vpd: metric,
-            co2: metric,
-            ppfd: metric,
+            tempC: emptySplit(),
+            humidityPct: emptySplit(),
+            vpd: emptySplit(),
+            co2: emptySplit(),
+            ppfd: emptySplit(),
         },
     };
+}
+
+function scoredRow(inside: number, scored: number): string {
+    const cells = Array<MosaicCell>(288).fill(0);
+    const start = cells.length - scored;
+    for (let i = 0; i < scored; i += 1) {
+        cells[start + i] = i < inside ? 1 : 7;
+    }
+    return mosaicRow(cells);
 }
 
 describe("evaluateAgainstRange", () => {
@@ -210,13 +228,13 @@ describe("mergeLiveMetric", () => {
             liveValue: 31,
             liveFresh: true,
             isDay: true,
-            mosaicRow: allInRangeRow(),
+            mosaicRow: scoredRow(10, 10),
             generatedAt,
         });
         assert.equal(merged.value, 31);
         assert.equal(merged.source, "live");
         assert.equal(merged.valueVerdict, "off");
-        assert.equal(merged.pctInRange, 99);
+        assert.equal(merged.pctInRange, 90);
         assert.equal(merged.pctVerdict, "in_range");
     });
 
