@@ -363,6 +363,8 @@ html[data-admin-save-bar] .admin-toast {
 .growcast-board {
   --growcast-hair: rgb(228 228 231);
   --growcast-cam-w: 320px;
+  /* zinc-500: ≥3:1 on white and zinc-950, same token as muted card text */
+  --growcast-ai-empty: #71717a;
   display: grid;
   view-transition-name: vt-board;
 }
@@ -546,10 +548,13 @@ html[data-admin-save-bar] .admin-toast {
 }
 
 .growcast-ai-tick {
-  transform: scaleY(0);
   transform-origin: center;
-  animation: growcast-ai-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: growcast-ai-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: calc(var(--growcast-i) * 14ms);
+}
+
+.growcast-ai-tick-empty {
+  background-color: var(--growcast-ai-empty, #71717a);
 }
 
 .growcast-ai-tip {
@@ -586,7 +591,8 @@ html[data-admin-save-bar] .admin-toast {
 }
 
 @keyframes growcast-ai-rise {
-  to { transform: scaleY(1); }
+  from { transform: scaleY(0); }
+  to { transform: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

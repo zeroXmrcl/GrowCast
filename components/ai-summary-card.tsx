@@ -334,7 +334,7 @@ export default function AiSummaryCard({
                                                 key={cell.date}
                                                 className={
                                                     cell.score === null
-                                                        ? "growcast-ai-tick h-full rounded-[2px] bg-zinc-200 dark:bg-zinc-800"
+                                                        ? "growcast-ai-tick growcast-ai-tick-empty h-full rounded-[2px]"
                                                         : "growcast-ai-tick h-full rounded-[2px]"
                                                 }
                                                 style={
