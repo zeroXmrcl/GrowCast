@@ -199,7 +199,7 @@ describe("mergeLiveMetric", () => {
         assert.equal(stale.value, 24.6);
         assert.equal(stale.source, "assessment");
         assert.equal(stale.asOf, generatedAt);
-        assert.equal(stale.pctInRange, 91);
+        assert.equal(stale.pctInRange, 100);
         assert.equal(stale.pctVerdict, "in_range");
 
         const missing = mergeLiveMetric({
@@ -216,7 +216,7 @@ describe("mergeLiveMetric", () => {
         assert.equal(missing.value, 840);
         assert.equal(missing.source, "assessment");
         assert.equal(missing.asOf, generatedAt);
-        assert.equal(missing.pctInRange, 69);
+        assert.equal(missing.pctInRange, 100);
     });
 
     it("marks a live out-of-range reading and updates pctInRange", () => {
@@ -234,7 +234,7 @@ describe("mergeLiveMetric", () => {
         assert.equal(merged.value, 31);
         assert.equal(merged.source, "live");
         assert.equal(merged.valueVerdict, "off");
-        assert.equal(merged.pctInRange, 90);
+        assert.equal(merged.pctInRange, 100);
         assert.equal(merged.pctVerdict, "in_range");
     });
 
@@ -254,7 +254,7 @@ describe("mergeLiveMetric", () => {
         assert.equal(merged.source, "live");
         assert.equal(merged.asOf, null);
         assert.equal(merged.valueVerdict, "unknown");
-        assert.equal(merged.pctInRange, 86);
+        assert.equal(merged.pctInRange, 100);
     });
 });
 

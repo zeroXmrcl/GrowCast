@@ -3,6 +3,14 @@ import {CLIMATE_METRIC_KEYS} from "@/lib/climate/types";
 import {aiSummaryDemoMode} from "@/lib/ai-summary/config";
 import {readingsFromStats} from "@/lib/ai-summary/live-metrics";
 import {buildMockAiSummaryRecord} from "@/lib/ai-summary/mock";
+import {verdictsFromMosaic} from "@/lib/ai-summary/mosaic";
+import {
+    AI_SUMMARY_WINDOW_MS,
+    mosaicWindowStartMs,
+    rebuildRollingMosaic,
+    shiftMosaic,
+} from "@/lib/ai-summary/rolling-mosaic";
+import {loadClimatePointsForWindow} from "@/lib/ai-summary/stats";
 import {readLatestAiSummary, readScoreHistory} from "@/lib/ai-summary/store";
 import type {AiSummaryPublic, AiSummaryRecord, AiSummaryScorePoint} from "@/lib/ai-summary/types";
 
@@ -53,29 +61,55 @@ function demoPublicAiSummary(nowMs: number = Date.now()): AiSummaryPublic {
     return publicFromRecord(record, demoScoreHistory(date, record.ai.score));
 }
 
-export async function toPublicAiSummary(record: AiSummaryRecord): Promise<AiSummaryPublic> {
-    return publicFromRecord(record, await readScoreHistory(record.date));
+async function rollingPublicMosaic(
+    record: AiSummaryRecord,
+    nowMs: number,
+): Promise<AiSummaryRecord["mosaic"]> {
+    try {
+        return await rebuildRollingMosaic(record.ai.ranges, nowMs, loadClimatePointsForWindow);
+    } catch {
+        const generatedMs = Date.parse(record.generatedAt);
+        const fromStart = Number.isFinite(generatedMs)
+            ? generatedMs - AI_SUMMARY_WINDOW_MS
+            : mosaicWindowStartMs(nowMs);
+        return shiftMosaic(record.mosaic, fromStart, mosaicWindowStartMs(nowMs));
+    }
 }
 
-export async function readStoredAiSummaryPublic(): Promise<AiSummaryPublic | null> {
+export async function toPublicAiSummary(
+    record: AiSummaryRecord,
+    nowMs: number = Date.now(),
+): Promise<AiSummaryPublic> {
+    const mosaic = await rollingPublicMosaic(record, nowMs);
+    const verdicts = verdictsFromMosaic(mosaic, record.ai.verdicts);
+    return publicFromRecord(
+        {...record, mosaic, ai: {...record.ai, verdicts}},
+        await readScoreHistory(record.date),
+    );
+}
+
+export async function readStoredAiSummaryPublic(
+    nowMs: number = Date.now(),
+): Promise<AiSummaryPublic | null> {
     const latest = await readLatestAiSummary();
     if (!latest) {
         return null;
     }
-    return toPublicAiSummary(latest);
+    return toPublicAiSummary(latest, nowMs);
 }
 
 export async function readAiSummaryPublic(
     env: NodeJS.ProcessEnv = process.env,
+    nowMs: number = Date.now(),
 ): Promise<AiSummaryPublicRead> {
-    const stored = await readStoredAiSummaryPublic();
+    const stored = await readStoredAiSummaryPublic(nowMs);
     if (stored) {
         return {summary: stored, demo: false};
     }
     if (!aiSummaryDemoMode(env)) {
         return {summary: null, demo: false};
     }
-    return {summary: demoPublicAiSummary(), demo: true};
+    return {summary: demoPublicAiSummary(nowMs), demo: true};
 }
 
 export const AI_SUMMARY_PUBLIC_KEYS = [

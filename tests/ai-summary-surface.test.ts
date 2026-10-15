@@ -68,7 +68,15 @@ describe("ai summary surface", () => {
         assert.match(card, /Demo/);
         assert.match(card, /No assessment yet\. The daily job runs around 08:00 \(Europe\/Berlin\)\./);
         assert.match(card, /useLiveClimate/);
+        assert.match(card, /useRollingAiMosaic/);
         assert.match(card, /mergeLiveMetrics/);
+        assert.match(card, /mosaicFoldSlotMs/);
+        assert.match(src(path.join("hooks", "use-rolling-ai-mosaic.ts")), /fetchPublicMosaic/);
+        assert.match(src(path.join("lib", "ai-summary", "rolling-mosaic.ts")), /\/api\/data\/ai-summary/);
+        assert.match(src(path.join("lib", "ai-summary", "public.ts")), /loadClimatePointsForWindow/);
+        assert.match(src(path.join("lib", "ai-summary", "public.ts")), /rebuildRollingMosaic/);
+        assert.doesNotMatch(src(path.join("lib", "ai-summary", "public.ts")), /requestGrowSummary/);
+        assert.doesNotMatch(src(path.join("lib", "ai-summary", "rolling-mosaic.ts")), /requestGrowSummary|XAI_API_KEY/);
         assert.match(card, /Confidence \{summary\.confidence\}%/);
         assert.match(card, /role="tooltip"/);
         assert.match(card, /as of/);

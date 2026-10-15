@@ -2,12 +2,14 @@
 
 import {useId, useRef} from "react";
 import {useLiveClimate} from "@/hooks/use-live-climate";
+import {useRollingAiMosaic} from "@/hooks/use-rolling-ai-mosaic";
 import {
     formatMetricReading,
     liveReadingsFromSnapshot,
     mergeLiveMetrics,
 } from "@/lib/ai-summary/live-metrics";
-import {foldMosaicRow, mosaicDetail, parseMosaicRow} from "@/lib/ai-summary/mosaic";
+import {foldMosaicRow, mosaicDetail, parseMosaicRow, verdictsFromMosaic} from "@/lib/ai-summary/mosaic";
+import {mosaicFoldSlotMs, mosaicWindowStartMs} from "@/lib/ai-summary/rolling-mosaic";
 import {AI_SUMMARY_SCORE_DAYS, type AiSummaryPublic, type MosaicCell} from "@/lib/ai-summary/types";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
@@ -35,9 +37,6 @@ const STRIP_EMPTY_CLASS = "bg-zinc-200 dark:bg-zinc-700";
 
 const CONFIDENCE_TIP =
     "How sure the model is in its score, given 24-hour sample coverage, whether a camera image was used, and data gaps or anomalies.";
-
-const WINDOW_MS = 24 * 60 * 60 * 1000;
-const HALF_HOUR_MS = 30 * 60 * 1000;
 
 const BERLIN_CLOCK = new Intl.DateTimeFormat("en-GB", {
     timeZone: APP_TIMEZONE,
@@ -193,14 +192,23 @@ export default function AiSummaryCard({
         shownRef.current = true;
     }
 
-    const windowStart = summary ? Date.parse(summary.generatedAt) - WINDOW_MS : Number.NaN;
     const scores = summary ? scoreWindow(summary.scoreHistory) : [];
     const liveBundle = liveReadingsFromSnapshot(live.snapshot);
-    const merged = summary
+    const rolling = useRollingAiMosaic({
+        summary,
+        demo,
+        nowMs: live.nowMs,
+        liveBundle,
+        liveFresh: !live.stale,
+    });
+    const mosaic = rolling?.mosaic ?? summary?.mosaic ?? null;
+    const windowStart = rolling?.windowStartMs ?? (summary ? mosaicWindowStartMs(live.nowMs) : Number.NaN);
+    const mosaicVerdicts = summary && mosaic ? verdictsFromMosaic(mosaic, summary.verdicts) : null;
+    const merged = summary && mosaic && mosaicVerdicts
         ? mergeLiveMetrics({
             ranges: summary.ranges,
-            verdicts: summary.verdicts,
-            mosaic: summary.mosaic,
+            verdicts: mosaicVerdicts,
+            mosaic,
             readings: summary.readings,
             generatedAt: summary.generatedAt,
             liveValues: liveBundle.values,
@@ -316,7 +324,7 @@ export default function AiSummaryCard({
                                 {CLIMATE_METRIC_KEYS.map((key, row) => {
                                     const range = summary.ranges[key];
                                     const metric = merged[key];
-                                    const cells = foldMosaicRow(parseMosaicRow(summary.mosaic[key] ?? ""));
+                                    const cells = foldMosaicRow(parseMosaicRow(mosaic?.[key] ?? ""));
                                     const percent = metric.pctInRange === null ? null : Math.round(metric.pctInRange);
                                     return (
                                         <div
@@ -359,7 +367,7 @@ export default function AiSummaryCard({
                                                 {cells.map((value, index) => {
                                                     const detail = mosaicDetail(value);
                                                     const time = Number.isFinite(windowStart)
-                                                        ? BERLIN_CLOCK.format(windowStart + index * HALF_HOUR_MS)
+                                                        ? BERLIN_CLOCK.format(mosaicFoldSlotMs(windowStart, index))
                                                         : "";
                                                     const word = detail?.word ?? "";
                                                     const fill = cellFill(value);

@@ -1,5 +1,5 @@
 import {airVpdKPa} from "@/lib/air-vpd";
-import {cellForValue, parseMosaicRow, verdictForShare, shareFromRow} from "@/lib/ai-summary/mosaic";
+import {cellForValue, verdictForShare, shareFromRow} from "@/lib/ai-summary/mosaic";
 import type {
     AiMetricJudgment,
     ClimateWindowStats,
@@ -98,29 +98,6 @@ export function evaluateAgainstRange(
     return {verdict: "unknown", inRange: null, cell: 0};
 }
 
-function shareWithLiveSample(mosaicRow: string, extra: MosaicCell): number | null {
-    if (extra === 0) {
-        return shareFromRow(mosaicRow);
-    }
-    const cells = parseMosaicRow(mosaicRow);
-    cells[cells.length - 1] = extra;
-    let scored = 0;
-    let inside = 0;
-    for (const cell of cells) {
-        if (cell === 0) {
-            continue;
-        }
-        scored += 1;
-        if (cell === 1) {
-            inside += 1;
-        }
-    }
-    if (scored === 0) {
-        return null;
-    }
-    return Math.round((inside / scored) * 100);
-}
-
 export function mergeLiveMetric(input: {
     key: ClimateMetricKey;
     range: DerivedRange | null;
@@ -135,21 +112,20 @@ export function mergeLiveMetric(input: {
     const lightsOffPpfd = input.key === "ppfd" && input.isDay === false;
     const liveUsable = input.liveFresh && input.liveValue !== null && Number.isFinite(input.liveValue);
 
+    const pctInRange = shareFromRow(input.mosaicRow);
+    const pctVerdict = verdictForShare(pctInRange);
+
     if (liveUsable) {
         const judged = lightsOffPpfd
             ? {verdict: "unknown" as const, inRange: null, cell: 0 as MosaicCell}
             : evaluateAgainstRange(input.liveValue, input.range);
-        const pctInRange =
-            !lightsOffPpfd && judged.cell !== 0
-                ? shareWithLiveSample(input.mosaicRow, judged.cell)
-                : input.assessment.pctInRange;
         return {
             value: input.liveValue,
             source: "live",
             asOf: null,
             valueVerdict: judged.verdict,
             pctInRange,
-            pctVerdict: verdictForShare(pctInRange),
+            pctVerdict,
         };
     }
 
@@ -159,8 +135,8 @@ export function mergeLiveMetric(input: {
         source: "assessment",
         asOf: input.generatedAt,
         valueVerdict: judged.verdict,
-        pctInRange: input.assessment.pctInRange,
-        pctVerdict: input.assessment.verdict,
+        pctInRange,
+        pctVerdict,
     };
 }
 
