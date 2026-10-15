@@ -1,5 +1,5 @@
 import {aiSummaryWidgetEnabled} from "@/lib/ai-summary/config";
-import {readAiSummaryPublic} from "@/lib/ai-summary/public";
+import {assertPublicSafe, readAiSummaryPublic} from "@/lib/ai-summary/public";
 import {withRequestLog} from "@/lib/logging";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +14,14 @@ export async function GET(request: Request) {
             return Response.json({available: false}, {headers: noStore});
         }
         const {summary} = await readAiSummaryPublic();
-        return Response.json(
-            summary ? {available: true, ...summary} : {available: false},
-            {headers: noStore},
-        );
+        if (!summary) {
+            return Response.json({available: false}, {headers: noStore});
+        }
+        try {
+            assertPublicSafe(summary);
+        } catch {
+            return Response.json({available: false}, {headers: noStore});
+        }
+        return Response.json({available: true, ...summary}, {headers: noStore});
     });
 }

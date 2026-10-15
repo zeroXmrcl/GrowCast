@@ -10,7 +10,7 @@ import {applyUnmeasuredRanges, extractJsonObject, parseAiSummaryPayload, parseMo
 import {AI_SUMMARY_SYSTEM_PROMPT, buildAiSummaryUserPrompt, promptContainsForbiddenTargets} from "../lib/ai-summary/prompt.ts";
 import {isAiSummaryDue, tryHoldLeaderLease} from "../lib/ai-summary/scheduler.ts";
 import {aiSummaryDemoMode, aiSummaryWidgetEnabled} from "../lib/ai-summary/config.ts";
-import {assertPublicSafe, readAiSummaryPublic, toPublicAiSummary} from "../lib/ai-summary/public.ts";
+import {AI_SUMMARY_PUBLIC_KEYS, assertPublicSafe, readAiSummaryPublic, toPublicAiSummary} from "../lib/ai-summary/public.ts";
 import {parseAiSummaryRecord, readLatestAiSummary, writeAiSummaryRecord, _resetAiSummaryLockForTests} from "../lib/ai-summary/store.ts";
 import {allowAiSummaryRegenerate, _resetAiSummaryRateLimitForTests} from "../lib/ai-summary/rate-limit.ts";
 import {generateDailyAiSummary} from "../lib/ai-summary/generate.ts";
@@ -439,6 +439,40 @@ describe("ai summary scheduler and public payload", () => {
         });
     });
 
+    it("public payload contains only the allowed fields", async () => {
+        await withTempDataDir(async () => {
+            const record: AiSummaryRecord = {
+                date: "2026-10-14",
+                generatedAt: "2026-10-14T06:00:00.000Z",
+                growId: "grow-secret",
+                stage: stage(),
+                stats: emptyStats(),
+                ai: validAi(),
+                mosaic: {
+                    tempC: "1".repeat(288),
+                    humidityPct: "0".repeat(288),
+                    vpd: "0".repeat(288),
+                    co2: "0".repeat(288),
+                    ppfd: "0".repeat(288),
+                },
+                imageUsed: true,
+            };
+            const pub = await toPublicAiSummary(record);
+            assert.deepEqual(Object.keys(pub).sort(), [...AI_SUMMARY_PUBLIC_KEYS].sort());
+            assertPublicSafe(pub);
+            assert.equal("growId" in pub, false);
+            assert.equal("stats" in pub, false);
+            assert.equal("imageUsed" in pub, false);
+            assert.equal("stage" in pub, false);
+            assert.throws(() => {
+                assertPublicSafe({...pub, growId: "grow-secret"} as unknown as typeof pub);
+            });
+            assert.throws(() => {
+                assertPublicSafe({...pub, stats: emptyStats()} as unknown as typeof pub);
+            });
+        });
+    });
+
     it("treats 1 and true as demo mode and enables the widget from a key or demo", () => {
         assert.equal(aiSummaryDemoMode({AI_SUMMARY_DEMO: "1"} as NodeJS.ProcessEnv), true);
         assert.equal(aiSummaryDemoMode({AI_SUMMARY_DEMO: "true"} as NodeJS.ProcessEnv), true);
@@ -614,7 +648,7 @@ describe("ai summary generate and archive", () => {
         });
     });
 
-    it("returns the reserved slot when the xAI call fails", async () => {
+    it("keeps the reserved slot after a 500 or invalid response", async () => {
         await withTempDataDir(async () => {
             const previousKey = process.env.XAI_API_KEY;
             process.env.XAI_API_KEY = "test-key";
@@ -627,7 +661,7 @@ describe("ai summary generate and archive", () => {
             if (!failed.ok) {
                 assert.equal(failed.reason, "request_failed");
             }
-            assert.equal((await readAiApiUsage("2026-10-14")).calls, 0);
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, 1);
 
             await writeClimateDay({
                 date: "2026-10-14",
@@ -660,13 +694,107 @@ describe("ai summary generate and archive", () => {
             if (!rejected.ok) {
                 assert.equal(rejected.reason, "invalid_response");
             }
-            assert.equal((await readAiApiUsage("2026-10-14")).calls, 0);
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, 2);
             if (previousKey === undefined) {
                 delete process.env.XAI_API_KEY;
             } else {
                 process.env.XAI_API_KEY = previousKey;
             }
         });
+    });
+
+    it("blocks a sixth call after five failed 500 or invalid responses in a day", async () => {
+        await withTempDataDir(async () => {
+            const previousKey = process.env.XAI_API_KEY;
+            process.env.XAI_API_KEY = "test-key";
+            const nowMs = Date.parse("2026-10-14T10:00:00.000Z");
+            let calls = 0;
+            const fetchImpl: typeof fetch = async () => {
+                calls += 1;
+                if (calls % 2 === 0) {
+                    return new Response("{}", {status: 500});
+                }
+                return Response.json({
+                    choices: [{message: {content: "not-json"}}],
+                });
+            };
+            for (let i = 0; i < AI_SUMMARY_DAILY_API_CAP; i += 1) {
+                const result = await generateDailyAiSummary({nowMs, force: true, fetchImpl});
+                assert.equal(result.ok, false);
+            }
+            assert.equal(calls, AI_SUMMARY_DAILY_API_CAP);
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, AI_SUMMARY_DAILY_API_CAP);
+
+            const blocked = await generateDailyAiSummary({nowMs, force: true, fetchImpl});
+            assert.equal(blocked.ok, false);
+            if (!blocked.ok) {
+                assert.equal(blocked.reason, "daily_cap");
+            }
+            assert.equal(calls, AI_SUMMARY_DAILY_API_CAP);
+
+            if (previousKey === undefined) {
+                delete process.env.XAI_API_KEY;
+            } else {
+                process.env.XAI_API_KEY = previousKey;
+            }
+        });
+    });
+
+    it("refunds the reserved slot only when fetch fails before connect", async () => {
+        await withTempDataDir(async () => {
+            const previousKey = process.env.XAI_API_KEY;
+            process.env.XAI_API_KEY = "test-key";
+            const nowMs = Date.parse("2026-10-14T10:00:00.000Z");
+            const refused: typeof fetch = async () => {
+                const error = new Error("connect ECONNREFUSED 127.0.0.1:443");
+                (error as NodeJS.ErrnoException).code = "ECONNREFUSED";
+                throw error;
+            };
+            const failed = await generateDailyAiSummary({nowMs, fetchImpl: refused});
+            assert.equal(failed.ok, false);
+            if (!failed.ok) {
+                assert.equal(failed.reason, "request_failed");
+            }
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, 0);
+
+            const aborted: typeof fetch = async () => {
+                throw new DOMException("The operation was aborted.", "AbortError");
+            };
+            const timedOut = await generateDailyAiSummary({nowMs, fetchImpl: aborted});
+            assert.equal(timedOut.ok, false);
+            if (!timedOut.ok) {
+                assert.equal(timedOut.reason, "request_failed");
+            }
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, 1);
+
+            if (previousKey === undefined) {
+                delete process.env.XAI_API_KEY;
+            } else {
+                process.env.XAI_API_KEY = previousKey;
+            }
+        });
+    });
+
+    it("refuses the global fetch in tests when no fetchImpl is given", async () => {
+        const previousEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = "test";
+        try {
+            const result = await requestGrowSummary({
+                userText: "stage only",
+                still: null,
+                env: {XAI_API_KEY: "test-key"} as NodeJS.ProcessEnv,
+            });
+            assert.equal(result.ok, false);
+            if (!result.ok) {
+                assert.equal(result.reason, "transport");
+            }
+        } finally {
+            if (previousEnv === undefined) {
+                delete process.env.NODE_ENV;
+            } else {
+                process.env.NODE_ENV = previousEnv;
+            }
+        }
     });
 
     it("elects one scheduler leader and refuses a live peer", async () => {

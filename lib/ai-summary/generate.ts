@@ -93,11 +93,19 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
         env,
     });
     if (!requested.ok) {
-        return releaseReserved(date, requested.reason === "invalid" ? "invalid_response" : "request_failed");
+        // Refund only a network error before connect. A sent request (HTTP
+        // error, timeout, invalid JSON) has already spent the slot.
+        if (requested.reason === "pre_connect") {
+            return releaseReserved(date, "request_failed");
+        }
+        return {
+            ok: false,
+            reason: requested.reason === "invalid" ? "invalid_response" : "request_failed",
+        };
     }
     const ai = applyUnmeasuredRanges(requested.ai, requested.illegal, stats);
     if (!ai) {
-        return releaseReserved(date, "invalid_response");
+        return {ok: false, reason: "invalid_response"};
     }
 
     const mosaic = still || points.length > 0 ? buildMosaic(points, windowStartMs, ai.ranges) : emptyMosaic();
@@ -115,7 +123,7 @@ async function generateDailyAiSummaryUnlocked(options: GenerateOptions): Promise
         await writeAiSummaryRecord(record);
     } catch {
         logAiSummary("write_failed", {date});
-        return releaseReserved(date, "write_failed");
+        return {ok: false, reason: "write_failed"};
     }
     logAiSummary("generated", {date, score: ai.score, imageUsed: record.imageUsed}, "info");
     return {ok: true, record, reused: false};

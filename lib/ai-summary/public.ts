@@ -76,7 +76,34 @@ export async function readAiSummaryPublic(
     return {summary: demoPublicAiSummary(), demo: true};
 }
 
+export const AI_SUMMARY_PUBLIC_KEYS = [
+    "date",
+    "generatedAt",
+    "score",
+    "rating",
+    "headline",
+    "summary",
+    "plantObservation",
+    "recommendations",
+    "confidence",
+    "ranges",
+    "verdicts",
+    "mosaic",
+    "scoreHistory",
+    "daysSinceSeeding",
+    "stageLabel",
+    "phase",
+    "lightHours",
+] as const;
+
+const PUBLIC_KEY_SET = new Set<string>(AI_SUMMARY_PUBLIC_KEYS);
+
 export function assertPublicSafe(body: AiSummaryPublic): void {
+    for (const key of Object.keys(body)) {
+        if (!PUBLIC_KEY_SET.has(key)) {
+            throw new Error("public_ai_summary_unsafe");
+        }
+    }
     const text = JSON.stringify(body);
     if (
         /XAI_API_KEY|data:image|serial|prompt|temperatureDay|humidityDay|growId/.test(text)

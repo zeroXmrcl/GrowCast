@@ -16,7 +16,12 @@ export function growAgeDays(seededAt: string): number | null {
     return getDaysSince(seededAt);
 }
 
-/** Reads flower week from grower stage text (English or common German labels). */
+/**
+ * Reads flower week from grower-entered stage text.
+ * English: flower / flowering / bloom + optional week N.
+ * German tokens stay because operators type them into the stage field
+ * (user input, not UI copy): Blüte / Bluete, Woche / W3.
+ */
 function parseFlowerWeek(stage: string): number | null {
     const match =
         /(?:blüte|bluete|flower(?:ing)?|bloom)\s*(?:w(?:oche)?|week)?\s*(\d{1,2})\b/i.exec(stage)
@@ -31,6 +36,14 @@ function parseFlowerWeek(stage: string): number | null {
     return week;
 }
 
+/**
+ * Maps free-text stage labels to a coarse phase.
+ * English: harvest, dry, cure, late flower, ripen, flower, bloom, seedling,
+ * clone, seed, veg, vegetation, grow.
+ * German grower labels stay in the regexes so existing tents still parse
+ * (user input, not UI copy): Ernte, Trockn*, spätblüte, Blüte/Bluete,
+ * Sämling/Saemling, Steckling, Keim, Samen, Wachstum.
+ */
 export function deriveGrowPhase(stage: string): GrowPhase {
     const text = stage.trim().toLowerCase();
     if (!text) {

@@ -3,7 +3,7 @@ import AiSummaryCard from "@/components/ai-summary-card";
 import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
 import {aiSummaryWidgetEnabled} from "@/lib/ai-summary/config";
-import {readAiSummaryPublic} from "@/lib/ai-summary/public";
+import {assertPublicSafe, readAiSummaryPublic} from "@/lib/ai-summary/public";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
 import {growAgeDays, isUsableSeededAt} from "@/lib/ai-summary/stage";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
@@ -76,6 +76,16 @@ export default async function Home() {
         hasGgsLiveUi(),
         showAiSummary ? readAiSummaryPublic() : Promise.resolve({summary: null, demo: false}),
     ]);
+    let aiSummary = aiSummaryRead.summary;
+    let aiDemo = aiSummaryRead.demo;
+    if (aiSummary) {
+        try {
+            assertPublicSafe(aiSummary);
+        } catch {
+            aiSummary = null;
+            aiDemo = false;
+        }
+    }
     const details = grow.details;
     const ageDays = growAgeDays(details.seededAt);
     const socialLinks = [
@@ -204,7 +214,7 @@ export default async function Home() {
             </section>
 
             {showAiSummary ? (
-                <AiSummaryCard summary={aiSummaryRead.summary} demo={aiSummaryRead.demo} />
+                <AiSummaryCard summary={aiSummary} demo={aiDemo} />
             ) : null}
 
             <DashPictures />

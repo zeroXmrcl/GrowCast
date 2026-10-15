@@ -44,8 +44,12 @@ describe("ai summary surface", () => {
         assert.match(action, /allowAiSummaryRegenerate/);
         assert.doesNotMatch(publicApi, /XAI_API_KEY/);
         assert.match(publicApi, /aiSummaryWidgetEnabled/);
+        assert.match(publicApi, /assertPublicSafe/);
         assert.match(src(path.join("app", "(site)", "page.tsx")), /aiSummaryWidgetEnabled/);
+        assert.match(src(path.join("app", "(site)", "page.tsx")), /assertPublicSafe/);
         assert.match(src(path.join("app", "(site)", "page.tsx")), /AiSummaryCard/);
+        assert.match(client, /NODE_ENV === ["']test["']/);
+        assert.match(generate, /pre_connect/);
         assert.doesNotMatch(src(path.join("components", "ai-summary-card.tsx")), /\/api\/snapshots\//);
         const card = src(path.join("components", "ai-summary-card.tsx"));
         assert.doesNotMatch(card, /AI Assessment/);
