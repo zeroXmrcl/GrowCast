@@ -3,6 +3,7 @@ import {asBoolean, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import type {GgsActuator, GgsActuatorKind, GgsDeviceSnapshot, GgsPrefix} from "@/lib/ggs-live";
 import {logEnergy} from "@/lib/energy/log";
+import {sanitizeError} from "@/lib/logging/redact";
 import {energyCurrentDir, energyCursorFile, energyDayFile, energyPendingCursorFile} from "@/lib/energy/paths";
 import type {EnergyCursor, EnergyDayFile, EnergyDayHours} from "@/lib/energy/types";
 
@@ -345,7 +346,7 @@ export async function restoreEnergyDayWrites(snapshots: EnergyDayWriteSnapshot[]
             if (snapshot.previousRaw === null && (error as NodeJS.ErrnoException).code === "ENOENT") {
                 continue;
             }
-            logEnergy("bucket_write_failed");
+            logEnergy("bucket_write_failed", {err: sanitizeError(error)});
         }
     }
 }

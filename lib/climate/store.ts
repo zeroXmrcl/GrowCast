@@ -5,6 +5,7 @@ import {isDateOnly} from "@/lib/date-only";
 import {CLIMATE_METRIC_KEYS, type ClimateDayFile, type ClimatePoint} from "@/lib/climate/types";
 import {climateCurrentDir, climateDayFile} from "@/lib/climate/paths";
 import {logClimate} from "@/lib/climate/log";
+import {sanitizeError} from "@/lib/logging/redact";
 
 const DAY_FILE_NAME = /^(\d{4}-\d{2}-\d{2})\.json$/;
 
@@ -168,7 +169,7 @@ export async function listCurrentClimateDates(): Promise<string[]> {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             return [];
         }
-        logClimate("climate_list_failed");
+        logClimate("climate_list_failed", {err: sanitizeError(error)});
         return [];
     }
     const dates: string[] = [];
@@ -196,7 +197,7 @@ export async function pruneClimateDays(keepFromDate: string): Promise<number> {
             removed += 1;
         } catch (error) {
             if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-                logClimate("climate_prune_failed", {date});
+                logClimate("climate_prune_failed", {date, err: sanitizeError(error)});
             }
         }
     }

@@ -8,6 +8,7 @@ import {
 import {recordClimateOnIngestBestEffort} from "@/lib/climate/writer";
 import {accrueEnergyOnIngest} from "@/lib/energy/accrue";
 import {logEnergy} from "@/lib/energy/log";
+import {sanitizeError} from "@/lib/logging/redact";
 import {readGgsLive, saveGgsLive} from "@/lib/ggs-live-store";
 import {
     publishLive,
@@ -191,8 +192,8 @@ export async function liveClimateIngestResponse(
     await recordClimateOnIngestBestEffort(parsed.value);
     try {
         await accrueEnergyOnIngest(parsed.value);
-    } catch {
-        logEnergy("energy_accrue_failed");
+    } catch (error) {
+        logEnergy("energy_accrue_failed", {err: sanitizeError(error)});
     }
     const publicState = withStale(parsed.value);
     const {changed} = publishLive(publicState);

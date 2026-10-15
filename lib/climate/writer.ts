@@ -9,6 +9,7 @@ import {
     type ClimatePoint,
 } from "@/lib/climate/types";
 import {logClimate} from "@/lib/climate/log";
+import {sanitizeError} from "@/lib/logging/redact";
 import {
     inspectClimateDay,
     mergeClimatePoint,
@@ -103,7 +104,7 @@ export async function recordClimateOnIngest(
 export async function recordClimateOnIngestBestEffort(snapshot: GgsLiveIngest): Promise<void> {
     try {
         await recordClimateOnIngest(snapshot);
-    } catch {
-        logClimate("climate_write_failed");
+    } catch (error) {
+        logClimate("climate_write_failed", {err: sanitizeError(error)});
     }
 }

@@ -21,6 +21,7 @@ import {EnergyCopyError, resetEnergyCurrentLocked, stageEnergyArchive} from "@/l
 import {logEnergy} from "@/lib/energy/log";
 import {AiSummaryCopyError, resetAiSummaryCurrentLocked, stageAiSummaryArchive} from "@/lib/ai-summary/archive";
 import {logAiSummary} from "@/lib/ai-summary/log";
+import {sanitizeError} from "@/lib/logging/redact";
 import {
     IMAGE_EXTENSIONS,
     VIDEO_EXTENSIONS,
@@ -356,18 +357,18 @@ async function retryLiveReset(
     }
     try {
         await resetEnergyCurrentLocked();
-    } catch {
-        logEnergy("energy_reset_failed");
+    } catch (error) {
+        logEnergy("energy_reset_failed", {err: sanitizeError(error)});
     }
     try {
         await resetClimateCurrentLocked();
-    } catch {
-        logClimate("climate_reset_failed");
+    } catch (error) {
+        logClimate("climate_reset_failed", {err: sanitizeError(error)});
     }
     try {
         await resetAiSummaryCurrentLocked();
-    } catch {
-        logAiSummary("ai_summary_reset_failed");
+    } catch (error) {
+        logAiSummary("ai_summary_reset_failed", {err: sanitizeError(error)});
     }
     try {
         await removeLiveMedia(sources);
@@ -438,18 +439,18 @@ async function completeCurrentGrowUnlocked(
         }
         try {
             await resetEnergyCurrentLocked();
-        } catch {
-            logEnergy("energy_reset_failed");
+        } catch (error) {
+            logEnergy("energy_reset_failed", {err: sanitizeError(error)});
         }
         try {
             await resetClimateCurrentLocked();
-        } catch {
-            logClimate("climate_reset_failed");
+        } catch (error) {
+            logClimate("climate_reset_failed", {err: sanitizeError(error)});
         }
         try {
             await resetAiSummaryCurrentLocked();
-        } catch {
-            logAiSummary("ai_summary_reset_failed");
+        } catch (error) {
+            logAiSummary("ai_summary_reset_failed", {err: sanitizeError(error)});
         }
 
         const cleanup = await Promise.allSettled([

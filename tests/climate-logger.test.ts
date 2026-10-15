@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {mkdir, mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
+import {chmod, mkdir, mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
@@ -7,7 +7,13 @@ import {GGS_PLUGIN_ID} from "../lib/ggs-live.ts";
 import {climateDayFile} from "../lib/climate/paths.ts";
 import {mergeClimatePoint, parseClimateDayFile, pruneClimateDays, writeClimateDay} from "../lib/climate/store.ts";
 import {_resetClimateWriteLockForTests} from "../lib/climate/store.ts";
-import {climatePointFromIngest, climateSlotStartMs, recordClimateOnIngest} from "../lib/climate/writer.ts";
+import {_setClimateLogListenerForTests} from "../lib/climate/log.ts";
+import {
+    climatePointFromIngest,
+    climateSlotStartMs,
+    recordClimateOnIngest,
+    recordClimateOnIngestBestEffort,
+} from "../lib/climate/writer.ts";
 import {CLIMATE_SLOT_MS} from "../lib/climate/types.ts";
 
 function ingest(overrides: {
@@ -54,9 +60,11 @@ async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     const previous = process.env.GROWCAST_DATA_DIR;
     process.env.GROWCAST_DATA_DIR = dir;
     _resetClimateWriteLockForTests();
+    _setClimateLogListenerForTests();
     try {
         return await fn();
     } finally {
+        _setClimateLogListenerForTests();
         _resetClimateWriteLockForTests();
         if (previous === undefined) {
             delete process.env.GROWCAST_DATA_DIR;
@@ -159,6 +167,33 @@ describe("climate logger", () => {
             await writeFile(droppedPath, JSON.stringify(dropped), "utf8");
             await recordClimateOnIngest(ingest({updatedAt: "2026-10-14T12:05:00.000Z", tempC: 26}), Date.parse("2026-10-14T12:05:00.000Z"));
             assert.equal(await readFile(droppedPath, "utf8"), JSON.stringify(dropped));
+        });
+    });
+
+    it("logs the error code when a write under an unwritable climate dir fails", async () => {
+        await withTempDataDir(async () => {
+            const climateRoot = path.join(process.env.GROWCAST_DATA_DIR!, "climate");
+            await mkdir(climateRoot, {recursive: true});
+            await chmod(climateRoot, 0o555);
+            const calls: Array<{reason: string; extra: Record<string, unknown>}> = [];
+            _setClimateLogListenerForTests((reason, extra) => {
+                calls.push({reason, extra});
+            });
+            try {
+                await recordClimateOnIngestBestEffort(
+                    ingest({updatedAt: "2026-10-13T12:03:10.000Z"}),
+                );
+                const failed = calls.find((call) => call.reason === "climate_write_failed");
+                assert.ok(failed, "expected climate_write_failed");
+                const err = failed.extra.err as {code?: string; message?: string} | undefined;
+                assert.equal(err?.code, "EACCES");
+                assert.equal(typeof err?.message, "string");
+                assert.ok((err?.message ?? "").length > 0);
+                assert.doesNotMatch(JSON.stringify(failed.extra), /XAI_API_KEY|Bearer |password=/i);
+            } finally {
+                _setClimateLogListenerForTests();
+                await chmod(climateRoot, 0o755);
+            }
         });
     });
 });

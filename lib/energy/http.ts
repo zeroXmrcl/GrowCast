@@ -1,6 +1,7 @@
 import {isValidArchiveId} from "@/lib/archives";
 import {buildEnergyDto} from "@/lib/energy/scoreboard";
 import {logEnergy} from "@/lib/energy/log";
+import {sanitizeError} from "@/lib/logging/redact";
 
 function noStoreJson(body: unknown, status = 200): Response {
     return Response.json(body, {
@@ -35,8 +36,8 @@ export async function energyGetResponse(
             return noStoreJson({error: "Not found"}, 404);
         }
         return noStoreJson(result.dto);
-    } catch {
-        logEnergy("energy_unavailable");
+    } catch (error) {
+        logEnergy("energy_unavailable", {err: sanitizeError(error)});
         return noStoreJson({error: "Unavailable"}, 500);
     }
 }

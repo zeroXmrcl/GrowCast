@@ -6,6 +6,7 @@ import {atomicWriteFile} from "@/lib/atomic-file";
 import {hasXaiApiKey} from "@/lib/ai-summary/config";
 import {generateDailyAiSummary} from "@/lib/ai-summary/generate";
 import {logAiSummary} from "@/lib/ai-summary/log";
+import {sanitizeError} from "@/lib/logging/redact";
 import {aiSummaryLeaderFile} from "@/lib/ai-summary/paths";
 import {readSchedulerState, writeSchedulerState} from "@/lib/ai-summary/store";
 import {AI_SUMMARY_JOB_HOUR, type SchedulerState} from "@/lib/ai-summary/types";
@@ -190,8 +191,7 @@ async function safeTick(): Promise<void> {
     try {
         await runAiSummaryTick();
     } catch (error) {
-        logAiSummary("tick_error");
-        void error;
+        logAiSummary("tick_error", {err: sanitizeError(error)});
     } finally {
         runtime.ticking = false;
     }

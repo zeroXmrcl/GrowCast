@@ -4,8 +4,16 @@ set -e
 # Bind mounts keep host ownership. Chown the data and media folders the app
 # writes, then drop privileges. Do not chown plugin source (git pull would fail).
 if [ "$(id -u)" = "0" ]; then
+  # Create app-owned data dirs before chown. Nested sidecar volume mounts can
+  # otherwise appear as root:root after this chown has already finished.
   mkdir -p \
     /app/data/restream \
+    /app/data/setup \
+    /app/data/energy/current \
+    /app/data/climate/current \
+    /app/data/ai-summary \
+    /app/data/archives \
+    /app/data/mesh \
     /app/public/setup \
     /app/public/yourPictures \
     /app/extensions/GrowCast-Timelapse/snapshots \

@@ -5,6 +5,7 @@ import {readGgsLive} from "@/lib/ggs-live-store";
 import {actuatorKey} from "@/lib/energy/catalog";
 import {splitBerlinHours} from "@/lib/energy/berlin";
 import {logEnergy} from "@/lib/energy/log";
+import {sanitizeError} from "@/lib/logging/redact";
 import {
     inspectEnergyDay,
     mergeDayAlerts,
@@ -280,15 +281,15 @@ export async function persistAccruePlan(plan: AccruePlan): Promise<void> {
     if (plan.kind === "init") {
         try {
             await writeEnergyCursor(plan.cursor);
-        } catch {
-            logEnergy("bucket_write_failed");
+        } catch (error) {
+            logEnergy("bucket_write_failed", {err: sanitizeError(error)});
         }
         return;
     }
     try {
         await writeEnergyPending(plan.cursor, plan.additions);
-    } catch {
-        logEnergy("bucket_write_failed");
+    } catch (error) {
+        logEnergy("bucket_write_failed", {err: sanitizeError(error)});
         return;
     }
     let daySnapshots: EnergyDayWriteSnapshot[] = [];
@@ -298,7 +299,7 @@ export async function persistAccruePlan(plan: AccruePlan): Promise<void> {
         } catch (error) {
             await removeEnergyPending().catch(() => undefined);
             if (!(error instanceof CorruptEnergyDayError)) {
-                logEnergy("bucket_write_failed");
+                logEnergy("bucket_write_failed", {err: sanitizeError(error)});
             }
             return;
         }
@@ -309,8 +310,8 @@ export async function persistAccruePlan(plan: AccruePlan): Promise<void> {
     try {
         await writeEnergyCursor(plan.cursor);
         await removeEnergyPending();
-    } catch {
-        logEnergy("bucket_write_failed");
+    } catch (error) {
+        logEnergy("bucket_write_failed", {err: sanitizeError(error)});
         await restoreEnergyDayWrites(daySnapshots);
         await removeEnergyPending().catch(() => undefined);
     }
@@ -344,8 +345,8 @@ async function accrueUnlocked(options: {
     if (cursor && cursor.growId !== grow.id) {
         try {
             await resetEnergyCurrent();
-        } catch {
-            logEnergy("energy_reset_failed");
+        } catch (error) {
+            logEnergy("energy_reset_failed", {err: sanitizeError(error)});
             return;
         }
         cursor = null;
