@@ -7,4 +7,4 @@
 - **Confirmed High:** 1
 - **Coverage:** 402 first-party source files inventoried (`app`, `components`, `lib`, `hooks`, `tests`, `extensions`, plus shell configs). High-risk paths were opened. Not every file was read.
 
-Report: `MASTER-REPORT-DE.md`
+Report: `MASTER-REPORT.md`

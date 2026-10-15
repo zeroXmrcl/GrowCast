@@ -169,7 +169,7 @@ data/
   ggs.env                      # Climate credentials written by the wizard
   timelapse.env                # Camera URL written by the wizard
   climate/current/             # 5-min climate day files (gitignored)
-  ai-summary/                  # Daily KI summaries + scheduler state (gitignored)
+  ai-summary/                  # Daily AI summaries + scheduler state (gitignored)
 ```
 
 ## 6. Camera (MediaMTX)

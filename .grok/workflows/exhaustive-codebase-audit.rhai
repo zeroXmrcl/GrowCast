@@ -1,6 +1,6 @@
 let meta = #{
     name: "exhaustive-codebase-audit",
-    description: "Exhaustive multi-pass paranoid audit of GrowCast-GGS (Next.js 16, energy, live climate, Cloudflare Tunnel) with specialists, file shards, journeys, skeptic verification of Critical/High, and a German master report",
+    description: "Exhaustive multi-pass paranoid audit of GrowCast-GGS (Next.js 16, energy, live climate, Cloudflare Tunnel) with specialists, file shards, journeys, skeptic verification of Critical/High, and an English master report",
     when_to_use: "Full production-readiness / security / quality audit of GrowCast on GrowCast-GGS behind a Cloudflare Tunnel",
     phases: [
         #{ title: "Stack", detail: "Detect exact stack and adapt checklists" },
@@ -11,7 +11,7 @@ let meta = #{
         #{ title: "Journeys", detail: "Critical user-journey mental simulations" },
         #{ title: "CrossCut", detail: "Cross-file consistency and residual gaps" },
         #{ title: "Verify", detail: "Independent skeptics for every Critical/High" },
-        #{ title: "Synthesize", detail: "German master report with health score" },
+        #{ title: "Synthesize", detail: "English master report with health score" },
     ],
 };
 
@@ -88,11 +88,11 @@ let verdict_schema = #{
 
 let report_schema = #{
     "type": "object",
-    "required": ["health_score", "executive_summary_de", "report_markdown_de", "files_considered_confirmation"],
+    "required": ["health_score", "executive_summary", "report_markdown", "files_considered_confirmation"],
     "properties": #{
         "health_score": #{ "type": "number" },
-        "executive_summary_de": #{ "type": "string" },
-        "report_markdown_de": #{ "type": "string" },
+        "executive_summary": #{ "type": "string" },
+        "report_markdown": #{ "type": "string" },
         "files_considered_confirmation": #{ "type": "string" },
         "critical_count": #{ "type": "number" },
         "high_count": #{ "type": "number" },
@@ -1333,7 +1333,7 @@ write_scratch_file("findings-lower.json", json_encode(lower_capped));
 write_scratch_file("findings-rejected.json", json_encode(rejected_high));
 
 phase("Synthesize");
-log("Phase Synthesize: German master report");
+log("Phase Synthesize: English master report");
 
 let stats = #{
     total_raw_deduped: all_findings.len(),
@@ -1348,7 +1348,7 @@ let stats = #{
 };
 
 let syn_prompt = "";
-syn_prompt += "You are the Master Audit Report Writer. Write the FINAL comprehensive audit report entirely in GERMAN.\n";
+syn_prompt += "You are the Master Audit Report Writer. Write the FINAL comprehensive audit report entirely in ENGLISH.\n";
 syn_prompt += "Workspace: /Users/marcel/WebstormProjects/growcastdev (GrowCast).\n";
 syn_prompt += "You may re-open key files with read_file if needed to sharpen fixes, but do NOT invent new Critical/High findings.\n";
 syn_prompt += "Only Critical/High findings that appear in CONFIRMED list may be reported as Critical/High.\n";
@@ -1358,26 +1358,26 @@ syn_prompt += "NEVER print secret values.\n\n";
 syn_prompt += "STATS:\n" + json_encode(stats) + "\n\n";
 syn_prompt += "CONFIRMED CRITICAL/HIGH (skeptic-verified):\n" + json_encode(confirmed_high) + "\n\n";
 syn_prompt += "LOWER FINDINGS (Medium/Low/Info):\n" + json_encode(lower_capped) + "\n\n";
-syn_prompt += "REPORT STRUCTURE (markdown in report_markdown_de) — exact section order:\n";
-syn_prompt += "# Master-Auditbericht — GrowCast\n";
-syn_prompt += "**Datum:** 2026-08-25\n";
-syn_prompt += "**Methode:** Workflow, Spezialisten, Skeptiker (Critical/High fail-closed)\n";
+syn_prompt += "REPORT STRUCTURE (markdown in report_markdown) — exact section order:\n";
+syn_prompt += "# Master Audit Report — GrowCast\n";
+syn_prompt += "**Date:** 2026-08-25\n";
+syn_prompt += "**Method:** Workflow, specialists, skeptics (Critical/High fail-closed)\n";
 syn_prompt += "**Workspace:** /Users/marcel/WebstormProjects/growcastdev\n\n";
-syn_prompt += "## 1. Methodik\n";
+syn_prompt += "## 1. Method\n";
 syn_prompt += "## 2. Executive Summary\n";
-syn_prompt += "## 3. Health Score (0–100) + Begründung\n";
-syn_prompt += "## 4. Stack-Übersicht\n";
+syn_prompt += "## 3. Health Score (0–100) + rationale\n";
+syn_prompt += "## 4. Stack overview\n";
 syn_prompt += "## 5. Findings (5.1 Critical, 5.2 High, 5.3 Medium, 5.4 Low, 5.5 Info)\n";
-syn_prompt += "Für JEDES Finding: Severity, Datei + Zeilen, Beschreibung, Risiko, Fix (Snippet/Diff), Aufwand S/M/L, bei C/H Verifier.\n";
-syn_prompt += "## 6. Priorisierte Remediation-Roadmap (Sofort 0-48h / Kurzfristig 1-2 Wochen / Mittelfristig 2-6 Wochen)\n";
-syn_prompt += "## 7. Architektur-Empfehlungen\n";
-syn_prompt += "## 8. Bestätigung 100%-Dateiabdeckung (Shards + Inventory)\n";
-syn_prompt += "## 9. Test- und CI-Lücken\n";
-syn_prompt += "Write polished German technical prose. health_score integer 0-100.\n";
-syn_prompt += "executive_summary_de: 1-2 Absätze. files_considered_confirmation: klare Bestätigung.\n";
+syn_prompt += "For EVERY finding: Severity, file + lines, description, risk, fix (snippet/diff), effort S/M/L, and for C/H the verifier.\n";
+syn_prompt += "## 6. Prioritized remediation roadmap (immediate 0-48h / short-term 1-2 weeks / mid-term 2-6 weeks)\n";
+syn_prompt += "## 7. Architecture recommendations\n";
+syn_prompt += "## 8. Confirmation of 100% file coverage (Shards + Inventory)\n";
+syn_prompt += "## 9. Test and CI gaps\n";
+syn_prompt += "Write polished English technical prose. health_score integer 0-100.\n";
+syn_prompt += "executive_summary: 1-2 paragraphs. files_considered_confirmation: a clear confirmation.\n";
 
 let report_res = agent(syn_prompt, #{
-    label: "master-report-de",
+    label: "master-report",
     capability_mode: "read-only",
     output_schema: report_schema,
 });
@@ -1388,27 +1388,27 @@ let exec_sum = "";
 let files_conf = "";
 
 if report_res != () && report_res.success && report_res.output != () {
-    if report_res.output.report_markdown_de != () {
-        report_md = report_res.output.report_markdown_de;
+    if report_res.output.report_markdown != () {
+        report_md = report_res.output.report_markdown;
     }
     if report_res.output.health_score != () {
         health = report_res.output.health_score;
     }
-    if report_res.output.executive_summary_de != () {
-        exec_sum = report_res.output.executive_summary_de;
+    if report_res.output.executive_summary != () {
+        exec_sum = report_res.output.executive_summary;
     }
     if report_res.output.files_considered_confirmation != () {
         files_conf = report_res.output.files_considered_confirmation;
     }
 } else {
-    log("WARN: synthesis agent failed — writing fallback German stub");
-    report_md = "# Master-Auditbericht (Fallback)\n\nSynthese unvollständig.\n\n";
+    log("WARN: synthesis agent failed — writing fallback English stub");
+    report_md = "# Master Audit Report (Fallback)\n\nSynthesis incomplete.\n\n";
     report_md += json_encode(confirmed_high);
     report_md += "\n\n";
     report_md += json_encode(lower_capped);
     health = 50;
-    exec_sum = "Fallback-Report: Synthese fehlgeschlagen.";
-    files_conf = "Shards deckten app/, components/, lib/, tests/, Docker, configs ab; Nachprüfung empfohlen.";
+    exec_sum = "Fallback report: synthesis failed.";
+    files_conf = "Shards covered app/, components/, lib/, tests/, Docker, configs; a second pass is recommended.";
 }
 
 let b3 = budget();
@@ -1418,12 +1418,12 @@ if b3 != () && b3.remaining != () {
     room3 = b3.remaining;
 }
 if room3 > 0 {
-    let arch_p = "Write a concise German section Architektur-Empfehlungen for GrowCast (Next 16, JSON files, Docker, admin cookie auth).\n";
-    arch_p += "8-15 bullet recommendations. Read key files if needed. Return findings array empty; put German markdown in coverage_notes.\n";
+    let arch_p = "Write a concise English section Architecture recommendations for GrowCast (Next 16, JSON files, Docker, admin cookie auth).\n";
+    arch_p += "8-15 bullet recommendations. Read key files if needed. Return findings array empty; put English markdown in coverage_notes.\n";
     arch_p += "Stack: " + stack_json + "\n";
     arch_p += "Confirmed: " + json_encode(confirmed_high) + "\n";
     let arch_res = agent(arch_p, #{
-        label: "arch-recommendations-de",
+        label: "arch-recommendations",
         capability_mode: "read-only",
         output_schema: findings_schema,
     });
@@ -1433,38 +1433,38 @@ if room3 > 0 {
 }
 
 if arch_extra != "" {
-    report_md += "\n\n---\n\n## Ergänzende Architektur-Empfehlungen (Zweitmeinung)\n\n";
+    report_md += "\n\n---\n\n## Additional architecture recommendations (second opinion)\n\n";
     report_md += arch_extra;
 }
 
 let final_doc = "";
 final_doc += "<!-- Generated by Grok Build workflow: exhaustive-codebase-audit (GrowCast) -->\n\n";
 final_doc += report_md;
-final_doc += "\n\n---\n\n## Anhang — Audit-Metadaten\n\n";
+final_doc += "\n\n---\n\n## Appendix — Audit metadata\n\n";
 final_doc += "- Health Score: " + health.to_string() + " / 100\n";
-final_doc += "- Roh-Findings (dedupliziert vor Verify): " + all_findings.len().to_string() + "\n";
-final_doc += "- Critical/High Kandidaten: " + to_verify.len().to_string() + "\n";
-final_doc += "- Nach Skeptiker bestätigt: " + confirmed_high.len().to_string() + "\n";
-final_doc += "- Von Skeptiker abgelehnt: " + rejected_high.len().to_string() + "\n";
-final_doc += "- Unverifiziert (fail-closed): " + unverified_high.len().to_string() + "\n";
-final_doc += "- Medium/Low/Info (gesamt / im Report): " + lower.len().to_string() + " / " + lower_capped.len().to_string() + "\n";
-final_doc += "- HighRisk-Agenten: " + hr_jobs.len().to_string() + "\n";
-final_doc += "- Spezialisten: " + sp_jobs.len().to_string() + "\n";
+final_doc += "- Raw findings (deduped before Verify): " + all_findings.len().to_string() + "\n";
+final_doc += "- Critical/High candidates: " + to_verify.len().to_string() + "\n";
+final_doc += "- Confirmed by skeptic: " + confirmed_high.len().to_string() + "\n";
+final_doc += "- Rejected by skeptic: " + rejected_high.len().to_string() + "\n";
+final_doc += "- Unverified (fail-closed): " + unverified_high.len().to_string() + "\n";
+final_doc += "- Medium/Low/Info (total / in report): " + lower.len().to_string() + " / " + lower_capped.len().to_string() + "\n";
+final_doc += "- HighRisk agents: " + hr_jobs.len().to_string() + "\n";
+final_doc += "- Specialists: " + sp_jobs.len().to_string() + "\n";
 final_doc += "- Shards: " + sh_jobs.len().to_string() + "\n";
 final_doc += "- Journeys: " + j_jobs.len().to_string() + "\n";
 final_doc += "- CrossCut: " + cc_jobs.len().to_string() + "\n";
 final_doc += "- Executive Summary: " + exec_sum + "\n";
-final_doc += "- Dateiabdeckung: " + files_conf + "\n";
+final_doc += "- File coverage: " + files_conf + "\n";
 
-let report_path = write_scratch_file("MASTER-REPORT-DE.md", final_doc);
-write_scratch_file("executive-summary-de.txt", exec_sum);
+let report_path = write_scratch_file("MASTER-REPORT.md", final_doc);
+write_scratch_file("executive-summary.txt", exec_sum);
 write_scratch_file("audit-result.json", json_encode(#{
     health_score: health,
     confirmed_critical_high: confirmed_high,
     lower_findings: lower_capped,
     rejected: rejected_high,
     unverified: unverified_high,
-    executive_summary_de: exec_sum,
+    executive_summary: exec_sum,
     files_considered_confirmation: files_conf,
     report_scratch: report_path,
 }));
@@ -1479,6 +1479,6 @@ complete(#{
     confirmed_critical_high_count: confirmed_high.len(),
     rejected_count: rejected_high.len(),
     lower_count: lower.len(),
-    executive_summary_de: exec_sum,
+    executive_summary: exec_sum,
     files_considered_confirmation: files_conf,
 });
