@@ -58,18 +58,18 @@ export default function ClimatePickerValue({
 
     if (value === null) {
         return (
-            <p className={dash ? "mt-1 text-xl font-semibold tabular-nums" : "mt-0.5 text-lg font-semibold tabular-nums"}>
+            <span className={dash ? "mt-1 text-xl font-semibold tabular-nums" : "mt-0.5 text-lg font-semibold tabular-nums"}>
                 —
-            </p>
+            </span>
         );
     }
 
     return (
-        <div
+        <span
             className={dash ? "growcast-climate-wheel growcast-climate-wheel-dash" : "growcast-climate-wheel"}
             aria-hidden="true"
         >
-            <div
+            <span
                 className="growcast-climate-wheel-strip"
                 style={{
                     transform: `translateY(calc((1 - ${idx}) * var(--row)))`,
@@ -78,11 +78,11 @@ export default function ClimatePickerValue({
                 }}
             >
                 {labels.map((label) => (
-                    <div className="growcast-climate-wheel-row" key={label}>
+                    <span className="growcast-climate-wheel-row" key={label}>
                         {label}
-                    </div>
+                    </span>
                 ))}
-            </div>
-        </div>
+            </span>
+        </span>
     );
 }

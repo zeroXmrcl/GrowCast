@@ -1,9 +1,7 @@
 "use client";
 
-/* Source dialog assigns callback refs during render. */
-/* eslint-disable react-hooks/refs */
-
-import {memo, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent} from "react";
+import {memo, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type RefObject} from "react";
+import {createPortal} from "react-dom";
 import {
     findStepSegment,
     layoutStepAxis,
@@ -13,6 +11,10 @@ import {
     type StepSegment,
 } from "@/lib/climate/plot";
 import type {ClimateHistoryPublic, ClimateMetricStats, ClimatePoint, ClimateWindow} from "@/lib/climate/history-public";
+import {
+    CLIMATE_HISTORY_METRIC_CHIPS,
+    type ClimateHistoryMetric,
+} from "@/lib/climate/history-ui";
 import {formatHumidityPctTenths, formatTempC, formatVpd} from "@/lib/live-climate-view";
 
 type HistoryKey = "24h" | "7d" | "30d" | "grow";
@@ -20,8 +22,9 @@ type Phase = "enter" | "open" | "leave";
 
 type ClimateHistoryDialogProps = {
     history: ClimateHistoryPublic;
+    metric: ClimateHistoryMetric;
+    onMetricChange: (metric: ClimateHistoryMetric) => void;
     onClose: () => void;
-    origin: {x: number; y: number};
 };
 
 const PLOT_W = 600;
@@ -29,6 +32,7 @@ const PLOT_H = 160;
 const LEAVE_MS = 160;
 const OPEN_EASE = "var(--growcast-workspace-ease)";
 const CLOSE_EASE = "cubic-bezier(0.4, 0, 1, 1)";
+const FOCUSABLE = "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])";
 
 const CHIP_ON =
     "rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900";
@@ -45,7 +49,7 @@ const TIME_LABEL = new Intl.DateTimeFormat("en-GB", {
 });
 
 const METRICS: {
-    key: "tempC" | "humidityPct" | "vpd";
+    key: ClimateHistoryMetric;
     label: string;
     stroke: string;
     format: (value: number | null) => string;
@@ -97,6 +101,78 @@ function selectedWindow(history: ClimateHistoryPublic, key: HistoryKey): Climate
 function whenLabel(t: string): string {
     const ms = Date.parse(t);
     return Number.isFinite(ms) ? TIME_LABEL.format(ms) : t;
+}
+
+function useScrollLock(): void {
+    useEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        const prevHtmlOverflow = html.style.overflow;
+        const prevBodyOverflow = body.style.overflow;
+        const prevBodyPad = body.style.paddingRight;
+        const gutter = window.innerWidth - html.clientWidth;
+        html.style.overflow = "hidden";
+        body.style.overflow = "hidden";
+        if (gutter > 0) {
+            body.style.paddingRight = `${gutter}px`;
+        }
+        return () => {
+            html.style.overflow = prevHtmlOverflow;
+            body.style.overflow = prevBodyOverflow;
+            body.style.paddingRight = prevBodyPad;
+        };
+    }, []);
+}
+
+function useFocusTrap(rootRef: RefObject<HTMLElement | null>, active: boolean): void {
+    useEffect(() => {
+        if (!active) {
+            return;
+        }
+        const root = rootRef.current;
+        if (!root) {
+            return;
+        }
+        function list(): HTMLElement[] {
+            if (!root) {
+                return [];
+            }
+            return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((node) => node.tabIndex !== -1);
+        }
+        root.focus();
+        function onKey(event: KeyboardEvent) {
+            if (event.key !== "Tab") {
+                return;
+            }
+            const items = list();
+            if (items.length === 0) {
+                event.preventDefault();
+                root.focus();
+                return;
+            }
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+        function onFocusIn(event: FocusEvent) {
+            if (!root.contains(event.target as Node)) {
+                const items = list();
+                (items[0] ?? root).focus();
+            }
+        }
+        document.addEventListener("keydown", onKey);
+        document.addEventListener("focusin", onFocusIn);
+        return () => {
+            document.removeEventListener("keydown", onKey);
+            document.removeEventListener("focusin", onFocusIn);
+        };
+    }, [active, rootRef]);
 }
 
 const PlotSvg = memo(function PlotSvg({
@@ -215,15 +291,31 @@ function MetricPlot({
     );
 }
 
-export default function ClimateHistoryDialog({history, onClose, origin}: ClimateHistoryDialogProps) {
+export default function ClimateHistoryDialog({
+    history,
+    metric,
+    onMetricChange,
+    onClose,
+}: ClimateHistoryDialogProps) {
     const titleId = useId();
     const [key, setKey] = useState<HistoryKey>("24h");
     const [phase, setPhase] = useState<Phase>(() => (prefersReducedMotion() ? "open" : "enter"));
     const [hoverX, setHoverX] = useState<number | null>(null);
+    const [mount, setMount] = useState<HTMLElement | null>(null);
+    const [swapAnim, setSwapAnim] = useState(false);
     const onCloseRef = useRef(onClose);
     const closing = useRef(false);
     const timer = useRef<number | null>(null);
+    const panelRef = useRef<HTMLDivElement | null>(null);
+    const firstSwap = useRef(true);
     onCloseRef.current = onClose;
+
+    useEffect(() => {
+        setMount(document.body);
+    }, []);
+
+    useScrollLock();
+    useFocusTrap(panelRef, mount !== null);
 
     useEffect(() => {
         if (phase !== "enter") {
@@ -260,6 +352,7 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
     useEffect(() => {
         function onKey(event: KeyboardEvent) {
             if (event.key === "Escape") {
+                event.preventDefault();
                 requestCloseRef.current();
             }
         }
@@ -271,20 +364,6 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
             }
         };
     }, []);
-
-    const shown = phase === "open";
-    const dimStyle: CSSProperties = {
-        opacity: shown ? 1 : 0,
-        transition: shown ? `opacity 220ms ${OPEN_EASE}` : `opacity ${LEAVE_MS}ms ${CLOSE_EASE}`,
-    };
-    const panelMotionStyle: CSSProperties = {
-        opacity: shown ? 1 : 0,
-        scale: shown ? "1" : "0.96",
-        transformOrigin: `${origin.x}px ${origin.y}px`,
-        transition: shown
-            ? `scale 360ms ${OPEN_EASE}, opacity 360ms ${OPEN_EASE}`
-            : `scale ${LEAVE_MS}ms ${CLOSE_EASE}, opacity ${LEAVE_MS}ms ${CLOSE_EASE}`,
-    };
 
     const chips: {key: HistoryKey; label: string}[] = [
         {key: "24h", label: "24h"},
@@ -298,6 +377,7 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
     const view = selectedWindow(history, active);
     const stats = view.stats;
     const empty = view.runs.length === 0 || stats === null;
+    const activeMetric = METRICS.find((item) => item.key === metric) ?? METRICS[0];
     const series = useMemo(() => {
         if (view.runs.length === 0 || view.stats === null) {
             return null;
@@ -316,6 +396,15 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
         ),
         [view],
     );
+    const swapKey = `${metric}:${active}`;
+
+    useEffect(() => {
+        if (firstSwap.current) {
+            firstSwap.current = false;
+            return;
+        }
+        setSwapAnim(!prefersReducedMotion());
+    }, [swapKey]);
 
     function onHover(event: PointerEvent<HTMLDivElement>) {
         const rect = event.currentTarget.getBoundingClientRect();
@@ -327,8 +416,27 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
         setHoverX(x);
     }
 
-    return (
-        <div className="absolute inset-0 z-30">
+    const reduced = prefersReducedMotion();
+    const shown = phase === "open";
+    const dimStyle: CSSProperties = reduced
+        ? {opacity: 1}
+        : {
+            opacity: shown ? 1 : 0,
+            transition: shown ? `opacity 220ms ${OPEN_EASE}` : `opacity ${LEAVE_MS}ms ${CLOSE_EASE}`,
+        };
+    const panelMotionStyle: CSSProperties = reduced
+        ? {opacity: 1, scale: "1"}
+        : {
+            opacity: shown ? 1 : 0,
+            scale: shown ? "1" : "0.96",
+            transformOrigin: "50% 50%",
+            transition: shown
+                ? `scale 360ms ${OPEN_EASE}, opacity 360ms ${OPEN_EASE}`
+                : `scale ${LEAVE_MS}ms ${CLOSE_EASE}, opacity ${LEAVE_MS}ms ${CLOSE_EASE}`,
+        };
+
+    const ui = (
+        <div className="fixed inset-0 z-50" data-climate-history-dialog="">
             <button
                 type="button"
                 aria-label="Close"
@@ -339,10 +447,13 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
             />
             <div className="pointer-events-none absolute inset-0 z-10" style={panelMotionStyle}>
                 <div
+                    ref={panelRef}
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby={titleId}
-                    className="pointer-events-auto absolute left-1/2 top-1/2 max-h-[calc(100%-28px)] w-[min(760px,calc(100%-28px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
+                    tabIndex={-1}
+                    data-climate-history-metric={metric}
+                    className="pointer-events-auto absolute left-1/2 top-1/2 max-h-[min(100dvh-28px,calc(100%-28px))] w-[min(760px,calc(100vw-28px))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl outline-none dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
                 >
                     <div className="mb-4 flex items-center justify-between gap-3">
                         <h2 id={titleId} className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
@@ -351,6 +462,25 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
                         <button type="button" onClick={requestClose} className={CHIP_OFF}>
                             Close
                         </button>
+                    </div>
+                    <div className="mb-3 flex flex-wrap gap-2">
+                        {CLIMATE_HISTORY_METRIC_CHIPS.map((chip) => {
+                            const pressed = chip.key === metric;
+                            return (
+                                <button
+                                    key={chip.key}
+                                    type="button"
+                                    aria-pressed={pressed}
+                                    onClick={() => {
+                                        onMetricChange(chip.key);
+                                        setHoverX(null);
+                                    }}
+                                    className={pressed ? CHIP_ON : CHIP_OFF}
+                                >
+                                    {chip.label}
+                                </button>
+                            );
+                        })}
                     </div>
                     <div className="mb-4 flex flex-wrap gap-2">
                         {chips.map((chip) => {
@@ -371,39 +501,38 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
                             );
                         })}
                     </div>
-                    {empty || series === null || stats === null ? (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-300">No climate history yet</p>
-                    ) : (
-                        <div onPointerDown={onHover} onPointerMove={onHover} onPointerLeave={() => setHoverX(null)}>
-                            <div className="space-y-5">
-                                {METRICS.map((metric) => (
-                                    <MetricPlot
-                                        key={metric.key}
-                                        label={metric.label}
-                                        last={metric.format(stats[metric.key].last)}
-                                        detail={rangeText(metric.format, stats[metric.key])}
-                                        samples={series[metric.key]}
-                                        stroke={metric.stroke}
-                                        format={metric.format}
-                                        hoverX={hoverX}
-                                    />
-                                ))}
+                    <div key={swapKey} className={swapAnim ? "growcast-history-swap" : undefined}>
+                        {empty || series === null || stats === null ? (
+                            <p className="text-sm text-zinc-600 dark:text-zinc-300">No climate history yet</p>
+                        ) : (
+                            <div onPointerDown={onHover} onPointerMove={onHover} onPointerLeave={() => setHoverX(null)}>
+                                <MetricPlot
+                                    label={activeMetric.label}
+                                    last={activeMetric.format(stats[activeMetric.key].last)}
+                                    detail={rangeText(activeMetric.format, stats[activeMetric.key])}
+                                    samples={series[activeMetric.key]}
+                                    stroke={activeMetric.stroke}
+                                    format={activeMetric.format}
+                                    hoverX={hoverX}
+                                />
+                                <div className="relative mt-1 h-[10px] text-[10px] leading-none text-zinc-400">
+                                    {axisLabels.map((label, index) => (
+                                        <span
+                                            key={`${label.t}-${index}`}
+                                            className={`absolute whitespace-nowrap ${index === 0 ? "" : "-translate-x-1/2"}`}
+                                            style={{left: `${(label.x / PLOT_W) * 100}%`}}
+                                        >
+                                            {whenLabel(label.t)}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="relative mt-1 h-[10px] text-[10px] leading-none text-zinc-400">
-                                {axisLabels.map((label, index) => (
-                                    <span
-                                        key={`${label.t}-${index}`}
-                                        className={`absolute whitespace-nowrap ${index === 0 ? "" : "-translate-x-1/2"}`}
-                                        style={{left: `${(label.x / PLOT_W) * 100}%`}}
-                                    >
-                                        {whenLabel(label.t)}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
+
+    return mount ? createPortal(ui, mount) : null;
 }

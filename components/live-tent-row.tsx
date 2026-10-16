@@ -1,13 +1,13 @@
 "use client";
 
-import {useEffect, useState} from "react";
-import {createPortal} from "react-dom";
+import {useEffect, useRef, useState} from "react";
 import ClimateHistoryDialog from "@/components/climate-history-dialog";
 import LiveClimateCard from "@/components/live-climate-card";
 import LiveDevicesCard from "@/components/live-devices-card";
 import {useLiveClimate} from "@/hooks/use-live-climate";
 import type {ClimateTick} from "@/lib/climate-tick";
 import type {ClimateHistoryPublic} from "@/lib/climate/history-public";
+import type {ClimateHistoryMetric} from "@/lib/climate/history-ui";
 import {DEFAULT_DEVICES_DESIGN, type DevicesDesign} from "@/lib/devices-design";
 import {
     OVERLAY_GROW_PATH,
@@ -30,8 +30,8 @@ export default function LiveTentRow({
     const [climateTick, setClimateTick] = useState(initialTick);
     const [devicesDesign, setDevicesDesign] = useState(initialDesign);
     const [historyOpen, setHistoryOpen] = useState(false);
-    const [origin, setOrigin] = useState({x: 0, y: 0});
-    const [board, setBoard] = useState<Element | null>(null);
+    const [historyMetric, setHistoryMetric] = useState<ClimateHistoryMetric>("tempC");
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
 
     useEffect(() => {
         setClimateTick(initialTick);
@@ -75,35 +75,23 @@ export default function LiveTentRow({
         }
     }, [snapshot, historyOpen]);
 
-    function openHistory(button: HTMLButtonElement) {
-        const target = document.querySelector(".growcast-board");
-        if (!target) {
-            return;
-        }
-        const boardRect = target.getBoundingClientRect();
-        const rect = button.getBoundingClientRect();
-        setOrigin({
-            x: rect.left + rect.width / 2 - boardRect.left,
-            y: rect.top + rect.height / 2 - boardRect.top,
-        });
-        setBoard(target);
+    function openHistory(metric: ClimateHistoryMetric, button: HTMLButtonElement) {
+        triggerRef.current = button;
+        setHistoryMetric(metric);
         setHistoryOpen(true);
+    }
+
+    function closeHistory() {
+        setHistoryOpen(false);
+        const trigger = triggerRef.current;
+        if (trigger) {
+            window.requestAnimationFrame(() => trigger.focus());
+        }
     }
 
     if (!shouldShowLiveRow(snapshot)) {
         return null;
     }
-
-    const dialog = historyOpen && board
-        ? createPortal(
-            <ClimateHistoryDialog
-                history={history}
-                origin={origin}
-                onClose={() => setHistoryOpen(false)}
-            />,
-            board,
-        )
-        : null;
 
     return (
         <>
@@ -113,11 +101,19 @@ export default function LiveTentRow({
                     stale={stale}
                     climateTick={climateTick}
                     historyOpen={historyOpen}
-                    onHistory={openHistory}
+                    historyMetric={historyMetric}
+                    onOpenHistory={openHistory}
                 />
                 <LiveDevicesCard snapshot={snapshot} devicesDesign={devicesDesign}/>
             </section>
-            {dialog}
+            {historyOpen ? (
+                <ClimateHistoryDialog
+                    history={history}
+                    metric={historyMetric}
+                    onMetricChange={setHistoryMetric}
+                    onClose={closeHistory}
+                />
+            ) : null}
         </>
     );
 }

@@ -262,6 +262,7 @@ html[data-admin-save-bar] .admin-toast {
 
 .growcast-climate-wheel {
   --row: 1.75rem;
+  display: block;
   position: relative;
   height: calc(var(--row) * 3);
   overflow: hidden;
@@ -297,17 +298,84 @@ html[data-admin-save-bar] .admin-toast {
 }
 
 .growcast-climate-wheel-strip {
+  display: block;
   will-change: transform;
   transition-property: transform;
 }
 
 .growcast-climate-wheel-row {
+  display: block;
   height: var(--row);
   font-size: 1.125rem;
   line-height: var(--row);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.growcast-climate-history-trigger {
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  margin: -0.25rem -0.375rem;
+  padding: 0.25rem 0.375rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition:
+    transform 220ms var(--growcast-workspace-ease),
+    background-color 220ms var(--growcast-workspace-ease);
+}
+
+.growcast-climate-history-trigger:hover,
+.growcast-climate-history-trigger:focus-visible {
+  transform: translateY(-2px);
+  background-color: rgb(24 24 27 / 0.06);
+}
+
+.growcast-climate-history-trigger:focus-visible {
+  outline: 2px solid rgb(24 24 27 / 0.35);
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .growcast-climate-history-trigger:hover,
+  .growcast-climate-history-trigger:focus-visible {
+    background-color: rgb(255 255 255 / 0.06);
+  }
+
+  .growcast-climate-history-trigger:focus-visible {
+    outline-color: rgb(244 244 245 / 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-climate-history-trigger {
+    transition: none;
+  }
+
+  .growcast-climate-history-trigger:hover,
+  .growcast-climate-history-trigger:focus-visible {
+    transform: none;
+  }
+}
+
+@keyframes growcast-history-swap {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.growcast-history-swap {
+  animation: growcast-history-swap 220ms var(--growcast-workspace-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-history-swap {
+    animation: none;
+  }
 }
 
 .growcast-climate-wheel-dash {
