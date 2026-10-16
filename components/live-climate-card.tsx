@@ -8,14 +8,21 @@ import {
     formatTempC,
     formatVpd,
 } from "@/lib/live-climate-view";
-import {WORKSPACE_PAD, WORKSPACE_SPLIT_MID, WORKSPACE_TITLE} from "@/lib/workspace";
+import {WORKSPACE_PAD, WORKSPACE_SPLIT_MID} from "@/lib/workspace";
 import type {ReactNode} from "react";
 
 type LiveClimateCardProps = {
     snapshot: GgsLivePublic;
     stale: boolean;
     climateTick?: ClimateTick;
+    historyOpen?: boolean;
+    onHistory?: (button: HTMLButtonElement) => void;
 };
+
+const HISTORY_CHIP_ON =
+    "rounded-full border border-transparent bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900";
+const HISTORY_CHIP_OFF =
+    "rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300";
 
 function Metric({
     label,
@@ -49,6 +56,8 @@ export default function LiveClimateCard({
     snapshot,
     stale,
     climateTick = "plain",
+    historyOpen,
+    onHistory,
 }: LiveClimateCardProps) {
     const metrics = climateMetrics(snapshot);
     const alerts = climateMetricAlerts(snapshot);
@@ -56,7 +65,17 @@ export default function LiveClimateCard({
 
     return (
         <article className={`${WORKSPACE_PAD} ${WORKSPACE_SPLIT_MID}`}>
-            <h2 className={`${WORKSPACE_TITLE} mb-4`}>Climate</h2>
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Climate</h2>
+                {onHistory ? (
+                    <button
+                        type="button"
+                        aria-expanded={historyOpen ?? false}
+                        onClick={(event) => onHistory(event.currentTarget)}
+                        className={`shrink-0 ${historyOpen ? HISTORY_CHIP_ON : HISTORY_CHIP_OFF}`}
+                    >History</button>
+                ) : null}
+            </div>
             <div className="grid grid-cols-3 gap-3">
                 <Metric label="Temp" alerting={alerts.temp} stale={stale}>
                     {picker ? (

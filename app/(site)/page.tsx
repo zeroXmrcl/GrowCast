@@ -2,6 +2,8 @@ import {getCurrentGrow} from "@/lib/db";
 import AiSummaryCard from "@/components/ai-summary-card";
 import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
+import {readPublicClimateHistory} from "@/lib/climate/history-adapter";
+import {emptyClimateHistory} from "@/lib/climate/history-public";
 import {aiSummaryWidgetEnabled} from "@/lib/ai-summary/config";
 import {assertPublicSafe, readAiSummaryPublic} from "@/lib/ai-summary/public";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
@@ -86,6 +88,9 @@ export default async function Home() {
             aiDemo = false;
         }
     }
+    const history = showLiveClimate
+        ? await readPublicClimateHistory({seededAt: grow.details.seededAt})
+        : emptyClimateHistory();
     const details = grow.details;
     const ageDays = growAgeDays(details.seededAt);
     const socialLinks = [
@@ -174,7 +179,7 @@ export default async function Home() {
             </aside>
 
             {showLiveClimate ? (
-                <LiveTentRow climateTick={grow.climateTick} devicesDesign={grow.devicesDesign}/>
+                <LiveTentRow climateTick={grow.climateTick} devicesDesign={grow.devicesDesign} history={history}/>
             ) : null}
 
             <section className={`${WORKSPACE_AREA.run} ${WORKSPACE_VT.flow} grid lg:grid-cols-2`}>
