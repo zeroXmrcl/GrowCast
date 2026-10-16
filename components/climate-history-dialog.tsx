@@ -1,5 +1,8 @@
 "use client";
 
+/* Source dialog assigns callback refs during render. */
+/* eslint-disable react-hooks/refs */
+
 import {memo, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent} from "react";
 import {
     findStepSegment,
@@ -219,7 +222,7 @@ export default function ClimateHistoryDialog({history, onClose, origin}: Climate
     const [hoverX, setHoverX] = useState<number | null>(null);
     const onCloseRef = useRef(onClose);
     const closing = useRef(false);
-    const timer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+    const timer = useRef<number | null>(null);
     onCloseRef.current = onClose;
 
     useEffect(() => {
