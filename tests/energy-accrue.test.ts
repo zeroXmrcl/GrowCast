@@ -14,7 +14,7 @@ import {
     planAccrue,
     previewPendingAccrue,
 } from "../lib/energy/accrue.ts";
-import {energyCurrentDir, energyCursorFile, energyDayFile} from "../lib/energy/paths.ts";
+import {energyCurrentDir, energyCursorFile, energyDayFile, energyPendingCursorFile} from "../lib/energy/paths.ts";
 import {
     _failEnergyDayWriteOnCallForTests,
     _failNextEnergyCursorWriteForTests,
@@ -23,6 +23,7 @@ import {
     readEnergyDay,
     writeEnergyCursor,
     writeEnergyDay,
+    writeEnergyPending,
 } from "../lib/energy/store.ts";
 import {getCurrentGrow} from "../lib/db.ts";
 import {saveGgsLive} from "../lib/ggs-live-store.ts";
@@ -720,6 +721,45 @@ describe("ingest accrue hook", () => {
             } catch (error) {
                 assert.equal((error as NodeJS.ErrnoException).code, "ENOENT");
             }
+        });
+    });
+
+    it("adopts a pending cursor without adding the interval twice", async () => {
+        await withTempDataDir(async () => {
+            const t1 = Date.parse("2026-08-23T10:00:00.000Z");
+            const t2 = t1 + 600_000;
+            const hour = String(berlinHour(t1));
+            const grow = await getCurrentGrow();
+            await writeEnergyCursor({
+                growId: grow.id,
+                startedAt: new Date(t1).toISOString(),
+                lastAccruedAt: new Date(t1).toISOString(),
+                devices: [heaterDevice(true, 1)],
+            });
+            await writeEnergyDay({
+                date: "2026-08-23",
+                hours: {[hour]: {"90E5B1B87088:heater": {"1": 600}}},
+            });
+            await writeEnergyPending(
+                {
+                    growId: grow.id,
+                    startedAt: new Date(t1).toISOString(),
+                    lastAccruedAt: new Date(t2).toISOString(),
+                    devices: [heaterDevice(true, 1)],
+                },
+                [{date: "2026-08-23", hour: berlinHour(t1), key: "90E5B1B87088:heater", level: "1", seconds: 600, bucket: "hours"}],
+            );
+            const parsed = parseIngestBody(ingestBody(new Date(t2).toISOString(), true, 1));
+            assert.equal(parsed.ok, true);
+            if (!parsed.ok) {
+                return;
+            }
+            await accrueEnergyOnIngest(parsed.value);
+            const day = await readEnergyDay("2026-08-23");
+            assert.equal(day?.hours[hour]?.["90E5B1B87088:heater"]?.["1"], 600);
+            const cursor = await readEnergyCursor();
+            assert.equal(cursor?.lastAccruedAt, new Date(t2).toISOString());
+            await assert.rejects(readFile(energyPendingCursorFile()));
         });
     });
 });

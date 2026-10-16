@@ -407,8 +407,8 @@ def main(argv: list[str] | None = None) -> int:
         except LockHeldError as e:
             print(f"ERROR: {e}")
             print(f"Lock file: {e.lock_path}")
-            print("If the old instance crashed, delete the lockfile manually,")
-            print("or start with SKIP_LOCK=1 (not recommended for normal use).")
+            print("The lock is an fcntl flock and cannot go stale after a crash.")
+            print("SKIP_LOCK=1 skips it (not recommended for normal use).")
             return 1
 
     if mode == "snapshot":

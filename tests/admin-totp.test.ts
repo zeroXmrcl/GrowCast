@@ -34,6 +34,7 @@ import {
     matchTotpStep,
     pendingTotpPath,
     totpCodeForStep,
+    totpSecurityStatus,
     totpStep,
 } from "../lib/admin-totp.ts";
 import {renderTotpQrSvg} from "../lib/admin-totp-qr.ts";
@@ -303,6 +304,7 @@ describe("admin totp", {concurrency: 1}, () => {
             assert.equal(mismatched.ok, true);
             assert.equal(otherCookies.get(ADMIN_PENDING_COOKIE), undefined);
             assert.equal(typeof otherCookies.get(ADMIN_SESSION_COOKIE), "string");
+            assert.equal(totpSecurityStatus("mismatch", false), "stale");
         });
     });
 

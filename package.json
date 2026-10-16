@@ -10,7 +10,7 @@
     "lint": "eslint",
     "setup:admin": "node scripts/admin-creator.mjs",
     "setup:admin:insecure": "node scripts/admin-creator.mjs --allow-insecure",
-    "test": "node --experimental-strip-types --import ./tests/register.mjs --test \"tests/**/*.test.ts\""
+    "test": "NODE_ENV=test node --experimental-strip-types --import ./tests/register.mjs --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "hls.js": "^1.7.2",

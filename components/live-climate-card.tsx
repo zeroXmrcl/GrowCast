@@ -1,5 +1,9 @@
 import ClimatePickerValue from "@/components/climate-picker";
 import type {ClimateTick} from "@/lib/climate-tick";
+import {
+    climateHistoryOpenLabel,
+    type ClimateHistoryMetric,
+} from "@/lib/climate/history-ui";
 import type {GgsLivePublic} from "@/lib/ggs-live";
 import {
     climateMetricAlerts,
@@ -8,24 +12,33 @@ import {
     formatTempC,
     formatVpd,
 } from "@/lib/live-climate-view";
-import {WORKSPACE_PAD, WORKSPACE_SPLIT_MID, WORKSPACE_TITLE} from "@/lib/workspace";
+import {WORKSPACE_PAD, WORKSPACE_SPLIT_MID} from "@/lib/workspace";
 import type {ReactNode} from "react";
 
 type LiveClimateCardProps = {
     snapshot: GgsLivePublic;
     stale: boolean;
     climateTick?: ClimateTick;
+    historyOpen?: boolean;
+    historyMetric?: ClimateHistoryMetric | null;
+    onOpenHistory?: (metric: ClimateHistoryMetric, button: HTMLButtonElement) => void;
 };
 
 function Metric({
     label,
+    metric,
     alerting,
     stale,
+    open,
+    onOpen,
     children,
 }: {
     label: string;
+    metric: ClimateHistoryMetric;
     alerting: boolean;
     stale: boolean;
+    open: boolean;
+    onOpen?: (metric: ClimateHistoryMetric, button: HTMLButtonElement) => void;
     children: ReactNode;
 }) {
     const alarm = alerting && !stale;
@@ -37,11 +50,26 @@ function Metric({
         : alarm
             ? "growcast-alert-pulse text-red-600 dark:text-red-400"
             : "text-zinc-900 dark:text-zinc-100";
+    const body = (
+        <>
+            <span className={`block text-sm ${color}`}>{label}</span>
+            <span className={`block ${valueColor}`}>{children}</span>
+        </>
+    );
+    if (!onOpen) {
+        return <div>{body}</div>;
+    }
     return (
-        <div>
-            <p className={`text-sm ${color}`}>{label}</p>
-            <div className={valueColor}>{children}</div>
-        </div>
+        <button
+            type="button"
+            aria-label={climateHistoryOpenLabel(metric)}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            onClick={(event) => onOpen(metric, event.currentTarget)}
+            className="growcast-climate-history-trigger"
+        >
+            {body}
+        </button>
     );
 }
 
@@ -49,6 +77,9 @@ export default function LiveClimateCard({
     snapshot,
     stale,
     climateTick = "plain",
+    historyOpen,
+    historyMetric,
+    onOpenHistory,
 }: LiveClimateCardProps) {
     const metrics = climateMetrics(snapshot);
     const alerts = climateMetricAlerts(snapshot);
@@ -56,33 +87,54 @@ export default function LiveClimateCard({
 
     return (
         <article className={`${WORKSPACE_PAD} ${WORKSPACE_SPLIT_MID}`}>
-            <h2 className={`${WORKSPACE_TITLE} mb-4`}>Climate</h2>
+            <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Climate</h2>
             <div className="grid grid-cols-3 gap-3">
-                <Metric label="Temp" alerting={alerts.temp} stale={stale}>
+                <Metric
+                    label="Temp"
+                    metric="tempC"
+                    alerting={alerts.temp}
+                    stale={stale}
+                    open={Boolean(historyOpen && historyMetric === "tempC")}
+                    onOpen={onOpenHistory}
+                >
                     {picker ? (
                         <ClimatePickerValue kind="temp" value={metrics.tempC} size="dash"/>
                     ) : (
-                        <p className="mt-1 text-xl font-semibold tabular-nums">
+                        <span className="mt-1 block text-xl font-semibold tabular-nums">
                             {formatTempC(metrics.tempC)}
-                        </p>
+                        </span>
                     )}
                 </Metric>
-                <Metric label="Humidity" alerting={alerts.humidity} stale={stale}>
+                <Metric
+                    label="Humidity"
+                    metric="humidityPct"
+                    alerting={alerts.humidity}
+                    stale={stale}
+                    open={Boolean(historyOpen && historyMetric === "humidityPct")}
+                    onOpen={onOpenHistory}
+                >
                     {picker ? (
                         <ClimatePickerValue kind="rh" value={metrics.humidityPct} size="dash"/>
                     ) : (
-                        <p className="mt-1 text-xl font-semibold tabular-nums">
+                        <span className="mt-1 block text-xl font-semibold tabular-nums">
                             {formatHumidityPctTenths(metrics.humidityPct)}
-                        </p>
+                        </span>
                     )}
                 </Metric>
-                <Metric label="VPD" alerting={alerts.vpd} stale={stale}>
+                <Metric
+                    label="VPD"
+                    metric="vpd"
+                    alerting={alerts.vpd}
+                    stale={stale}
+                    open={Boolean(historyOpen && historyMetric === "vpd")}
+                    onOpen={onOpenHistory}
+                >
                     {picker ? (
                         <ClimatePickerValue kind="vpd" value={metrics.vpd} size="dash"/>
                     ) : (
-                        <p className="mt-1 text-xl font-semibold tabular-nums">
+                        <span className="mt-1 block text-xl font-semibold tabular-nums">
                             {formatVpd(metrics.vpd)}
-                        </p>
+                        </span>
                     )}
                 </Metric>
             </div>

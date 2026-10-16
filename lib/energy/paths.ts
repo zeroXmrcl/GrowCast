@@ -17,6 +17,10 @@ export function energyCursorFile(): string {
     return path.join(energyCurrentDir(), "cursor.json");
 }
 
+export function energyPendingCursorFile(): string {
+    return path.join(energyCurrentDir(), "cursor.pending.json");
+}
+
 export function energyDayFile(dateOnly: string): string {
     return path.join(energyCurrentDir(), `${dateOnly}.json`);
 }

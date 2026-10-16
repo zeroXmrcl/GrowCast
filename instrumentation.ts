@@ -39,5 +39,20 @@ export async function register(): Promise<void> {
         });
       }
     });
+    void Promise.resolve().then(async () => {
+      try {
+        const { startAiSummaryScheduler } = await import(
+          "@/lib/ai-summary/scheduler"
+        );
+        startAiSummaryScheduler();
+      } catch (error) {
+        const { childLogger, sanitizeError } = await import("@/lib/logging");
+        childLogger().warn({
+          event: "ai_summary.scheduler.failed",
+          reason: "boot_failed",
+          err: sanitizeError(error),
+        });
+      }
+    });
   }
 }

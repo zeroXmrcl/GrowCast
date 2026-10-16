@@ -70,5 +70,6 @@ export type LogBindings = {
 export type SanitizedError = {
   type: string;
   message: string;
+  code?: string;
   stack?: string;
 };

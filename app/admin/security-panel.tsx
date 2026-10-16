@@ -22,7 +22,7 @@ export type SecurityPendingView = {
 };
 
 export type SecurityView = {
-    status: "off" | "pending" | "enrolled" | "corrupt";
+    status: "off" | "pending" | "enrolled" | "corrupt" | "stale";
     pending: SecurityPendingView | null;
 };
 
@@ -118,7 +118,13 @@ export function SecurityPanel({view}: {view: SecurityView}) {
                         </AdminNotice>
                     ) : null}
 
-                    {view.status === "off" ? (
+                    {view.status === "stale" ? (
+                        <AdminNotice tone="danger" title="Authenticator is not protecting sign-in">
+                            The saved file belongs to a previous password. Turn on replaces it.
+                        </AdminNotice>
+                    ) : null}
+
+                    {view.status === "off" || view.status === "stale" ? (
                         <AdminButton type="button" tone="primary" disabled={busy} onClick={() => run(startEnrollAction)}>
                             Turn on authenticator
                         </AdminButton>

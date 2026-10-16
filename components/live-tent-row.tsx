@@ -1,10 +1,13 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
+import ClimateHistoryDialog from "@/components/climate-history-dialog";
 import LiveClimateCard from "@/components/live-climate-card";
 import LiveDevicesCard from "@/components/live-devices-card";
 import {useLiveClimate} from "@/hooks/use-live-climate";
 import type {ClimateTick} from "@/lib/climate-tick";
+import type {ClimateHistoryPublic} from "@/lib/climate/history-public";
+import type {ClimateHistoryMetric} from "@/lib/climate/history-ui";
 import {DEFAULT_DEVICES_DESIGN, type DevicesDesign} from "@/lib/devices-design";
 import {
     OVERLAY_GROW_PATH,
@@ -17,13 +20,18 @@ import {WORKSPACE_AREA, WORKSPACE_VT} from "@/lib/workspace";
 export default function LiveTentRow({
     climateTick: initialTick = "plain",
     devicesDesign: initialDesign = DEFAULT_DEVICES_DESIGN,
+    history,
 }: {
     climateTick?: ClimateTick;
     devicesDesign?: DevicesDesign;
+    history: ClimateHistoryPublic;
 }) {
     const {snapshot, stale} = useLiveClimate();
     const [climateTick, setClimateTick] = useState(initialTick);
     const [devicesDesign, setDevicesDesign] = useState(initialDesign);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [historyMetric, setHistoryMetric] = useState<ClimateHistoryMetric>("tempC");
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
 
     useEffect(() => {
         setClimateTick(initialTick);
@@ -61,18 +69,51 @@ export default function LiveTentRow({
         };
     }, []);
 
+    useEffect(() => {
+        if (!shouldShowLiveRow(snapshot) && historyOpen) {
+            setHistoryOpen(false);
+        }
+    }, [snapshot, historyOpen]);
+
+    function openHistory(metric: ClimateHistoryMetric, button: HTMLButtonElement) {
+        triggerRef.current = button;
+        setHistoryMetric(metric);
+        setHistoryOpen(true);
+    }
+
+    function closeHistory() {
+        setHistoryOpen(false);
+        const trigger = triggerRef.current;
+        if (trigger) {
+            window.requestAnimationFrame(() => trigger.focus());
+        }
+    }
+
     if (!shouldShowLiveRow(snapshot)) {
         return null;
     }
 
     return (
-        <section className={`${WORKSPACE_AREA.live} ${WORKSPACE_VT.mid} grid lg:grid-cols-2`}>
-            <LiveClimateCard
-                snapshot={snapshot}
-                stale={stale}
-                climateTick={climateTick}
-            />
-            <LiveDevicesCard snapshot={snapshot} devicesDesign={devicesDesign}/>
-        </section>
+        <>
+            <section className={`${WORKSPACE_AREA.live} ${WORKSPACE_VT.mid} grid lg:grid-cols-2`}>
+                <LiveClimateCard
+                    snapshot={snapshot}
+                    stale={stale}
+                    climateTick={climateTick}
+                    historyOpen={historyOpen}
+                    historyMetric={historyMetric}
+                    onOpenHistory={openHistory}
+                />
+                <LiveDevicesCard snapshot={snapshot} devicesDesign={devicesDesign}/>
+            </section>
+            {historyOpen ? (
+                <ClimateHistoryDialog
+                    history={history}
+                    metric={historyMetric}
+                    onMetricChange={setHistoryMetric}
+                    onClose={closeHistory}
+                />
+            ) : null}
+        </>
     );
 }
