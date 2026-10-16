@@ -1,5 +1,8 @@
 "use client";
 
+/* Wheel distance reads the previous detent from a ref during render. */
+/* eslint-disable react-hooks/refs */
+
 import {useLayoutEffect, useRef, useSyncExternalStore} from "react";
 import {
     CLIMATE_TICK_EASING,

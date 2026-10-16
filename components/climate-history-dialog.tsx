@@ -301,21 +301,18 @@ export default function ClimateHistoryDialog({
     const [key, setKey] = useState<HistoryKey>("24h");
     const [phase, setPhase] = useState<Phase>(() => (prefersReducedMotion() ? "open" : "enter"));
     const [hoverX, setHoverX] = useState<number | null>(null);
-    const [mount, setMount] = useState<HTMLElement | null>(null);
-    const [swapAnim, setSwapAnim] = useState(false);
     const onCloseRef = useRef(onClose);
     const closing = useRef(false);
     const timer = useRef<number | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
-    const firstSwap = useRef(true);
-    onCloseRef.current = onClose;
+    const mounted = typeof document !== "undefined";
 
     useEffect(() => {
-        setMount(document.body);
-    }, []);
+        onCloseRef.current = onClose;
+    }, [onClose]);
 
     useScrollLock();
-    useFocusTrap(panelRef, mount !== null);
+    useFocusTrap(panelRef, mounted);
 
     useEffect(() => {
         if (phase !== "enter") {
@@ -347,7 +344,9 @@ export default function ClimateHistoryDialog({
     }
 
     const requestCloseRef = useRef(requestClose);
-    requestCloseRef.current = requestClose;
+    useEffect(() => {
+        requestCloseRef.current = requestClose;
+    });
 
     useEffect(() => {
         function onKey(event: KeyboardEvent) {
@@ -379,32 +378,29 @@ export default function ClimateHistoryDialog({
     const empty = view.runs.length === 0 || stats === null;
     const activeMetric = METRICS.find((item) => item.key === metric) ?? METRICS[0];
     const series = useMemo(() => {
-        if (view.runs.length === 0 || view.stats === null) {
+        const window = selectedWindow(history, active);
+        if (window.runs.length === 0 || window.stats === null) {
             return null;
         }
         return {
-            tempC: samplesFor(view.runs, (point) => point.tempC),
-            humidityPct: samplesFor(view.runs, (point) => point.humidityPct),
-            vpd: samplesFor(view.runs, (point) => point.vpd),
+            tempC: samplesFor(window.runs, (point) => point.tempC),
+            humidityPct: samplesFor(window.runs, (point) => point.humidityPct),
+            vpd: samplesFor(window.runs, (point) => point.vpd),
         };
-    }, [view]);
+    }, [active, history]);
     const axisLabels = useMemo(
-        () => layoutStepAxis(
-            view.runs.map((run) => run.map((point) => ({t: point.t, value: point.tempC}))),
-            PLOT_W,
-            PLOT_H,
-        ),
-        [view],
+        () => {
+            const window = selectedWindow(history, active);
+            return layoutStepAxis(
+                window.runs.map((run) => run.map((point) => ({t: point.t, value: point.tempC}))),
+                PLOT_W,
+                PLOT_H,
+            );
+        },
+        [active, history],
     );
     const swapKey = `${metric}:${active}`;
-
-    useEffect(() => {
-        if (firstSwap.current) {
-            firstSwap.current = false;
-            return;
-        }
-        setSwapAnim(!prefersReducedMotion());
-    }, [swapKey]);
+    const swapAnim = !prefersReducedMotion();
 
     function onHover(event: PointerEvent<HTMLDivElement>) {
         const rect = event.currentTarget.getBoundingClientRect();
@@ -534,5 +530,5 @@ export default function ClimateHistoryDialog({
         </div>
     );
 
-    return mount ? createPortal(ui, mount) : null;
+    return mounted ? createPortal(ui, document.body) : null;
 }
