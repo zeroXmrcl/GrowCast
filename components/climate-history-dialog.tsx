@@ -133,13 +133,11 @@ function useFocusTrap(rootRef: RefObject<HTMLElement | null>, active: boolean): 
         if (!root) {
             return;
         }
+        const panel = root;
         function list(): HTMLElement[] {
-            if (!root) {
-                return [];
-            }
-            return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((node) => node.tabIndex !== -1);
+            return [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((node) => node.tabIndex !== -1);
         }
-        root.focus();
+        panel.focus();
         function onKey(event: KeyboardEvent) {
             if (event.key !== "Tab") {
                 return;
@@ -147,7 +145,7 @@ function useFocusTrap(rootRef: RefObject<HTMLElement | null>, active: boolean): 
             const items = list();
             if (items.length === 0) {
                 event.preventDefault();
-                root.focus();
+                panel.focus();
                 return;
             }
             const first = items[0];
@@ -161,9 +159,9 @@ function useFocusTrap(rootRef: RefObject<HTMLElement | null>, active: boolean): 
             }
         }
         function onFocusIn(event: FocusEvent) {
-            if (!root.contains(event.target as Node)) {
+            if (!panel.contains(event.target as Node)) {
                 const items = list();
-                (items[0] ?? root).focus();
+                (items[0] ?? panel).focus();
             }
         }
         document.addEventListener("keydown", onKey);
