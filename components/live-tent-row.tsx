@@ -21,10 +21,12 @@ export default function LiveTentRow({
     climateTick: initialTick = "plain",
     devicesDesign: initialDesign = DEFAULT_DEVICES_DESIGN,
     history,
+    preview = false,
 }: {
     climateTick?: ClimateTick;
     devicesDesign?: DevicesDesign;
     history: ClimateHistoryPublic;
+    preview?: boolean;
 }) {
     const {snapshot, stale} = useLiveClimate();
     const [climateTick, setClimateTick] = useState(initialTick);
@@ -103,6 +105,7 @@ export default function LiveTentRow({
                     historyOpen={historyOpen}
                     historyMetric={historyMetric}
                     onOpenHistory={openHistory}
+                    preview={preview}
                 />
                 <LiveDevicesCard snapshot={snapshot} devicesDesign={devicesDesign}/>
             </section>

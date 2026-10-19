@@ -326,14 +326,17 @@ html[data-admin-save-bar] .admin-toast {
   font: inherit;
   text-align: left;
   transition:
-    transform 220ms var(--growcast-workspace-ease),
+    transform 80ms var(--growcast-workspace-ease),
     background-color 220ms var(--growcast-workspace-ease);
 }
 
 .growcast-climate-history-trigger:hover,
 .growcast-climate-history-trigger:focus-visible {
-  transform: translateY(-2px);
   background-color: rgb(24 24 27 / 0.06);
+}
+
+.growcast-climate-history-trigger:active {
+  transform: scale(0.98);
 }
 
 .growcast-climate-history-trigger:focus-visible {
@@ -358,7 +361,8 @@ html[data-admin-save-bar] .admin-toast {
   }
 
   .growcast-climate-history-trigger:hover,
-  .growcast-climate-history-trigger:focus-visible {
+  .growcast-climate-history-trigger:focus-visible,
+  .growcast-climate-history-trigger:active {
     transform: none;
   }
 }

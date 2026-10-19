@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {describe, it} from "node:test";
-import {layoutStepAxis, stepPath} from "../lib/climate/plot.ts";
+import {layoutStepAxis, layoutStepRuns, morphStepFrame, pairStepPieces, stepPath} from "../lib/climate/plot.ts";
 import {
     CLIMATE_HISTORY_METRIC_CHIPS,
     CLIMATE_HISTORY_METRICS,
@@ -81,13 +81,56 @@ describe("climate history dialog", () => {
         assert.match(dialog, /100vw/);
         assert.match(dialog, /overflow-y-auto/);
         assert.match(dialog, /prefers-reduced-motion/);
-        assert.match(dialog, /scale: "1"/);
+        assert.match(dialog, /translateY/);
         assert.match(dialog, /transition: shown/);
+        assert.match(dialog, /24 hours/);
+        assert.match(dialog, /ArrowLeft/);
+        assert.match(dialog, /Show \$\{previous.label\}/);
+        assert.doesNotMatch(dialog, /Past climate/);
+        const chart = src("components/climate-history-chart.tsx");
+        assert.match(chart, /morphStepFrame/);
+        assert.match(chart, /pairStepPieces/);
+        assert.doesNotMatch(css, /translateY\(-2px\)/);
         assert.match(css, /growcast-climate-history-trigger/);
         assert.match(css, /growcast-history-swap/);
         assert.match(css, /prefers-reduced-motion: reduce/);
         assert.match(css, /cursor: pointer/);
         assert.match(css, /:focus-visible/);
+    });
+
+    it("moves the line already on screen into the next range", () => {
+        const from = layoutStepRuns([[
+            {t: "2026-10-19T00:00:00.000Z", value: 10},
+            {t: "2026-10-19T02:00:00.000Z", value: 20},
+        ]], 200, 100);
+        const to = layoutStepRuns([[
+            {t: "2026-10-19T00:00:00.000Z", value: 30},
+            {t: "2026-10-19T02:00:00.000Z", value: 0},
+        ]], 200, 100);
+        const pieces = pairStepPieces(from, to, 200);
+        const start = morphStepFrame(pieces, 0, 100);
+        const mid = morphStepFrame(pieces, 0.5, 100);
+        const end = morphStepFrame(pieces, 1, 100);
+        assert.match(start.shared.d, new RegExp(from[0].segments[0].y.toFixed(2)));
+        assert.match(end.shared.d, new RegExp(to[0].segments[0].y.toFixed(2)));
+        assert.match(mid.shared.d, new RegExp(((from[0].segments[0].y + to[0].segments[0].y) / 2).toFixed(2)));
+        assert.notEqual(start.shared.d, end.shared.d);
+
+        const gapped = layoutStepRuns([
+            [{t: "2026-10-19T00:00:00.000Z", value: 10}],
+            [{t: "2026-10-19T06:00:00.000Z", value: 20}],
+        ], 300, 80);
+        const filled = layoutStepRuns([[
+            {t: "2026-10-19T00:00:00.000Z", value: 10},
+            {t: "2026-10-19T03:00:00.000Z", value: 16},
+            {t: "2026-10-19T06:00:00.000Z", value: 20},
+        ]], 300, 80);
+        const gapPieces = pairStepPieces(gapped, filled, 300);
+        assert.equal(gapPieces.some((piece) => piece.a == null && piece.b != null), true);
+        const gapFrame = morphStepFrame(gapPieces, 0, 80);
+        assert.equal(gapFrame.fadeIn.opacity, 0);
+        assert.notEqual(gapFrame.fadeIn.d, "");
+        assert.equal(morphStepFrame(gapPieces, 1, 80).fadeOut.opacity, 0);
     });
 
     it("does not import this branch storage ClimatePoint from types", () => {

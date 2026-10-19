@@ -5,6 +5,7 @@ import {
     withStale,
     type GgsLivePublic,
 } from "@/lib/ggs-live";
+import {climatePreviewSnapshot} from "@/lib/climate/local-preview";
 import {recordClimateOnIngestBestEffort} from "@/lib/climate/writer";
 import {accrueEnergyOnIngest} from "@/lib/energy/accrue";
 import {logEnergy} from "@/lib/energy/log";
@@ -47,9 +48,28 @@ function noStoreJson(body: unknown, status = 200): Response {
     });
 }
 
-export async function liveClimateGetResponse(): Promise<Response> {
+/** Dev-server gate. Kept here so the env read is not constant-folded in a shared module. */
+export function devClimatePreviewEnabled(): boolean {
+    const flag = `${process.env.GROWCAST_CLIMATE_PREVIEW ?? ""}`.trim().toLowerCase();
+    const name = `${process.env.GROWCAST_ENV ?? ""}`.trim().toLowerCase()
+        || `${process.env.NODE_ENV ?? ""}`.trim().toLowerCase();
+    return flag === "1" || flag === "true"
+        || (flag !== "0" && flag !== "false" && (name === "development" || name === "dev"));
+}
+
+async function readPublicLive(): Promise<GgsLivePublic> {
     const stored = await readGgsLive();
-    const body = stored ? withStale(stored) : EMPTY_LIVE_PUBLIC;
+    if (stored) {
+        return withStale(stored);
+    }
+    if (devClimatePreviewEnabled()) {
+        return climatePreviewSnapshot();
+    }
+    return EMPTY_LIVE_PUBLIC;
+}
+
+export async function liveClimateGetResponse(): Promise<Response> {
+    const body = await readPublicLive();
     return Response.json(body, {
         headers: {"Cache-Control": "no-store, must-revalidate"},
     });
@@ -80,14 +100,13 @@ export async function liveClimateStreamResponse(request?: Request): Promise<Resp
     }
     const slot: SseSlot = reserved;
 
-    let stored;
+    let hello;
     try {
-        stored = await readGgsLive();
+        hello = await readPublicLive();
     } catch (error) {
         releaseSseSlot(slot);
         throw error;
     }
-    const hello = stored ? withStale(stored) : EMPTY_LIVE_PUBLIC;
     let unsubscribe: (() => void) | undefined;
     let closed = false;
 

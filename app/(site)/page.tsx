@@ -4,10 +4,12 @@ import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
 import {readPublicClimateHistory} from "@/lib/climate/history-adapter";
 import {emptyClimateHistory} from "@/lib/climate/history-public";
+import {climatePreviewHistory} from "@/lib/climate/local-preview";
 import {aiSummaryWidgetEnabled} from "@/lib/ai-summary/config";
 import {assertPublicSafe, readAiSummaryPublic} from "@/lib/ai-summary/public";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
 import {growAgeDays, isUsableSeededAt} from "@/lib/ai-summary/stage";
+import {devClimatePreviewEnabled} from "@/lib/ggs-live-http";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 import {listMediaUrls} from "@/lib/media-library";
 import ReactMarkdown from "react-markdown";
@@ -72,12 +74,14 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
 
 export default async function Home() {
     const showAiSummary = aiSummaryWidgetEnabled();
-    const [grow, setupImages, showLiveClimate, aiSummaryRead] = await Promise.all([
+    const [grow, setupImages, ggsLive, aiSummaryRead] = await Promise.all([
         getCurrentGrow(),
         listMediaUrls("setup"),
         hasGgsLiveUi(),
         showAiSummary ? readAiSummaryPublic() : Promise.resolve({summary: null, demo: false}),
     ]);
+    const previewClimate = !ggsLive && devClimatePreviewEnabled();
+    const showLiveClimate = ggsLive || previewClimate;
     let aiSummary = aiSummaryRead.summary;
     let aiDemo = aiSummaryRead.demo;
     if (aiSummary) {
@@ -88,9 +92,11 @@ export default async function Home() {
             aiDemo = false;
         }
     }
-    const history = showLiveClimate
+    const history = ggsLive
         ? await readPublicClimateHistory({seededAt: grow.details.seededAt})
-        : emptyClimateHistory();
+        : previewClimate
+            ? climatePreviewHistory(Date.now(), grow.details.seededAt)
+            : emptyClimateHistory();
     const details = grow.details;
     const ageDays = growAgeDays(details.seededAt);
     const socialLinks = [
@@ -179,7 +185,7 @@ export default async function Home() {
             </aside>
 
             {showLiveClimate ? (
-                <LiveTentRow climateTick={grow.climateTick} devicesDesign={grow.devicesDesign} history={history}/>
+                <LiveTentRow climateTick={grow.climateTick} devicesDesign={grow.devicesDesign} history={history} preview={previewClimate}/>
             ) : null}
 
             <section className={`${WORKSPACE_AREA.run} ${WORKSPACE_VT.flow} grid lg:grid-cols-2`}>

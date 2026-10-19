@@ -178,6 +178,35 @@ describe("live climate GET", () => {
         });
     });
 
+    it("returns a sample snapshot when local preview is on and GGS has not posted", async () => {
+        await withTempDataDir(async () => {
+            const previous = process.env.GROWCAST_CLIMATE_PREVIEW;
+            process.env.GROWCAST_CLIMATE_PREVIEW = "1";
+            try {
+                const response = await liveClimateGetResponse();
+                const body = await response.json();
+                assert.equal(body.stale, false);
+                assert.equal(body.online, true);
+                assert.equal(body.devices[0].sensor.tempC, 25.4);
+                assert.equal(body.devices[0].sensor.humidityPct, 62.8);
+                const stream = await liveClimateStreamResponse();
+                const reader = stream.body?.getReader();
+                assert.ok(reader);
+                const {value} = await reader.read();
+                const text = new TextDecoder().decode(value);
+                assert.match(text, /event: snapshot/);
+                assert.match(text, /25\.4/);
+                await reader.cancel();
+            } finally {
+                if (previous === undefined) {
+                    delete process.env.GROWCAST_CLIMATE_PREVIEW;
+                } else {
+                    process.env.GROWCAST_CLIMATE_PREVIEW = previous;
+                }
+            }
+        });
+    });
+
     it("returns saved tempC", async () => {
         await withTempDataDir(async () => {
             const parsed = (await import("../lib/ggs-live.ts")).parseIngestBody(

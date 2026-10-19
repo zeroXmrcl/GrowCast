@@ -22,6 +22,7 @@ type LiveClimateCardProps = {
     historyOpen?: boolean;
     historyMetric?: ClimateHistoryMetric | null;
     onOpenHistory?: (metric: ClimateHistoryMetric, button: HTMLButtonElement) => void;
+    preview?: boolean;
 };
 
 function Metric({
@@ -80,6 +81,7 @@ export default function LiveClimateCard({
     historyOpen,
     historyMetric,
     onOpenHistory,
+    preview = false,
 }: LiveClimateCardProps) {
     const metrics = climateMetrics(snapshot);
     const alerts = climateMetricAlerts(snapshot);
@@ -87,7 +89,12 @@ export default function LiveClimateCard({
 
     return (
         <article className={`${WORKSPACE_PAD} ${WORKSPACE_SPLIT_MID}`}>
-            <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-100">Climate</h2>
+            <h2 className="mb-4 flex items-baseline gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                Climate
+                {preview ? (
+                    <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">Sample</span>
+                ) : null}
+            </h2>
             <div className="grid grid-cols-3 gap-3">
                 <Metric
                     label="Temp"
