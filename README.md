@@ -286,3 +286,9 @@ Cause:
 
 Fix:
 - Restart dev server.
+
+## License
+
+[PolyForm Noncommercial 1.0.0](LICENSE). You may use, modify, and share this code for noncommercial purposes only; commercial use is not permitted. It comes as is, without any warranty, and you use it at your own risk.
+
+Copyright 2026 [zeroXmrcl](https://github.com/zeroXmrcl).
