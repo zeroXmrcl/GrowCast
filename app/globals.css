@@ -262,6 +262,7 @@ html[data-admin-save-bar] .admin-toast {
 
 .growcast-climate-wheel {
   --row: 1.75rem;
+  display: block;
   position: relative;
   height: calc(var(--row) * 3);
   overflow: hidden;
@@ -297,17 +298,88 @@ html[data-admin-save-bar] .admin-toast {
 }
 
 .growcast-climate-wheel-strip {
+  display: block;
   will-change: transform;
   transition-property: transform;
 }
 
 .growcast-climate-wheel-row {
+  display: block;
   height: var(--row);
   font-size: 1.125rem;
   line-height: var(--row);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.growcast-climate-history-trigger {
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  margin: -0.25rem -0.375rem;
+  padding: 0.25rem 0.375rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition:
+    transform 80ms var(--growcast-workspace-ease),
+    background-color 220ms var(--growcast-workspace-ease);
+}
+
+.growcast-climate-history-trigger:hover,
+.growcast-climate-history-trigger:focus-visible {
+  background-color: rgb(24 24 27 / 0.06);
+}
+
+.growcast-climate-history-trigger:active {
+  transform: scale(0.98);
+}
+
+.growcast-climate-history-trigger:focus-visible {
+  outline: 2px solid rgb(24 24 27 / 0.35);
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .growcast-climate-history-trigger:hover,
+  .growcast-climate-history-trigger:focus-visible {
+    background-color: rgb(255 255 255 / 0.06);
+  }
+
+  .growcast-climate-history-trigger:focus-visible {
+    outline-color: rgb(244 244 245 / 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-climate-history-trigger {
+    transition: none;
+  }
+
+  .growcast-climate-history-trigger:hover,
+  .growcast-climate-history-trigger:focus-visible,
+  .growcast-climate-history-trigger:active {
+    transform: none;
+  }
+}
+
+@keyframes growcast-history-swap {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.growcast-history-swap {
+  animation: growcast-history-swap 220ms var(--growcast-workspace-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-history-swap {
+    animation: none;
+  }
 }
 
 .growcast-climate-wheel-dash {
@@ -424,6 +496,7 @@ html[data-admin-save-bar] .admin-toast {
     "cam details"
     "live live"
     "run run"
+    "ai ai"
     "pics pics"
     "setup setup"
     "socials socials";
@@ -435,6 +508,7 @@ html[data-admin-save-bar] .admin-toast {
     "cam details"
     "live live"
     "run run"
+    "ai ai"
     "pics pics"
     "setup setup"
     "socials socials";
@@ -464,6 +538,7 @@ html[data-admin-save-bar] .admin-toast {
       "details"
       "live"
       "run"
+      "ai"
       "pics"
       "setup"
       "socials";
@@ -475,6 +550,7 @@ html[data-admin-save-bar] .admin-toast {
       "details"
       "live"
       "run"
+      "ai"
       "pics"
       "setup"
       "socials";
@@ -514,6 +590,129 @@ html[data-admin-save-bar] .admin-toast {
 .growcast-area-run {
   grid-area: run;
   border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-ai {
+  grid-area: ai;
+  border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-ai-arc {
+  stroke-dasharray: var(--growcast-score) 100;
+  stroke-dashoffset: var(--growcast-score);
+  animation: growcast-ai-draw 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.growcast-ai-row {
+  animation: growcast-ai-slide 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--growcast-i) * 45ms);
+}
+
+.growcast-ai-mosaic:hover .growcast-ai-row {
+  opacity: 0.38;
+  transition: opacity 180ms linear;
+}
+
+.growcast-ai-mosaic .growcast-ai-row:hover {
+  opacity: 1;
+}
+
+.growcast-ai-tick {
+  transform-origin: center;
+  animation: growcast-ai-rise 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--growcast-i) * 14ms);
+}
+
+.growcast-ai-reading {
+  transition: color 180ms linear;
+}
+
+.growcast-ai-confidence {
+  position: relative;
+  cursor: help;
+}
+
+.growcast-ai-confidence-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  width: max-content;
+  max-width: 16rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #18181b;
+  color: #fafafa;
+  border: 1px solid #3f3f46;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 80ms linear, transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.growcast-ai-confidence:hover .growcast-ai-confidence-tip,
+.growcast-ai-confidence:focus-visible .growcast-ai-confidence-tip {
+  opacity: 1;
+  transform: none;
+}
+
+.growcast-ai-tip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 8px;
+  background: #18181b;
+  color: #fafafa;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  opacity: 0;
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), opacity 80ms linear;
+}
+
+.growcast-ai-tip.is-on {
+  opacity: 1;
+}
+
+@keyframes growcast-ai-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes growcast-ai-slide {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes growcast-ai-rise {
+  from { transform: scaleY(0); }
+  to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .growcast-ai-arc,
+  .growcast-ai-row,
+  .growcast-ai-tick {
+    animation: none;
+  }
+
+  .growcast-ai-arc { stroke-dashoffset: 0; }
+  .growcast-ai-row { opacity: 1; transform: none; }
+  .growcast-ai-tick { transform: none; }
+  .growcast-ai-reading,
+  .growcast-ai-confidence-tip,
+  .growcast-ai-tip,
+  .growcast-ai-mosaic:hover .growcast-ai-row { transition: none; }
+  .growcast-ai-confidence-tip { transform: none; }
 }
 
 .growcast-area-pics {
@@ -571,6 +770,7 @@ html[data-admin-save-bar] .admin-toast {
 .vt-side { view-transition-name: vt-side; }
 .vt-mid { view-transition-name: vt-mid; }
 .vt-flow { view-transition-name: vt-flow; }
+.vt-ai { view-transition-name: vt-ai; }
 .vt-water { view-transition-name: vt-water; }
 .vt-table { view-transition-name: vt-table; }
 .vt-socials { view-transition-name: vt-socials; }
@@ -605,6 +805,7 @@ html[data-admin-save-bar] .admin-toast {
 ::view-transition-old(vt-side),
 ::view-transition-old(vt-mid),
 ::view-transition-old(vt-flow),
+::view-transition-old(vt-ai),
 ::view-transition-old(vt-water),
 ::view-transition-old(vt-table),
 ::view-transition-old(vt-name),
@@ -615,6 +816,7 @@ html[data-admin-save-bar] .admin-toast {
 ::view-transition-new(vt-side),
 ::view-transition-new(vt-mid),
 ::view-transition-new(vt-flow),
+::view-transition-new(vt-ai),
 ::view-transition-new(vt-water),
 ::view-transition-new(vt-table),
 ::view-transition-new(vt-name),

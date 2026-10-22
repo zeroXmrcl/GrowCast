@@ -37,6 +37,9 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
     volumes:
       - ./data:/data
+      # Do not overlay anonymous volumes on /data/* (climate, setup, …).
+      # Compose creates those host folders as root:root when this service is
+      # created, which can be after growcast already chowned /app/data.
       - ./extensions/GrowCast-GGS:/opt/legacy-ggs:ro
       - ./docker/ggs-run.sh:/opt/growcast/ggs-run.sh:ro
     entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /opt/growcast/ggs-run.sh > /tmp/ggs-run.sh && exec /bin/sh /tmp/ggs-run.sh"]
@@ -70,6 +73,8 @@ services:
       GROWCAST_TIMELAPSE_ENV: /data/timelapse.env
     volumes:
       - ./data:/data
+      # Same as ggs: no nested anonymous /data/* overlays. Those mounts create
+      # root-owned host folders and then uid 1001 cannot write climate/current.
       - ./extensions/GrowCast-Timelapse/GrowCast-Timelapse:/opt/legacy-timelapse:ro
       - ./extensions/GrowCast-Timelapse/snapshots:/app/GrowCast-Timelapse/snapshots
       - ./extensions/GrowCast-Timelapse/timelapse:/app/GrowCast-Timelapse/timelapse

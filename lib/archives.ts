@@ -15,8 +15,13 @@ import {isDateOnly, todayDateOnly} from "@/lib/date-only";
 import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/lib/extension-status";
 import {deleteSnapshotThumbs} from "@/lib/snapshot-thumb";
 import {mediaCollectionDir} from "@/lib/media-library";
+import {ClimateCopyError, resetClimateCurrentLocked, stageClimateArchive} from "@/lib/climate/archive";
+import {logClimate} from "@/lib/climate/log";
 import {EnergyCopyError, resetEnergyCurrentLocked, stageEnergyArchive} from "@/lib/energy/archive";
 import {logEnergy} from "@/lib/energy/log";
+import {AiSummaryCopyError, resetAiSummaryCurrentLocked, stageAiSummaryArchive} from "@/lib/ai-summary/archive";
+import {logAiSummary} from "@/lib/ai-summary/log";
+import {sanitizeError} from "@/lib/logging/redact";
 import {
     IMAGE_EXTENSIONS,
     VIDEO_EXTENSIONS,
@@ -352,8 +357,18 @@ async function retryLiveReset(
     }
     try {
         await resetEnergyCurrentLocked();
-    } catch {
-        logEnergy("energy_reset_failed");
+    } catch (error) {
+        logEnergy("energy_reset_failed", {err: sanitizeError(error)});
+    }
+    try {
+        await resetClimateCurrentLocked();
+    } catch (error) {
+        logClimate("climate_reset_failed", {err: sanitizeError(error)});
+    }
+    try {
+        await resetAiSummaryCurrentLocked();
+    } catch (error) {
+        logAiSummary("ai_summary_reset_failed", {err: sanitizeError(error)});
     }
     try {
         await removeLiveMedia(sources);
@@ -409,6 +424,8 @@ async function completeCurrentGrowUnlocked(
         await copyFiles(sources.timelapseDir, timelapseFiles, path.join(stagingRoot, "timelapse"));
         await copyFiles(sources.picturesDir, pictureFiles, path.join(stagingRoot, "pictures"));
         await stageEnergyArchive(stagingRoot, grow.id, archive.archivedAt);
+        await stageClimateArchive(stagingRoot, grow.id, archive.archivedAt, grow.details.seededAt);
+        await stageAiSummaryArchive(stagingRoot, grow.id, archive.archivedAt, grow.details.seededAt);
         await atomicWriteFile(
             path.join(stagingRoot, "grow.json"),
             JSON.stringify(archive, null, 2),
@@ -422,8 +439,18 @@ async function completeCurrentGrowUnlocked(
         }
         try {
             await resetEnergyCurrentLocked();
-        } catch {
-            logEnergy("energy_reset_failed");
+        } catch (error) {
+            logEnergy("energy_reset_failed", {err: sanitizeError(error)});
+        }
+        try {
+            await resetClimateCurrentLocked();
+        } catch (error) {
+            logClimate("climate_reset_failed", {err: sanitizeError(error)});
+        }
+        try {
+            await resetAiSummaryCurrentLocked();
+        } catch (error) {
+            logAiSummary("ai_summary_reset_failed", {err: sanitizeError(error)});
         }
 
         const cleanup = await Promise.allSettled([
@@ -444,9 +471,13 @@ async function completeCurrentGrowUnlocked(
             error:
                 error instanceof EnergyCopyError
                     ? "energy_copy_failed"
-                    : error instanceof Error
-                      ? error.message
-                      : String(error),
+                    : error instanceof ClimateCopyError
+                      ? "climate_copy_failed"
+                      : error instanceof AiSummaryCopyError
+                        ? "ai_summary_copy_failed"
+                        : error instanceof Error
+                          ? error.message
+                          : String(error),
         };
     }
 }

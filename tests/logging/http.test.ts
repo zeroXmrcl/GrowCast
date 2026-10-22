@@ -102,6 +102,24 @@ describe("docker compose listen address", () => {
     assert.doesNotMatch(yml, /GrowCast-Timelapse\/GrowCast-Timelapse\/\.env/);
     assert.match(yml, /required:\s*false/);
     assert.doesNotMatch(yml, /profiles:/);
+    assert.doesNotMatch(yml, /^\s*-\s*\/data\/climate\s*$/m);
+    assert.doesNotMatch(yml, /^\s*-\s*\/data\/ai-summary\s*$/m);
+    assert.doesNotMatch(yml, /^\s*-\s*\/data\/archives\s*$/m);
+    assert.doesNotMatch(yml, /^\s*-\s*\/data\/energy\s*$/m);
+    assert.doesNotMatch(yml, /^\s*-\s*\/data\/setup\s*$/m);
+  });
+
+  it("creates data dirs before chown so sidecar mounts cannot steal ownership", async () => {
+    const {readFile} = await import("node:fs/promises");
+    const sh = await readFile(new URL("../../docker-entrypoint.sh", import.meta.url), "utf8");
+    const mkdirAt = sh.indexOf("mkdir -p");
+    const chownAt = sh.indexOf("chown -R growcast:growcast");
+    assert.ok(mkdirAt >= 0 && chownAt > mkdirAt);
+    assert.match(sh, /\/app\/data\/climate\/current/);
+    assert.match(sh, /\/app\/data\/ai-summary/);
+    assert.match(sh, /\/app\/data\/archives/);
+    assert.match(sh, /\/app\/data\/energy/);
+    assert.match(sh, /\/app\/data\/setup/);
   });
 
   it("does not recursively chown /app/extensions in the entrypoint", async () => {

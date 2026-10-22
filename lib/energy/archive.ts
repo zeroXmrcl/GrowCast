@@ -3,6 +3,7 @@ import {readFile} from "node:fs/promises";
 import {asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {logEnergy} from "@/lib/energy/log";
+import {sanitizeError} from "@/lib/logging/redact";
 import {accrueEnergyPending, withEnergyAccrueLock} from "@/lib/energy/accrue";
 import {archiveEnergyFile} from "@/lib/energy/paths";
 import {
@@ -135,8 +136,8 @@ export async function stageEnergyArchive(
     try {
         try {
             await accrueEnergyPending();
-        } catch {
-            logEnergy("energy_accrue_failed");
+        } catch (error) {
+            logEnergy("energy_accrue_failed", {err: sanitizeError(error)});
         }
         const payload = await buildEnergyArchivePayload(growId, endedAt);
         await atomicWriteFile(

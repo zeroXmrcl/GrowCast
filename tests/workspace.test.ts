@@ -69,6 +69,8 @@ describe("workspace morph", () => {
         assert.equal(WORKSPACE_CAM_ENERGY_PX, 320);
         assert.doesNotMatch(home, /OverlayCamera/);
         assert.match(home, /LiveTentRow climateTick=\{grow\.climateTick\}/);
+        assert.match(home, /AiSummaryCard/);
+        assert.match(home, /readAiSummaryPublic/);
         assert.doesNotMatch(energy, /<h1/);
         assert.doesNotMatch(energy, /py-10/);
         assert.doesNotMatch(energy, /buildEnergyDto/);
@@ -83,6 +85,7 @@ describe("workspace morph", () => {
         const row = src(path.join("components", "live-tent-row.tsx"));
         const pictures = src(path.join("components", "dash-pictures.tsx"));
         const frame = src(path.join("components", "workspace-frame.tsx"));
+        const aiCard = src(path.join("components", "ai-summary-card.tsx"));
         assert.match(css, /view-transition-name: vt-cam/);
         assert.match(css, /view-transition-name: vt-side/);
         assert.match(css, /view-transition-name: vt-mid/);
@@ -132,6 +135,11 @@ describe("workspace morph", () => {
         assert.match(home, /WORKSPACE_VT\.flow/);
         assert.match(home, /WORKSPACE_VT\.table/);
         assert.match(home, /WORKSPACE_VT\.socials/);
+        assert.match(aiCard, /No assessment yet/);
+        assert.match(aiCard, /WORKSPACE_AREA\.ai/);
+        assert.match(aiCard, /WORKSPACE_VT\.ai/);
+        assert.match(css, /growcast-area-ai/);
+        assert.match(css, /grid-area: ai/);
         assert.match(row, /WORKSPACE_VT\.mid/);
         assert.match(pictures, /WORKSPACE_VT\.water/);
         assert.match(scoreboard, /WORKSPACE_VT\.side/);

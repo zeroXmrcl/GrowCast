@@ -8,7 +8,7 @@ export const WORKSPACE_EASING = OVERLAY_EASING_ENTER;
 export const WORKSPACE_CAM_ENERGY_PX = 320;
 
 export const WORKSPACE_BOARD_CLASS =
-    "growcast-board overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950";
+    "growcast-board relative overflow-hidden border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950";
 
 export const WORKSPACE_HAIRLINE = "border-zinc-200 dark:border-zinc-800";
 export const WORKSPACE_SPLIT_B = `border-b ${WORKSPACE_HAIRLINE}`;
@@ -23,6 +23,7 @@ export const WORKSPACE_AREA = {
     details: "growcast-area-details",
     live: "growcast-area-live",
     run: "growcast-area-run",
+    ai: "growcast-area-ai",
     pics: "growcast-area-pics",
     setup: "growcast-area-setup",
     socials: "growcast-area-socials",
@@ -42,6 +43,7 @@ export const WORKSPACE_VT = {
     side: "vt-side",
     mid: "vt-mid",
     flow: "vt-flow",
+    ai: "vt-ai",
     water: "vt-water",
     table: "vt-table",
     socials: "vt-socials",

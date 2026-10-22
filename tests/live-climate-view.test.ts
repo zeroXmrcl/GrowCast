@@ -69,9 +69,10 @@ describe("shouldShowLiveRow", () => {
 });
 
 describe("homepage live-climate gate", () => {
-    it("does not render LiveTentRow unless hasGgsLiveUi is true", () => {
+    it("renders LiveTentRow for a GGS snapshot or a local climate preview", () => {
         const src = readFileSync(path.join(process.cwd(), "app", "(site)", "page.tsx"), "utf8");
         assert.match(src, /hasGgsLiveUi\(/);
+        assert.match(src, /devClimatePreviewEnabled\(/);
         assert.match(src, /showLiveClimate\s*\?\s*\(?\s*<LiveTentRow/);
         assert.match(src, /LiveTentRow climateTick=\{grow\.climateTick\}/);
         assert.doesNotMatch(src, /LiveTentRow climate=\{/);

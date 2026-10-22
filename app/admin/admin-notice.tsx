@@ -258,6 +258,31 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "No controller found",
         body: "Spider Farmer accepted the login and returned no controllers.",
     },
+    ai_summary_ready: {
+        tone: "success",
+        title: "AI Assessment updated",
+        body: "The public card now shows the new score. The plant photo is not published.",
+    },
+    ai_summary_failed: {
+        tone: "danger",
+        title: "AI Assessment failed",
+        body: "xAI did not answer or the JSON was invalid. Check the logs and try again later.",
+    },
+    ai_summary_rate_limited: {
+        tone: "warning",
+        title: "Please wait",
+        body: "Regenerate is limited to once every 10 minutes so unused API spend stays low.",
+    },
+    ai_summary_no_key: {
+        tone: "warning",
+        title: "XAI_API_KEY is missing",
+        body: "Set XAI_API_KEY in .env.local (server only) and restart GrowCast.",
+    },
+    ai_summary_daily_cap: {
+        tone: "warning",
+        title: "Daily cap reached",
+        body: "At most 5 xAI calls per Berlin day (scheduler and regenerate combined). Try again tomorrow or check the logs.",
+    },
 };
 
 export function adminNoticeContent(notice: string): NoticeContent | null {
