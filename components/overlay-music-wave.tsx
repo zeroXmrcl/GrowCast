@@ -89,9 +89,12 @@ export default function OverlayMusicWave({layout}: {layout: OverlayLayout}) {
     const lookRef = useRef(musicLook);
     const barsRef = useRef(waveBars);
     const timeRef = useRef({currentTime, duration});
-    lookRef.current = musicLook;
-    barsRef.current = waveBars;
-    timeRef.current = {currentTime, duration};
+
+    useEffect(() => {
+        lookRef.current = musicLook;
+        barsRef.current = waveBars;
+        timeRef.current = {currentTime, duration};
+    }, [musicLook, waveBars, currentTime, duration]);
 
     useEffect(() => {
         if (!active || !analyser) {

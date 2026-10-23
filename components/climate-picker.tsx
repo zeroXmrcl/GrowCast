@@ -1,6 +1,6 @@
 "use client";
 
-import {useLayoutEffect, useRef, useSyncExternalStore} from "react";
+import {useState, useSyncExternalStore} from "react";
 import {
     CLIMATE_TICK_EASING,
     climateTickDurationMs,
@@ -43,18 +43,18 @@ export default function ClimatePickerValue({
     size?: "overlay" | "dash";
 }) {
     const reduced = usePrefersReducedMotion();
-    const lastIndex = useRef<number | null>(null);
+    const [track, setTrack] = useState<{last: number | null; dist: number}>({
+        last: null,
+        dist: 0,
+    });
     const labels = climateTickLabels(kind);
     const dash = size === "dash";
     const idx = value === null ? null : climateTickIndex(kind, value);
-    const prev = lastIndex.current;
-    const dist = idx === null || prev === null ? 0 : Math.abs(idx - prev);
-
-    useLayoutEffect(() => {
-        if (idx !== null) {
-            lastIndex.current = idx;
-        }
-    }, [idx]);
+    let dist = track.dist;
+    if (idx !== null && idx !== track.last) {
+        dist = track.last === null ? 0 : Math.abs(idx - track.last);
+        setTrack({last: idx, dist});
+    }
 
     if (value === null) {
         return (
