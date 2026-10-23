@@ -1,5 +1,6 @@
 import type {EnergyFlowRow, EnergyFlowView} from "@/lib/energy/types";
-import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
+import {PUBLIC_AXIS_LABEL} from "@/lib/public-ui";
+import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_TITLE, WORKSPACE_VT} from "@/lib/workspace";
 
 function padHour(hour: number): string {
     return String(hour).padStart(2, "0");
@@ -57,8 +58,9 @@ export default function EnergyFlowmap({
                     : "rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
             }
         >
+            <h2 className={WORKSPACE_TITLE}>Runtime</h2>
             {flow.rows.length === 0 ? (
-                <p className="text-sm text-zinc-500 dark:text-zinc-400">No actuator runtime yet.</p>
+                <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">No actuator runtime yet.</p>
             ) : (
                 <div className="space-y-2">
                     {flow.rows.map((row) => {
@@ -68,7 +70,7 @@ export default function EnergyFlowmap({
                                 key={`${row.name}:${row.id}`}
                                 className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-3"
                             >
-                                <p className={`truncate rounded-lg px-2 py-1 text-[11px] ${nodeClass(row)}`}>
+                                <p className={`truncate rounded-md px-2 py-1 text-xs ${nodeClass(row)}`}>
                                     {row.label}
                                     {last?.mark ? ` ${last.mark}` : ""}
                                 </p>
@@ -77,7 +79,7 @@ export default function EnergyFlowmap({
                         );
                     })}
                     {hours.length > 0 ? (
-                        <div className="flex justify-between pl-[7.75rem] font-mono text-[10px] leading-none text-zinc-400">
+                        <div className={`flex justify-between pl-[7.75rem] font-mono ${PUBLIC_AXIS_LABEL}`}>
                             <span>{padHour(start)}</span>
                             <span>{padHour(mid)}</span>
                             <span>{padHour(end)}</span>

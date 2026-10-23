@@ -4,7 +4,6 @@ import type {ReactNode} from "react";
 import {useRef} from "react";
 import {usePathname} from "next/navigation";
 import OverlayCamera from "@/components/overlay-camera";
-import SiteFooter from "@/components/site-footer";
 import {BroadcastToast} from "@/components/broadcast-toast";
 import EnergyScoreboard from "@/components/energy-scoreboard";
 import {useWorkspaceNav} from "@/components/workspace-nav";
@@ -42,10 +41,11 @@ export default function WorkspaceFrame({
 
     return (
         <main className="flex flex-1 flex-col py-4">
+            {energy ? <h1 className="sr-only">Energy</h1> : null}
             <div className={`${WORKSPACE_BOARD_CLASS} ${WORKSPACE_VT.board}`} data-page={page}>
                 {showGrowName ? (
-                    <div className={`${WORKSPACE_AREA.name} ${WORKSPACE_VT.name} px-4 py-3`}>
-                        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+                    <div className={`${WORKSPACE_AREA.name} ${WORKSPACE_VT.name} px-4 py-3 sm:px-6`}>
+                        <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
                             {growName}
                         </h1>
                     </div>
@@ -54,8 +54,11 @@ export default function WorkspaceFrame({
                     {streamUrl ? (
                         <OverlayCamera streamUrl={streamUrl} look={look} />
                     ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-zinc-800 text-zinc-100">
-                            <p>No Stream configured</p>
+                        <div className="flex h-full w-full flex-col items-center justify-center bg-zinc-900 px-6 text-center">
+                            <p className="text-base font-medium text-zinc-100">Live view unavailable</p>
+                            <p className="mt-2 max-w-xs text-sm leading-6 text-zinc-400">
+                                No stream is configured for this grow.
+                            </p>
                         </div>
                     )}
                 </div>
@@ -64,7 +67,6 @@ export default function WorkspaceFrame({
                     <EnergyScoreboard />
                 </div>
             </div>
-            <SiteFooter />
             {energy ? null : <BroadcastToast />}
         </main>
     );

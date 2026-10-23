@@ -1,5 +1,13 @@
 import {isDateOnly} from "@/lib/date-only";
 
+/** Sentinel / blank seeding dates are not a real grow start. */
+export function hasGrowStartDate(value: string): boolean {
+    if (!value.trim()) {
+        return false;
+    }
+    return formatDateDisplay(value) !== "01.01.2001";
+}
+
 export function formatDateDisplay(value: string): string {
     if (isDateOnly(value)) {
         const [year, month, day] = value.split("-");

@@ -1,7 +1,8 @@
 import {getCurrentGrow} from "@/lib/db";
 import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
-import {formatDateDisplay} from "@/app/(site)/grows/format";
+import {formatDateDisplay, hasGrowStartDate} from "@/app/(site)/grows/format";
+import {PUBLIC_FOCUS, PUBLIC_HIT, PUBLIC_MEDIA_LINK} from "@/lib/public-ui";
 import {hasGgsLiveUi} from "@/lib/ggs-live-store";
 import {getDaysSince} from "@/utils/daysSinceSeeding";
 import {listMediaUrls} from "@/lib/media-library";
@@ -65,6 +66,15 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
     );
 }
 
+function DetailRow({label, value}: {label: string; value: string}) {
+    return (
+        <div className="flex justify-between gap-3">
+            <dt className="text-zinc-500 dark:text-zinc-400">{label}</dt>
+            <dd className="text-right text-zinc-900 dark:text-zinc-100">{value}</dd>
+        </div>
+    );
+}
+
 export default async function Home() {
     const [grow, setupImages, showLiveClimate] = await Promise.all([
         getCurrentGrow(),
@@ -104,57 +114,73 @@ export default async function Home() {
             iconSrc: "/globe.svg",
         },
     ].filter(({href}) => href.length > 0);
+    const startDate = hasGrowStartDate(details.seededAt)
+        ? formatDateDisplay(details.seededAt)
+        : null;
+    const health = grow.status.health.trim();
+    const vitalNotes = grow.status.notes.trim();
+    const hasDetails =
+        Boolean(grow.plant)
+        || Boolean(details.strain)
+        || grow.plantAmount !== 0
+        || Boolean(grow.growSetup.growingMedium)
+        || grow.growSetup.potSizeLiters !== 0
+        || grow.climate.temperatureDay !== 0
+        || grow.climate.temperatureNight !== 0
+        || grow.climate.humidityDay !== 0
+        || grow.climate.humidityNight !== 0
+        || Boolean(startDate)
+        || Boolean(details.notes.trim());
+    const hasStatus =
+        Boolean(details.stage.trim())
+        || startDate !== null
+        || Boolean(details.lightSchedule.trim());
 
     return (
         <>
             <aside className={`${WORKSPACE_AREA.details} ${WORKSPACE_VT.side} ${WORKSPACE_PAD}`}>
                 <h2 className={WORKSPACE_TITLE}>Details</h2>
-                <dl className="space-y-3 text-sm">
-                    {grow.plant && (<div className="flex justify-between gap-3">
-                        <dt className="text-zinc-500 dark:text-zinc-400">Plant</dt>
-                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plant}</dd>
-                    </div>)}
-                    {details.strain && (<div className="flex justify-between gap-3">
-                        <dt className="text-zinc-500 dark:text-zinc-400">Strain</dt>
-                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.strain}</dd>
-                    </div>)}
-                    {(grow.plantAmount != 0) && (<div className="flex justify-between gap-3">
-                        <dt className="text-zinc-500 dark:text-zinc-400">Plant Count</dt>
-                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.plantAmount}</dd>
-                    </div>)}
-                    {grow.growSetup.growingMedium && (<div className="flex justify-between gap-3">
-                        <dt className="text-zinc-500 dark:text-zinc-400">Growing Medium</dt>
-                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.growingMedium}</dd>
-                    </div>)}
-                    {(grow.growSetup.potSizeLiters != 0) && (<div className="flex justify-between gap-3">
-                        <dt className="text-zinc-500 dark:text-zinc-400">Pot Size</dt>
-                        <dd className="text-right text-zinc-900 dark:text-zinc-100">{grow.growSetup.potSizeLiters}</dd>
-                    </div>)}
-                    <DayOrNight
-                        label="Temperature"
-                        day={grow.climate.temperatureDay}
-                        night={grow.climate.temperatureNight}
-                        unit=" C"
-                    />
-                    <DayOrNight
-                        label="Humidity"
-                        day={grow.climate.humidityDay}
-                        night={grow.climate.humidityNight}
-                        unit="%"
-                    />
-                    {(formatDateDisplay(details.seededAt) != '01.01.2001') && (
-                        <div className="flex justify-between gap-3">
-                            <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
-                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatDateDisplay(details.seededAt)}</dd>
-                        </div>)}
-                </dl>
-                {details.notes && (
-                    <div
-                        className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
-                        <ReactMarkdown urlTransform={markdownUrlTransform}>
-                            {details.notes}
-                        </ReactMarkdown>
-                    </div>)}
+                {hasDetails ? (
+                    <>
+                        <dl className="space-y-3 text-sm">
+                            {grow.plant ? <DetailRow label="Plant" value={grow.plant} /> : null}
+                            {details.strain ? <DetailRow label="Strain" value={details.strain} /> : null}
+                            {grow.plantAmount !== 0 ? (
+                                <DetailRow label="Plant Count" value={String(grow.plantAmount)} />
+                            ) : null}
+                            {grow.growSetup.growingMedium ? (
+                                <DetailRow label="Growing Medium" value={grow.growSetup.growingMedium} />
+                            ) : null}
+                            {grow.growSetup.potSizeLiters !== 0 ? (
+                                <DetailRow label="Pot Size" value={`${grow.growSetup.potSizeLiters} L`} />
+                            ) : null}
+                            <DayOrNight
+                                label="Temperature"
+                                day={grow.climate.temperatureDay}
+                                night={grow.climate.temperatureNight}
+                                unit=" C"
+                            />
+                            <DayOrNight
+                                label="Humidity"
+                                day={grow.climate.humidityDay}
+                                night={grow.climate.humidityNight}
+                                unit="%"
+                            />
+                            {startDate ? <DetailRow label="Start Date" value={startDate} /> : null}
+                        </dl>
+                        {details.notes ? (
+                            <div className="mt-5 border-t border-zinc-200 pt-4 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 whitespace-pre-line">
+                                <ReactMarkdown urlTransform={markdownUrlTransform}>
+                                    {details.notes}
+                                </ReactMarkdown>
+                            </div>
+                        ) : null}
+                    </>
+                ) : (
+                    <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                        No grow details yet.
+                    </p>
+                )}
             </aside>
 
             {showLiveClimate ? (
@@ -164,32 +190,37 @@ export default async function Home() {
             <section className={`${WORKSPACE_AREA.run} ${WORKSPACE_VT.flow} grid lg:grid-cols-2`}>
                 <article className={`${WORKSPACE_PAD} ${WORKSPACE_SPLIT_MID}`}>
                     <h2 className={WORKSPACE_TITLE}>Status</h2>
-                    <dl className="space-y-3 text-sm">
-                        <div className="flex justify-between gap-3">
-                            <dt className="text-zinc-500 dark:text-zinc-400">Stage</dt>
-                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.stage}</dd>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                            <dt className="text-zinc-500 dark:text-zinc-400">Age</dt>
-                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{getDaysSince(details.seededAt)} days</dd>
-                        </div>
-                        {details.lightSchedule && (<div className="flex justify-between gap-3">
-                            <dt className="text-zinc-500 dark:text-zinc-400">Light Schedule</dt>
-                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.lightSchedule}</dd>
-                        </div>)}
-                    </dl>
+                    {hasStatus ? (
+                        <dl className="space-y-3 text-sm">
+                            {details.stage.trim() ? <DetailRow label="Stage" value={details.stage} /> : null}
+                            {startDate ? (
+                                <DetailRow label="Age" value={`${getDaysSince(details.seededAt)} days`} />
+                            ) : null}
+                            {details.lightSchedule.trim() ? (
+                                <DetailRow label="Light Schedule" value={details.lightSchedule} />
+                            ) : null}
+                        </dl>
+                    ) : (
+                        <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                            No status for this grow yet.
+                        </p>
+                    )}
                 </article>
 
                 <article className={WORKSPACE_PAD}>
                     <h2 className={WORKSPACE_TITLE}>Vitals</h2>
                     <div className="space-y-3 text-sm">
                         <div>
-                            <p className="text-zinc-500 dark:text-zinc-400">Status</p>
-                            <p className={`mt-1 text-lg font-semibold ${getHealthColor(grow.status.health)}`}>{grow.status.health}</p>
+                            <p className="text-zinc-500 dark:text-zinc-400">Health</p>
+                            <p className={`mt-1 text-lg font-semibold tracking-tight ${health ? getHealthColor(health) : "text-zinc-600 dark:text-zinc-400"}`}>
+                                {health || "No health update yet."}
+                            </p>
                         </div>
                         <div>
                             <p className="text-zinc-500 dark:text-zinc-400">Notes</p>
-                            <p className="mt-1 whitespace-pre-wrap text-zinc-900 dark:text-zinc-100">{grow.status.notes || "-"}</p>
+                            <p className={`mt-1 whitespace-pre-wrap ${vitalNotes ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-600 dark:text-zinc-400"}`}>
+                                {vitalNotes || "No notes yet."}
+                            </p>
                         </div>
                     </div>
                 </article>
@@ -204,7 +235,7 @@ export default async function Home() {
                     </h2>
 
                     {grow.growSetup.setupText?.trim() ? (
-                        <div className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
+                        <div className="whitespace-pre-wrap text-sm leading-6 text-zinc-700 dark:text-zinc-300">
                             <ReactMarkdown urlTransform={markdownUrlTransform}>
                                 {grow.growSetup.setupText}
                             </ReactMarkdown>
@@ -212,21 +243,21 @@ export default async function Home() {
                     ) : null}
 
                     {setupImages.length > 0 && (
-                        <div className="-mx-4 -mb-4 mt-4 grid grid-cols-2 sm:-mx-[18px] sm:-mb-[18px] md:grid-cols-3">
+                        <div className="-mx-4 -mb-4 mt-4 grid grid-cols-2 sm:-mx-6 sm:-mb-6 md:grid-cols-3">
                             {setupImages.map((src, index) => (
                                 <a
                                     key={src}
                                     href={src}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className={`overflow-hidden ${
+                                    className={`${PUBLIC_MEDIA_LINK} overflow-hidden ${
                                         index < setupImages.length - 1 ? `border-r ${WORKSPACE_HAIRLINE}` : ""
                                     } max-md:nth-[2n]:border-r-0 md:nth-[3n]:border-r-0`}
                                 >
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={src}
-                                        alt=""
+                                        alt={`Grow setup photo ${index + 1}`}
                                         className="h-full w-full object-cover"
                                         loading="lazy"
                                     />
@@ -248,7 +279,7 @@ export default async function Home() {
                                 title={label}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="group inline-flex  items-center justify-center transition-colors"
+                                className={`group ${PUBLIC_HIT} rounded-md ${PUBLIC_FOCUS} text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100`}
                             >
                                 <Image
                                     src={iconSrc}
