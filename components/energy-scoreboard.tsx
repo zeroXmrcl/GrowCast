@@ -74,7 +74,7 @@ function readPersistedWindowKey(slot: string): WindowKey {
 }
 
 function usePersistedWindowKey(slot: string): [WindowKey, (key: WindowKey) => void] {
-    const windowKey = useSyncExternalStore(
+    const windowKey = useSyncExternalStore<WindowKey>(
         (onChange) => subscribePersistedWindowKey(slot, onChange),
         () => readPersistedWindowKey(slot),
         () => "today",
