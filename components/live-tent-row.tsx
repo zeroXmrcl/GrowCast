@@ -24,14 +24,16 @@ export default function LiveTentRow({
     const {snapshot, stale} = useLiveClimate();
     const [climateTick, setClimateTick] = useState(initialTick);
     const [devicesDesign, setDevicesDesign] = useState(initialDesign);
-
-    useEffect(() => {
+    const [prevTick, setPrevTick] = useState(initialTick);
+    const [prevDesign, setPrevDesign] = useState(initialDesign);
+    if (initialTick !== prevTick) {
+        setPrevTick(initialTick);
         setClimateTick(initialTick);
-    }, [initialTick]);
-
-    useEffect(() => {
+    }
+    if (initialDesign !== prevDesign) {
+        setPrevDesign(initialDesign);
         setDevicesDesign(initialDesign);
-    }, [initialDesign]);
+    }
 
     useEffect(() => {
         const abort = new AbortController();

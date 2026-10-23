@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useEffect, useState, useSyncExternalStore} from "react";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/lib/energy/berlin";
 import {ENERGY_POLL_MS, fetchEnergyDto, shouldPollEnergy} from "@/lib/energy/poll";
@@ -44,21 +44,44 @@ function persistWindowKey(slot: string, key: WindowKey): void {
     }
 }
 
-function usePersistedWindowKey(slot: string): [WindowKey, (key: WindowKey) => void] {
-    const [windowKey, setWindowKey] = useState<WindowKey>("today");
-    useEffect(() => {
-        try {
-            const saved = parseWindowKey(sessionStorage.getItem(slot));
-            if (saved) {
-                setWindowKey(saved);
-            }
-        } catch {
-            // private mode
+const persistListeners = new Map<string, Set<() => void>>();
+
+function subscribePersistedWindowKey(slot: string, onChange: () => void): () => void {
+    let listeners = persistListeners.get(slot);
+    if (!listeners) {
+        listeners = new Set();
+        persistListeners.set(slot, listeners);
+    }
+    listeners.add(onChange);
+    return () => {
+        listeners.delete(onChange);
+        if (listeners.size === 0) {
+            persistListeners.delete(slot);
         }
-    }, [slot]);
+    };
+}
+
+function notifyPersistedWindowKey(slot: string): void {
+    persistListeners.get(slot)?.forEach((listener) => listener());
+}
+
+function readPersistedWindowKey(slot: string): WindowKey {
+    try {
+        return parseWindowKey(sessionStorage.getItem(slot)) ?? "today";
+    } catch {
+        return "today";
+    }
+}
+
+function usePersistedWindowKey(slot: string): [WindowKey, (key: WindowKey) => void] {
+    const windowKey = useSyncExternalStore(
+        (onChange) => subscribePersistedWindowKey(slot, onChange),
+        () => readPersistedWindowKey(slot),
+        () => "today",
+    );
     function onWindowKey(key: WindowKey) {
-        setWindowKey(key);
         persistWindowKey(slot, key);
+        notifyPersistedWindowKey(slot);
     }
     return [windowKey, onWindowKey];
 }
@@ -440,9 +463,11 @@ function EnergyGraphCard({
 
 function usePolledEnergyDto(initial: EnergyPublicDto | null): EnergyPublicDto | null {
     const [dto, setDto] = useState(initial);
-    useEffect(() => {
+    const [prevInitial, setPrevInitial] = useState(initial);
+    if (initial !== prevInitial) {
+        setPrevInitial(initial);
         setDto(initial);
-    }, [initial]);
+    }
     useEffect(() => {
         let cancelled = false;
         async function tick() {
