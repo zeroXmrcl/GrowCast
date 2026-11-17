@@ -10,8 +10,6 @@ function src(rel: string): string {
 }
 
 const allOn: NavFlags = {
-    showEnergy: true,
-    showGallery: true,
     showPastGrows: true,
     showSettingsLink: true,
 };
@@ -32,36 +30,28 @@ describe("admin settings split", () => {
         }
     });
 
-    it("lists admin page routes instead of hash links", () => {
+    it("lists generic admin routes and loads extra plugin pages from the host", () => {
         const chromeSrc = src(path.join("app", "admin", "admin-chrome.tsx"));
         assert.match(chromeSrc, /href: "\/admin"/);
-        assert.match(chromeSrc, /href: "\/admin\/stream"/);
-        assert.match(chromeSrc, /href: "\/admin\/timelapse"/);
-        assert.match(chromeSrc, /href: "\/admin\/ggs"/);
         assert.match(chromeSrc, /href: "\/admin\/plugins"/);
         assert.match(chromeSrc, /href: "\/admin\/archives"/);
         assert.match(chromeSrc, /href: "\/admin\/security"/);
         assert.match(chromeSrc, /label: "Grow"/);
-        assert.match(chromeSrc, /label: "Broadcast"/);
-        assert.match(chromeSrc, /label: "Timelapse"/);
-        assert.match(chromeSrc, /label: "GGS"/);
         assert.match(chromeSrc, /label: "Plugins"/);
         assert.match(chromeSrc, /label: "Archives"/);
         assert.match(chromeSrc, /label: "Security"/);
+        assert.match(chromeSrc, /pluginAdminNavItems/);
+        assert.doesNotMatch(chromeSrc, /label: "Broadcast"/);
+        assert.doesNotMatch(chromeSrc, /label: "Timelapse"/);
+        assert.doesNotMatch(chromeSrc, /label: "GGS"/);
         assert.doesNotMatch(chromeSrc, /href: "#[a-z]+"/);
         assert.doesNotMatch(chromeSrc, /hidden lg:block/);
         assert.match(chromeSrc, /AdminSectionNav/);
-        assert.equal([...chromeSrc.matchAll(/href: "\/admin(?:\/[a-z]+)?"/g)].length, 7);
     });
 
-    it("keeps stream/overlay/twitch/timelapse/energy/complete-grow off the Grow form", () => {
+    it("keeps twitch/timelapse/energy/complete-grow off the Grow form", () => {
         const growFields = src(path.join("app", "admin", "settings-fields.tsx"));
         const growPage = src(path.join("app", "admin", "page.tsx"));
-        assert.doesNotMatch(growFields, /name="streamUrl"/);
-        assert.doesNotMatch(growFields, /name="overlayLayout"/);
-        assert.doesNotMatch(growFields, /name="overlayStream"/);
-        assert.doesNotMatch(growFields, /name="climateTick"/);
-        assert.doesNotMatch(growFields, /name="showGrowName"/);
         assert.doesNotMatch(growFields, /id="twitch"/);
         assert.doesNotMatch(growFields, /timelapsePaused/);
         assert.doesNotMatch(growFields, /energyPublicTariff/);
@@ -70,16 +60,17 @@ describe("admin settings split", () => {
         assert.doesNotMatch(growPage, /RestreamPanel/);
         assert.doesNotMatch(growPage, /GROWCAST_RESTREAM_STREAM_URL/);
         assert.match(growPage, /GrowSettingsFields/);
+        assert.match(growPage, /StreamSettingsFields/);
         assert.match(growPage, /MediaManager/);
         assert.match(growFields, /name="showSettingsLink"/);
     });
 
-    it("renders OverlayHud on Stream as include+lockStream using grow.streamUrl", () => {
-        const programPage = src(path.join("app", "program", "page.tsx"));
-        const scene = src(path.join("components", "program-scene.tsx"));
-        const lookHud = src(path.join("components", "program-camera-look.tsx"));
-        const monitor = src(path.join("app", "admin", "program-monitor.tsx"));
-        const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
+    it("renders OverlayHud on the program scene as include+lockStream using grow.streamUrl", () => {
+        const programPage = src(path.join("plugins", "restream", "pages", "program.tsx"));
+        const scene = src(path.join("plugins", "restream", "ui", "program-scene.tsx"));
+        const lookHud = src(path.join("plugins", "restream", "ui", "program-camera-look.tsx"));
+        const monitor = src(path.join("plugins", "restream", "admin", "program-monitor.tsx"));
+        const streamPage = src(path.join("plugins", "restream", "admin", "page.tsx"));
         assert.match(lookHud, /overlayStream="include"/);
         assert.match(scene, /ProgramCameraLook/);
         assert.match(scene, /lockStream/);
@@ -92,7 +83,7 @@ describe("admin settings split", () => {
         assert.match(streamPage, /ProgramMonitor/);
         assert.doesNotMatch(streamPage, /StreamPreview/);
         assert.doesNotMatch(streamPage, /capture\?token/);
-        assert.match(monitor, /src="\/program"/);
+        assert.match(monitor, /src="\/p\/restream\/program"/);
         assert.doesNotMatch(monitor, /token=/);
         assert.doesNotMatch(streamPage, /capture\.token/);
         assert.doesNotMatch(streamPage, /GROWCAST_RESTREAM_TOKEN/);
@@ -109,19 +100,16 @@ describe("admin settings split", () => {
         assert.match(archives, /redirect\("\/admin"\)/);
     });
 
-    it("maps leftover #twitch to /admin/stream", () => {
-        const helper = src(path.join("app", "admin", "hash-redirects.ts"));
-        assert.equal(ADMIN_HASH_REDIRECTS["#twitch"], "/admin/stream");
-        assert.equal(ADMIN_HASH_REDIRECTS["#stream"], "/admin/stream");
-        assert.equal(ADMIN_HASH_REDIRECTS["#overlay"], "/admin/stream");
-        assert.equal(ADMIN_HASH_REDIRECTS["#timelapse"], "/admin/timelapse");
-        assert.equal(ADMIN_HASH_REDIRECTS["#energy"], "/admin/ggs");
+    it("maps leftover admin hashes to plugin admin pages", () => {
+        assert.equal(ADMIN_HASH_REDIRECTS["#twitch"], "/admin/plugins/growcast.restream");
+        assert.equal(ADMIN_HASH_REDIRECTS["#stream"], "/admin/plugins/growcast.restream");
+        assert.equal(ADMIN_HASH_REDIRECTS["#overlay"], "/admin");
+        assert.equal(ADMIN_HASH_REDIRECTS["#timelapse"], "/admin/plugins/growcast.timelapse");
+        assert.equal(ADMIN_HASH_REDIRECTS["#energy"], "/admin/plugins/growcast.ggs");
         assert.equal(ADMIN_HASH_REDIRECTS["#archive"], "/admin/archives");
-        assert.match(helper, /#twitch/);
-        assert.match(helper, /\/admin\/stream/);
         const growPage = src(path.join("app", "admin", "page.tsx"));
         assert.match(growPage, /AdminHashRedirect/);
-        const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
+        const streamPage = src(path.join("plugins", "restream", "admin", "page.tsx"));
         assert.doesNotMatch(streamPage, /AdminHashRedirect/);
     });
 
@@ -141,24 +129,18 @@ describe("admin settings split", () => {
         const readme = src("README.md");
         const restreamReadme = src(path.join("plugins", "restream", "README.md"));
         assert.doesNotMatch(notice, /compose profile twitch/);
-        assert.match(notice, /restream service is running/);
-        assert.match(readme, /\/admin\/stream/);
+        assert.match(notice, /plugin container is running/);
+        assert.match(readme, /\/admin\/plugins\/growcast\.restream/);
         assert.match(readme, /capture\.token/);
         assert.match(readme, /optional override/);
-        assert.match(restreamReadme, /\/admin\/stream/);
+        assert.match(restreamReadme, /\/admin\/plugins\/growcast\.restream|\/admin\/stream/);
         assert.match(restreamReadme, /capture\.token/);
         assert.match(restreamReadme, /overrides that file/);
     });
 
-    it("gates Stream, Timelapse, and GGS like archives", () => {
-        for (const rel of [
-            path.join("app", "admin", "stream", "page.tsx"),
-            path.join("app", "admin", "timelapse", "page.tsx"),
-            path.join("app", "admin", "ggs", "page.tsx"),
-        ]) {
-            const page = src(rel);
-            assert.match(page, /isAdminAuthenticated/);
-            assert.match(page, /redirect\("\/admin"\)/);
-        }
+    it("gates plugin admin pages like archives", () => {
+        const page = src(path.join("app", "admin", "plugins", "[pluginId]", "[[...path]]", "page.tsx"));
+        assert.match(page, /isAdminAuthenticated/);
+        assert.match(page, /redirect\("\/admin"\)/);
     });
 });

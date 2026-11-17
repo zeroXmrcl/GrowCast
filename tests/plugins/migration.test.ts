@@ -35,15 +35,15 @@ describe("plugin data migration", () => {
 
     it("dry-run copies nothing", async () => {
         await withFixture(async (dir) => {
-            const result = await applyPluginDataMigration({dataDir: dir, dryRun: true, enableFirstParty: false});
+            const result = await applyPluginDataMigration({dataDir: dir, dryRun: true});
             assert.ok(result.copied.length >= 5);
             assert.equal(existsSync(path.join(dir, "plugins", "growcast.ggs", "energy")), false);
         });
     });
 
-    it("apply is idempotent and preserves energy day files", async () => {
+    it("apply is idempotent, preserves energy day files, and does not delete legacy trees", async () => {
         await withFixture(async (dir) => {
-            const first = await applyPluginDataMigration({dataDir: dir, dryRun: false, enableFirstParty: false});
+            const first = await applyPluginDataMigration({dataDir: dir, dryRun: false});
             assert.ok(first.copied.length >= 5);
             const energy = await readFile(
                 path.join(dir, "plugins", "growcast.ggs", "energy", "current", "2026-11-16.json"),
@@ -54,7 +54,8 @@ describe("plugin data migration", () => {
             assert.match(live, /growcast.ggs/);
             const restream = await readFile(path.join(dir, "plugins", "growcast.restream", "control.json"), "utf8");
             assert.match(restream, /enabled/);
-            const second = await applyPluginDataMigration({dataDir: dir, dryRun: false, enableFirstParty: false});
+            assert.equal(existsSync(path.join(dir, "energy", "current", "2026-11-16.json")), true);
+            const second = await applyPluginDataMigration({dataDir: dir, dryRun: false});
             assert.equal(second.copied.length, 0);
             assert.ok(second.skipped.length >= 5);
         });

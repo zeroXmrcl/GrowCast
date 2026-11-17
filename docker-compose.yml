@@ -1,17 +1,33 @@
 # Plugin backends are started by GrowCast from compose.plugins.generated.yml
 # (docker compose -f docker-compose.yml -f compose.plugins.generated.yml).
-# The GrowCast process talks to the host Docker engine through docker.sock as
-# uid 1001. Set DOCKER_GID to the host docker group (stat -c %g /var/run/docker.sock)
-# if plugin start fails with permission denied.
+# GrowCast never mounts /var/run/docker.sock. It talks to a restricted
+# docker-socket-proxy (tecnativa/docker-socket-proxy) that only allows
+# container inspect/start/stop (CONTAINERS+POST) plus NETWORKS and IMAGES so
+# `docker compose up --no-deps --no-build` can attach plugin containers.
+# BUILD is off: build plugin images on the host, then enable the plugin in Admin.
 services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.2.0
+    restart: unless-stopped
+    environment:
+      CONTAINERS: "1"
+      POST: "1"
+      NETWORKS: "1"
+      IMAGES: "1"
+      BUILD: "0"
+      EXEC: "0"
+      VOLUMES: "0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   growcast:
     image: 0xmrcl/growcast:latest
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    group_add:
-      - "${DOCKER_GID:-0}"
+    depends_on:
+      - docker-socket-proxy
     ports:
       - "${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}:3000"
     env_file:
@@ -25,15 +41,14 @@ services:
       GROWCAST_TRUST_PROXY: "1"
       GROWCAST_BIND: ${GROWCAST_BIND:-127.0.0.1}
       GROWCAST_PORT: ${GROWCAST_PORT:-3000}
-      GROWCAST_GGS_ENV_FILE: /app/data/ggs.env
       GROWCAST_COMPOSE_DIR: /host-project
       GROWCAST_PLUGIN_RUNTIME: docker
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
     volumes:
       - ./data:/app/data
       - ./plugins:/app/plugins:ro
       - ./public/setup:/app/public/setup
       - ./public/yourPictures:/app/public/yourPictures
       - ./:/host-project
-      - /var/run/docker.sock:/var/run/docker.sock
       - ./plugins/timelapse/snapshots:/app/plugins/timelapse/snapshots
       - ./plugins/timelapse/timelapse:/app/plugins/timelapse/timelapse

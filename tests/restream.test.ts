@@ -275,8 +275,6 @@ describe("restream capture gate", () => {
 describe("restream chrome", () => {
     it("does not add Capture or Twitch to public nav", () => {
         const flags: NavFlags = {
-            showEnergy: true,
-            showGallery: true,
             showPastGrows: true,
             showSettingsLink: true,
         };
@@ -291,19 +289,19 @@ describe("restream chrome", () => {
 
     it("capture page forces include-stream and is not in public overlay chrome tests", () => {
         const captureSrc = readFileSync(
-            path.join(process.cwd(), "app", "overlay", "capture", "page.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "pages", "capture.tsx"),
             "utf8",
         );
         const sceneSrc = readFileSync(
-            path.join(process.cwd(), "components", "program-scene.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "ui", "program-scene.tsx"),
             "utf8",
         );
         const lookHudSrc = readFileSync(
-            path.join(process.cwd(), "components", "program-camera-look.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "ui", "program-camera-look.tsx"),
             "utf8",
         );
         const fieldsSrc = readFileSync(
-            path.join(process.cwd(), "app", "admin", "restream-panel.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "admin", "restream-panel.tsx"),
             "utf8",
         );
         const composeSrc = readFileSync(path.join(process.cwd(), "docker-compose.yml"), "utf8");

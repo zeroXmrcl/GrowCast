@@ -347,12 +347,10 @@ describe("programMusicGetResponse", () => {
 
 describe("program audio wiring", () => {
     it("polls from a hidden audio client and keeps admin auth in the route", () => {
-        const client = src(path.join("components", "program-audio.tsx"));
-        const scene = src(path.join("components", "program-scene.tsx"));
-        const audioRoute = src(path.join("app", "api", "overlay", "program-audio", "route.ts"));
-        const musicRoute = src(
-            path.join("app", "api", "overlay", "music", "[filename]", "route.ts"),
-        );
+        const client = src(path.join("plugins", "restream", "ui", "program-audio.tsx"));
+        const scene = src(path.join("plugins", "restream", "ui", "program-scene.tsx"));
+        const host = src(path.join("plugins", "restream", "host", "index.ts"));
+        const redirects = src(path.join("lib", "plugins", "legacy-redirects.ts"));
         const http = src(path.join("plugins", "restream", "host", "program-http.ts"));
 
         assert.match(client, /"use client"/);
@@ -379,14 +377,13 @@ describe("program audio wiring", () => {
         assert.doesNotMatch(client, /Date\.now\(\)/);
         assert.match(scene, /ProgramAudio/);
 
-        assert.match(audioRoute, /withRequestLog/);
-        assert.match(audioRoute, /isAdminAuthenticated/);
-        assert.match(audioRoute, /programAudioGetResponse/);
+        assert.match(host, /isAdminAuthenticated/);
+        assert.match(host, /programAudioGetResponse/);
         assert.match(http, /readAlertsSettings/);
         assert.match(http, /stingEnabled/);
-        assert.match(musicRoute, /withRequestLog/);
-        assert.match(musicRoute, /isAdminAuthenticated/);
-        assert.match(musicRoute, /programMusicGetResponse/);
+        assert.match(redirects, /\/api\/overlay\/program-audio/);
+        assert.match(redirects, /\/api\/overlay\/music\/:filename/);
+        assert.match(host, /programMusicGetResponse/);
         assert.doesNotMatch(http, /isAdminAuthenticated/);
         assert.doesNotMatch(http, /next\/headers/);
     });

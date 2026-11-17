@@ -177,8 +177,8 @@ describe("energy flow view", () => {
 
     it("wires the flow view into the current scoreboard and /energy card", () => {
         const scoreboard = readFileSync(path.join(process.cwd(), "plugins", "ggs", "host", "energy", "scoreboard.ts"), "utf8");
-        const page = readFileSync(path.join(process.cwd(), "components", "energy-scoreboard.tsx"), "utf8");
-        const map = readFileSync(path.join(process.cwd(), "components", "energy-flowmap.tsx"), "utf8");
+        const page = readFileSync(path.join(process.cwd(), "plugins", "ggs", "ui", "energy-scoreboard.tsx"), "utf8");
+        const map = readFileSync(path.join(process.cwd(), "plugins", "ggs", "ui", "energy-flowmap.tsx"), "utf8");
         assert.match(scoreboard, /buildEnergyFlowView/);
         assert.match(scoreboard, /flow: buildEnergyFlowView/);
         assert.match(page, /EnergyFlowmap/);

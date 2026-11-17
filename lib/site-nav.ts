@@ -1,8 +1,6 @@
 export type NavItem = {href: string; label: string};
 
 export type NavFlags = {
-    showEnergy: boolean;
-    showGallery: boolean;
     showPastGrows: boolean;
     showSettingsLink: boolean;
 };
@@ -11,13 +9,7 @@ const SETTINGS_ITEM: NavItem = {href: "/admin", label: "Settings"};
 
 export function navItemsFor(pathname: string, flags: NavFlags, extra: NavItem[] = []): NavItem[] {
     const items: NavItem[] = [{href: "/", label: "Dashboard"}];
-    if (flags.showEnergy) {
-        items.push({href: "/energy", label: "Energy"});
-    }
     items.push(...extra.filter((item) => item.href.startsWith("/p/")));
-    if (flags.showGallery) {
-        items.push({href: "/gallery", label: "Gallery"});
-    }
     if (flags.showPastGrows) {
         items.push({href: "/grows", label: "Past Grows"});
     }
@@ -26,7 +18,7 @@ export function navItemsFor(pathname: string, flags: NavFlags, extra: NavItem[] 
     }
 
     return items.filter((item) => {
-        if (item.href === "/" || item.href === "/energy") {
+        if (item.href === "/") {
             return true;
         }
         return !navItemIsActive(pathname, item.href);

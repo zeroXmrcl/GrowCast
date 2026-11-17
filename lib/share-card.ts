@@ -2,16 +2,9 @@ import {readdir, stat} from "node:fs/promises";
 import path from "node:path";
 import {getCurrentGrow} from "@/lib/db";
 import {publicRequestOrigin} from "@/lib/request-trust";
-import {SNAPSHOT_DIR, pathExists} from "@/plugins/timelapse/host/extension-status";
+import {pathExists} from "@/lib/path-exists";
 import {IMAGE_EXTENSIONS} from "@/lib/safe-media-filename";
-import {withStale} from "@/plugins/ggs/host/ggs-live";
-import {readGgsLive} from "@/plugins/ggs/host/ggs-live-store";
-import {
-    climateMetrics,
-    formatHumidityPct,
-    formatTempC,
-    shouldShowLiveRow,
-} from "@/plugins/ggs/host/live-climate-view";
+import {collectPluginMediaSources, loadPluginLiveReadings} from "@/lib/plugins/hooks";
 import {
     listMediaFiles,
     mediaCollectionDir,
@@ -77,6 +70,14 @@ export function shareCardMetadataOrigin(
         new Request("http://127.0.0.1", {headers: headersFromInput(headers)}),
         env,
     );
+}
+
+function formatTempC(value: number | null): string {
+    return value === null || !Number.isFinite(value) ? "—" : `${value.toFixed(1)}°C`;
+}
+
+function formatHumidityPct(value: number | null): string {
+    return value === null || !Number.isFinite(value) ? "—" : `${Math.round(value)}%`;
 }
 
 export function buildShareCardCopy(input: {
@@ -159,9 +160,10 @@ export async function shareCardStillMtimeMs(filePath: string | null): Promise<nu
     }
 }
 
-export function shareCardStillPath(still: ShareCardStill): string {
+export async function shareCardStillPath(still: ShareCardStill): Promise<string> {
     if (still.kind === "snapshot") {
-        return path.join(SNAPSHOT_DIR, still.name);
+        const sources = await collectPluginMediaSources();
+        return path.join(sources.snapshotsDir ?? "", still.name);
     }
     const collection: MediaCollectionId = still.kind;
     return path.join(mediaCollectionDir(collection), still.name);
@@ -187,14 +189,10 @@ export async function loadShareCardCopySafe(host: string): Promise<ShareCardCopy
 export async function loadShareCardCopy(host: string): Promise<ShareCardCopy> {
     const grow = await getCurrentGrow();
     const daysSince = grow.details.seededAt ? getDaysSince(grow.details.seededAt) : null;
-    let climate: ShareCardClimate | null = null;
-    const stored = await readGgsLive();
-    if (stored) {
-        const snapshot = withStale(stored);
-        if (shouldShowLiveRow(snapshot)) {
-            climate = climateMetrics(snapshot);
-        }
-    }
+    const live = await loadPluginLiveReadings();
+    const climate = live
+        ? {tempC: live.values.tempC, humidityPct: live.values.humidityPct}
+        : null;
     return buildShareCardCopy({
         plant: grow.plant,
         daysSince,
@@ -204,10 +202,12 @@ export async function loadShareCardCopy(host: string): Promise<ShareCardCopy> {
 }
 
 async function listSnapshotImageNames(): Promise<string[]> {
-    if (!(await pathExists(SNAPSHOT_DIR))) {
+    const sources = await collectPluginMediaSources();
+    const dir = sources.snapshotsDir;
+    if (!dir || !(await pathExists(dir))) {
         return [];
     }
-    const entries = await readdir(SNAPSHOT_DIR, {withFileTypes: true});
+    const entries = await readdir(dir, {withFileTypes: true});
     return entries
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)

@@ -73,19 +73,19 @@ describe("grow and overlay parse", () => {
 
 describe("overlay picker wiring", () => {
     it("keeps Current as the default overlay option and parks Picker on Broadcast Design", () => {
-        const picker = src(path.join("components", "climate-picker.tsx"));
-        const climate = src(path.join("components", "overlay-climate.tsx"));
+        const picker = src(path.join("plugins", "ggs", "ui", "climate-picker.tsx"));
+        const climate = src(path.join("plugins", "ggs", "ui", "overlay-climate.tsx"));
         const hud = src(path.join("components", "overlay-hud.tsx"));
-        const fields = src(path.join("app", "admin", "stream-fields.tsx"));
+        const fields = src(path.join("app", "admin", "overlay-fields.tsx"));
         const growFields = src(path.join("app", "admin", "settings-fields.tsx"));
         const css = src(path.join("app", "globals.css"));
-        const homeCard = src(path.join("components", "live-climate-card.tsx"));
-        const homeRow = src(path.join("components", "live-tent-row.tsx"));
+        const homeCard = src(path.join("plugins", "ggs", "ui", "live-climate-card.tsx"));
+        const homeRow = src(path.join("plugins", "ggs", "ui", "live-tent-row.tsx"));
         const homePage = src(path.join("app", "(site)", "page.tsx"));
         const overlayPage = src(path.join("app", "overlay", "page.tsx"));
-        const programPage = src(path.join("app", "program", "page.tsx"));
-        const capturePage = src(path.join("app", "overlay", "capture", "page.tsx"));
-        const scene = src(path.join("components", "program-scene.tsx"));
+        const programPage = src(path.join("plugins", "restream", "pages", "program.tsx"));
+        const capturePage = src(path.join("plugins", "restream", "pages", "capture.tsx"));
+        const scene = src(path.join("plugins", "restream", "ui", "program-scene.tsx"));
 
         assert.match(picker, /"use client"/);
         assert.match(picker, /useSyncExternalStore/);
@@ -101,7 +101,7 @@ describe("overlay picker wiring", () => {
         assert.match(climate, /formatTempC/);
         assert.match(climate, /formatHumidityPctTenths/);
 
-        assert.match(hud, /climateTick=\{grow\.climateTick\}/);
+        assert.match(hud, /OverlayGrowView/);
         assert.match(overlayPage, /climateTick=\{grow\.climateTick\}/);
         assert.match(programPage, /climateTick=\{grow\.climateTick\}/);
         assert.match(capturePage, /climateTick=\{grow\.climateTick\}/);
@@ -124,6 +124,6 @@ describe("overlay picker wiring", () => {
         assert.match(homeCard, /climateTick === "picker"/);
         assert.match(homeCard, /size="dash"/);
         assert.match(homeRow, /climateTick=\{climateTick\}/);
-        assert.match(homePage, /LiveTentRow climateTick=\{grow\.climateTick\}/);
+        assert.match(homePage, /PluginWidgets slot="dashboard"/);
     });
 });

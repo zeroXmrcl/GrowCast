@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {overlayIdentityView} from "../lib/overlay-identity.ts";
-import {overlayEnergyGrowWindow} from "../lib/overlay-energy-view.ts";
+import {overlayEnergyGrowWindow} from "../plugins/ggs/ui/overlay-energy-view.ts";
 import type {EnergyPublicDto} from "../plugins/ggs/host/energy/types.ts";
 
 function identity(

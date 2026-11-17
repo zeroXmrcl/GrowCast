@@ -8,6 +8,7 @@ import {energyCurrentDir, energyCursorFile} from "../plugins/ggs/host/energy/pat
 import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
 import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
+import {enableGgsForTests} from "./enable-ggs.ts";
 
 async function withTempEnv<T>(
     fn: (env: {
@@ -30,6 +31,7 @@ async function withTempEnv<T>(
     process.env.GROWCAST_DATA_DIR = dataDir;
     _resetEnergyAccrueLockForTests();
     _resetGrowWriteLockForTests();
+    await enableGgsForTests();
     try {
         return await fn({root, sources});
     } finally {

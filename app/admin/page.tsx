@@ -1,3 +1,4 @@
+import {headers} from "next/headers";
 import {getAdminAuthStatus, hasPendingAdminChallenge, isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {cancelSecondFactorAction, loginAction, saveGrowAction, verifySecondFactorAction} from "@/app/admin/actions";
@@ -7,7 +8,10 @@ import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/adm
 import {AdminHashRedirect} from "@/app/admin/hash-redirect";
 import {AdminLoginForm} from "@/app/admin/login-form";
 import MediaManager from "@/app/admin/media-manager";
+import {StreamSettingsFields} from "@/app/admin/overlay-fields";
 import {GrowSettingsFields} from "@/app/admin/settings-fields";
+import {overlayPublicUrl} from "@/lib/overlay-layout";
+import {shareCardMetadataOrigin} from "@/lib/share-card";
 
 type AdminPageProps = {
     searchParams: Promise<{
@@ -43,6 +47,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
     }
 
     const grow = await getCurrentGrow();
+    const overlayUrl = overlayPublicUrl(shareCardMetadataOrigin(await headers()));
 
     return (
         <AdminChrome
@@ -55,6 +60,7 @@ export default async function AdminPage({searchParams}: AdminPageProps) {
                 <AdminSaveForm action={saveGrowAction}>
                     <input type="hidden" name="growId" value={grow.id}/>
                     <GrowSettingsFields grow={grow}/>
+                    <StreamSettingsFields grow={grow} overlayUrl={overlayUrl}/>
                 </AdminSaveForm>
                 <MediaManager/>
             </AdminBandGroup>

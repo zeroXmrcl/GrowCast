@@ -1,7 +1,7 @@
 import {hasXaiApiKey, xaiApiBase, xaiModel} from "@/lib/ai-summary/config";
 import {logAiSummary} from "@/lib/ai-summary/log";
 import {AI_SUMMARY_SYSTEM_PROMPT} from "@/lib/ai-summary/prompt";
-import type {ClimateMetricKey} from "@/plugins/ggs/host/climate/types";
+import type {ClimateMetricKey} from "@/lib/ai-summary/climate";
 import {extractJsonObject, GROW_SUMMARY_JSON_SCHEMA, parseModelSummary} from "@/lib/ai-summary/schema";
 import type {AiSummaryPayload} from "@/lib/ai-summary/types";
 import type {SummaryStill} from "@/lib/ai-summary/image";

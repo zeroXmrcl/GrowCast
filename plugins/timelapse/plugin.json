@@ -19,11 +19,30 @@
   },
   "ui": { "entry": "ui/dist/index.js", "sdk": "^1.0.0" },
   "pages": [
-    { "id": "gallery", "path": "gallery", "title": "Gallery", "nav": "none" },
-    { "id": "admin", "path": "", "title": "Timelapse", "nav": "admin" }
+    { "id": "gallery", "path": "gallery", "title": "Gallery", "nav": "site", "public": true },
+    {
+      "id": "admin",
+      "path": "",
+      "title": "Timelapse",
+      "nav": "admin",
+      "bands": [
+        { "id": "capture", "label": "Capture" },
+        { "id": "triggers", "label": "Triggers" },
+        { "id": "output", "label": "Output" }
+      ]
+    }
   ],
-  "widgets": [],
-  "permissions": { "network": "lan", "media": true },
+  "widgets": [
+    { "id": "archive-media", "title": "Archived snapshots", "slots": ["archive"] }
+  ],
+  "permissions": { "network": "lan", "media": true, "publicPages": true },
+  "installer": {
+    "stepId": "timelapse",
+    "sort": 40,
+    "label": "Timelapse",
+    "title": "Point it at the camera",
+    "line": "Use the camera’s local rtsp:// address."
+  },
   "hostModule": "host/index.ts",
   "exports": { "gallery": true },
   "compat": { "meshSettings": true },

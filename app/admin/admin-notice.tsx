@@ -145,18 +145,18 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
     },
     twitch_started: {
         tone: "success",
-        title: "Twitch restream requested",
-        body: "The sidecar will go live when the restream service is running.",
+        title: "Twitch broadcast requested",
+        body: "The sidecar will go live when the plugin container is running.",
     },
     twitch_stopped: {
         tone: "success",
-        title: "Twitch restream stop requested",
+        title: "Twitch broadcast stop requested",
         body: "The sidecar will end the Twitch push.",
     },
     twitch_need_key: {
         tone: "warning",
         title: "No Twitch stream key",
-        body: "Save a stream key before starting the 24/7 restream.",
+        body: "Save a stream key before starting the 24/7 broadcast.",
     },
     twitch_login_invalid: {
         tone: "warning",

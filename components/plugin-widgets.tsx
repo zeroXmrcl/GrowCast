@@ -3,6 +3,8 @@ import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {widgetsForSlot} from "@/lib/plugins/routes";
 import type {PluginWidgetSlot} from "@/lib/plugins/types";
 
+const CONTENTS_SLOTS = new Set<PluginWidgetSlot>(["overlay", "site-chrome", "archive"]);
+
 export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
     const widgets = await widgetsForSlot(slot);
     if (widgets.length === 0) {
@@ -12,8 +14,11 @@ export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
         const discovered = await findDiscoveredPlugin(item.pluginId);
         return discovered ? {item, discovered} : null;
     }));
+    const className = CONTENTS_SLOTS.has(slot)
+        ? "contents"
+        : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
     return (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={className}>
             {mounts.map((entry) => {
                 if (!entry) {
                     return null;

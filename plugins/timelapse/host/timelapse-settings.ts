@@ -3,9 +3,7 @@ import path from "node:path";
 import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
-import {TIMELAPSE_PLUGIN_ID} from "@/lib/mesh-plugins";
-
-export {TIMELAPSE_PLUGIN_ID};
+export const TIMELAPSE_PLUGIN_ID = "growcast.timelapse";
 
 export type TimelapseQuality = "low" | "medium" | "high";
 

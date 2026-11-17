@@ -66,25 +66,25 @@ const helixEnv = {
 };
 
 describe("broadcast chrome", () => {
-    it("labels the admin nav Broadcast with href /admin/stream", () => {
+    it("loads Broadcast from the restream plugin admin page", () => {
         const chromeSrc = src(path.join("app", "admin", "admin-chrome.tsx"));
-        const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
-        const alias = src(path.join("app", "admin", "broadcast", "page.tsx"));
-        assert.match(chromeSrc, /href: "\/admin\/stream"/);
-        assert.match(chromeSrc, /label: "Broadcast"/);
+        const streamPage = src(path.join("plugins", "restream", "admin", "page.tsx"));
+        const restreamManifest = src(path.join("plugins", "restream", "plugin.json"));
+        assert.match(chromeSrc, /pluginAdminNavItems/);
+        assert.doesNotMatch(chromeSrc, /label: "Broadcast"/);
         assert.doesNotMatch(chromeSrc, /label: "Stream"/);
-        assert.match(streamPage, /title="Broadcast"/);
-        assert.match(alias, /redirect\("\/admin\/stream"\)/);
-        assert.equal(ADMIN_HASH_REDIRECTS["#twitch"], "/admin/stream");
-        assert.equal(ADMIN_HASH_REDIRECTS["#overlay"], "/admin/stream");
-        assert.equal(ADMIN_HASH_REDIRECTS["#stream"], "/admin/stream");
+        assert.match(restreamManifest, /"title": "Broadcast"/);
+        assert.match(streamPage, /ProgramMonitor/);
+        assert.equal(ADMIN_HASH_REDIRECTS["#twitch"], "/admin/plugins/growcast.restream");
+        assert.equal(ADMIN_HASH_REDIRECTS["#overlay"], "/admin");
+        assert.equal(ADMIN_HASH_REDIRECTS["#stream"], "/admin/plugins/growcast.restream");
     });
 
     it("renders OverlayHud include+lockStream on the program monitor without ON AIR", () => {
-        const scene = src(path.join("components", "program-scene.tsx"));
-        const lookHud = src(path.join("components", "program-camera-look.tsx"));
-        const programPage = src(path.join("app", "program", "page.tsx"));
-        const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
+        const scene = src(path.join("plugins", "restream", "ui", "program-scene.tsx"));
+        const lookHud = src(path.join("plugins", "restream", "ui", "program-camera-look.tsx"));
+        const programPage = src(path.join("plugins", "restream", "pages", "program.tsx"));
+        const streamPage = src(path.join("plugins", "restream", "admin", "page.tsx"));
         assert.match(lookHud, /overlayStream="include"/);
         assert.match(scene, /ProgramCameraLook/);
         assert.match(scene, /lockStream/);
@@ -97,17 +97,17 @@ describe("broadcast chrome", () => {
     });
 
     it("wires overlay and camera grow fields to the disconnected broadcast-grow form", () => {
-        const fields = src(path.join("app", "admin", "stream-fields.tsx"));
-        const streamPage = src(path.join("app", "admin", "stream", "page.tsx"));
+        const fields = src(path.join("app", "admin", "overlay-fields.tsx"));
+        const growPage = src(path.join("app", "admin", "page.tsx"));
         assert.match(fields, /name="overlayStream"/);
         assert.match(fields, /name="overlayLayout"/);
         assert.match(fields, /name="climateTick"/);
         assert.match(fields, /OverlayScaleInput defaultValue=\{grow\.overlayScalePct\}/);
         assert.match(fields, /name="streamUrl"/);
         assert.match(fields, /name="showGrowName"/);
-        assert.match(streamPage, /saveStreamAction/);
-        assert.match(streamPage, /StreamSettingsFields/);
-        assert.doesNotMatch(streamPage, /id="broadcast-grow"/);
+        assert.match(growPage, /saveGrowAction/);
+        assert.match(growPage, /StreamSettingsFields/);
+        assert.doesNotMatch(growPage, /id="broadcast-grow"/);
     });
 });
 
@@ -272,7 +272,7 @@ describe("twitch helix login lookup", () => {
                 ),
                 "helixuser",
             );
-            const actions = src(path.join("app", "admin", "actions.ts"));
+            const actions = src(path.join("plugins", "restream", "admin", "actions.ts"));
             assert.match(actions, /readRestreamKey/);
             assert.match(actions, /streamKeyForChannelLookup/);
             assert.match(actions, /twitch_login_invalid/);
@@ -403,11 +403,11 @@ describe("GET /api/data/broadcast", () => {
 describe("homepage toast", () => {
     it("mounts the toast poller only on the grow homepage and renders markup only when live", () => {
         const home = src(path.join("app", "(site)", "page.tsx"));
-        const frame = src(path.join("components", "workspace-frame.tsx"));
-        const toast = src(path.join("components", "broadcast-toast.tsx"));
+        const shell = src(path.join("components", "site-shell.tsx"));
+        const toast = src(path.join("plugins", "restream", "ui", "broadcast-toast.tsx"));
         assert.doesNotMatch(home, /BroadcastToast/);
-        assert.match(frame, /BroadcastToast/);
-        assert.match(frame, /energy \? null/);
+        assert.match(shell, /PluginWidgets slot="site-chrome"/);
+        assert.match(src(path.join("plugins", "restream", "ui", "src", "index.tsx")), /broadcast-toast/);
         assert.match(toast, /if \(!payload\.live\)/);
         assert.match(toast, /Live on Twitch/);
         assert.match(toast, /#9146FF/);
@@ -421,12 +421,12 @@ describe("homepage toast", () => {
 
         for (const rel of [
             path.join("app", "(site)", "layout.tsx"),
-            path.join("app", "(site)", "energy", "page.tsx"),
-            path.join("app", "(site)", "gallery", "page.tsx"),
+            path.join("plugins", "ggs", "pages", "energy.tsx"),
+            path.join("plugins", "timelapse", "pages", "gallery.tsx"),
             path.join("app", "(site)", "grows", "page.tsx"),
             path.join("app", "overlay", "page.tsx"),
             path.join("app", "overlay", "layout.tsx"),
-            path.join("app", "overlay", "capture", "page.tsx"),
+            path.join("plugins", "restream", "pages", "capture.tsx"),
             path.join("app", "admin", "page.tsx"),
             path.join("app", "admin", "layout.tsx"),
         ]) {
@@ -435,9 +435,9 @@ describe("homepage toast", () => {
     });
 
     it("leaves overlay/capture unchanged and does not interpolate restream token", () => {
-        const captureSrc = src(path.join("app", "overlay", "capture", "page.tsx"));
-        const scene = src(path.join("components", "program-scene.tsx"));
-        const lookHud = src(path.join("components", "program-camera-look.tsx"));
+        const captureSrc = src(path.join("plugins", "restream", "pages", "capture.tsx"));
+        const scene = src(path.join("plugins", "restream", "ui", "program-scene.tsx"));
+        const lookHud = src(path.join("plugins", "restream", "ui", "program-camera-look.tsx"));
         const composeSrc = src("docker-compose.yml");
         const sidecarSrc = src(path.join("plugins", "restream", "restream.py"));
         const restream = composeSrc.split(/^  restream:\s*$/m)[1] ?? "";

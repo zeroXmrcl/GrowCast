@@ -27,6 +27,7 @@ import {writeAiSummaryRecord, _resetAiSummaryLockForTests} from "../lib/ai-summa
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
 import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
 import {AI_SUMMARY_MOSAIC_SLOTS, type AiSummaryRecord, type ClimateWindowStats, type MosaicCell, type StageContext} from "../lib/ai-summary/types.ts";
+import {enableGgsForTests} from "./enable-ggs.ts";
 
 function emptyStats(): ClimateWindowStats {
     const metric = {
@@ -113,6 +114,7 @@ async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     _resetGrowWriteLockForTests();
     _resetEnergyAccrueLockForTests();
     _resetClimateWriteLockForTests();
+    await enableGgsForTests();
     try {
         return await fn();
     } finally {

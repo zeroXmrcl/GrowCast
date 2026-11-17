@@ -12,12 +12,14 @@ import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
 import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
 import {saveGgsLive} from "../plugins/ggs/host/ggs-live-store.ts";
 import {GGS_PLUGIN_ID, parseIngestBody} from "../plugins/ggs/host/ggs-live.ts";
+import {enableGgsForTests} from "./enable-ggs.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-energy-http-"));
     const previous = process.env.GROWCAST_DATA_DIR;
     process.env.GROWCAST_DATA_DIR = dir;
     _resetEnergyAccrueLockForTests();
+    await enableGgsForTests();
     try {
         return await fn(dir);
     } finally {

@@ -1,9 +1,9 @@
 import {OVERLAY_EASING_ENTER} from "@/lib/overlay-motion";
 
-export type ClimateTick = "plain" | "picker";
+export type {ClimateTick} from "@/lib/overlay-tick";
+export {DEFAULT_CLIMATE_TICK, parseClimateTick} from "@/lib/overlay-tick";
 export type ClimateTickKind = "temp" | "rh" | "vpd";
 
-export const DEFAULT_CLIMATE_TICK: ClimateTick = "plain";
 export const CLIMATE_TICK_EASING = OVERLAY_EASING_ENTER;
 
 type KindSpec = {
@@ -40,10 +40,6 @@ const CACHE: Record<ClimateTickKind, {values: number[]; labels: string[]}> = {
     rh: series(SPECS.rh),
     vpd: series(SPECS.vpd),
 };
-
-export function parseClimateTick(value: unknown): ClimateTick {
-    return value === "picker" ? "picker" : DEFAULT_CLIMATE_TICK;
-}
 
 export function climateTickLabels(kind: ClimateTickKind): readonly string[] {
     return CACHE[kind].labels;

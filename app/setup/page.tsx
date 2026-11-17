@@ -16,14 +16,13 @@ export default async function SetupPage() {
     return (
         <SetupWizard
             initial={signedIn ? progress : {
+                ...progress,
                 step: "authenticate",
                 username: "",
                 finished: [],
                 skipped: [],
                 streamUrl: null,
-                climate: null,
-                twitchSaved: false,
-                timelapse: null,
+                details: {},
             }}
         />
     );

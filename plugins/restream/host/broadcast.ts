@@ -1,7 +1,7 @@
 import {asString, isRecord} from "@/lib/coerce";
 
 export const BROADCAST_POLL_MS = 5_000;
-export const BROADCAST_POLL_PATH = "/api/data/broadcast";
+export const BROADCAST_POLL_PATH = "/api/data/plugins/restream/broadcast";
 
 export type PublicBroadcast =
     | {live: true; login: string}

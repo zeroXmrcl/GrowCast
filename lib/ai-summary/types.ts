@@ -1,4 +1,4 @@
-import type {ClimateMetricKey} from "@/plugins/ggs/host/climate/types";
+import type {ClimateMetricKey} from "@/lib/ai-summary/climate";
 
 export const AI_SUMMARY_ARCHIVE_VERSION = 1;
 export const AI_SUMMARY_JOB_HOUR = 8;

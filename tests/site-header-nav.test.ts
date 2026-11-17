@@ -3,8 +3,6 @@ import {describe, it} from "node:test";
 import {navItemIsActive, navItemsFor, type NavFlags} from "../lib/site-nav.ts";
 
 const allOn: NavFlags = {
-    showEnergy: true,
-    showGallery: true,
     showPastGrows: true,
     showSettingsLink: true,
 };
@@ -12,43 +10,39 @@ const allOn: NavFlags = {
 describe("navItemsFor", () => {
     it("hides the current section and appends Settings last when enabled", () => {
         assert.deepEqual(
-            navItemsFor("/gallery", allOn).map((item) => item.href),
-            ["/", "/energy", "/grows", "/admin"],
+            navItemsFor("/p/timelapse/gallery", allOn).map((item) => item.href),
+            ["/", "/grows", "/admin"],
         );
     });
 
     it("omits Settings when the flag is off", () => {
         assert.deepEqual(
-            navItemsFor("/gallery", {...allOn, showSettingsLink: false}).map((item) => item.href),
-            ["/", "/energy", "/grows"],
+            navItemsFor("/p/timelapse/gallery", {...allOn, showSettingsLink: false}).map((item) => item.href),
+            ["/", "/grows"],
         );
     });
 
     it("does not append Settings on admin routes", () => {
         assert.deepEqual(
             navItemsFor("/admin/archives", allOn).map((item) => item.href),
-            ["/", "/energy", "/gallery", "/grows"],
+            ["/", "/grows"],
         );
     });
 
-    it("keeps Dashboard and Energy visible on both workspace pages", () => {
+    it("keeps Dashboard visible and hides the current plugin page when extra is passed", () => {
+        const extra = [{href: "/p/ggs/energy", label: "Energy"}];
         assert.deepEqual(
-            navItemsFor("/", allOn).map((item) => item.href),
-            ["/", "/energy", "/gallery", "/grows", "/admin"],
+            navItemsFor("/", allOn, extra).map((item) => item.href),
+            ["/", "/p/ggs/energy", "/grows", "/admin"],
         );
         assert.deepEqual(
-            navItemsFor("/energy", {...allOn, showSettingsLink: false}).map((item) => item.href),
-            ["/", "/energy", "/gallery", "/grows"],
+            navItemsFor("/p/ggs/energy", {...allOn, showSettingsLink: false}, extra).map((item) => item.href),
+            ["/", "/grows"],
         );
         assert.equal(navItemIsActive("/", "/"), true);
-        assert.equal(navItemIsActive("/", "/energy"), false);
-        assert.equal(navItemIsActive("/energy", "/energy"), true);
-        assert.equal(navItemIsActive("/energy", "/"), false);
-        assert.equal(
-            navItemsFor("/", {...allOn, showEnergy: false, showSettingsLink: false})
-                .some((item) => item.href === "/energy"),
-            false,
-        );
+        assert.equal(navItemIsActive("/", "/p/ggs/energy"), false);
+        assert.equal(navItemIsActive("/p/ggs/energy", "/p/ggs/energy"), true);
+        assert.equal(navItemIsActive("/p/ggs/energy", "/"), false);
     });
 
     it("omits Past Grows when no grow has been archived", () => {
@@ -56,7 +50,7 @@ describe("navItemsFor", () => {
             navItemsFor("/", {...allOn, showPastGrows: false, showSettingsLink: false}).map(
                 (item) => item.href,
             ),
-            ["/", "/energy", "/gallery"],
+            ["/"],
         );
     });
 
@@ -69,21 +63,12 @@ describe("navItemsFor", () => {
         );
     });
 
-    it("inserts extra plugin pages after Energy", () => {
+    it("inserts extra plugin pages after Dashboard", () => {
         assert.deepEqual(
             navItemsFor("/", {...allOn, showSettingsLink: false}, [
                 {href: "/p/solar/energy", label: "Solar"},
             ]).map((item) => item.href),
-            ["/", "/energy", "/p/solar/energy", "/gallery", "/grows"],
-        );
-    });
-
-    it("omits Gallery when the timelapse plugin is not installed", () => {
-        assert.deepEqual(
-            navItemsFor("/", {...allOn, showGallery: false, showSettingsLink: false}).map(
-                (item) => item.href,
-            ),
-            ["/", "/energy", "/grows"],
+            ["/", "/p/solar/energy", "/grows"],
         );
     });
 });

@@ -351,7 +351,7 @@ def start_stack(key: str, token: str) -> None:
             log.error("xvfb exited immediately")
     ensure_pulse()
     chrome_profile = f"/tmp/growcast-chrome-{os.getpid()}-{time.time_ns()}"
-    capture = f"{GROWCAST_URL}/overlay/capture"
+    capture = f"{GROWCAST_URL}/p/restream/capture"
     log.info("starting chromium kiosk %s", capture)
     chrome = subprocess.Popen(
         [

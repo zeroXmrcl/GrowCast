@@ -4,7 +4,7 @@ import {airVpdKPa} from "../lib/air-vpd.ts";
 import {
     evaluateAgainstRange,
     formatMetricReading,
-    liveReadingsFromSnapshot,
+    liveReadingsFromPlugin,
     mergeLiveMetric,
     mergeLiveMetrics,
     readingsFromStats,
@@ -142,12 +142,17 @@ describe("readingsFromStats", () => {
     });
 });
 
-describe("liveReadingsFromSnapshot", () => {
-    it("computes VPD and keeps CO2 and PPFD", () => {
-        const bundle = liveReadingsFromSnapshot(snapshot({tempC: 25.3, humidityPct: 47.1, co2: 810, ppfd: 420}));
+describe("liveReadingsFromPlugin", () => {
+    it("keeps VPD, CO2 and PPFD from plugin live readings", () => {
+        const vpd = airVpdKPa(25.3, 47.1);
+        const bundle = liveReadingsFromPlugin({
+            values: {tempC: 25.3, humidityPct: 47.1, vpd, co2: 810, ppfd: 420},
+            isDay: true,
+            asOf: "2026-10-15T10:00:00.000Z",
+        });
         assert.equal(bundle.values.tempC, 25.3);
         assert.equal(bundle.values.humidityPct, 47.1);
-        assert.equal(bundle.values.vpd, airVpdKPa(25.3, 47.1));
+        assert.equal(bundle.values.vpd, vpd);
         assert.notEqual(bundle.values.vpd, 9.99);
         assert.equal(bundle.values.co2, 810);
         assert.equal(bundle.values.ppfd, 420);
@@ -155,7 +160,7 @@ describe("liveReadingsFromSnapshot", () => {
     });
 
     it("returns empty readings when there is no snapshot", () => {
-        const bundle = liveReadingsFromSnapshot(null);
+        const bundle = liveReadingsFromPlugin(null);
         assert.equal(bundle.values.tempC, null);
         assert.equal(bundle.isDay, null);
     });

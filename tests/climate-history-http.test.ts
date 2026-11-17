@@ -3,11 +3,11 @@ import {mkdir, mkdtemp, readFile, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {GET} from "../app/api/data/climate-history/route.ts";
 import {climateHistoryGetResponse} from "../plugins/ggs/host/climate/history-http.ts";
 import {_resetClimateWriteLockForTests, writeClimateDay} from "../plugins/ggs/host/climate/store.ts";
 import {updateCurrentGrow} from "../lib/db.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
+import {enableGgsForTests} from "./enable-ggs.ts";
 import type {ClimateDayFile, ClimatePoint} from "../plugins/ggs/host/climate/types.ts";
 
 const NOW = Date.parse("2026-10-13T13:00:00.000Z");
@@ -36,6 +36,7 @@ async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     await mkdir(process.env.GROWCAST_DATA_DIR, {recursive: true});
     _resetClimateWriteLockForTests();
     _resetGrowWriteLockForTests();
+    await enableGgsForTests();
     try {
         return await fn();
     } finally {
@@ -113,13 +114,17 @@ describe("GET /api/data/climate-history", () => {
         });
     });
 
-    it("wraps GET in withRequestLog and stays read-only", async () => {
-        const route = await readFile(path.join(process.cwd(), "app", "api", "data", "climate-history", "route.ts"), "utf8");
-        assert.match(route, /withRequestLog/);
-        assert.match(route, /\/api\/data\/climate-history/);
-        assert.match(route, /export async function GET/);
-        assert.doesNotMatch(route, /export async function POST/);
-        assert.doesNotMatch(route, /XAI_API_KEY|requestGrowSummary|AI_SUMMARY_DAILY_API_CAP/);
-        assert.equal(typeof GET, "function");
+    it("stays a GET-only climate-history handler without AI secrets", async () => {
+        const host = await readFile(path.join(process.cwd(), "plugins", "ggs", "host", "index.ts"), "utf8");
+        const http = await readFile(
+            path.join(process.cwd(), "plugins", "ggs", "host", "climate", "history-http.ts"),
+            "utf8",
+        );
+        assert.match(host, /climate-history/);
+        assert.match(host, /climateHistoryGetResponse/);
+        assert.match(http, /export async function climateHistoryGetResponse/);
+        assert.doesNotMatch(http, /export async function POST/);
+        assert.doesNotMatch(http, /XAI_API_KEY|requestGrowSummary|AI_SUMMARY_DAILY_API_CAP/);
+        assert.equal(typeof climateHistoryGetResponse, "function");
     });
 });

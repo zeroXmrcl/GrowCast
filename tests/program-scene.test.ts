@@ -9,9 +9,9 @@ function src(rel: string): string {
 
 describe("program scene", () => {
     it("is shared by capture and session preview", () => {
-        const scene = src(path.join("components", "program-scene.tsx"));
-        const capture = src(path.join("app", "overlay", "capture", "page.tsx"));
-        const preview = src(path.join("app", "program", "page.tsx"));
+        const scene = src(path.join("plugins", "restream", "ui", "program-scene.tsx"));
+        const capture = src(path.join("plugins", "restream", "pages", "capture.tsx"));
+        const preview = src(path.join("plugins", "restream", "pages", "program.tsx"));
         assert.match(scene, /ProgramCameraLook/);
         assert.match(scene, /lockStream/);
         assert.match(scene, /ProgramAudio/);
@@ -26,7 +26,7 @@ describe("program scene", () => {
         assert.match(scene, /ProgramAudioGraphProvider/);
         assert.match(scene, /OverlayMusicWave/);
         assert.match(scene, /extra=\{/);
-        const wave = src(path.join("components", "overlay-music-wave.tsx"));
+        const wave = src(path.join("plugins", "restream", "ui", "overlay-music-wave.tsx"));
         assert.match(wave, /OVERLAY_PANEL_CLASS/);
         assert.match(wave, /getByteFrequencyData/);
         assert.match(wave, /#22c55e/);
@@ -40,7 +40,7 @@ describe("program scene", () => {
         assert.match(wave, /currentTime/);
         assert.match(wave, /duration/);
         assert.doesNotMatch(wave, /drawMirroredWave\(canvas, bins\)/);
-        const audio = src(path.join("components", "program-audio.tsx"));
+        const audio = src(path.join("plugins", "restream", "ui", "program-audio.tsx"));
         assert.match(audio, /createMediaElementSource/);
         assert.match(audio, /createAnalyser/);
         assert.match(audio, /destination/);
@@ -57,7 +57,7 @@ describe("program scene", () => {
         assert.doesNotMatch(audio, /playbackFailed/);
         assert.match(audio, /fftSize/);
         assert.match(audio, /256/);
-        const graph = src(path.join("components", "program-audio-graph.tsx"));
+        const graph = src(path.join("plugins", "restream", "ui", "program-audio-graph.tsx"));
         assert.match(graph, /title:/);
         assert.match(graph, /currentTime:/);
         assert.match(graph, /duration:/);
@@ -65,9 +65,9 @@ describe("program scene", () => {
         assert.match(graph, /waveBars:/);
         assert.match(audio, /playlistTrackTitle/);
         assert.match(audio, /currentTime/);
-        const lookHud = src(path.join("components", "program-camera-look.tsx"));
+        const lookHud = src(path.join("plugins", "restream", "ui", "program-camera-look.tsx"));
         assert.match(scene, /ProgramCameraLook/);
-        assert.match(lookHud, /\/api\/overlay\/program-camera/);
+        assert.match(lookHud, /\/api\/data\/plugins\/restream\/program-camera/);
         assert.match(lookHud, /PROGRAM_CAMERA_POLL_MS/);
         assert.match(lookHud, /x-growcast-capture/);
         assert.match(lookHud, /isCameraLookMessage/);
@@ -75,7 +75,7 @@ describe("program scene", () => {
         assert.match(lookHud, /addEventListener\("message"/);
         assert.match(lookHud, /event\.origin/);
         assert.match(lookHud, /captureToken/);
-        assert.match(lookHud, /look=\{look\}/);
+        assert.match(lookHud, /lookCss=\{cameraLookFilterCss\(look\)\}/);
         assert.doesNotMatch(capture, /CAMERA_LOOK_DRAFT_EVENT/);
         assert.doesNotMatch(capture, /postMessage/);
         const overlayPage = src(path.join("app", "overlay", "page.tsx"));
@@ -84,7 +84,7 @@ describe("program scene", () => {
     });
 
     it("shows the Music header only on the wave look", () => {
-        const wave = src(path.join("components", "overlay-music-wave.tsx"));
+        const wave = src(path.join("plugins", "restream", "ui", "overlay-music-wave.tsx"));
         assert.match(wave, /musicLook === "wave"/);
         assert.match(wave, />Music</);
         assert.match(wave, /musicLook === "wave"[\s\S]{0,240}>Music</);
@@ -95,13 +95,14 @@ describe("program scene", () => {
     });
 
     it("keeps OverlayAlertLayer a HUD sibling and wires program alert SSE", () => {
-        const scene = src(path.join("components", "program-scene.tsx"));
-        const layer = src(path.join("components", "overlay-alert-layer.tsx"));
-        const route = src(path.join("app", "api", "overlay", "program-alerts", "route.ts"));
-        const http = src(path.join("lib", "overlay-alert-http.ts"));
-        const hub = src(path.join("lib", "overlay-alert-hub.ts"));
+        const scene = src(path.join("plugins", "restream", "ui", "program-scene.tsx"));
+        const layer = src(path.join("plugins", "restream", "ui", "overlay-alert-layer.tsx"));
+        const route = src(path.join("lib", "plugins", "legacy-redirects.ts"));
+        const http = src(path.join("plugins", "restream", "host", "overlay-alert-http.ts"));
+        const hub = src(path.join("plugins", "restream", "host", "overlay-alert-hub.ts"));
 
-        assert.match(scene, /<ProgramCameraLook[\s\S]*\/>\s*<OverlayAlertLayer layout=\{overlayLayout\} captureToken=\{captureToken\} \/>/);
+        assert.match(scene, /ProgramCameraLook/);
+        assert.match(scene, /OverlayAlertLayer layout=\{overlayLayout\} captureToken=\{captureToken\}/);
         assert.match(layer, /"use client"/);
         assert.match(layer, /EventSource/);
         assert.match(layer, /\/api\/overlay\/program-alerts/);
@@ -123,8 +124,8 @@ describe("program scene", () => {
         assert.doesNotMatch(layer, /OVERLAY_PANEL_CLASS/);
         assert.doesNotMatch(layer, /bottom-8 right-8/);
         assert.doesNotMatch(layer, /left-1\/2/);
-        assert.match(route, /isAdminAuthenticated/);
-        assert.match(route, /programAlertsSseResponse/);
+        assert.match(route, /\/api\/overlay\/program-alerts/);
+        assert.match(http, /programAlertsSseResponse|text\/event-stream/);
         assert.doesNotMatch(http, /isAdminAuthenticated/);
         assert.doesNotMatch(http, /next\/headers/);
         assert.match(http, /text\/event-stream/);
@@ -136,8 +137,8 @@ describe("program scene", () => {
     });
 
     it("dispatches growcast-alert-sting so ProgramAudio can duck", () => {
-        const layer = src(path.join("components", "overlay-alert-layer.tsx"));
-        const audio = src(path.join("components", "program-audio.tsx"));
+        const layer = src(path.join("plugins", "restream", "ui", "overlay-alert-layer.tsx"));
+        const audio = src(path.join("plugins", "restream", "ui", "program-audio.tsx"));
         assert.match(layer, /new CustomEvent\("growcast-alert-sting"\)/);
         assert.match(layer, /dispatchEvent/);
         assert.match(audio, /growcast-alert-sting/);

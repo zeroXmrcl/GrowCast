@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {GGS_PLUGIN_ID, type GgsLivePublic} from "../plugins/ggs/host/ggs-live.ts";
-import {recoverLiveClimateOnSseFailure} from "../hooks/use-live-climate.ts";
+import {recoverLiveClimateOnSseFailure} from "../plugins/ggs/ui/use-live-climate.ts";
 
 function publicSnap(updatedAt: string, tempC = 25.4): GgsLivePublic {
     return {
@@ -44,7 +44,7 @@ function jsonFetch(body: unknown, status = 200): typeof fetch {
 jsonFetch.urls = [] as string[];
 
 describe("recoverLiveClimateOnSseFailure", () => {
-    it("on 503 fetches GET /api/data/live-climate and applies a newer snapshot", async () => {
+    it("on 503 fetches GET /api/data/plugins/ggs/live-climate and applies a newer snapshot", async () => {
         jsonFetch.urls = [];
         const current = publicSnap("2026-08-22T18:00:00.000Z", 24);
         const newer = publicSnap("2026-08-22T18:01:00.000Z", 26.2);
@@ -53,7 +53,7 @@ describe("recoverLiveClimateOnSseFailure", () => {
             current,
             fetch: jsonFetch(newer),
         });
-        assert.deepEqual(jsonFetch.urls, ["/api/data/live-climate"]);
+        assert.deepEqual(jsonFetch.urls, ["/api/data/plugins/ggs/live-climate"]);
         assert.equal(next?.updatedAt, newer.updatedAt);
         assert.equal(next?.devices[0].sensor.tempC, 26.2);
     });
@@ -67,7 +67,7 @@ describe("recoverLiveClimateOnSseFailure", () => {
             current,
             fetch: jsonFetch(older),
         });
-        assert.deepEqual(jsonFetch.urls, ["/api/data/live-climate"]);
+        assert.deepEqual(jsonFetch.urls, ["/api/data/plugins/ggs/live-climate"]);
         assert.equal(next?.updatedAt, current.updatedAt);
         assert.equal(next?.devices[0].sensor.tempC, 27);
     });

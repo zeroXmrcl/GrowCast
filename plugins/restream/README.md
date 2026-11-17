@@ -1,6 +1,6 @@
 # GrowCast Twitch restream sidecar
 
-Enabled from Admin → Plugins. GrowCast starts this backend. Captures `/overlay/capture` in Chromium and pushes RTMPS to Twitch. Stays idle until Broadcast (`/admin/stream`) → Start.
+Enabled from Admin → Plugins. GrowCast starts this backend. Captures `/p/restream/capture` in Chromium and pushes RTMPS to Twitch. Stays idle until Broadcast (`/admin/plugins/growcast.restream`) → Start.
 
 Needs about 1–2 CPU cores and 1 GB RAM. Encode is 1080p10, 2500 kbps, two x264 threads.
 

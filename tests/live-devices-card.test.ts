@@ -36,7 +36,7 @@ describe("deviceGaugePercent", () => {
 describe("live devices card wiring", () => {
     it("draws a half-circle needle gauge with the value under the arc", () => {
         const src = readFileSync(
-            path.join(process.cwd(), "components", "live-devices-card.tsx"),
+            path.join(process.cwd(), "plugins", "ggs", "ui", "live-devices-card.tsx"),
             "utf8",
         );
         assert.match(src, /deviceGaugePercent/);
@@ -49,7 +49,7 @@ describe("live devices card wiring", () => {
 
     it("does not change overlay gear wrapping", () => {
         const src = readFileSync(
-            path.join(process.cwd(), "components", "overlay-gear.tsx"),
+            path.join(process.cwd(), "plugins", "ggs", "ui", "overlay-gear.tsx"),
             "utf8",
         );
         assert.match(src, /flex flex-wrap gap-2/);

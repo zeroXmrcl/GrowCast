@@ -82,6 +82,70 @@ describe("plugin host ingest HTTP", {concurrency: 1}, () => {
                 "community.example",
             );
             assert.equal(beat.status, 204);
+            process.env.GROWCAST_MESH_TOKEN = "mesh-fallback-token-value";
+            const mesh = await pluginIngestPostResponse(
+                new Request("http://growcast.local/api/plugins/v1/community.example/ingest", {
+                    method: "POST",
+                    headers: {
+                        "content-type": "application/json",
+                        authorization: "Bearer mesh-fallback-token-value",
+                    },
+                    body: JSON.stringify(ingestBody({"battery.soc": 13})),
+                }),
+                "community.example",
+            );
+            assert.equal(mesh.status, 401);
+            delete process.env.GROWCAST_MESH_TOKEN;
         });
+    });
+
+    it("accepts the shared mesh token as fallback for first-party GGS", async () => {
+        const {mkdtemp, rm} = await import("node:fs/promises");
+        const os = await import("node:os");
+        const path = await import("node:path");
+        const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-ggs-mesh-"));
+        const previousData = process.env.GROWCAST_DATA_DIR;
+        const previousToken = process.env.GROWCAST_MESH_TOKEN;
+        process.env.GROWCAST_DATA_DIR = dir;
+        process.env.GROWCAST_MESH_TOKEN = "mesh-fallback-token-value";
+        try {
+            await enablePlugin("growcast.ggs");
+            const denied = await pluginIngestPostResponse(
+                new Request("http://growcast.local/api/plugins/v1/growcast.ggs/ingest", {
+                    method: "POST",
+                    headers: {
+                        "content-type": "application/json",
+                        authorization: "Bearer wrong",
+                    },
+                    body: JSON.stringify({apiVersion: 1, observedAt: "2026-11-17T09:59:50.000Z", metrics: {}}),
+                }),
+                "growcast.ggs",
+            );
+            assert.equal(denied.status, 401);
+            const mesh = await pluginIngestPostResponse(
+                new Request("http://growcast.local/api/plugins/v1/growcast.ggs/ingest", {
+                    method: "POST",
+                    headers: {
+                        "content-type": "application/json",
+                        authorization: "Bearer mesh-fallback-token-value",
+                    },
+                    body: JSON.stringify({apiVersion: 1, observedAt: "2026-11-17T09:59:50.000Z", metrics: {}}),
+                }),
+                "growcast.ggs",
+            );
+            assert.notEqual(mesh.status, 401);
+        } finally {
+            if (previousData === undefined) {
+                delete process.env.GROWCAST_DATA_DIR;
+            } else {
+                process.env.GROWCAST_DATA_DIR = previousData;
+            }
+            if (previousToken === undefined) {
+                delete process.env.GROWCAST_MESH_TOKEN;
+            } else {
+                process.env.GROWCAST_MESH_TOKEN = previousToken;
+            }
+            await rm(dir, {recursive: true, force: true});
+        }
     });
 });

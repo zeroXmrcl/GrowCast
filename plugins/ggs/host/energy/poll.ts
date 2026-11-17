@@ -3,8 +3,8 @@ import type {EnergyPublicDto} from "@/plugins/ggs/host/energy/types";
 
 /** Live snapshots land about every 15s. Faster polls repeat the same watts. */
 export const ENERGY_POLL_MS = 15_000;
-export const ENERGY_POLL_PATH = "/api/data/energy?grow=current";
-export const ENERGY_PUBLIC_POLL_PATH = "/api/data/energy?grow=current&tariff=public";
+export const ENERGY_POLL_PATH = "/api/data/plugins/ggs/energy?grow=current";
+export const ENERGY_PUBLIC_POLL_PATH = "/api/data/plugins/ggs/energy?grow=current&tariff=public";
 
 let energyPollInFlight = false;
 

@@ -230,7 +230,7 @@ describe("refreshTwitchToken", () => {
 
 describe("Twitch OAuth routes and panel", () => {
     it("starts connect with admin session, csrf cookie, and 302 authorize URL", () => {
-        const connect = src(path.join("app", "admin", "stream", "twitch-connect", "route.ts"));
+        const connect = src(path.join("plugins", "restream", "host", "oauth-http.ts"));
         assert.match(connect, /isAdminAuthenticated/);
         assert.doesNotMatch(connect, /requireAdmin/);
         assert.match(connect, /randomBytes\(32\)/);
@@ -246,11 +246,10 @@ describe("Twitch OAuth routes and panel", () => {
         assert.match(connect, /status:\s*302/);
         assert.match(connect, /["']Cache-Control["']:\s*["']no-store["']/);
         assert.match(connect, /twitch_oauth_failed/);
-        assert.doesNotMatch(connect, /ensureEventsub/);
     });
 
     it("validates callback state in constant time and subscribes EventSub after tokens", () => {
-        const callback = src(path.join("app", "admin", "stream", "twitch-callback", "route.ts"));
+        const callback = src(path.join("plugins", "restream", "host", "oauth-http.ts"));
         assert.match(callback, /isAdminAuthenticated/);
         assert.doesNotMatch(callback, /requireAdmin/);
         assert.match(callback, /safeEqualText/);
@@ -273,7 +272,7 @@ describe("Twitch OAuth routes and panel", () => {
     });
 
     it("uses a hard navigation for Connect Twitch so prefetch cannot rotate CSRF state", () => {
-        const panel = src(path.join("app", "admin", "alerts-panel.tsx"));
+        const panel = src(path.join("plugins", "restream", "admin", "alerts-panel.tsx"));
         assert.doesNotMatch(panel, /from ["']next\/link["']/);
         assert.doesNotMatch(panel, /<Link\b/);
         assert.match(panel, /<a\s+href="\/admin\/stream\/twitch-connect"/);

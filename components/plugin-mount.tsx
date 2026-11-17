@@ -3,7 +3,6 @@
 import {useEffect, useState, type ReactNode} from "react";
 import {PluginRuntimeProvider, type PluginDefinition, type PluginRole} from "@growcast/plugin-sdk/ui";
 import {pluginAssetUrl} from "@/lib/plugins/import-map";
-import {loadFirstPartyUi} from "@/lib/plugins/ui-registry";
 
 type PluginMountProps = {
     pluginId: string;
@@ -19,7 +18,7 @@ type PluginMountProps = {
 
 type LoadState =
     | {kind: "loading"}
-    | {kind: "ready"; definition: PluginDefinition; via: "import-map" | "first-party"}
+    | {kind: "ready"; definition: PluginDefinition; via: "import-map"}
     | {kind: "web-component"; tag: string}
     | {kind: "error"; message: string};
 
@@ -39,13 +38,8 @@ export default function PluginMount(props: PluginMountProps) {
                         return;
                     }
                 } catch {
-                    /* fall through to first-party, then web components */
+                    /* fall through to web components */
                 }
-            }
-            const firstParty = await loadFirstPartyUi(props.pluginId);
-            if (!cancelled && firstParty) {
-                setState({kind: "ready", definition: firstParty, via: "first-party"});
-                return;
             }
             if (!cancelled && props.webComponent) {
                 setState({kind: "web-component", tag: props.webComponent});

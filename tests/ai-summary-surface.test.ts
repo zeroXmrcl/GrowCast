@@ -21,7 +21,7 @@ describe("ai summary surface", () => {
 
         assert.match(instrumentation, /startAiSummaryScheduler/);
         assert.match(http, /recordClimateOnIngestBestEffort/);
-        assert.match(archives, /stageClimateArchive/);
+        assert.match(archives, /runPluginGrowArchived/);
         assert.match(archives, /stageAiSummaryArchive/);
         assert.match(generate, /stageContextFromGrow/);
         assert.doesNotMatch(generate, /temperatureDay|humidityNight/);
@@ -67,7 +67,7 @@ describe("ai summary surface", () => {
         assert.match(card, /ABOVE|mosaicDetail/);
         assert.match(card, /Demo/);
         assert.match(card, /No assessment yet\. The daily job runs around 08:00 \(Europe\/Berlin\)\./);
-        assert.match(card, /useLiveClimate/);
+        assert.match(card, /usePluginLiveReadings/);
         assert.match(card, /useRollingAiMosaic/);
         assert.match(card, /mergeLiveMetrics/);
         assert.match(card, /mosaicFoldSlotMs/);

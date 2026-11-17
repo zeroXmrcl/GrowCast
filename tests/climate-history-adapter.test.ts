@@ -17,6 +17,7 @@ import {_resetClimateWriteLockForTests, writeClimateDay} from "../plugins/ggs/ho
 import {CLIMATE_RETENTION_DAYS, type ClimateDayFile, type ClimatePoint} from "../plugins/ggs/host/climate/types.ts";
 import {climateRetentionStartDate} from "../plugins/ggs/host/climate/writer.ts";
 import {berlinDateOnly} from "../plugins/ggs/host/energy/berlin.ts";
+import {enableGgsForTests} from "./enable-ggs.ts";
 
 const NOW = Date.parse("2026-10-13T13:00:00.000Z");
 
@@ -43,6 +44,7 @@ async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     process.env.GROWCAST_DATA_DIR = path.join(root, "data");
     await mkdir(process.env.GROWCAST_DATA_DIR, {recursive: true});
     _resetClimateWriteLockForTests();
+    await enableGgsForTests();
     try {
         return await fn();
     } finally {

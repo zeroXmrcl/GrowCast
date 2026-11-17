@@ -1,4 +1,5 @@
-import {getBearerToken} from "@/lib/mesh-auth";
+import {getBearerToken, getMeshToken, isMeshTokenAuthorized} from "@/lib/mesh-auth";
+import {isFirstPartyPluginId} from "@/lib/plugins/ids";
 import {isPluginTokenAuthorized} from "@/lib/plugins/tokens";
 import {getRegistryRecord, pluginIsActive} from "@/lib/plugins/registry";
 
@@ -22,6 +23,9 @@ export async function requirePluginToken(request: Request, pluginId: string): Pr
     }
     const provided = getBearerToken(request);
     if (await isPluginTokenAuthorized(pluginId, provided)) {
+        return null;
+    }
+    if (isFirstPartyPluginId(pluginId) && isMeshTokenAuthorized(getMeshToken(), provided)) {
         return null;
     }
     return unauthorized();

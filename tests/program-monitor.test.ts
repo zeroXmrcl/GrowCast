@@ -19,14 +19,14 @@ describe("programScale", () => {
 describe("program monitor wiring", () => {
     it("iframes the session program route at 1920x1080, not OverlayHud in a fluid box", () => {
         const monitor = readFileSync(
-            path.join(process.cwd(), "app", "admin", "program-monitor.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "admin", "program-monitor.tsx"),
             "utf8",
         );
         const page = readFileSync(
-            path.join(process.cwd(), "app", "admin", "stream", "page.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "admin", "page.tsx"),
             "utf8",
         );
-        assert.match(monitor, /src="\/program"/);
+        assert.match(monitor, /src="\/p\/restream\/program"/);
         assert.match(monitor, /1920/);
         assert.match(monitor, /1080/);
         assert.match(monitor, /allow="autoplay"/);
@@ -41,7 +41,7 @@ describe("program monitor wiring", () => {
         assert.match(monitor, /iframeRef/);
         assert.match(page, /CameraLookPanel/);
         const panel = readFileSync(
-            path.join(process.cwd(), "app", "admin", "camera-look-panel.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "admin", "camera-look-panel.tsx"),
             "utf8",
         );
         assert.match(panel, /name="brightness"/);

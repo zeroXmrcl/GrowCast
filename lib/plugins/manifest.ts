@@ -9,6 +9,7 @@ import {
     type PluginConfigField,
     type PluginConfigFieldType,
     type PluginExports,
+    type PluginInstallerSpec,
     type PluginManifest,
     type PluginMetricSpec,
     type PluginNavPlacement,
@@ -34,6 +35,8 @@ const SLOTS = new Set<PluginWidgetSlot>([
     "plugin-page",
     "energy-page",
     "gallery-page",
+    "archive",
+    "site-chrome",
 ]);
 const NETWORK = new Set<PluginNetworkPermission>(["none", "lan", "internet"]);
 const METRIC_KINDS = new Set(["gauge", "counter", "enum"]);
@@ -135,12 +138,25 @@ function parsePages(raw: unknown): PluginPageSpec[] | string {
         }
         ids.add(id);
         const pathValue = typeof item.path === "string" ? item.path.replace(/^\/+/, "") : "";
+        const bands = Array.isArray(item.bands)
+            ? item.bands.flatMap((band) => {
+                if (!isRecord(band)) {
+                    return [];
+                }
+                const bandId = asTrimmed(band.id);
+                const label = asTrimmed(band.label);
+                return bandId && label ? [{id: bandId, label}] : [];
+            })
+            : undefined;
         pages.push({
             id,
             path: pathValue,
             title,
             nav,
             public: item.public === true,
+            shell: item.shell === "none" ? "none" : "site",
+            viewport: item.viewport === "broadcast" ? "broadcast" : "site",
+            ...(bands && bands.length > 0 ? {bands} : {}),
         });
     }
     return pages;
@@ -293,6 +309,24 @@ function parseExports(raw: unknown): PluginExports | undefined | string {
     };
 }
 
+function parseInstaller(raw: unknown): PluginInstallerSpec | undefined | string {
+    if (raw === undefined) {
+        return undefined;
+    }
+    if (!isRecord(raw)) {
+        return "installer must be an object";
+    }
+    const stepId = asTrimmed(raw.stepId);
+    const label = asTrimmed(raw.label);
+    const title = asTrimmed(raw.title);
+    const line = asTrimmed(raw.line);
+    const sort = typeof raw.sort === "number" && Number.isFinite(raw.sort) ? raw.sort : null;
+    if (!stepId || !label || !title || !line || sort === null) {
+        return "installer requires stepId, sort, label, title, and line";
+    }
+    return {stepId, sort, label, title, line};
+}
+
 function parseCompat(raw: unknown): PluginCompat | undefined | string {
     if (raw === undefined) {
         return undefined;
@@ -365,6 +399,10 @@ export function parsePluginManifest(raw: unknown): ManifestResult {
     if (typeof compat === "string") {
         return {ok: false, error: compat};
     }
+    const installer = parseInstaller(raw.installer);
+    if (typeof installer === "string") {
+        return {ok: false, error: installer};
+    }
     for (const page of pages) {
         if (page.public && !permissions.publicPages) {
             return {ok: false, error: `page "${page.id}" is public but permissions.publicPages is not set`};
@@ -391,6 +429,7 @@ export function parsePluginManifest(raw: unknown): ManifestResult {
             metrics,
             exports,
             compat,
+            installer,
             hostModule: optionalString(raw.hostModule),
         },
     };

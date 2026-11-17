@@ -6,7 +6,7 @@ import {
     applyOverlayEnergyPoll,
     overlayClimateGearVisible,
     overlayEnergyVisible,
-} from "../lib/overlay-presence.ts";
+} from "../plugins/ggs/ui/overlay-presence.ts";
 import {OVERLAY_GROW_PATH, OVERLAY_GROW_POLL_MS, parseOverlayGrowBody} from "../lib/overlay-grow.ts";
 
 function snapshot(overrides: Partial<GgsLivePublic> = {}): GgsLivePublic {

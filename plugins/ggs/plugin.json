@@ -15,13 +15,35 @@
   },
   "ui": { "entry": "ui/dist/index.js", "sdk": "^1.0.0" },
   "pages": [
-    { "id": "energy", "path": "energy", "title": "Energy", "nav": "none" },
-    { "id": "admin", "path": "", "title": "GGS", "nav": "admin" }
+    { "id": "energy", "path": "energy", "title": "Energy", "nav": "site", "public": true },
+    {
+      "id": "admin",
+      "path": "",
+      "title": "GGS",
+      "nav": "admin",
+      "bands": [
+        { "id": "spider-farmer", "label": "Spider Farmer" },
+        { "id": "sidecar", "label": "Sidecar" },
+        { "id": "devices", "label": "Devices" },
+        { "id": "energy", "label": "Energy" }
+      ]
+    }
   ],
   "widgets": [
-    { "id": "live-climate", "title": "Live climate", "slots": ["plugin-page"], "size": "2x1" }
+    { "id": "live-climate", "title": "Live climate", "slots": ["dashboard"], "size": "2x1" },
+    { "id": "overlay-climate", "title": "Overlay climate", "slots": ["overlay"] },
+    { "id": "overlay-gear", "title": "Overlay gear", "slots": ["overlay"] },
+    { "id": "overlay-energy", "title": "Overlay energy", "slots": ["overlay"] },
+    { "id": "archive-energy", "title": "Archived energy", "slots": ["archive"] }
   ],
-  "permissions": { "network": "internet" },
+  "permissions": { "network": "internet", "publicPages": true },
+  "installer": {
+    "stepId": "climate",
+    "sort": 15,
+    "label": "Climate",
+    "title": "Connect Spider Farmer",
+    "line": "Email and password only. Google or Apple sign-in will not work."
+  },
   "hostModule": "host/index.ts",
   "exports": { "liveClimate": true, "energy": true, "tentEnergy": true },
   "compat": { "meshState": true, "meshSettings": true },

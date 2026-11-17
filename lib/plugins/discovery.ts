@@ -1,5 +1,6 @@
 import {readdir, readFile} from "node:fs/promises";
 import path from "node:path";
+import {pluginIdMatchesParam} from "@/lib/plugins/ids";
 import {parsePluginManifest} from "@/lib/plugins/manifest";
 import {pluginsRoot} from "@/lib/plugins/paths";
 import type {DiscoveredPlugin, PluginManifest} from "@/lib/plugins/types";
@@ -65,4 +66,9 @@ export async function discoverPlugins(root = pluginsRoot()): Promise<DiscoveryRe
 export async function findDiscoveredPlugin(pluginId: string): Promise<DiscoveredPlugin | null> {
     const {plugins} = await discoverPlugins();
     return plugins.find((item) => item.manifest.id === pluginId) ?? null;
+}
+
+export async function resolveDiscoveredPluginId(param: string): Promise<string | null> {
+    const {plugins} = await discoverPlugins();
+    return plugins.find((item) => pluginIdMatchesParam(item.manifest.id, param))?.manifest.id ?? null;
 }

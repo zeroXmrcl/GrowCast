@@ -70,12 +70,11 @@ describe("programCameraGetResponse", () => {
 describe("program-camera route", () => {
     it("uses the program GET helper and request log", () => {
         const route = readFileSync(
-            path.join(process.cwd(), "app", "api", "overlay", "program-camera", "route.ts"),
+            path.join(process.cwd(), "plugins", "restream", "host", "index.ts"),
             "utf8",
         );
         assert.match(route, /programCameraGetResponse/);
         assert.match(route, /isAdminAuthenticated/);
-        assert.match(route, /withRequestLog/);
-        assert.doesNotMatch(route, /401/);
+        assert.match(route, /pathName === "program-camera"/);
     });
 });

@@ -9,10 +9,10 @@ First-party plugins (this repo):
 - `growcast.restream` — Twitch program capture
 - `growcast.solar` — FENECON / vendor-agnostic solar split
 
-Install: copy the folder into `plugins/`, open **Admin → Plugins**, read the warning, confirm the hash, enable. GrowCast starts the backend. If files change, the plugin is paused until the new hash is confirmed.
+Install: copy the folder into `plugins/`, open **Admin → Plugins**, read the warning, confirm the hash, enable. First-party plugins are **not** auto-enabled. GrowCast starts the backend through `docker-socket-proxy` (never a raw `docker.sock` mount). If files change, the plugin is paused until the new hash is confirmed.
 
 Plugin pages live under `/p/<plugin>/...`. Admin pages under `/admin/plugins/<id>/...`. Core routes always win.
 
-The frontend SDK (`packages/plugin-sdk`, MIT) is shared through an import map so plugin UI uses core's React 19. The Python SDK (`packages/plugin-sdk-python`, MIT) posts ingest and heartbeats.
+Widget UI is built to `plugins/*/ui/dist` (`npm run build:plugin-ui`) and loaded through the host import map. The frontend SDK (`packages/plugin-sdk`, MIT) shares core React 19. The Python SDK (`packages/plugin-sdk-python`, MIT) posts ingest and heartbeats.
 
 See [MIGRATION.md](./MIGRATION.md) and [HOST-API.md](./HOST-API.md).

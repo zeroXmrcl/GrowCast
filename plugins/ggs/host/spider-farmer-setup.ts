@@ -4,7 +4,7 @@ import {ensureMeshToken} from "@/lib/mesh-token";
 import {
     clearStoredControllers,
     writeStoredControllers,
-} from "@/lib/setup-account";
+} from "@/plugins/ggs/host/controllers";
 import {
     SpiderFarmerLoginError,
     listSpiderFarmerControllers,

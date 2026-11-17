@@ -25,7 +25,30 @@ describe("first-party plugin.json files", () => {
                 assert.equal(parsed.value.id, id);
                 assert.equal(parsed.value.apiVersion, 1);
                 assert.ok(parsed.value.ui?.sdk);
+                assert.equal(parsed.value.ui?.entry, "ui/dist/index.js");
             }
         });
     }
+
+    it("defaults solar public tiles on and battery discharge to always-solar", () => {
+        const raw = JSON.parse(
+            readFileSync(path.join(process.cwd(), "plugins", "solar", "plugin.json"), "utf8"),
+        ) as {config: Record<string, {default?: unknown}>};
+        assert.equal(raw.config.publicPv.default, true);
+        assert.equal(raw.config.publicBattery.default, true);
+        assert.equal(raw.config.publicGrid.default, true);
+        assert.equal(raw.config.publicTentShare.default, true);
+        assert.equal(raw.config.batteryDischargeOrigin.default, "always-solar");
+    });
+
+    it("loads plugin UI through the import map, not a first-party Next import()", () => {
+        const mount = readFileSync(path.join(process.cwd(), "components", "plugin-mount.tsx"), "utf8");
+        const map = readFileSync(path.join(process.cwd(), "components", "plugin-import-map.tsx"), "utf8");
+        assert.match(mount, /webpackIgnore: true/);
+        assert.match(mount, /pluginAssetUrl/);
+        assert.match(mount, /web-component/);
+        assert.doesNotMatch(mount, /FIRST_PARTY/);
+        assert.doesNotMatch(mount, /from ['"]@\/plugins\//);
+        assert.match(map, /type="importmap"/);
+    });
 });

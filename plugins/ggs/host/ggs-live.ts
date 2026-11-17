@@ -1,7 +1,6 @@
 import {asBoolean, asString, isRecord} from "@/lib/coerce";
-import {GGS_PLUGIN_ID} from "@/lib/mesh-plugins";
 
-export {GGS_PLUGIN_ID};
+export const GGS_PLUGIN_ID = "growcast.ggs";
 export const GGS_STALE_AFTER_MS = 120_000;
 export const GGS_HEARTBEAT_MS = 15_000;
 export const GGS_MAX_DEVICES = 20;

@@ -8,7 +8,7 @@ import {describe, it} from "node:test";
 import {
     _resetOverlayAlertHubForTests,
     peekOverlayAlertQueue,
-} from "../lib/overlay-alert-hub.ts";
+} from "../plugins/restream/host/overlay-alert-hub.ts";
 import {writeAlertsSettings} from "../plugins/restream/host/alerts-settings.ts";
 import {
     EVENTSUB_TYPES,
@@ -843,15 +843,18 @@ describe("ensureEventsubSubscriptionsOnBoot", () => {
 
 describe("EventSub route and files", () => {
     it("is a public HMAC webhook that reads the raw body first", () => {
-        const route = src(path.join("app", "api", "twitch", "eventsub", "route.ts"));
+        const dispatcher = src(path.join("app", "api", "twitch", "eventsub", "route.ts"));
+        assert.match(dispatcher, /withRequestLog/);
+        assert.match(dispatcher, /legacyPluginPublicResponse/);
+        assert.doesNotMatch(dispatcher, /isAdminAuthenticated|requireAdmin/);
+        assert.doesNotMatch(dispatcher, /request\.json\(/);
+        assert.doesNotMatch(dispatcher, /console\.(log|info|debug|warn|error)/);
+        assert.doesNotMatch(dispatcher, /current-grow|getCurrentGrow|writeGrow/);
+        const route = src(path.join("plugins", "restream", "host", "index.ts"));
         assert.match(route, /await request\.text\(\)/);
         assert.match(route, /eventsubNotificationResponse/);
-        assert.match(route, /withRequestLog/);
-        assert.match(route, /Twitch-Eventsub-Message-Id|request\.headers/);
-        assert.doesNotMatch(route, /isAdminAuthenticated|requireAdmin/);
-        assert.doesNotMatch(route, /request\.json\(/);
-        assert.doesNotMatch(route, /console\.(log|info|debug|warn|error)/);
-        assert.doesNotMatch(route, /current-grow|getCurrentGrow|writeGrow/);
+        assert.match(route, /pathName === "eventsub"/);
+        assert.match(route, /ensureEventsubSubscriptionsOnBoot/);
 
         const eventsub = src(path.join("plugins", "restream", "host", "eventsub.ts"));
         assert.match(eventsub, /safeEqualText/);
@@ -877,11 +880,10 @@ describe("EventSub route and files", () => {
         assert.doesNotMatch(eventsub, /childLogger\([^)]*rawBody|log\.[a-z]+\([^)]*rawBody/);
 
         const instrumentation = src("instrumentation.ts");
-        assert.match(instrumentation, /ensureEventsubSubscriptionsOnBoot/);
+        assert.match(instrumentation, /bootPluginHost/);
         assert.match(instrumentation, /void Promise\.resolve\(\)\.then/);
         assert.match(instrumentation, /NEXT_RUNTIME === ["']nodejs["']/);
         assert.match(instrumentation, /phase-production-build/);
-        assert.match(instrumentation, /twitch\.eventsub\.failed/);
-        assert.match(instrumentation, /boot_failed/);
+        assert.match(instrumentation, /plugin\.boot\.failed/);
     });
 });

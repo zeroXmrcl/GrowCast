@@ -71,17 +71,14 @@ describe("shouldShowLiveRow", () => {
 describe("homepage live-climate gate", () => {
     it("renders LiveTentRow for a GGS snapshot or a local climate preview", () => {
         const src = readFileSync(path.join(process.cwd(), "app", "(site)", "page.tsx"), "utf8");
-        assert.match(src, /hasGgsLiveUi\(/);
-        assert.match(src, /devClimatePreviewEnabled\(/);
-        assert.match(src, /showLiveClimate\s*\?\s*\(?\s*<LiveTentRow/);
-        assert.match(src, /LiveTentRow climateTick=\{grow\.climateTick\}/);
+        assert.match(src, /PluginWidgets slot="dashboard"/);
         assert.doesNotMatch(src, /LiveTentRow climate=\{/);
         const card = readFileSync(
-            path.join(process.cwd(), "components", "live-climate-card.tsx"),
+            path.join(process.cwd(), "plugins", "ggs", "ui", "live-climate-card.tsx"),
             "utf8",
         );
         const row = readFileSync(
-            path.join(process.cwd(), "components", "live-tent-row.tsx"),
+            path.join(process.cwd(), "plugins", "ggs", "ui", "live-tent-row.tsx"),
             "utf8",
         );
         assert.match(card, /growcast-alert-pulse/);
@@ -98,7 +95,7 @@ describe("homepage live-climate gate", () => {
 
     it("shows humidity tenths on the dashboard card and whole percents on the OG card", () => {
         const dashSrc = readFileSync(
-            path.join(process.cwd(), "components", "live-climate-card.tsx"),
+            path.join(process.cwd(), "plugins", "ggs", "ui", "live-climate-card.tsx"),
             "utf8",
         );
         const ogSrc = readFileSync(path.join(process.cwd(), "lib", "share-card.ts"), "utf8");

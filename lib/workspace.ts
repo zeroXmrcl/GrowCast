@@ -50,7 +50,10 @@ export const WORKSPACE_VT = {
 } as const;
 
 export function isWorkspacePath(pathname: string): boolean {
-    return pathname === "/" || pathname === "/energy";
+    if (pathname === "/") {
+        return true;
+    }
+    return /^\/p\/[^/]+\/energy\/?$/.test(pathname);
 }
 
 export function isWorkspaceHandoff(from: string, to: string): boolean {

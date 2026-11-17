@@ -3,8 +3,8 @@ import {describe, it} from "node:test";
 import {
     parseAdminSettingsForm,
     parseStreamSettingsForm,
-    parseTimelapseSettingsForm,
 } from "../lib/admin/parse-grow-form.ts";
+import {DEFAULT_TIMELAPSE_SETTINGS, normalizeTimelapseSettings} from "../plugins/timelapse/host/timelapse-settings.ts";
 
 function formFrom(entries: Record<string, string>): FormData {
     const form = new FormData();
@@ -15,7 +15,7 @@ function formFrom(entries: Record<string, string>): FormData {
 }
 
 describe("parseAdminSettingsForm", () => {
-    it("allows https social URLs and ignores stream fields", () => {
+    it("allows https social URLs and parses overlay fields on the grow form", () => {
         const result = parseAdminSettingsForm(
             formFrom({
                 name: "Test Grow",
@@ -31,12 +31,12 @@ describe("parseAdminSettingsForm", () => {
         );
 
         assert.equal(result.grow.socials?.youtube, "https://www.youtube.com/@example");
-        assert.equal(result.grow.streamUrl, undefined);
-        assert.equal(result.grow.showGrowName, undefined);
-        assert.equal(result.grow.overlayLayout, undefined);
-        assert.equal(result.grow.overlayStream, undefined);
-        assert.equal(result.grow.overlayScalePct, undefined);
-        assert.equal(result.grow.climateTick, undefined);
+        assert.equal(result.grow.streamUrl, "https://stream.example.com/hls/");
+        assert.equal(result.grow.showGrowName, true);
+        assert.equal(result.grow.overlayLayout, "bottom-bar");
+        assert.equal(result.grow.overlayStream, "include");
+        assert.equal(result.grow.climateTick, "picker");
+        assert.equal(result.grow.name, "Test Grow");
     });
 
     it("strips javascript: and data: URL schemes on socials", () => {
@@ -122,7 +122,7 @@ describe("parseStreamSettingsForm", () => {
         assert.equal(bad.grow.showGrowName, false);
     });
 
-    it("does not parse grow identity fields", () => {
+    it("parses overlay and identity together because overlay lives on Grow", () => {
         const result = parseStreamSettingsForm(
             formFrom({
                 name: "Hijack",
@@ -130,8 +130,9 @@ describe("parseStreamSettingsForm", () => {
                 streamUrl: "https://stream.example.com/hls/",
             }),
         );
-        assert.equal(result.grow.name, undefined);
-        assert.equal(result.grow.plant, undefined);
+        assert.equal(result.grow.name, "Hijack");
+        assert.equal(result.grow.plant, "Tomato");
+        assert.equal(result.grow.streamUrl, "https://stream.example.com/hls/");
     });
 
     it("parses overlayLayout radios with left-rail as the missing/junk default", () => {
@@ -185,14 +186,15 @@ describe("parseStreamSettingsForm", () => {
     });
 });
 
-describe("parseTimelapseSettingsForm", () => {
+describe("normalizeTimelapseSettings", () => {
     it("parses quality, timezone, and length", () => {
-        const result = parseTimelapseSettingsForm(
-            formFrom({
+        const result = normalizeTimelapseSettings(
+            {
                 timelapseQuality: "high",
-                timelapseTimezone: "UTC",
-                timelapseLength: "12",
-            }),
+                timezone: "UTC",
+                timelapseLengthSeconds: 12,
+            },
+            DEFAULT_TIMELAPSE_SETTINGS,
         );
         assert.equal(result.timelapseQuality, "high");
         assert.equal(result.timelapseLengthSeconds, 12);
@@ -200,11 +202,12 @@ describe("parseTimelapseSettingsForm", () => {
     });
 
     it("routes invalid timelapse quality through normalizer defaults", () => {
-        const result = parseTimelapseSettingsForm(
-            formFrom({
+        const result = normalizeTimelapseSettings(
+            {
                 timelapseQuality: "ultra-mega",
-                timelapseTimezone: "Not/AZone",
-            }),
+                timezone: "Not/AZone",
+            },
+            DEFAULT_TIMELAPSE_SETTINGS,
         );
 
         assert.equal(result.timelapseQuality, "medium");
@@ -212,23 +215,25 @@ describe("parseTimelapseSettingsForm", () => {
     });
 
     it("keeps unused timelapse trigger times empty so 0, 1, 2, or 3 slots work", () => {
-        const one = parseTimelapseSettingsForm(
-            formFrom({
-                timelapseTime1: "08:00",
-                timelapseTime2: "",
-                timelapseTime3: "",
-            }),
+        const one = normalizeTimelapseSettings(
+            {
+                time1: "08:00",
+                time2: "",
+                time3: "",
+            },
+            DEFAULT_TIMELAPSE_SETTINGS,
         );
         assert.equal(one.time1, "08:00");
         assert.equal(one.time2, "");
         assert.equal(one.time3, "");
 
-        const none = parseTimelapseSettingsForm(
-            formFrom({
-                timelapseTime1: "",
-                timelapseTime2: "",
-                timelapseTime3: "",
-            }),
+        const none = normalizeTimelapseSettings(
+            {
+                time1: "",
+                time2: "",
+                time3: "",
+            },
+            DEFAULT_TIMELAPSE_SETTINGS,
         );
         assert.equal(none.time1, "");
         assert.equal(none.time2, "");

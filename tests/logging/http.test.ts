@@ -91,7 +91,7 @@ describe("docker compose listen address", () => {
     assert.doesNotMatch(yml, /^\s*ggs:\s*$/m);
     assert.doesNotMatch(yml, /^\s*restream:\s*$/m);
     assert.doesNotMatch(yml, /^\s*timelapse:\s*$/m);
-    assert.match(yml, /GROWCAST_GGS_ENV_FILE:\s*\/app\/data\/ggs\.env/);
+    assert.doesNotMatch(yml, /GROWCAST_GGS_ENV_FILE/);
     assert.match(yml, /GROWCAST_PLUGIN_RUNTIME:\s*docker/);
     assert.match(yml, /compose\.plugins\.generated\.yml/);
     assert.match(yml, /docker\.sock/);

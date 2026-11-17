@@ -19,17 +19,17 @@ function src(rel: string): string {
 }
 
 describe("workspace morph", () => {
-    it("treats only / and /energy as workspace paths", () => {
+    it("treats only / and plugin energy pages as workspace paths", () => {
         assert.equal(isWorkspacePath("/"), true);
-        assert.equal(isWorkspacePath("/energy"), true);
-        assert.equal(isWorkspacePath("/gallery"), false);
+        assert.equal(isWorkspacePath("/p/ggs/energy"), true);
+        assert.equal(isWorkspacePath("/p/timelapse/gallery"), false);
         assert.equal(isWorkspacePath("/grows"), false);
         assert.equal(isWorkspacePath("/admin"), false);
-        assert.equal(isWorkspaceHandoff("/", "/energy"), true);
-        assert.equal(isWorkspaceHandoff("/energy", "/"), true);
+        assert.equal(isWorkspaceHandoff("/", "/p/ggs/energy"), true);
+        assert.equal(isWorkspaceHandoff("/p/ggs/energy", "/"), true);
         assert.equal(isWorkspaceHandoff("/", "/"), false);
-        assert.equal(isWorkspaceHandoff("/gallery", "/"), false);
-        assert.equal(isWorkspaceHandoff("/", "/gallery"), false);
+        assert.equal(isWorkspaceHandoff("/p/timelapse/gallery", "/"), false);
+        assert.equal(isWorkspaceHandoff("/", "/p/timelapse/gallery"), false);
         assert.equal(
             isPlainWorkspaceClick({
                 altKey: false,
@@ -53,22 +53,19 @@ describe("workspace morph", () => {
     });
 
     it("keeps OverlayCamera in the site shell and LiveTentRow on home", () => {
-        const layout = src(path.join("app", "(site)", "layout.tsx"));
+        const layout = src(path.join("components", "site-shell.tsx"));
         const frame = src(path.join("components", "workspace-frame.tsx"));
         const home = src(path.join("app", "(site)", "page.tsx"));
-        const energy = src(path.join("app", "(site)", "energy", "page.tsx"));
+        const energy = src(path.join("plugins", "ggs", "pages", "energy.tsx"));
         assert.match(layout, /WorkspaceFrame/);
-        assert.match(layout, /readCameraLook/);
         assert.match(frame, /OverlayCamera/);
-        assert.match(frame, /look=\{look\}/);
         assert.match(frame, /isWorkspacePath\(pathname\)/);
-        assert.match(frame, /EnergyScoreboard/);
         assert.match(frame, /growcast-dash-slot/);
         assert.match(frame, /growcast-energy-slot/);
         assert.doesNotMatch(frame, /lg:w-\[320px\]/);
         assert.equal(WORKSPACE_CAM_ENERGY_PX, 320);
         assert.doesNotMatch(home, /OverlayCamera/);
-        assert.match(home, /LiveTentRow climateTick=\{grow\.climateTick\}/);
+        assert.match(home, /PluginWidgets slot="dashboard"/);
         assert.match(home, /AiSummaryCard/);
         assert.match(home, /readAiSummaryPublic/);
         assert.doesNotMatch(energy, /<h1/);
@@ -81,8 +78,8 @@ describe("workspace morph", () => {
         const home = src(path.join("app", "(site)", "page.tsx"));
         const header = src(path.join("components", "site-header.tsx"));
         const workspace = src(path.join("lib", "workspace.ts"));
-        const scoreboard = src(path.join("components", "energy-scoreboard.tsx"));
-        const row = src(path.join("components", "live-tent-row.tsx"));
+        const scoreboard = src(path.join("plugins", "ggs", "ui", "energy-scoreboard.tsx"));
+        const row = src(path.join("plugins", "ggs", "ui", "live-tent-row.tsx"));
         const pictures = src(path.join("components", "dash-pictures.tsx"));
         const frame = src(path.join("components", "workspace-frame.tsx"));
         const aiCard = src(path.join("components", "ai-summary-card.tsx"));
@@ -126,7 +123,7 @@ describe("workspace morph", () => {
         assert.match(nav, /keepCameraInView/);
         assert.match(nav, /popstate/);
         assert.match(nav, /WORKSPACE_MORPH_MS \+ 80/);
-        assert.match(frame, /EnergyScoreboard/);
+        assert.match(frame, /growcast-energy-slot/);
         assert.match(frame, /WORKSPACE_VT\.board/);
         assert.match(footer, /vt-footer/);
         assert.match(css, /growcast-vt-off/);

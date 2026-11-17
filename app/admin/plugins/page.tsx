@@ -38,7 +38,36 @@ export default async function AdminPluginsPage() {
                         Drop a folder into <code>plugins/</code>, review the SHA-256 hash, then enable.
                         GrowCast starts and stops the plugin backend. If files change after enable, the plugin is paused until you confirm the new hash.
                     </p>
+                    <p className="mt-2 text-sm text-(--admin-muted)">
+                        First-party plugins are never auto-enabled. After a cutover, enable them here immediately
+                        or climate, energy, snapshots, and broadcast ingest stay off.
+                    </p>
                 </AdminBand>
+                {(() => {
+                    const waiting = plugins.filter((plugin) => {
+                        const record = records.find((item) => item.id === plugin.manifest.id);
+                        const enabled = record?.status === "enabled" || record?.status === "healthy";
+                        return !enabled;
+                    });
+                    if (waiting.length === 0) {
+                        return null;
+                    }
+                    return (
+                        <AdminBand id="enable-now" title="Installed but not enabled">
+                            <p className="text-sm text-amber-200">
+                                Enable these plugins now. Until they are enabled, their data collection is off
+                                and you will see gaps across the cutover.
+                            </p>
+                            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-(--admin-text)">
+                                {waiting.map((plugin) => (
+                                    <li key={plugin.manifest.id}>
+                                        {plugin.manifest.name} ({plugin.manifest.id})
+                                    </li>
+                                ))}
+                            </ul>
+                        </AdminBand>
+                    );
+                })()}
                 {plugins.map((plugin) => {
                     const record = records.find((item) => item.id === plugin.manifest.id);
                     const config = configs.find((item) => item.id === plugin.manifest.id);

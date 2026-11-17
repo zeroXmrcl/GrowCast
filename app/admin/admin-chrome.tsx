@@ -2,13 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import {AdminSectionNav} from "@/app/admin/admin-section-nav";
 import {AdminButton} from "@/components/admin/ui";
+import {pluginAdminNavItems} from "@/lib/plugins/nav";
 import type {ReactNode} from "react";
 
 export const SETTINGS_SECTION_LINKS = [
     {href: "/admin", label: "Grow"},
-    {href: "/admin/stream", label: "Broadcast"},
-    {href: "/admin/timelapse", label: "Timelapse"},
-    {href: "/admin/ggs", label: "GGS"},
     {href: "/admin/plugins", label: "Plugins"},
     {href: "/admin/archives", label: "Archives"},
     {href: "/admin/security", label: "Security"},
@@ -22,7 +20,16 @@ export function AdminSignOutButton() {
     );
 }
 
-export function AdminSidebar() {
+export async function AdminSidebar() {
+    const extra = await pluginAdminNavItems();
+    const pluginPages = extra.filter((item) => item.href !== "/admin/plugins");
+    const sections = [
+        {href: "/admin", label: "Grow"},
+        {href: "/admin/plugins", label: "Plugins"},
+        ...pluginPages.map((item) => ({href: item.href, label: item.label, bands: item.bands})),
+        {href: "/admin/archives", label: "Archives"},
+        {href: "/admin/security", label: "Security"},
+    ];
     return (
         <aside className="border-b border-(--admin-border) bg-(--admin-surface) lg:sticky lg:top-0 lg:h-screen lg:overflow-auto lg:border-b-0 lg:border-r">
             <div className="border-b border-(--admin-border) px-4 py-4">
@@ -40,7 +47,7 @@ export function AdminSidebar() {
                 </Link>
             </div>
             <div className="px-3 py-3 lg:py-4">
-                <AdminSectionNav sections={SETTINGS_SECTION_LINKS}/>
+                <AdminSectionNav sections={sections}/>
             </div>
         </aside>
     );

@@ -209,7 +209,7 @@ export async function confirmPluginHash(pluginId: string): Promise<PluginRegistr
     return enablePlugin(pluginId);
 }
 
-export function pluginIsActive(record: PluginRegistryRecord | null): boolean {
+export function pluginIsActive(record: PluginRegistryRecord | null | undefined): boolean {
     if (!record || !record.hashMatches || !record.pinnedHash) {
         return false;
     }

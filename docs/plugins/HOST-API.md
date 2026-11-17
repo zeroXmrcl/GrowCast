@@ -4,6 +4,8 @@ Base: `/api/plugins/v1/:id/`
 
 Auth: `Authorization: Bearer <per-plugin token>` (minted on enable). Fail-closed.
 
+First-party plugins (GGS, Timelapse, Restream, Solar) also accept the shared mesh token (`GROWCAST_MESH_TOKEN` or `data/mesh.token`) as a temporary fallback. New plugins must use the per-plugin token.
+
 | Method | Path | Result |
 |--------|------|--------|
 | GET | `config` | Plugin config including secrets (backend only) |

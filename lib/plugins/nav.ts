@@ -1,7 +1,12 @@
 import {listEnabledAdminPages, listEnabledSitePages} from "@/lib/plugins/routes";
 import {pluginUrlSlug} from "@/lib/plugins/ids";
 
-export type PluginNavItem = {href: string; label: string; pluginId: string};
+export type PluginNavItem = {
+    href: string;
+    label: string;
+    pluginId: string;
+    bands?: Array<{id: string; label: string}>;
+};
 
 export async function pluginSiteNavItems(): Promise<PluginNavItem[]> {
     const pages = await listEnabledSitePages();
@@ -20,6 +25,7 @@ export async function pluginAdminNavItems(): Promise<PluginNavItem[]> {
             pluginId: item.pluginId,
             label: item.page.title,
             href: `/admin/plugins/${item.pluginId}${item.page.path ? `/${item.page.path}` : ""}`,
+            bands: item.page.bands,
         });
     }
     return items;

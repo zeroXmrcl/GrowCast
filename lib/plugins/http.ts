@@ -1,6 +1,6 @@
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {readPluginConfig, readPluginConfigForBackend, stripSecrets, writePluginConfig} from "@/lib/plugins/config";
-import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
+import {findDiscoveredPlugin, resolveDiscoveredPluginId} from "@/lib/plugins/discovery";
 import {requirePluginToken} from "@/lib/plugins/auth";
 import {recordPluginHeartbeat} from "@/lib/plugins/heartbeat";
 import {ingestPluginPayload} from "@/lib/plugins/ingest";
@@ -97,7 +97,8 @@ export async function pluginHeartbeatPostResponse(request: Request, pluginId: st
     return new Response(null, {status: 204, headers: {"Cache-Control": "no-store"}});
 }
 
-export async function pluginPublicGetResponse(pluginId: string): Promise<Response> {
+export async function pluginPublicGetResponse(pluginIdParam: string): Promise<Response> {
+    const pluginId = (await resolveDiscoveredPluginId(pluginIdParam)) ?? pluginIdParam;
     const record = await getRegistryRecord(pluginId);
     const discovered = await findDiscoveredPlugin(pluginId);
     if (!discovered || !pluginIsActive(record)) {
@@ -107,12 +108,31 @@ export async function pluginPublicGetResponse(pluginId: string): Promise<Respons
     return Response.json(live, {headers: {"Cache-Control": "no-store, must-revalidate"}});
 }
 
-export async function pluginPublicStreamResponse(request: Request, pluginId: string): Promise<Response> {
+export async function pluginPublicStreamResponse(request: Request, pluginIdParam: string): Promise<Response> {
+    const pluginId = (await resolveDiscoveredPluginId(pluginIdParam)) ?? pluginIdParam;
     const record = await getRegistryRecord(pluginId);
     if (!pluginIsActive(record)) {
         return noStoreJson({error: "Unknown plugin"}, 404);
     }
     return pluginLiveSseResponse(pluginId, request);
+}
+
+export async function pluginPublicDispatch(
+    request: Request,
+    pluginIdParam: string,
+    remainder: string,
+): Promise<Response> {
+    const pluginId = (await resolveDiscoveredPluginId(pluginIdParam)) ?? pluginIdParam;
+    const discovered = await findDiscoveredPlugin(pluginId);
+    const record = await getRegistryRecord(pluginId);
+    if (!discovered || !pluginIsActive(record)) {
+        return noStoreJson({error: "Unknown plugin"}, 404);
+    }
+    const host = await loadHostModule(discovered);
+    if (host?.handlePublic) {
+        return host.handlePublic(request, remainder);
+    }
+    return noStoreJson({error: "Plugin has no public handler"}, 404);
 }
 
 export async function pluginSeriesGetResponse(pluginId: string, keys: string[], window: string): Promise<Response> {
@@ -130,12 +150,13 @@ export async function pluginSeriesGetResponse(pluginId: string, keys: string[], 
 
 export async function pluginProxyResponse(
     request: Request,
-    pluginId: string,
+    pluginIdParam: string,
     remainder: string,
 ): Promise<Response> {
     if (!(await isAdminAuthenticated())) {
         return noStoreJson({error: "Unauthorized"}, 401);
     }
+    const pluginId = (await resolveDiscoveredPluginId(pluginIdParam)) ?? pluginIdParam;
     const discovered = await findDiscoveredPlugin(pluginId);
     if (!discovered) {
         return noStoreJson({error: "Unknown plugin"}, 404);

@@ -31,7 +31,7 @@ const sample = {
 describe("energy poll", () => {
     it("uses a 15s interval and current-grow path", () => {
         assert.equal(ENERGY_POLL_MS, 15_000);
-        assert.equal(ENERGY_POLL_PATH, "/api/data/energy?grow=current");
+        assert.equal(ENERGY_POLL_PATH, "/api/data/plugins/ggs/energy?grow=current");
     });
 
     it("parses a public energy DTO and rejects error bodies", () => {

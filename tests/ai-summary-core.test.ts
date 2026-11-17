@@ -26,6 +26,7 @@ import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.
 import {writeClimateDay} from "../plugins/ggs/host/climate/store.ts";
 import type {AiSummaryRecord, ClimateWindowStats, SchedulerState, StageContext} from "../lib/ai-summary/types.ts";
 import type {ClimatePoint} from "../plugins/ggs/host/climate/types.ts";
+import {enableGgsForTests} from "./enable-ggs.ts";
 
 function emptyStats(): ClimateWindowStats {
     const metric = {
@@ -100,6 +101,7 @@ async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     _resetAiSummaryLockForTests();
     _resetGrowWriteLockForTests();
     _resetEnergyAccrueLockForTests();
+    await enableGgsForTests();
     try {
         return await fn(root);
     } finally {

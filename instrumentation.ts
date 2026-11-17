@@ -21,34 +21,6 @@ export async function register(): Promise<void> {
         err: sanitizeError(error),
       });
     }
-    try {
-      const {importLegacyTimelapseEnv} = await import("@/plugins/timelapse/host/import-legacy-sidecars");
-      await importLegacyTimelapseEnv();
-    } catch (error) {
-      const {childLogger, sanitizeError} = await import("@/lib/logging");
-      childLogger().warn({
-        event: "sidecar.legacy_import.failed",
-        reason: "timelapse",
-        err: sanitizeError(error),
-      });
-    }
-    // Helix waits for Twitch to POST the webhook challenge; awaiting that
-    // here deadlocks because Next does not serve until register() returns.
-    void Promise.resolve().then(async () => {
-      try {
-        const { ensureEventsubSubscriptionsOnBoot } = await import(
-          "@/plugins/restream/host/eventsub"
-        );
-        await ensureEventsubSubscriptionsOnBoot();
-      } catch (error) {
-        const { childLogger, sanitizeError } = await import("@/lib/logging");
-        childLogger().warn({
-          event: "twitch.eventsub.failed",
-          reason: "boot_failed",
-          err: sanitizeError(error),
-        });
-      }
-    });
     void Promise.resolve().then(async () => {
       try {
         const { startAiSummaryScheduler } = await import(

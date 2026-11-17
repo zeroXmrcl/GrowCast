@@ -59,6 +59,15 @@ export async function bootPluginHost(): Promise<void> {
             err: error instanceof Error ? error.message : "unknown",
         });
     }
+    try {
+        const {bootActivePluginHosts} = await import("@/lib/plugins/hooks");
+        await bootActivePluginHosts();
+    } catch (error) {
+        pluginLogger().warn({
+            event: "plugin.host_boot.failed",
+            err: error instanceof Error ? error.message : "unknown",
+        });
+    }
 }
 
 export async function pluginEnabledAndPinned(pluginId: string): Promise<boolean> {

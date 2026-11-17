@@ -20,8 +20,8 @@ import {
 } from "@/plugins/ggs/host/ggs-live-hub";
 import {meshClientKey, requireMeshAuthThrottled} from "@/lib/mesh-throttle";
 import {
-    logGgsStateIngested,
-    logGgsStateRejected,
+    logMeshPluginStateIngested,
+    logMeshPluginStateRejected,
     logMeshPluginUnknown,
 } from "@/lib/logging/security-events";
 
@@ -197,13 +197,13 @@ export async function liveClimateIngestResponse(
     try {
         raw = await request.json();
     } catch {
-        logGgsStateRejected({reason: "invalid_json"});
+        logMeshPluginStateRejected({reason: "invalid_json"});
         return noStoreJson({error: "Invalid JSON"}, 400);
     }
 
     const parsed = parseIngestBody(raw);
     if (!parsed.ok) {
-        logGgsStateRejected({reason: parsed.error});
+        logMeshPluginStateRejected({reason: parsed.error});
         return noStoreJson({error: "Invalid body"}, 400);
     }
 
@@ -216,7 +216,7 @@ export async function liveClimateIngestResponse(
     }
     const publicState = withStale(parsed.value);
     const {changed} = publishLive(publicState);
-    logGgsStateIngested({
+    logMeshPluginStateIngested({
         device_count: parsed.value.devices.length,
         online: parsed.value.online,
         changed,

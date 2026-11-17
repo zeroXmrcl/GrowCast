@@ -1,4 +1,3 @@
-import {airVpdKPa} from "@/lib/air-vpd";
 import {cellForValue, verdictForShare, shareFromRow} from "@/lib/ai-summary/mosaic";
 import type {
     AiMetricJudgment,
@@ -7,9 +6,8 @@ import type {
     MetricVerdict,
     MosaicCell,
 } from "@/lib/ai-summary/types";
-import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/plugins/ggs/host/climate/types";
-import type {GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
-import {pickClimateDevice} from "@/plugins/ggs/host/live-climate-view";
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/ai-summary/climate";
+import type {PluginLiveReadings} from "@/lib/plugins/types";
 
 export type LiveMetricSource = "live" | "assessment";
 
@@ -55,26 +53,19 @@ export function readingsFromStats(
     ) as Record<ClimateMetricKey, number | null>;
 }
 
-export function liveReadingsFromSnapshot(snapshot: GgsLivePublic | null): LiveReadingsBundle {
-    if (!snapshot) {
+export function liveReadingsFromPlugin(live: PluginLiveReadings | null): LiveReadingsBundle {
+    if (!live) {
         return {values: emptyReadings(), isDay: null};
     }
-    const device = pickClimateDevice(snapshot);
-    if (!device) {
-        return {values: emptyReadings(), isDay: null};
-    }
-    const tempC = finiteNumber(device.sensor.tempC);
-    const humidityPct = finiteNumber(device.sensor.humidityPct);
-    const isDay = typeof device.sensor.isDay === "boolean" ? device.sensor.isDay : null;
     return {
         values: {
-            tempC,
-            humidityPct,
-            vpd: airVpdKPa(tempC, humidityPct),
-            co2: finiteNumber(device.sensor.co2),
-            ppfd: finiteNumber(device.sensor.ppfd),
+            tempC: finiteNumber(live.values.tempC),
+            humidityPct: finiteNumber(live.values.humidityPct),
+            vpd: finiteNumber(live.values.vpd),
+            co2: finiteNumber(live.values.co2),
+            ppfd: finiteNumber(live.values.ppfd),
         },
-        isDay,
+        isDay: live.isDay,
     };
 }
 

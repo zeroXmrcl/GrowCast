@@ -108,8 +108,8 @@ describe("energy water view", () => {
 
     it("wires the drip into the current scoreboard and /energy card", () => {
         const scoreboard = readFileSync(path.join(process.cwd(), "plugins", "ggs", "host", "energy", "scoreboard.ts"), "utf8");
-        const page = readFileSync(path.join(process.cwd(), "components", "energy-scoreboard.tsx"), "utf8");
-        const drip = readFileSync(path.join(process.cwd(), "components", "energy-water.tsx"), "utf8");
+        const page = readFileSync(path.join(process.cwd(), "plugins", "ggs", "ui", "energy-scoreboard.tsx"), "utf8");
+        const drip = readFileSync(path.join(process.cwd(), "plugins", "ggs", "ui", "energy-water.tsx"), "utf8");
         assert.match(scoreboard, /buildEnergyWaterView/);
         assert.match(page, /EnergyWater/);
         assert.match(drip, />Water Usage</);

@@ -6,7 +6,7 @@ import {
     parseWaveBars,
     parseWaveSmoothPct,
     type MusicLook,
-} from "@/lib/program-music-wave";
+} from "@/plugins/restream/host/program-music-wave";
 import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 import {restreamAudioFile, restreamDir} from "@/plugins/restream/host/paths";
 

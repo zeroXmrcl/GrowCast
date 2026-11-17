@@ -43,9 +43,9 @@ describe("climate history dialog", () => {
     });
 
     it("opens from the three climate values and drops the History chip", () => {
-        const card = src("components/live-climate-card.tsx");
-        const row = src("components/live-tent-row.tsx");
-        const dialog = src("components/climate-history-dialog.tsx");
+        const card = src("plugins/ggs/ui/live-climate-card.tsx");
+        const row = src("plugins/ggs/ui/live-tent-row.tsx");
+        const dialog = src("plugins/ggs/ui/climate-history-dialog.tsx");
         assert.match(card, /aria-label=\{climateHistoryOpenLabel\(metric\)\}/);
         assert.match(card, /climateHistoryOpenLabel/);
         assert.match(card, /growcast-climate-history-trigger/);
@@ -66,7 +66,7 @@ describe("climate history dialog", () => {
     });
 
     it("portals a fixed viewport dialog with a backdrop", () => {
-        const dialog = src("components/climate-history-dialog.tsx");
+        const dialog = src("plugins/ggs/ui/climate-history-dialog.tsx");
         const css = src("app/globals.css");
         assert.match(dialog, /createPortal/);
         assert.match(dialog, /document\.body/);
@@ -87,7 +87,7 @@ describe("climate history dialog", () => {
         assert.match(dialog, /ArrowLeft/);
         assert.match(dialog, /Show \$\{previous.label\}/);
         assert.doesNotMatch(dialog, /Past climate/);
-        const chart = src("components/climate-history-chart.tsx");
+        const chart = src("plugins/ggs/ui/climate-history-chart.tsx");
         assert.match(chart, /morphStepFrame/);
         assert.match(chart, /pairStepPieces/);
         assert.doesNotMatch(css, /translateY\(-2px\)/);
@@ -134,7 +134,7 @@ describe("climate history dialog", () => {
     });
 
     it("does not import this branch storage ClimatePoint from types", () => {
-        const dialog = src("components/climate-history-dialog.tsx");
+        const dialog = src("plugins/ggs/ui/climate-history-dialog.tsx");
         assert.match(dialog, /@\/plugins\/ggs\/host\/climate\/history-public/);
         assert.match(dialog, /@\/plugins\/ggs\/host\/climate\/plot/);
         assert.doesNotMatch(dialog, /@\/plugins\/ggs\/host\/climate\/types/);

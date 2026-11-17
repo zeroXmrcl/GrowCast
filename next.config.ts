@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import {LEGACY_PERMANENT_REDIRECTS} from "./lib/plugins/legacy-redirects";
 
 const isStandaloneBuild = process.env.BUILD_STANDALONE === "1";
 
@@ -97,7 +98,26 @@ const nextConfig: NextConfig = {
                 source: "/program/:path*",
                 headers: PROGRAM_FRAME_HEADERS,
             },
+            {
+                source: "/p/restream/program",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
+            {
+                source: "/p/restream/program/:path*",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
+            {
+                source: "/p/restream/capture",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
+            {
+                source: "/p/restream/capture/:path*",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
         ];
+    },
+    async redirects() {
+        return LEGACY_PERMANENT_REDIRECTS;
     },
 };
 

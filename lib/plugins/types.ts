@@ -23,7 +23,14 @@ export type PluginRuntimeType = "python" | "node" | "docker" | "none";
 
 export type PluginNavPlacement = "site" | "admin" | "none";
 
-export type PluginWidgetSlot = "dashboard" | "overlay" | "plugin-page" | "energy-page" | "gallery-page";
+export type PluginWidgetSlot =
+    | "dashboard"
+    | "overlay"
+    | "plugin-page"
+    | "energy-page"
+    | "gallery-page"
+    | "archive"
+    | "site-chrome";
 
 export type PluginNetworkPermission = "none" | "lan" | "internet";
 
@@ -62,12 +69,23 @@ export type PluginMetricSpec = {
     values?: Record<string, string>;
 };
 
+export type PluginPageShell = "site" | "none";
+export type PluginPageViewport = "site" | "broadcast";
+
+export type PluginPageBand = {
+    id: string;
+    label: string;
+};
+
 export type PluginPageSpec = {
     id: string;
     path: string;
     title: string;
     nav: PluginNavPlacement;
     public?: boolean;
+    shell?: PluginPageShell;
+    viewport?: PluginPageViewport;
+    bands?: PluginPageBand[];
 };
 
 export type PluginWidgetSpec = {
@@ -135,6 +153,7 @@ export type PluginManifest = {
     metrics: Record<string, PluginMetricSpec>;
     exports?: PluginExports;
     compat?: PluginCompat;
+    installer?: PluginInstallerSpec;
     hostModule?: string;
 };
 
@@ -202,6 +221,59 @@ export type PluginSeriesPoint = {
     value: number | null;
 };
 
+export type PluginArchiveContext = {
+    archiveId: string;
+    destDir: string;
+    growId: string;
+    seededAt: string;
+    archivedAt: string;
+};
+
+export type PluginClimatePoint = {
+    t: string;
+    tempC: number | null;
+    humidityPct: number | null;
+    vpd: number | null;
+    co2: number | null;
+    ppfd: number | null;
+    isDay: boolean | null;
+    alarm?: boolean;
+};
+
+export type PluginLiveReadings = {
+    values: {
+        tempC: number | null;
+        humidityPct: number | null;
+        vpd: number | null;
+        co2: number | null;
+        ppfd: number | null;
+    };
+    isDay: boolean | null;
+    asOf: string | null;
+};
+
+export type PluginMediaSources = {
+    snapshotsDir?: string;
+    timelapseDir?: string;
+};
+
+export type PluginInstallerSpec = {
+    stepId: string;
+    sort: number;
+    label: string;
+    title: string;
+    line: string;
+};
+
+export type PluginSetupResult =
+    | {ok: true; detail?: string}
+    | {ok: false; message: string; choose?: Array<{serial: string; name: string; prefix: string}>};
+
+export type PluginOverlayLook = {
+    lookCss: string;
+    temperatureStyle: Record<string, string | number>;
+};
+
 export type PluginHostModule = {
     onIngest?: (input: {
         pluginId: string;
@@ -212,6 +284,17 @@ export type PluginHostModule = {
     fromMeshState?: (raw: unknown) => PluginIngestBody | {error: string};
     meshSettings?: () => Promise<Record<string, unknown>>;
     handleAction?: (request: Request, remainder: string) => Promise<Response>;
+    handlePublic?: (request: Request, remainder: string) => Promise<Response>;
+    onBoot?: () => Promise<void>;
+    onGrowArchived?: (ctx: PluginArchiveContext) => Promise<void>;
+    onGrowReset?: () => Promise<void>;
+    archiveMediaSources?: () => PluginMediaSources | Promise<PluginMediaSources>;
+    climatePointsForWindow?: (startMs: number, endMs: number) => Promise<PluginClimatePoint[]>;
+    liveReadings?: () => Promise<PluginLiveReadings | null>;
+    newestSnapshotStill?: () => Promise<{mime: "image/jpeg"; dataUrl: string} | null>;
+    overlayLook?: () => Promise<PluginOverlayLook | null>;
+    setupStatus?: () => Promise<{complete: boolean; detail: string | null}>;
+    handleSetup?: (formData: FormData) => Promise<PluginSetupResult>;
 };
 
 export const INSTALL_WARNING =

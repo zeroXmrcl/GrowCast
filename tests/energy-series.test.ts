@@ -10,6 +10,7 @@ import {buildEnergyDto} from "../plugins/ggs/host/energy/scoreboard.ts";
 import {buildEnergySeries} from "../plugins/ggs/host/energy/series.ts";
 import {writeEnergyCursor, writeEnergyDay} from "../plugins/ggs/host/energy/store.ts";
 import {updateCurrentGrow} from "../lib/db.ts";
+import {enableGgsForTests} from "./enable-ggs.ts";
 import type {EnergyDayFile, EnergySeriesPoint} from "../plugins/ggs/host/energy/types.ts";
 
 const LIGHT_KEY = "90E5B1B87088:light";
@@ -46,6 +47,7 @@ async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const previous = process.env.GROWCAST_DATA_DIR;
     process.env.GROWCAST_DATA_DIR = dir;
     _resetEnergyAccrueLockForTests();
+    await enableGgsForTests();
     try {
         return await fn(dir);
     } finally {

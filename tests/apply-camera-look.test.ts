@@ -4,7 +4,7 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {applyCameraLook} from "../lib/admin/apply-camera-look.ts";
+import {applyCameraLook} from "../plugins/restream/admin/apply-camera-look.ts";
 import {EMPTY_CAMERA_LOOK} from "../plugins/restream/host/camera-look.ts";
 import {readCameraLook} from "../plugins/restream/host/camera-look-store.ts";
 
@@ -51,14 +51,14 @@ describe("applyCameraLook", () => {
 describe("camera-look admin route", () => {
     it("is a same-origin JSON POST without a page redirect", () => {
         const route = readFileSync(
-            path.join(process.cwd(), "app", "api", "admin", "camera-look", "route.ts"),
+            path.join(process.cwd(), "plugins", "restream", "host", "index.ts"),
             "utf8",
         );
         assert.match(route, /isSameOriginRequest/);
         assert.match(route, /isAdminAuthenticated/);
         assert.match(route, /applyCameraLook/);
         assert.match(route, /invalid_json/);
-        assert.doesNotMatch(route, /seeOther/);
+        assert.match(route, /pathName === "camera-look"/);
         assert.doesNotMatch(route, /redirect\(/);
     });
 });

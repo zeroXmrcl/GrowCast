@@ -28,6 +28,7 @@ RUN apk add --no-cache su-exec docker-cli docker-cli-compose \
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/plugins ./plugins
 # File tracing often omits @img/sharp-libvips-* (libvips-cpp.so). Copy the
 # full Alpine musl prebuilds from the deps/build install.
 COPY --from=builder /app/node_modules/@img ./node_modules/@img

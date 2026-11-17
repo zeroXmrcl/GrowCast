@@ -10,8 +10,6 @@ import {navItemIsActive, navItemsFor, type NavFlags, type NavItem} from "@/lib/s
 import {isPlainWorkspaceClick, isWorkspacePath, WORKSPACE_VT} from "@/lib/workspace";
 
 export default function SiteHeader({
-    showEnergy = false,
-    showGallery = false,
     showPastGrows = false,
     showSettingsLink = false,
     extra = [],
@@ -19,8 +17,6 @@ export default function SiteHeader({
     const pathname = usePathname();
     const {view, go} = useWorkspaceNav();
     const navItems = navItemsFor(pathname, {
-        showEnergy,
-        showGallery,
         showPastGrows,
         showSettingsLink,
     }, extra);

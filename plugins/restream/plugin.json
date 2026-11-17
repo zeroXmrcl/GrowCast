@@ -15,10 +15,34 @@
   },
   "ui": { "entry": "ui/dist/index.js", "sdk": "^1.0.0" },
   "pages": [
-    { "id": "admin", "path": "", "title": "Broadcast", "nav": "admin" }
+    {
+      "id": "admin",
+      "path": "",
+      "title": "Broadcast",
+      "nav": "admin",
+      "bands": [
+        { "id": "program", "label": "Program" },
+        { "id": "mixer", "label": "Mixer" },
+        { "id": "twitch", "label": "Twitch" },
+        { "id": "camera-look", "label": "Camera look" },
+        { "id": "music", "label": "Music" },
+        { "id": "alerts", "label": "Alerts" }
+      ]
+    },
+    { "id": "capture", "path": "capture", "title": "Capture", "nav": "none", "shell": "none", "public": true, "viewport": "broadcast" },
+    { "id": "program", "path": "program", "title": "Program", "nav": "none", "shell": "none", "viewport": "broadcast" }
   ],
-  "widgets": [],
-  "permissions": { "network": "internet" },
+  "widgets": [
+    { "id": "broadcast-toast", "title": "On air", "slots": ["site-chrome"] }
+  ],
+  "permissions": { "network": "internet", "publicPages": true },
+  "installer": {
+    "stepId": "twitch",
+    "sort": 30,
+    "label": "Twitch",
+    "title": "Save the stream key",
+    "line": "Creator Dashboard -> Settings -> Stream."
+  },
   "hostModule": "host/index.ts",
   "exports": { "broadcast": true, "overlayCapture": true },
   "config": {

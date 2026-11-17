@@ -1,6 +1,7 @@
 import {spawn} from "node:child_process";
 import path from "node:path";
 import {generatePluginsCompose} from "@/lib/plugins/compose";
+import {assertDockerHostIsProxy, assertPluginRuntimeTarget, dockerEngineBaseUrl} from "@/lib/plugins/docker-guard";
 import {pluginServiceName} from "@/lib/plugins/ids";
 import {pluginLogger} from "@/lib/plugins/log";
 import {generatedComposeFile} from "@/lib/plugins/paths";
@@ -17,9 +18,20 @@ function composeDir(): string {
     return override ? path.resolve(override) : process.cwd();
 }
 
+function dockerEnv(): NodeJS.ProcessEnv {
+    return {
+        ...process.env,
+        DOCKER_HOST: assertDockerHostIsProxy(process.env.DOCKER_HOST ?? "tcp://docker-socket-proxy:2375"),
+    };
+}
+
 function run(command: string, args: string[]): Promise<void> {
     return new Promise((resolve, reject) => {
-        const child = spawn(command, args, {cwd: composeDir(), stdio: "pipe"});
+        const child = spawn(command, args, {
+            cwd: composeDir(),
+            stdio: "pipe",
+            env: dockerEnv(),
+        });
         let stderr = "";
         child.stderr?.on("data", (chunk) => {
             stderr += String(chunk);
@@ -37,6 +49,7 @@ function run(command: string, args: string[]): Promise<void> {
 
 const dockerAdapter: PluginRuntimeAdapter = {
     async start(serviceName) {
+        assertPluginRuntimeTarget(serviceName);
         await generatePluginsCompose();
         await run("docker", [
             "compose",
@@ -47,11 +60,12 @@ const dockerAdapter: PluginRuntimeAdapter = {
             "up",
             "-d",
             "--no-deps",
-            "--build",
+            "--no-build",
             serviceName,
         ]);
     },
     async stop(serviceName) {
+        assertPluginRuntimeTarget(serviceName);
         await generatePluginsCompose();
         await run("docker", [
             "compose",
@@ -73,6 +87,7 @@ async function discoveredForService(serviceName: string) {
 
 const processAdapter: PluginRuntimeAdapter = {
     async start(serviceName) {
+        assertPluginRuntimeTarget(serviceName);
         const discovered = await discoveredForService(serviceName);
         if (!discovered?.manifest.runtime?.entry) {
             return;
@@ -99,10 +114,12 @@ const processAdapter: PluginRuntimeAdapter = {
 };
 
 const noneAdapter: PluginRuntimeAdapter = {
-    async start() {
+    async start(serviceName) {
+        assertPluginRuntimeTarget(serviceName);
         await generatePluginsCompose();
     },
-    async stop() {
+    async stop(serviceName) {
+        assertPluginRuntimeTarget(serviceName);
         await generatePluginsCompose();
     },
 };
@@ -120,6 +137,7 @@ function adapter(): PluginRuntimeAdapter {
 
 export async function startPluginRuntime(pluginId: string): Promise<void> {
     const service = pluginServiceName(pluginId);
+    assertPluginRuntimeTarget(service, pluginId);
     try {
         await adapter().start(service);
         pluginLogger().info({event: "plugin.runtime.started", plugin_id: pluginId, service});
@@ -128,6 +146,7 @@ export async function startPluginRuntime(pluginId: string): Promise<void> {
             event: "plugin.runtime.start_failed",
             plugin_id: pluginId,
             err: error instanceof Error ? error.message : "unknown",
+            docker_host: dockerEngineBaseUrl(),
         });
         if ((process.env.GROWCAST_PLUGIN_RUNTIME ?? "docker") !== "process") {
             try {
@@ -145,6 +164,7 @@ export async function startPluginRuntime(pluginId: string): Promise<void> {
 
 export async function stopPluginRuntime(pluginId: string): Promise<void> {
     const service = pluginServiceName(pluginId);
+    assertPluginRuntimeTarget(service, pluginId);
     try {
         await adapter().stop(service);
         await processAdapter.stop(service);

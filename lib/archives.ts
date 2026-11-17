@@ -12,13 +12,14 @@ import {
     type GrowRecord,
 } from "@/lib/db";
 import {isDateOnly, todayDateOnly} from "@/lib/date-only";
-import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/plugins/timelapse/host/extension-status";
+import {pathExists} from "@/lib/path-exists";
 import {deleteSnapshotThumbs} from "@/lib/snapshot-thumb";
 import {mediaCollectionDir} from "@/lib/media-library";
-import {ClimateCopyError, resetClimateCurrentLocked, stageClimateArchive} from "@/plugins/ggs/host/climate/archive";
-import {logClimate} from "@/plugins/ggs/host/climate/log";
-import {EnergyCopyError, resetEnergyCurrentLocked, stageEnergyArchive} from "@/plugins/ggs/host/energy/archive";
-import {logEnergy} from "@/plugins/ggs/host/energy/log";
+import {
+    collectPluginMediaSources,
+    runPluginGrowArchived,
+    runPluginGrowReset,
+} from "@/lib/plugins/hooks";
 import {AiSummaryCopyError, resetAiSummaryCurrentLocked, stageAiSummaryArchive} from "@/lib/ai-summary/archive";
 import {logAiSummary} from "@/lib/ai-summary/log";
 import {sanitizeError} from "@/lib/logging/redact";
@@ -90,10 +91,11 @@ function archiveGrowFile(archiveId: string): string {
     return path.join(archivesDir(), archiveId, "grow.json");
 }
 
-function defaultMediaSources(): ArchiveMediaSources {
+async function defaultMediaSources(): Promise<ArchiveMediaSources> {
+    const plugin = await collectPluginMediaSources();
     return {
-        snapshotsDir: SNAPSHOT_DIR,
-        timelapseDir: TIMELAPSE_DIR,
+        snapshotsDir: plugin.snapshotsDir ?? "",
+        timelapseDir: plugin.timelapseDir ?? "",
         picturesDir: mediaCollectionDir("dashboard"),
     };
 }
@@ -146,6 +148,9 @@ async function reserveArchiveId(growName: string): Promise<string> {
 }
 
 async function listFilesByExtension(dir: string, extensions: Set<string>): Promise<string[]> {
+    if (!dir) {
+        return [];
+    }
     try {
         const entries = await readdir(dir, {withFileTypes: true});
         return entries
@@ -322,10 +327,11 @@ export type ResetLiveGrow = (grow: GrowRecord) => Promise<void>;
 
 export async function completeCurrentGrow(
     input: CompleteGrowInput,
-    sources: ArchiveMediaSources = defaultMediaSources(),
+    sources?: ArchiveMediaSources,
     resetLiveGrow?: ResetLiveGrow,
 ): Promise<CompleteGrowResult> {
-    return withGrowWriteLock(() => completeCurrentGrowUnlocked(input, sources, resetLiveGrow));
+    const resolved = sources ?? await defaultMediaSources();
+    return withGrowWriteLock(() => completeCurrentGrowUnlocked(input, resolved, resetLiveGrow));
 }
 
 async function removeLiveMedia(sources: ArchiveMediaSources): Promise<void> {
@@ -356,14 +362,9 @@ async function retryLiveReset(
         return {ok: true, archive: already, warning: "reset_failed"};
     }
     try {
-        await resetEnergyCurrentLocked();
-    } catch (error) {
-        logEnergy("energy_reset_failed", {err: sanitizeError(error)});
-    }
-    try {
-        await resetClimateCurrentLocked();
-    } catch (error) {
-        logClimate("climate_reset_failed", {err: sanitizeError(error)});
+        await runPluginGrowReset();
+    } catch {
+        /* plugin reset is best-effort after archive */
     }
     try {
         await resetAiSummaryCurrentLocked();
@@ -423,8 +424,13 @@ async function completeCurrentGrowUnlocked(
         await copyFiles(sources.snapshotsDir, snapshotFiles, path.join(stagingRoot, "snapshots"));
         await copyFiles(sources.timelapseDir, timelapseFiles, path.join(stagingRoot, "timelapse"));
         await copyFiles(sources.picturesDir, pictureFiles, path.join(stagingRoot, "pictures"));
-        await stageEnergyArchive(stagingRoot, grow.id, archive.archivedAt);
-        await stageClimateArchive(stagingRoot, grow.id, archive.archivedAt, grow.details.seededAt);
+        await runPluginGrowArchived({
+            archiveId,
+            destDir: stagingRoot,
+            growId: grow.id,
+            seededAt: grow.details.seededAt,
+            archivedAt: archive.archivedAt,
+        });
         await stageAiSummaryArchive(stagingRoot, grow.id, archive.archivedAt, grow.details.seededAt);
         await atomicWriteFile(
             path.join(stagingRoot, "grow.json"),
@@ -438,14 +444,9 @@ async function completeCurrentGrowUnlocked(
             return {ok: true, archive, warning: "reset_failed"};
         }
         try {
-            await resetEnergyCurrentLocked();
-        } catch (error) {
-            logEnergy("energy_reset_failed", {err: sanitizeError(error)});
-        }
-        try {
-            await resetClimateCurrentLocked();
-        } catch (error) {
-            logClimate("climate_reset_failed", {err: sanitizeError(error)});
+            await runPluginGrowReset();
+        } catch {
+            /* plugin reset is best-effort after archive */
         }
         try {
             await resetAiSummaryCurrentLocked();
@@ -469,15 +470,11 @@ async function completeCurrentGrowUnlocked(
         return {
             ok: false,
             error:
-                error instanceof EnergyCopyError
-                    ? "energy_copy_failed"
-                    : error instanceof ClimateCopyError
-                      ? "climate_copy_failed"
-                      : error instanceof AiSummaryCopyError
-                        ? "ai_summary_copy_failed"
-                        : error instanceof Error
-                          ? error.message
-                          : String(error),
+                error instanceof AiSummaryCopyError
+                    ? "ai_summary_copy_failed"
+                    : error instanceof Error
+                      ? error.message
+                      : String(error),
         };
     }
 }

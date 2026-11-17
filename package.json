@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/build-plugin-runtime.mjs && next build",
+    "build": "node scripts/build-plugin-runtime.mjs && node scripts/build-plugin-ui.mjs && next build",
     "start": "next start",
     "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "build:plugin-runtime": "node scripts/build-plugin-runtime.mjs",
+    "build:plugin-ui": "node scripts/build-plugin-ui.mjs",
     "setup:admin": "node scripts/admin-creator.mjs",
     "setup:admin:insecure": "node scripts/admin-creator.mjs --allow-insecure",
     "test": "NODE_ENV=test node --experimental-strip-types --import ./tests/register.mjs --test \"tests/**/*.test.ts\""

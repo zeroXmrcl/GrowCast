@@ -2,10 +2,10 @@
 /**
  * Copy legacy core sidecar storage into data/plugins/<id>/.
  * Idempotent. Default is dry-run. Never talks to a remote/prod host.
+ * Does not enable plugins and does not delete legacy folders.
  *
  *   npx tsx scripts/migrate-plugin-data.ts --dry-run
  *   npx tsx scripts/migrate-plugin-data.ts --apply
- *   npx tsx scripts/migrate-plugin-data.ts --apply --enable-first-party
  */
 import {copyFile, cp, mkdir, writeFile} from "node:fs/promises";
 import {existsSync} from "node:fs";
@@ -14,7 +14,6 @@ import path from "node:path";
 export type MigrateOptions = {
     dataDir: string;
     dryRun: boolean;
-    enableFirstParty: boolean;
 };
 
 export type MigrateStep = {
@@ -95,18 +94,24 @@ async function main(): Promise<void> {
         process.stdout.write(`GrowCast plugin data migration
   --dry-run     print the plan (default)
   --apply       copy files
-  --enable-first-party  also pin+enable ggs, timelapse, restream, solar
   --data-dir DIR  override data directory
+Does not enable plugins. Does not delete legacy folders.
 Never run this against production from a laptop; take a backup first.\n`);
         return;
     }
+    if (args.has("--enable-first-party")) {
+        process.stderr.write("Refused: --enable-first-party was removed. Enable plugins in Admin after cutover.\n");
+        process.exitCode = 2;
+        return;
+    }
     const dryRun = !args.has("--apply");
-    const dataDir = process.env.GROWCAST_DATA_DIR?.trim()
+    const dataDirArg = process.argv.find((item, index, all) => all[index - 1] === "--data-dir");
+    const dataDir = dataDirArg
+        || process.env.GROWCAST_DATA_DIR?.trim()
         || path.resolve(process.cwd(), "data");
     const result = await applyPluginDataMigration({
         dataDir,
         dryRun,
-        enableFirstParty: args.has("--enable-first-party"),
     });
     process.stdout.write(`${dryRun ? "DRY RUN" : "APPLY"} dataDir=${dataDir}\n`);
     for (const line of result.copied) {
@@ -115,17 +120,9 @@ Never run this against production from a laptop; take a backup first.\n`);
     for (const line of result.skipped) {
         process.stdout.write(`skip ${line}\n`);
     }
-    if (args.has("--enable-first-party") && !dryRun) {
-        process.env.GROWCAST_DATA_DIR = dataDir;
-        const {enablePlugin} = await import("../lib/plugins/registry.ts");
-        for (const id of ["growcast.ggs", "growcast.timelapse", "growcast.restream", "growcast.solar"]) {
-            try {
-                await enablePlugin(id);
-                process.stdout.write(`enabled ${id}\n`);
-            } catch (error) {
-                process.stdout.write(`enable failed ${id}: ${error instanceof Error ? error.message : "error"}\n`);
-            }
-        }
+    if (!dryRun) {
+        process.stdout.write("Enable GGS, Timelapse, Restream, and Solar in Admin → Plugins immediately after start.\n");
+        process.stdout.write("Do not delete legacy data folders until the owner says so.\n");
     }
 }
 

@@ -1,7 +1,7 @@
 import {chmod, readFile} from "node:fs/promises";
 import {asBoolean, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
-import type {OverlayAlertKind} from "@/lib/overlay-alert";
+import type {OverlayAlertKind} from "@/plugins/restream/host/overlay-alert";
 import {parseOverlayScalePct} from "@/lib/overlay-scale";
 import {restreamAlertsFile, restreamDir} from "@/plugins/restream/host/paths";
 
