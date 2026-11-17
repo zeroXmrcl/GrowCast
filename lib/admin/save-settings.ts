@@ -3,8 +3,8 @@ import {withGrowWriteLock} from "@/lib/grow-write-lock";
 import {
     saveTimelapseSettings,
     type TimelapseSettings,
-} from "@/lib/timelapse-settings";
-import {writeEnergySettings, type EnergySettings} from "@/lib/energy/settings";
+} from "@/plugins/timelapse/host/timelapse-settings";
+import {writeEnergySettings, type EnergySettings} from "@/plugins/ggs/host/energy/settings";
 
 export type SaveAdminSettingsInput = {
     grow: GrowUpdateInput;

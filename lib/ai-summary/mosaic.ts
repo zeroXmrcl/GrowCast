@@ -1,4 +1,4 @@
-import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/lib/climate/types";
+import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/plugins/ggs/host/climate/types";
 import {
     AI_SUMMARY_MOSAIC_SLOTS,
     type AiMetricJudgment,

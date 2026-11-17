@@ -9,7 +9,7 @@ import {
     _resetOverlayAlertHubForTests,
     peekOverlayAlertQueue,
 } from "../lib/overlay-alert-hub.ts";
-import {writeAlertsSettings} from "../lib/restream/alerts-settings.ts";
+import {writeAlertsSettings} from "../plugins/restream/host/alerts-settings.ts";
 import {
     EVENTSUB_TYPES,
     ensureEventsubSubscriptions,
@@ -17,9 +17,9 @@ import {
     eventsubNotificationResponse,
     mapEventsubNotification,
     verifyEventsubSignature,
-} from "../lib/restream/eventsub.ts";
-import {restreamEventsubSecretFile} from "../lib/restream/paths.ts";
-import {writeTwitchOAuthFile} from "../lib/restream/twitch-oauth.ts";
+} from "../plugins/restream/host/eventsub.ts";
+import {restreamEventsubSecretFile} from "../plugins/restream/host/paths.ts";
+import {writeTwitchOAuthFile} from "../plugins/restream/host/twitch-oauth.ts";
 
 function src(rel: string): string {
     return readFileSync(path.join(process.cwd(), rel), "utf8");
@@ -853,7 +853,7 @@ describe("EventSub route and files", () => {
         assert.doesNotMatch(route, /console\.(log|info|debug|warn|error)/);
         assert.doesNotMatch(route, /current-grow|getCurrentGrow|writeGrow/);
 
-        const eventsub = src(path.join("lib", "restream", "eventsub.ts"));
+        const eventsub = src(path.join("plugins", "restream", "host", "eventsub.ts"));
         assert.match(eventsub, /safeEqualText/);
         assert.match(eventsub, /sha256=/);
         assert.match(eventsub, /digest\("hex"\)/);

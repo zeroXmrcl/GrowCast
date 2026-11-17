@@ -1,17 +1,17 @@
 import ClimatePickerValue from "@/components/climate-picker";
-import type {ClimateTick} from "@/lib/climate-tick";
+import type {ClimateTick} from "@/plugins/ggs/host/climate-tick";
 import {
     climateHistoryOpenLabel,
     type ClimateHistoryMetric,
-} from "@/lib/climate/history-ui";
-import type {GgsLivePublic} from "@/lib/ggs-live";
+} from "@/plugins/ggs/host/climate/history-ui";
+import type {GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
 import {
     climateMetricAlerts,
     climateMetrics,
     formatHumidityPctTenths,
     formatTempC,
     formatVpd,
-} from "@/lib/live-climate-view";
+} from "@/plugins/ggs/host/live-climate-view";
 import {WORKSPACE_PAD, WORKSPACE_SPLIT_MID} from "@/lib/workspace";
 import type {ReactNode} from "react";
 

@@ -6,7 +6,7 @@ import {usePathname} from "next/navigation";
 import {useEffect, useState} from "react";
 import {useWorkspaceNav} from "@/components/workspace-nav";
 import {SITE_FRAME_CLASS} from "@/lib/site-frame";
-import {navItemIsActive, navItemsFor, type NavFlags} from "@/lib/site-nav";
+import {navItemIsActive, navItemsFor, type NavFlags, type NavItem} from "@/lib/site-nav";
 import {isPlainWorkspaceClick, isWorkspacePath, WORKSPACE_VT} from "@/lib/workspace";
 
 export default function SiteHeader({
@@ -14,7 +14,8 @@ export default function SiteHeader({
     showGallery = false,
     showPastGrows = false,
     showSettingsLink = false,
-}: NavFlags) {
+    extra = [],
+}: NavFlags & {extra?: NavItem[]}) {
     const pathname = usePathname();
     const {view, go} = useWorkspaceNav();
     const navItems = navItemsFor(pathname, {
@@ -22,7 +23,7 @@ export default function SiteHeader({
         showGallery,
         showPastGrows,
         showSettingsLink,
-    });
+    }, extra);
     const workspace = isWorkspacePath(view);
 
     const [logoText, setLogoText] = useState("GrowCast");

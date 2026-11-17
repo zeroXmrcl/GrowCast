@@ -11,7 +11,7 @@ import {
     EMPTY_CAMERA_LOOK,
     parseCameraLook,
     type CameraLook,
-} from "@/lib/restream/camera-look";
+} from "@/plugins/restream/host/camera-look";
 
 function formatLookValue(value: number, temperature = false): string {
     if (value === 0) {

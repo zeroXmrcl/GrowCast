@@ -6,7 +6,7 @@ import {
     AdminInput,
     AdminSelect,
 } from "@/components/admin/ui";
-import type {TimelapseSettings} from "@/lib/timelapse-settings";
+import type {TimelapseSettings} from "@/plugins/timelapse/host/timelapse-settings";
 
 export function TimelapseSettingsFields({
     timelapseSettings,

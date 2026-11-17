@@ -3,7 +3,7 @@ import {AdminBand} from "@/app/admin/admin-band";
 import {AdminImmediateForm} from "@/app/admin/admin-save-form";
 import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
 import type {AdminActionResult} from "@/lib/admin/action-result";
-import type {RestreamPublicView} from "@/lib/restream/store";
+import type {RestreamPublicView} from "@/plugins/restream/host/store";
 
 type RestreamAction = (formData: FormData) => Promise<AdminActionResult>;
 

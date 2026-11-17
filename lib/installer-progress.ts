@@ -2,11 +2,11 @@ import {isSafeHttpUrl} from "@/lib/url-policy";
 import type {InstallerInitial, InstallerStepId} from "@/lib/installer-steps";
 import {INSTALLER_STEPS} from "@/lib/installer-steps";
 import {getCurrentGrow} from "@/lib/db";
-import {readSpiderFarmerBrokerStatus} from "@/lib/ggs-sidecar-env";
+import {readSpiderFarmerBrokerStatus} from "@/plugins/ggs/host/ggs-sidecar-env";
 import {installerCanFinish, isOptionalInstallerStep, nextInstallerStep, type InstallerFinishInput} from "@/lib/installer-ready";
-import {hasRestreamKey} from "@/lib/restream/store";
+import {hasRestreamKey} from "@/plugins/restream/host/store";
 import {readSkippedSteps, readStoredAdminAccount} from "@/lib/setup-account";
-import {isRtspUrl, readTimelapseRtsp} from "@/lib/timelapse-sidecar-env";
+import {isRtspUrl, readTimelapseRtsp} from "@/plugins/timelapse/host/timelapse-sidecar-env";
 
 type InstallerSnapshot = InstallerFinishInput & {
     username: string;

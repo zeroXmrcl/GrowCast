@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {localClimatePreviewEnabled, climatePreviewHistory, climatePreviewSnapshot} from "../lib/climate/local-preview.ts";
-import {layoutStepRuns} from "../lib/climate/plot.ts";
-import {parsePublicLiveBody} from "../lib/ggs-live.ts";
-import {shouldShowLiveRow} from "../lib/live-climate-view.ts";
+import {localClimatePreviewEnabled, climatePreviewHistory, climatePreviewSnapshot} from "../plugins/ggs/host/climate/local-preview.ts";
+import {layoutStepRuns} from "../plugins/ggs/host/climate/plot.ts";
+import {parsePublicLiveBody} from "../plugins/ggs/host/ggs-live.ts";
+import {shouldShowLiveRow} from "../plugins/ggs/host/live-climate-view.ts";
 
 const NOW = Date.parse("2026-10-19T12:00:00.000Z");
 

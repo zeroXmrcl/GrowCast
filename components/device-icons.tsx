@@ -1,5 +1,5 @@
 // Lucide icons, https://lucide.dev, ISC
-import type {GgsActuatorKind} from "@/lib/ggs-live";
+import type {GgsActuatorKind} from "@/plugins/ggs/host/ggs-live";
 
 type IconProps = {
     className?: string;

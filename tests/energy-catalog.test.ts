@@ -6,7 +6,7 @@ import {
     catalogWatts,
     lightWatts,
     lookupWatts,
-} from "../lib/energy/catalog.ts";
+} from "../plugins/ggs/host/energy/catalog.ts";
 
 describe("energy catalog", () => {
     it("matches locked light table points via the linear formula", () => {

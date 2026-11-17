@@ -1,4 +1,4 @@
-import {berlinDateOnly} from "@/lib/energy/berlin";
+import {berlinDateOnly} from "@/plugins/ggs/host/energy/berlin";
 import {getCurrentGrow} from "@/lib/db";
 import {xaiApiKey} from "@/lib/ai-summary/config";
 import {requestGrowSummary} from "@/lib/ai-summary/client";

@@ -12,13 +12,13 @@ import {
     type GrowRecord,
 } from "@/lib/db";
 import {isDateOnly, todayDateOnly} from "@/lib/date-only";
-import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/lib/extension-status";
+import {pathExists, SNAPSHOT_DIR, TIMELAPSE_DIR} from "@/plugins/timelapse/host/extension-status";
 import {deleteSnapshotThumbs} from "@/lib/snapshot-thumb";
 import {mediaCollectionDir} from "@/lib/media-library";
-import {ClimateCopyError, resetClimateCurrentLocked, stageClimateArchive} from "@/lib/climate/archive";
-import {logClimate} from "@/lib/climate/log";
-import {EnergyCopyError, resetEnergyCurrentLocked, stageEnergyArchive} from "@/lib/energy/archive";
-import {logEnergy} from "@/lib/energy/log";
+import {ClimateCopyError, resetClimateCurrentLocked, stageClimateArchive} from "@/plugins/ggs/host/climate/archive";
+import {logClimate} from "@/plugins/ggs/host/climate/log";
+import {EnergyCopyError, resetEnergyCurrentLocked, stageEnergyArchive} from "@/plugins/ggs/host/energy/archive";
+import {logEnergy} from "@/plugins/ggs/host/energy/log";
 import {AiSummaryCopyError, resetAiSummaryCurrentLocked, stageAiSummaryArchive} from "@/lib/ai-summary/archive";
 import {logAiSummary} from "@/lib/ai-summary/log";
 import {sanitizeError} from "@/lib/logging/redact";

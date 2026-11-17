@@ -1,6 +1,6 @@
 import {readFile} from "node:fs/promises";
 import path from "node:path";
-import {getSnapshotFiles, SNAPSHOT_DIR} from "@/lib/extension-status";
+import {getSnapshotFiles, SNAPSHOT_DIR} from "@/plugins/timelapse/host/extension-status";
 import {IMAGE_EXTENSIONS, isSafeMediaFilename} from "@/lib/safe-media-filename";
 import {encodePortableSnapshotThumb} from "@/lib/snapshot-thumb";
 import {logAiSummary} from "@/lib/ai-summary/log";

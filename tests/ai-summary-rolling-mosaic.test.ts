@@ -3,9 +3,9 @@ import {mkdir, mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {berlinDateOnly} from "../lib/energy/berlin.ts";
-import {writeClimateDay, _resetClimateWriteLockForTests} from "../lib/climate/store.ts";
-import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "../lib/climate/types.ts";
+import {berlinDateOnly} from "../plugins/ggs/host/energy/berlin.ts";
+import {writeClimateDay, _resetClimateWriteLockForTests} from "../plugins/ggs/host/climate/store.ts";
+import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "../plugins/ggs/host/climate/types.ts";
 import {shareFromRow, verdictsFromMosaic} from "../lib/ai-summary/mosaic.ts";
 import {
     currentMosaicSlotIndex,
@@ -25,7 +25,7 @@ import {
 import {toPublicAiSummary} from "../lib/ai-summary/public.ts";
 import {writeAiSummaryRecord, _resetAiSummaryLockForTests} from "../lib/ai-summary/store.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
-import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
+import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
 import {AI_SUMMARY_MOSAIC_SLOTS, type AiSummaryRecord, type ClimateWindowStats, type MosaicCell, type StageContext} from "../lib/ai-summary/types.ts";
 
 function emptyStats(): ClimateWindowStats {

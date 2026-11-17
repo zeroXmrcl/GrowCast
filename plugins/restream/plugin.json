@@ -1,0 +1,28 @@
+{
+  "id": "growcast.restream",
+  "name": "GrowCast Restream",
+  "author": "0xmrcl",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "description": "Twitch restream from the GrowCast program scene.",
+  "homepage": "https://github.com/zeroXmrcl/GrowCast",
+  "repository": "https://github.com/zeroXmrcl/GrowCast",
+  "runtime": {
+    "type": "docker",
+    "dockerfile": "Dockerfile",
+    "shmSize": "2gb",
+    "extraEnv": { "RESTREAM_DATA_DIR": "/data" }
+  },
+  "ui": { "entry": "ui/dist/index.js", "sdk": "^1.0.0" },
+  "pages": [
+    { "id": "admin", "path": "", "title": "Broadcast", "nav": "admin" }
+  ],
+  "widgets": [],
+  "permissions": { "network": "internet" },
+  "hostModule": "host/index.ts",
+  "exports": { "broadcast": true, "overlayCapture": true },
+  "config": {
+    "intervalS": { "type": "integer", "default": 2 }
+  },
+  "metrics": {}
+}

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { SNAPSHOT_DIR } from "@/lib/extension-status";
+import { SNAPSHOT_DIR } from "@/plugins/timelapse/host/extension-status";
 import {
     logHttpPathTraversalBlocked,
     withRequestLog,

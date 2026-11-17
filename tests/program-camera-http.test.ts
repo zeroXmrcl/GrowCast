@@ -4,9 +4,9 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {writeCameraLook} from "../lib/restream/camera-look-store.ts";
-import {ensureRestreamCaptureToken} from "../lib/restream/capture.ts";
-import {programCameraGetResponse} from "../lib/restream/program-http.ts";
+import {writeCameraLook} from "../plugins/restream/host/camera-look-store.ts";
+import {ensureRestreamCaptureToken} from "../plugins/restream/host/capture.ts";
+import {programCameraGetResponse} from "../plugins/restream/host/program-http.ts";
 
 async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-cam-"));

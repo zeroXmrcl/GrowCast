@@ -9,6 +9,7 @@ export const SETTINGS_SECTION_LINKS = [
     {href: "/admin/stream", label: "Broadcast"},
     {href: "/admin/timelapse", label: "Timelapse"},
     {href: "/admin/ggs", label: "GGS"},
+    {href: "/admin/plugins", label: "Plugins"},
     {href: "/admin/archives", label: "Archives"},
     {href: "/admin/security", label: "Security"},
 ];

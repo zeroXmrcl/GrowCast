@@ -12,7 +12,17 @@ export async function register(): Promise<void> {
     const {announceStartup} = await import("@/lib/setup-gate");
     await announceStartup();
     try {
-      const {importLegacyTimelapseEnv} = await import("@/lib/import-legacy-sidecars");
+      const {bootPluginHost} = await import("@/lib/plugins/lifecycle");
+      await bootPluginHost();
+    } catch (error) {
+      const {childLogger, sanitizeError} = await import("@/lib/logging");
+      childLogger().warn({
+        event: "plugin.boot.failed",
+        err: sanitizeError(error),
+      });
+    }
+    try {
+      const {importLegacyTimelapseEnv} = await import("@/plugins/timelapse/host/import-legacy-sidecars");
       await importLegacyTimelapseEnv();
     } catch (error) {
       const {childLogger, sanitizeError} = await import("@/lib/logging");
@@ -27,7 +37,7 @@ export async function register(): Promise<void> {
     void Promise.resolve().then(async () => {
       try {
         const { ensureEventsubSubscriptionsOnBoot } = await import(
-          "@/lib/restream/eventsub"
+          "@/plugins/restream/host/eventsub"
         );
         await ensureEventsubSubscriptionsOnBoot();
       } catch (error) {

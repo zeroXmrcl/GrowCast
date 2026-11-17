@@ -15,16 +15,16 @@ import {
     saveEnergyAdminSettings,
     saveTimelapseAdminSettings,
 } from "@/lib/admin/save-settings";
-import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
+import {parseEnergySettingsForm, readEnergySettings} from "@/plugins/ggs/host/energy/settings";
 import type {AdminActionResult} from "@/lib/admin/action-result";
-import {prepareSpiderFarmer} from "@/lib/spider-farmer-setup";
-import {isRtspUrl, readTimelapseRtsp, writeTimelapseSidecarEnv} from "@/lib/timelapse-sidecar-env";
+import {prepareSpiderFarmer} from "@/plugins/ggs/host/spider-farmer-setup";
+import {isRtspUrl, readTimelapseRtsp, writeTimelapseSidecarEnv} from "@/plugins/timelapse/host/timelapse-sidecar-env";
 import {completeCurrentGrow} from "@/lib/archives";
 import {parseOverlayScalePct} from "@/lib/overlay-scale";
 import {parseMusicLook, parseWaveBars, parseWaveSmoothPct} from "@/lib/program-music-wave";
-import {readAlertsSettings, writeAlertsSettings} from "@/lib/restream/alerts-settings";
-import {readRestreamAudio, writeRestreamAudio} from "@/lib/restream/audio";
-import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
+import {readAlertsSettings, writeAlertsSettings} from "@/plugins/restream/host/alerts-settings";
+import {readRestreamAudio, writeRestreamAudio} from "@/plugins/restream/host/audio";
+import {ensureRestreamCaptureToken} from "@/plugins/restream/host/capture";
 import {
     hasRestreamKey,
     patchRestreamChannel,
@@ -33,12 +33,12 @@ import {
     saveRestreamKey,
     setRestreamEnabled,
     writeRestreamChannel,
-} from "@/lib/restream/store";
+} from "@/plugins/restream/host/store";
 import {
     isInvalidTypedChannelLogin,
     resolveChannelLogin,
     streamKeyForChannelLookup,
-} from "@/lib/restream/twitch-helix";
+} from "@/plugins/restream/host/twitch-helix";
 import {clientIdentityKey, loginRateLimitKey, secondFactorRateLimitKey} from "@/lib/request-trust";
 import {hasXaiApiKey} from "@/lib/ai-summary/config";
 import {generateDailyAiSummary} from "@/lib/ai-summary/generate";

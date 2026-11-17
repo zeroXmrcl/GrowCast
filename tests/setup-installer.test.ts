@@ -7,7 +7,7 @@ import {describe, it} from "node:test";
 import {INSTALLER_COPY, installerDoneRows} from "../app/setup/installer-copy.ts";
 import {isSafeHttpUrl} from "../lib/url-policy.ts";
 import {adminSetupDecision, installerCanFinish} from "../lib/installer-ready.ts";
-import {isRtspUrl} from "../lib/timelapse-sidecar-env.ts";
+import {isRtspUrl} from "../plugins/timelapse/host/timelapse-sidecar-env.ts";
 import {passwordLineMet, passwordLineScale} from "../app/setup/password-meter.ts";
 import {parseSetupCodePaste, setupCodeSlots} from "../lib/setup-code.ts";
 import {readSkippedSteps, writeSkippedStep} from "../lib/setup-account.ts";

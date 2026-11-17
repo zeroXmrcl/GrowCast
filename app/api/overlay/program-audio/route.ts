@@ -1,6 +1,6 @@
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {withRequestLog} from "@/lib/logging";
-import {programAudioGetResponse} from "@/lib/restream/program-http";
+import {programAudioGetResponse} from "@/plugins/restream/host/program-http";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

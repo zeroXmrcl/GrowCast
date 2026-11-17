@@ -11,12 +11,12 @@ import {
     readPublicClimateHistory,
     seedForHistory,
     toHistoryPoint,
-} from "../lib/climate/history-adapter.ts";
-import {parseClimateHistoryRange} from "../lib/climate/history-public.ts";
-import {_resetClimateWriteLockForTests, writeClimateDay} from "../lib/climate/store.ts";
-import {CLIMATE_RETENTION_DAYS, type ClimateDayFile, type ClimatePoint} from "../lib/climate/types.ts";
-import {climateRetentionStartDate} from "../lib/climate/writer.ts";
-import {berlinDateOnly} from "../lib/energy/berlin.ts";
+} from "../plugins/ggs/host/climate/history-adapter.ts";
+import {parseClimateHistoryRange} from "../plugins/ggs/host/climate/history-public.ts";
+import {_resetClimateWriteLockForTests, writeClimateDay} from "../plugins/ggs/host/climate/store.ts";
+import {CLIMATE_RETENTION_DAYS, type ClimateDayFile, type ClimatePoint} from "../plugins/ggs/host/climate/types.ts";
+import {climateRetentionStartDate} from "../plugins/ggs/host/climate/writer.ts";
+import {berlinDateOnly} from "../plugins/ggs/host/energy/berlin.ts";
 
 const NOW = Date.parse("2026-10-13T13:00:00.000Z");
 

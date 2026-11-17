@@ -8,9 +8,9 @@ import OverlayIdentity from "@/components/overlay-identity";
 import OverlayMotionItem from "@/components/overlay-motion-item";
 import OverlayShell from "@/components/overlay-shell";
 import {useLiveClimate} from "@/hooks/use-live-climate";
-import {ENERGY_POLL_MS, ENERGY_PUBLIC_POLL_PATH, fetchEnergyDto} from "@/lib/energy/poll";
-import type {EnergyPublicDto} from "@/lib/energy/types";
-import type {GgsLivePublic} from "@/lib/ggs-live";
+import {ENERGY_POLL_MS, ENERGY_PUBLIC_POLL_PATH, fetchEnergyDto} from "@/plugins/ggs/host/energy/poll";
+import type {EnergyPublicDto} from "@/plugins/ggs/host/energy/types";
+import type {GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
 import {
     OVERLAY_GROW_PATH,
     OVERLAY_GROW_POLL_MS,
@@ -29,14 +29,20 @@ import {
     overlayClimateGearVisible,
     overlayEnergyVisible,
 } from "@/lib/overlay-presence";
-import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/lib/restream/camera-look";
+import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/plugins/restream/host/camera-look";
 
 export default function OverlayHud({
     lockStream = false,
     extra,
+    children,
     look = EMPTY_CAMERA_LOOK,
     ...initial
-}: OverlayGrowView & {lockStream?: boolean; extra?: ReactNode; look?: CameraLook}) {
+}: OverlayGrowView & {
+    lockStream?: boolean;
+    extra?: ReactNode;
+    children?: ReactNode;
+    look?: CameraLook;
+}) {
     const [grow, setGrow] = useState<OverlayGrowView>(initial);
     const [energy, setEnergy] = useState<EnergyPublicDto | null>(null);
     const [heldSnapshot, setHeldSnapshot] = useState<GgsLivePublic | null>(null);
@@ -145,6 +151,7 @@ export default function OverlayHud({
             >
                 {heldEnergy ? <OverlayEnergy dto={heldEnergy}/> : null}
             </OverlayMotionItem>
+            {children}
             {extra}
         </OverlayShell>
     );

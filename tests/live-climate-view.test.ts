@@ -3,7 +3,7 @@ import {readFileSync} from "node:fs";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {airVpdKPa} from "../lib/air-vpd.ts";
-import {EMPTY_LIVE_PUBLIC, GGS_PLUGIN_ID, GGS_STALE_AFTER_MS, type GgsLivePublic} from "../lib/ggs-live.ts";
+import {EMPTY_LIVE_PUBLIC, GGS_PLUGIN_ID, GGS_STALE_AFTER_MS, type GgsLivePublic} from "../plugins/ggs/host/ggs-live.ts";
 import {
     climateMetricAlerts,
     climateMetrics,
@@ -16,7 +16,7 @@ import {
     preferLiveSnapshot,
     shouldShowLiveRow,
     actuatorCountsTowardEnergy,
-} from "../lib/live-climate-view.ts";
+} from "../plugins/ggs/host/live-climate-view.ts";
 
 function snapshot(overrides: Partial<GgsLivePublic> = {}): GgsLivePublic {
     return {

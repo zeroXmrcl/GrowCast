@@ -9,7 +9,7 @@ import {
     isCameraLookMessage,
     parseCameraLook,
     type CameraLook,
-} from "@/lib/restream/camera-look";
+} from "@/plugins/restream/host/camera-look";
 
 const PROGRAM_CAMERA_PATH = "/api/overlay/program-camera";
 

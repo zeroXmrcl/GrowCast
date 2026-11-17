@@ -2,8 +2,8 @@
 
 import {useEffect, useState} from "react";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
-import {berlinHour} from "@/lib/energy/berlin";
-import {ENERGY_POLL_MS, fetchEnergyDto, shouldPollEnergy} from "@/lib/energy/poll";
+import {berlinHour} from "@/plugins/ggs/host/energy/berlin";
+import {ENERGY_POLL_MS, fetchEnergyDto, shouldPollEnergy} from "@/plugins/ggs/host/energy/poll";
 import EnergyFlowmap from "@/components/energy-flowmap";
 import EnergyWater from "@/components/energy-water";
 import {
@@ -12,13 +12,13 @@ import {
     formatKwh,
     formatSharePct,
     formatWatts,
-} from "@/lib/energy/format";
+} from "@/plugins/ggs/host/energy/format";
 import type {
     EnergyPublicDto,
     EnergySeries,
     EnergySeriesWindows,
     EnergyWindow,
-} from "@/lib/energy/types";
+} from "@/plugins/ggs/host/energy/types";
 import {
     WORKSPACE_AREA,
     WORKSPACE_HAIRLINE,

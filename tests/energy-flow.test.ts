@@ -4,13 +4,13 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {buildEnergyArchivePayload} from "../lib/energy/archive.ts";
-import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
-import {berlinDateOnly, berlinHour} from "../lib/energy/berlin.ts";
-import {buildEnergyFlowView} from "../lib/energy/flow-view.ts";
-import {totalsForDays} from "../lib/energy/math.ts";
-import {writeEnergyCursor, writeEnergyDay} from "../lib/energy/store.ts";
-import type {EnergyDayFile} from "../lib/energy/types.ts";
+import {buildEnergyArchivePayload} from "../plugins/ggs/host/energy/archive.ts";
+import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
+import {berlinDateOnly, berlinHour} from "../plugins/ggs/host/energy/berlin.ts";
+import {buildEnergyFlowView} from "../plugins/ggs/host/energy/flow-view.ts";
+import {totalsForDays} from "../plugins/ggs/host/energy/math.ts";
+import {writeEnergyCursor, writeEnergyDay} from "../plugins/ggs/host/energy/store.ts";
+import type {EnergyDayFile} from "../plugins/ggs/host/energy/types.ts";
 
 const SERIAL = "90E5B1B87088";
 const HUM_KEY = `${SERIAL}:humidifier`;
@@ -176,7 +176,7 @@ describe("energy flow view", () => {
     });
 
     it("wires the flow view into the current scoreboard and /energy card", () => {
-        const scoreboard = readFileSync(path.join(process.cwd(), "lib", "energy", "scoreboard.ts"), "utf8");
+        const scoreboard = readFileSync(path.join(process.cwd(), "plugins", "ggs", "host", "energy", "scoreboard.ts"), "utf8");
         const page = readFileSync(path.join(process.cwd(), "components", "energy-scoreboard.tsx"), "utf8");
         const map = readFileSync(path.join(process.cwd(), "components", "energy-flowmap.tsx"), "utf8");
         assert.match(scoreboard, /buildEnergyFlowView/);

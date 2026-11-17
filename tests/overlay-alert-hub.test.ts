@@ -9,7 +9,7 @@ import {
     publishOverlayAlert,
     takeNextOverlayAlert,
 } from "../lib/overlay-alert-hub.ts";
-import {parseAlertsSettings} from "../lib/restream/alerts-settings.ts";
+import {parseAlertsSettings} from "../plugins/restream/host/alerts-settings.ts";
 
 describe("overlay alert hub", () => {
     it("publishes FIFO and takeNext pops the current head", () => {

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {lookupWatts} from "../lib/energy/catalog.ts";
-import {berlinHourStartAtOrBefore} from "../lib/energy/berlin.ts";
-import {costEur, round1, round2, secondsToKwh, totalsForDays, totalsForHourRange} from "../lib/energy/math.ts";
-import type {EnergyActuatorRef, EnergyDayFile} from "../lib/energy/types.ts";
+import {lookupWatts} from "../plugins/ggs/host/energy/catalog.ts";
+import {berlinHourStartAtOrBefore} from "../plugins/ggs/host/energy/berlin.ts";
+import {costEur, round1, round2, secondsToKwh, totalsForDays, totalsForHourRange} from "../plugins/ggs/host/energy/math.ts";
+import type {EnergyActuatorRef, EnergyDayFile} from "../plugins/ggs/host/energy/types.ts";
 
 const heaterRef: EnergyActuatorRef = {
     key: "90E5B1B87088:heater",

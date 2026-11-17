@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {berlinDateOnly, berlinHour} from "../lib/energy/berlin.ts";
-import {buildEnergyWaterView} from "../lib/energy/water-view.ts";
-import type {EnergyDayFile} from "../lib/energy/types.ts";
+import {berlinDateOnly, berlinHour} from "../plugins/ggs/host/energy/berlin.ts";
+import {buildEnergyWaterView} from "../plugins/ggs/host/energy/water-view.ts";
+import type {EnergyDayFile} from "../plugins/ggs/host/energy/types.ts";
 
 const SERIAL = "90E5B1B87088";
 const HUM_KEY = `${SERIAL}:humidifier`;
@@ -107,7 +107,7 @@ describe("energy water view", () => {
     });
 
     it("wires the drip into the current scoreboard and /energy card", () => {
-        const scoreboard = readFileSync(path.join(process.cwd(), "lib", "energy", "scoreboard.ts"), "utf8");
+        const scoreboard = readFileSync(path.join(process.cwd(), "plugins", "ggs", "host", "energy", "scoreboard.ts"), "utf8");
         const page = readFileSync(path.join(process.cwd(), "components", "energy-scoreboard.tsx"), "utf8");
         const drip = readFileSync(path.join(process.cwd(), "components", "energy-water.tsx"), "utf8");
         assert.match(scoreboard, /buildEnergyWaterView/);

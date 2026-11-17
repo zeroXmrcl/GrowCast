@@ -7,9 +7,9 @@ import type {
     MetricVerdict,
     MosaicCell,
 } from "@/lib/ai-summary/types";
-import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
-import type {GgsLivePublic} from "@/lib/ggs-live";
-import {pickClimateDevice} from "@/lib/live-climate-view";
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/plugins/ggs/host/climate/types";
+import type {GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
+import {pickClimateDevice} from "@/plugins/ggs/host/live-climate-view";
 
 export type LiveMetricSource = "live" | "assessment";
 

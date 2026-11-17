@@ -3,10 +3,10 @@
 import {useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject} from "react";
 import {createPortal} from "react-dom";
 import ClimateHistoryChart from "@/components/climate-history-chart";
-import type {ClimateHistoryPublic, ClimatePoint, ClimateWindow} from "@/lib/climate/history-public";
-import type {ClimateHistoryMetric} from "@/lib/climate/history-ui";
-import type {StepSample} from "@/lib/climate/plot";
-import {formatHumidityPctTenths, formatTempC, formatVpd} from "@/lib/live-climate-view";
+import type {ClimateHistoryPublic, ClimatePoint, ClimateWindow} from "@/plugins/ggs/host/climate/history-public";
+import type {ClimateHistoryMetric} from "@/plugins/ggs/host/climate/history-ui";
+import type {StepSample} from "@/plugins/ggs/host/climate/plot";
+import {formatHumidityPctTenths, formatTempC, formatVpd} from "@/plugins/ggs/host/live-climate-view";
 
 type HistoryKey = "24h" | "7d" | "30d" | "grow";
 type Phase = "enter" | "open" | "leave";

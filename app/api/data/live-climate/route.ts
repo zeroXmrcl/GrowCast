@@ -1,4 +1,4 @@
-import {liveClimateGetResponse} from "@/lib/ggs-live-http";
+import {liveClimateGetResponse} from "@/plugins/ggs/host/ggs-live-http";
 import {withRequestLog} from "@/lib/logging";
 
 export const dynamic = "force-dynamic";

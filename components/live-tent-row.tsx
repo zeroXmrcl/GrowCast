@@ -5,16 +5,16 @@ import ClimateHistoryDialog from "@/components/climate-history-dialog";
 import LiveClimateCard from "@/components/live-climate-card";
 import LiveDevicesCard from "@/components/live-devices-card";
 import {useLiveClimate} from "@/hooks/use-live-climate";
-import type {ClimateTick} from "@/lib/climate-tick";
-import type {ClimateHistoryPublic} from "@/lib/climate/history-public";
-import type {ClimateHistoryMetric} from "@/lib/climate/history-ui";
-import {DEFAULT_DEVICES_DESIGN, type DevicesDesign} from "@/lib/devices-design";
+import type {ClimateTick} from "@/plugins/ggs/host/climate-tick";
+import type {ClimateHistoryPublic} from "@/plugins/ggs/host/climate/history-public";
+import type {ClimateHistoryMetric} from "@/plugins/ggs/host/climate/history-ui";
+import {DEFAULT_DEVICES_DESIGN, type DevicesDesign} from "@/plugins/ggs/host/devices-design";
 import {
     OVERLAY_GROW_PATH,
     OVERLAY_GROW_POLL_MS,
     parseOverlayGrowBody,
 } from "@/lib/overlay-grow";
-import {shouldShowLiveRow} from "@/lib/live-climate-view";
+import {shouldShowLiveRow} from "@/plugins/ggs/host/live-climate-view";
 import {WORKSPACE_AREA, WORKSPACE_VT} from "@/lib/workspace";
 
 export default function LiveTentRow({

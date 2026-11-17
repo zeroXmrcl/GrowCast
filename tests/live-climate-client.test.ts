@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {GGS_PLUGIN_ID, type GgsLivePublic} from "../lib/ggs-live.ts";
+import {GGS_PLUGIN_ID, type GgsLivePublic} from "../plugins/ggs/host/ggs-live.ts";
 import {recoverLiveClimateOnSseFailure} from "../hooks/use-live-climate.ts";
 
 function publicSnap(updatedAt: string, tempC = 25.4): GgsLivePublic {

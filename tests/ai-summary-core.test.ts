@@ -22,10 +22,10 @@ import {AI_SUMMARY_DAILY_API_CAP, AI_SUMMARY_MOSAIC_SLOTS} from "../lib/ai-summa
 import {completeCurrentGrow} from "../lib/archives.ts";
 import {updateCurrentGrow} from "../lib/db.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
-import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
-import {writeClimateDay} from "../lib/climate/store.ts";
+import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
+import {writeClimateDay} from "../plugins/ggs/host/climate/store.ts";
 import type {AiSummaryRecord, ClimateWindowStats, SchedulerState, StageContext} from "../lib/ai-summary/types.ts";
-import type {ClimatePoint} from "../lib/climate/types.ts";
+import type {ClimatePoint} from "../plugins/ggs/host/climate/types.ts";
 
 function emptyStats(): ClimateWindowStats {
     const metric = {

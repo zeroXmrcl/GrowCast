@@ -15,10 +15,10 @@ import {
 } from "../lib/admin/save-settings.ts";
 import {completeCurrentGrow, listArchivedGrows} from "../lib/archives.ts";
 import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
-import {energySettingsFile} from "../lib/energy/paths.ts";
-import {readEnergySettings, writeEnergySettings} from "../lib/energy/settings.ts";
+import {energySettingsFile} from "../plugins/ggs/host/energy/paths.ts";
+import {readEnergySettings, writeEnergySettings} from "../plugins/ggs/host/energy/settings.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
-import {getTimelapseSettings} from "../lib/timelapse-settings.ts";
+import {getTimelapseSettings} from "../plugins/timelapse/host/timelapse-settings.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-save-"));

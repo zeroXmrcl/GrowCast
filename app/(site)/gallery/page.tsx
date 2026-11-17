@@ -1,6 +1,6 @@
 import SnapshotGallery from "@/components/snapshot-gallery";
 import TimelapsePlayer from "@/components/timelapse-player";
-import {isTimelapsePluginInstalled} from "@/lib/extension-status";
+import {isTimelapsePluginInstalled} from "@/plugins/timelapse/host/extension-status";
 import {WORKSPACE_BOARD_CLASS} from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";

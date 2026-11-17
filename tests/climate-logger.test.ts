@@ -3,18 +3,18 @@ import {chmod, mkdir, mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {GGS_PLUGIN_ID} from "../lib/ggs-live.ts";
-import {climateDayFile} from "../lib/climate/paths.ts";
-import {mergeClimatePoint, parseClimateDayFile, pruneClimateDays, writeClimateDay} from "../lib/climate/store.ts";
-import {_resetClimateWriteLockForTests} from "../lib/climate/store.ts";
-import {_setClimateLogListenerForTests} from "../lib/climate/log.ts";
+import {GGS_PLUGIN_ID} from "../plugins/ggs/host/ggs-live.ts";
+import {climateDayFile} from "../plugins/ggs/host/climate/paths.ts";
+import {mergeClimatePoint, parseClimateDayFile, pruneClimateDays, writeClimateDay} from "../plugins/ggs/host/climate/store.ts";
+import {_resetClimateWriteLockForTests} from "../plugins/ggs/host/climate/store.ts";
+import {_setClimateLogListenerForTests} from "../plugins/ggs/host/climate/log.ts";
 import {
     climatePointFromIngest,
     climateSlotStartMs,
     recordClimateOnIngest,
     recordClimateOnIngestBestEffort,
-} from "../lib/climate/writer.ts";
-import {CLIMATE_SLOT_MS} from "../lib/climate/types.ts";
+} from "../plugins/ggs/host/climate/writer.ts";
+import {CLIMATE_SLOT_MS} from "../plugins/ggs/host/climate/types.ts";
 
 function ingest(overrides: {
     updatedAt?: string;

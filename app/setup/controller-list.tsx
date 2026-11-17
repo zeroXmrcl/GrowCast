@@ -1,7 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
+import type {SpiderFarmerController} from "@/plugins/ggs/host/spider-farmer-login";
 
 type ControllerListProps = {
     controllers: SpiderFarmerController[];

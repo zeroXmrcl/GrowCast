@@ -3,7 +3,7 @@ import {
     replayableOverlayAlerts,
     type OverlayAlert,
 } from "@/lib/overlay-alert";
-import {shouldEnqueueKind, type AlertsSettings} from "@/lib/restream/alerts-settings";
+import {shouldEnqueueKind, type AlertsSettings} from "@/plugins/restream/host/alerts-settings";
 
 /**
  * Next can evaluate this module once per bundle (Server Action vs Route

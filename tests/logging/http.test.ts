@@ -87,17 +87,14 @@ describe("docker compose listen address", () => {
     assert.doesNotMatch(yml, /ports:\s*\n\s*-\s*"\$\{GROWCAST_PORT:-3000\}:3000"/);
     assert.match(yml, /GROWCAST_TRUST_PROXY:\s*"?1"?/);
     assert.doesNotMatch(yml, /-\s*"?\.\/extensions:\/app\/extensions"?/);
-    assert.match(
-      yml,
-      /-\s*"?\.\/extensions\/GrowCast-Timelapse:\/app\/extensions\/GrowCast-Timelapse"?/,
-    );
-    assert.match(yml, /^\s*ggs:\s*$/m);
-    assert.match(yml, /^\s*restream:\s*$/m);
-    assert.match(yml, /^\s*timelapse:\s*$/m);
+    assert.match(yml, /-\s*"?\.\/plugins:\/app\/plugins:ro"?/);
+    assert.doesNotMatch(yml, /^\s*ggs:\s*$/m);
+    assert.doesNotMatch(yml, /^\s*restream:\s*$/m);
+    assert.doesNotMatch(yml, /^\s*timelapse:\s*$/m);
     assert.match(yml, /GROWCAST_GGS_ENV_FILE:\s*\/app\/data\/ggs\.env/);
-    assert.match(yml, /docker\/ggs-run\.sh/);
-    assert.match(yml, /docker\/timelapse-run\.sh/);
-    assert.match(yml, /GrowCast-Timelapse\/GrowCast-Timelapse:\/opt\/legacy-timelapse:ro/);
+    assert.match(yml, /GROWCAST_PLUGIN_RUNTIME:\s*docker/);
+    assert.match(yml, /compose\.plugins\.generated\.yml/);
+    assert.match(yml, /docker\.sock/);
     assert.doesNotMatch(yml, /GrowCast-GGS\/\.env/);
     assert.doesNotMatch(yml, /GrowCast-Timelapse\/GrowCast-Timelapse\/\.env/);
     assert.match(yml, /required:\s*false/);
@@ -125,7 +122,7 @@ describe("docker compose listen address", () => {
   it("does not recursively chown /app/extensions in the entrypoint", async () => {
     const {readFile} = await import("node:fs/promises");
     const sh = await readFile(new URL("../../docker-entrypoint.sh", import.meta.url), "utf8");
-    assert.match(sh, /\/app\/extensions\/GrowCast-Timelapse/);
+    assert.match(sh, /\/app\/plugins\/timelapse/);
     assert.doesNotMatch(sh, /^\s*\/app\/extensions\s*\\?\s*$/m);
     assert.doesNotMatch(sh, /GrowCast-GGS/);
   });

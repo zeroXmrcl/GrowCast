@@ -1,0 +1,34 @@
+{
+  "id": "growcast.timelapse",
+  "name": "GrowCast Timelapse",
+  "author": "0xmrcl",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "description": "RTSP snapshots and timelapse video.",
+  "homepage": "https://github.com/zeroXmrcl/GrowCast",
+  "repository": "https://github.com/zeroXmrcl/GrowCast",
+  "runtime": {
+    "type": "docker",
+    "dockerfile": "Dockerfile",
+    "command": ["/bin/sh", "/app/run.sh"],
+    "extraVolumes": [
+      "./plugins/timelapse/snapshots:/app/GrowCast-Timelapse/snapshots",
+      "./plugins/timelapse/timelapse:/app/GrowCast-Timelapse/timelapse",
+      "./data:/host-data:ro"
+    ]
+  },
+  "ui": { "entry": "ui/dist/index.js", "sdk": "^1.0.0" },
+  "pages": [
+    { "id": "gallery", "path": "gallery", "title": "Gallery", "nav": "none" },
+    { "id": "admin", "path": "", "title": "Timelapse", "nav": "admin" }
+  ],
+  "widgets": [],
+  "permissions": { "network": "lan", "media": true },
+  "hostModule": "host/index.ts",
+  "exports": { "gallery": true },
+  "compat": { "meshSettings": true },
+  "config": {
+    "intervalS": { "type": "integer", "min": 60, "max": 86400, "default": 900 }
+  },
+  "metrics": {}
+}

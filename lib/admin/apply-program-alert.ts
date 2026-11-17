@@ -1,5 +1,5 @@
 import {publishOverlayAlert} from "@/lib/overlay-alert-hub";
-import {readAlertsSettings} from "@/lib/restream/alerts-settings";
+import {readAlertsSettings} from "@/plugins/restream/host/alerts-settings";
 
 export type ApplyProgramAlertResult =
     | {ok: true}

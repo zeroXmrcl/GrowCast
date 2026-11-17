@@ -9,11 +9,12 @@ export type NavFlags = {
 
 const SETTINGS_ITEM: NavItem = {href: "/admin", label: "Settings"};
 
-export function navItemsFor(pathname: string, flags: NavFlags): NavItem[] {
+export function navItemsFor(pathname: string, flags: NavFlags, extra: NavItem[] = []): NavItem[] {
     const items: NavItem[] = [{href: "/", label: "Dashboard"}];
     if (flags.showEnergy) {
         items.push({href: "/energy", label: "Energy"});
     }
+    items.push(...extra.filter((item) => item.href.startsWith("/p/")));
     if (flags.showGallery) {
         items.push({href: "/gallery", label: "Gallery"});
     }

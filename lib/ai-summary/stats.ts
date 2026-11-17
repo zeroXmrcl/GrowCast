@@ -1,6 +1,6 @@
-import {berlinDateOnly, berlinDateWindow} from "@/lib/energy/berlin";
-import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/lib/climate/types";
-import {readClimateDay} from "@/lib/climate/store";
+import {berlinDateOnly, berlinDateWindow} from "@/plugins/ggs/host/energy/berlin";
+import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/plugins/ggs/host/climate/types";
+import {readClimateDay} from "@/plugins/ggs/host/climate/store";
 import type {ClimateWindowStats, MetricStats, SplitStats} from "@/lib/ai-summary/types";
 
 function emptyStats(): MetricStats {

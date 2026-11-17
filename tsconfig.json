@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@growcast/plugin-sdk": ["./packages/plugin-sdk/src/index.ts"],
+      "@growcast/plugin-sdk/ui": ["./packages/plugin-sdk/src/ui/index.ts"]
     }
   },
   "include": [
@@ -30,5 +32,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "tests"]
+  "exclude": ["node_modules", "tests", "scripts", "plugins/**/ui/dist"]
 }

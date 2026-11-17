@@ -6,7 +6,7 @@ import {
     BROADCAST_POLL_PATH,
     parsePublicBroadcastBody,
     type PublicBroadcast,
-} from "@/lib/restream/broadcast";
+} from "@/plugins/restream/host/broadcast";
 
 function TwitchGlitchIcon() {
     return (

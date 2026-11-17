@@ -1,4 +1,4 @@
-import type {EnergyFlowRow, EnergyFlowView} from "@/lib/energy/types";
+import type {EnergyFlowRow, EnergyFlowView} from "@/plugins/ggs/host/energy/types";
 import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
 
 function padHour(hour: number): string {

@@ -1,0 +1,32 @@
+{
+  "id": "growcast.ggs",
+  "name": "GrowCast GGS",
+  "author": "0xmrcl",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "description": "Spider Farmer GGS climate, devices, and tent energy.",
+  "homepage": "https://github.com/zeroXmrcl/GrowCast",
+  "repository": "https://github.com/zeroXmrcl/GrowCast",
+  "runtime": {
+    "type": "docker",
+    "dockerfile": "Dockerfile",
+    "command": ["/bin/sh", "/app/run.sh"],
+    "extraVolumes": ["./data:/host-data:ro"]
+  },
+  "ui": { "entry": "ui/dist/index.js", "sdk": "^1.0.0" },
+  "pages": [
+    { "id": "energy", "path": "energy", "title": "Energy", "nav": "none" },
+    { "id": "admin", "path": "", "title": "GGS", "nav": "admin" }
+  ],
+  "widgets": [
+    { "id": "live-climate", "title": "Live climate", "slots": ["plugin-page"], "size": "2x1" }
+  ],
+  "permissions": { "network": "internet" },
+  "hostModule": "host/index.ts",
+  "exports": { "liveClimate": true, "energy": true, "tentEnergy": true },
+  "compat": { "meshState": true, "meshSettings": true },
+  "config": {
+    "intervalS": { "type": "integer", "min": 2, "max": 60, "default": 2 }
+  },
+  "metrics": {}
+}

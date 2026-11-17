@@ -5,7 +5,7 @@ import {
     captureStreamUrl,
     ensureRestreamCaptureToken,
     isRestreamCaptureAuthorized,
-} from "@/lib/restream/capture";
+} from "@/plugins/restream/host/capture";
 
 export const dynamic = "force-dynamic";
 

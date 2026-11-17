@@ -13,8 +13,8 @@ import {
     persistAccruePlan,
     planAccrue,
     previewPendingAccrue,
-} from "../lib/energy/accrue.ts";
-import {energyCurrentDir, energyCursorFile, energyDayFile, energyPendingCursorFile} from "../lib/energy/paths.ts";
+} from "../plugins/ggs/host/energy/accrue.ts";
+import {energyCurrentDir, energyCursorFile, energyDayFile, energyPendingCursorFile} from "../plugins/ggs/host/energy/paths.ts";
 import {
     _failEnergyDayWriteOnCallForTests,
     _failNextEnergyCursorWriteForTests,
@@ -24,19 +24,19 @@ import {
     writeEnergyCursor,
     writeEnergyDay,
     writeEnergyPending,
-} from "../lib/energy/store.ts";
+} from "../plugins/ggs/host/energy/store.ts";
 import {getCurrentGrow} from "../lib/db.ts";
-import {saveGgsLive} from "../lib/ggs-live-store.ts";
-import {GGS_FUTURE_SKEW_MS, GGS_PLUGIN_ID, parseIngestBody} from "../lib/ggs-live.ts";
+import {saveGgsLive} from "../plugins/ggs/host/ggs-live-store.ts";
+import {GGS_FUTURE_SKEW_MS, GGS_PLUGIN_ID, parseIngestBody} from "../plugins/ggs/host/ggs-live.ts";
 import {
     _resetIngestRateForTests,
     liveClimateIngestResponse,
-} from "../lib/ggs-live-http.ts";
+} from "../plugins/ggs/host/ggs-live-http.ts";
 import {_resetMeshAuthThrottleForTests} from "../lib/mesh-throttle.ts";
-import {berlinHour, splitBerlinHours} from "../lib/energy/berlin.ts";
-import {nowWattsFromSnapshot} from "../lib/energy/scoreboard.ts";
+import {berlinHour, splitBerlinHours} from "../plugins/ggs/host/energy/berlin.ts";
+import {nowWattsFromSnapshot} from "../plugins/ggs/host/energy/scoreboard.ts";
 import {readFileSync} from "node:fs";
-import type {GgsDeviceSnapshot} from "../lib/ggs-live.ts";
+import type {GgsDeviceSnapshot} from "../plugins/ggs/host/ggs-live.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-energy-accrue-"));
@@ -367,9 +367,9 @@ describe("nowWattsFromSnapshot", () => {
     });
 
     it("wires accrue, now watts, and the energy cursor through the alert skip", () => {
-        const accrue = readFileSync(path.join(process.cwd(), "lib", "energy", "accrue.ts"), "utf8");
-        const scoreboard = readFileSync(path.join(process.cwd(), "lib", "energy", "scoreboard.ts"), "utf8");
-        const store = readFileSync(path.join(process.cwd(), "lib", "energy", "store.ts"), "utf8");
+        const accrue = readFileSync(path.join(process.cwd(), "plugins", "ggs", "host", "energy", "accrue.ts"), "utf8");
+        const scoreboard = readFileSync(path.join(process.cwd(), "plugins", "ggs", "host", "energy", "scoreboard.ts"), "utf8");
+        const store = readFileSync(path.join(process.cwd(), "plugins", "ggs", "host", "energy", "store.ts"), "utf8");
         assert.match(accrue, /actuatorCountsTowardEnergy/);
         assert.match(scoreboard, /actuatorCountsTowardEnergy/);
         assert.match(store, /alarm: parseCursorAlarm\(raw\.alarm\)/);

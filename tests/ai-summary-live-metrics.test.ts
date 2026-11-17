@@ -11,8 +11,8 @@ import {
 } from "../lib/ai-summary/live-metrics.ts";
 import {encodeMosaicRow} from "../lib/ai-summary/mosaic.ts";
 import type {AiMetricJudgment, ClimateWindowStats, MosaicCell} from "../lib/ai-summary/types.ts";
-import {GGS_PLUGIN_ID, type GgsLivePublic} from "../lib/ggs-live.ts";
-import type {ClimateMetricKey} from "../lib/climate/types.ts";
+import {GGS_PLUGIN_ID, type GgsLivePublic} from "../plugins/ggs/host/ggs-live.ts";
+import type {ClimateMetricKey} from "../plugins/ggs/host/climate/types.ts";
 
 function judgment(overrides: Partial<AiMetricJudgment> = {}): AiMetricJudgment {
     return {verdict: "in_range", pctInRange: 90, note: "on target", ...overrides};

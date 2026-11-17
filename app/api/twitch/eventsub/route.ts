@@ -1,5 +1,5 @@
 import {withRequestLog} from "@/lib/logging";
-import {eventsubNotificationResponse} from "@/lib/restream/eventsub";
+import {eventsubNotificationResponse} from "@/plugins/restream/host/eventsub";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

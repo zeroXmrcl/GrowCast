@@ -12,7 +12,7 @@ import {foldMosaicRow, mosaicDetail, parseMosaicRow, verdictsFromMosaic} from "@
 import {mosaicFoldSlotMs, mosaicWindowStartMs} from "@/lib/ai-summary/rolling-mosaic";
 import {AI_SUMMARY_SCORE_DAYS, type AiSummaryPublic, type MosaicCell} from "@/lib/ai-summary/types";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
-import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/plugins/ggs/host/climate/types";
 import {WORKSPACE_AREA, WORKSPACE_HAIRLINE, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
 

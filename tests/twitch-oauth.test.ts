@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {REDACT_PATHS} from "../lib/logging/redact.ts";
-import {restreamOAuthFile} from "../lib/restream/paths.ts";
+import {restreamOAuthFile} from "../plugins/restream/host/paths.ts";
 import {
     TWITCH_OAUTH_SCOPES,
     buildTwitchAuthorizeUrl,
@@ -14,7 +14,7 @@ import {
     readTwitchOAuthFile,
     refreshTwitchToken,
     writeTwitchOAuthFile,
-} from "../lib/restream/twitch-oauth.ts";
+} from "../plugins/restream/host/twitch-oauth.ts";
 
 function src(rel: string): string {
     return readFileSync(path.join(process.cwd(), rel), "utf8");
@@ -280,7 +280,7 @@ describe("Twitch OAuth routes and panel", () => {
     });
 
     it("does not log tokens and redacts camelCase token fields", () => {
-        const oauth = src(path.join("lib", "restream", "twitch-oauth.ts"));
+        const oauth = src(path.join("plugins", "restream", "host", "twitch-oauth.ts"));
         assert.match(oauth, /sanitizeError/);
         assert.match(oauth, /atomicWriteFile/);
         assert.match(oauth, /restreamOAuthFile/);

@@ -8,12 +8,12 @@ import {AdminSaveForm} from "@/app/admin/admin-save-form";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {EnergySettingsFields} from "@/app/admin/energy-fields";
 import {SpiderFarmerLoginPanel} from "@/app/admin/spider-farmer-panel";
-import {readSpiderFarmerBrokerStatus} from "@/lib/ggs-sidecar-env";
+import {readSpiderFarmerBrokerStatus} from "@/plugins/ggs/host/ggs-sidecar-env";
 import {readStoredControllers} from "@/lib/setup-account";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
-import {energyActuatorRows, readEnergySettings} from "@/lib/energy/settings";
-import {withStale} from "@/lib/ggs-live";
-import {readGgsLive} from "@/lib/ggs-live-store";
+import {energyActuatorRows, readEnergySettings} from "@/plugins/ggs/host/energy/settings";
+import {withStale} from "@/plugins/ggs/host/ggs-live";
+import {readGgsLive} from "@/plugins/ggs/host/ggs-live-store";
 
 export default async function AdminGgsPage() {
     if (!(await isAdminAuthenticated())) {

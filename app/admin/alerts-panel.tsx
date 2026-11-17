@@ -3,7 +3,7 @@ import {AdminBand} from "@/app/admin/admin-band";
 import {AdminImmediateForm} from "@/app/admin/admin-save-form";
 import {AdminButton, AdminCheckboxRow} from "@/components/admin/ui";
 import OverlayScaleInput from "@/components/overlay-scale-input";
-import type {AlertsSettings} from "@/lib/restream/alerts-settings";
+import type {AlertsSettings} from "@/plugins/restream/host/alerts-settings";
 
 export function AlertsPanel({
     settings,

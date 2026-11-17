@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {deviceGaugePercent} from "../lib/device-gauge.ts";
-import type {LiveDeviceTile} from "../lib/live-climate-view.ts";
+import {deviceGaugePercent} from "../plugins/ggs/host/device-gauge.ts";
+import type {LiveDeviceTile} from "../plugins/ggs/host/live-climate-view.ts";
 
 function tile(partial: Partial<LiveDeviceTile>): LiveDeviceTile {
     return {

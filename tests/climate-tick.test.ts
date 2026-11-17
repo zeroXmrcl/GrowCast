@@ -9,7 +9,7 @@ import {
     climateTickIndex,
     climateTickLabels,
     parseClimateTick,
-} from "../lib/climate-tick.ts";
+} from "../plugins/ggs/host/climate-tick.ts";
 import {normalizeGrowRecord} from "../lib/db.ts";
 import {OVERLAY_EASING_ENTER} from "../lib/overlay-motion.ts";
 import {parseOverlayGrowBody} from "../lib/overlay-grow.ts";

@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {completeCurrentGrow, listArchivedGrows} from "../lib/archives.ts";
-import {energyCurrentDir, energyCursorFile} from "../lib/energy/paths.ts";
+import {energyCurrentDir, energyCursorFile} from "../plugins/ggs/host/energy/paths.ts";
 import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
-import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
+import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
 
 async function withTempEnv<T>(

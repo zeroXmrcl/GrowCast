@@ -3,7 +3,7 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {afterEach, describe, it} from "node:test";
-import {GGS_PLUGIN_ID} from "../lib/ggs-live.ts";
+import {GGS_PLUGIN_ID} from "../plugins/ggs/host/ggs-live.ts";
 import {
     GGS_MAX_SSE_PER_CLIENT,
     GGS_MAX_SSE_SUBSCRIBERS,
@@ -14,16 +14,16 @@ import {
     subscribeLive,
     subscriberCount,
     tryReserveSseSlot,
-} from "../lib/ggs-live-hub.ts";
+} from "../plugins/ggs/host/ggs-live-hub.ts";
 import {
     _resetIngestRateForTests,
     liveClimateGetResponse,
     liveClimateIngestResponse,
     liveClimateStreamResponse,
-} from "../lib/ggs-live-http.ts";
+} from "../plugins/ggs/host/ggs-live-http.ts";
 import {MESH_AUTH_MAX_FAILURES, _resetMeshAuthThrottleForTests} from "../lib/mesh-throttle.ts";
-import {EMPTY_LIVE_PUBLIC, withStale} from "../lib/ggs-live.ts";
-import {saveGgsLive} from "../lib/ggs-live-store.ts";
+import {EMPTY_LIVE_PUBLIC, withStale} from "../plugins/ggs/host/ggs-live.ts";
+import {saveGgsLive} from "../plugins/ggs/host/ggs-live-store.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-ggs-http-"));
@@ -209,7 +209,7 @@ describe("live climate GET", () => {
 
     it("returns saved tempC", async () => {
         await withTempDataDir(async () => {
-            const parsed = (await import("../lib/ggs-live.ts")).parseIngestBody(
+            const parsed = (await import("../plugins/ggs/host/ggs-live.ts")).parseIngestBody(
                 validBody({updatedAt: new Date().toISOString()}),
             );
             assert.equal(parsed.ok, true);
@@ -229,7 +229,7 @@ describe("live climate GET", () => {
                 ...validBody(),
                 updatedAt: new Date(Date.now() - 121_000).toISOString(),
             };
-            const parsed = (await import("../lib/ggs-live.ts")).parseIngestBody(old);
+            const parsed = (await import("../plugins/ggs/host/ggs-live.ts")).parseIngestBody(old);
             assert.equal(parsed.ok, true);
             if (!parsed.ok) return;
             await saveGgsLive(parsed.value);
@@ -245,7 +245,7 @@ describe("live climate GET", () => {
 describe("live climate SSE", () => {
     it("sends a snapshot event on connect", async () => {
         await withTempDataDir(async () => {
-            const parsed = (await import("../lib/ggs-live.ts")).parseIngestBody(
+            const parsed = (await import("../plugins/ggs/host/ggs-live.ts")).parseIngestBody(
                 validBody({updatedAt: new Date().toISOString()}),
             );
             assert.equal(parsed.ok, true);

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {afterEach, describe, it} from "node:test";
-import {GGS_PLUGIN_ID} from "../lib/ggs-live.ts";
-import {liveClimateIngestResponse} from "../lib/ggs-live-http.ts";
+import {GGS_PLUGIN_ID} from "../plugins/ggs/host/ggs-live.ts";
+import {liveClimateIngestResponse} from "../plugins/ggs/host/ggs-live-http.ts";
 import {meshPluginGetResponse} from "../lib/mesh-http.ts";
 import {MESH_AUTH_MAX_FAILURES, _resetMeshAuthThrottleForTests} from "../lib/mesh-throttle.ts";
 

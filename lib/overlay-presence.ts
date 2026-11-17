@@ -1,6 +1,6 @@
-import type {EnergyPublicDto} from "@/lib/energy/types";
-import {shouldShowLiveRow} from "@/lib/live-climate-view";
-import type {GgsLivePublic} from "@/lib/ggs-live";
+import type {EnergyPublicDto} from "@/plugins/ggs/host/energy/types";
+import {shouldShowLiveRow} from "@/plugins/ggs/host/live-climate-view";
+import type {GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
 
 export function overlayClimateGearVisible(
     snapshot: GgsLivePublic | null | undefined,

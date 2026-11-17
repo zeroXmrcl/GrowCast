@@ -20,13 +20,13 @@ import {StreamSettingsFields} from "@/app/admin/stream-fields";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {getCurrentGrow} from "@/lib/db";
 import {overlayPublicUrl} from "@/lib/overlay-layout";
-import {readAlertsSettings} from "@/lib/restream/alerts-settings";
-import {readRestreamAudio} from "@/lib/restream/audio";
-import {readCameraLook} from "@/lib/restream/camera-look-store";
-import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
-import {listMusicFiles} from "@/lib/restream/music-files";
-import {readRestreamPublicView} from "@/lib/restream/store";
-import {readTwitchOAuthFile} from "@/lib/restream/twitch-oauth";
+import {readAlertsSettings} from "@/plugins/restream/host/alerts-settings";
+import {readRestreamAudio} from "@/plugins/restream/host/audio";
+import {readCameraLook} from "@/plugins/restream/host/camera-look-store";
+import {ensureRestreamCaptureToken} from "@/plugins/restream/host/capture";
+import {listMusicFiles} from "@/plugins/restream/host/music-files";
+import {readRestreamPublicView} from "@/plugins/restream/host/store";
+import {readTwitchOAuthFile} from "@/plugins/restream/host/twitch-oauth";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
 
 export default async function AdminStreamPage() {

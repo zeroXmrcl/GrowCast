@@ -13,9 +13,9 @@ import {
     isTwitchLogin,
     parsePublicBroadcastBody,
     publicBroadcastPayload,
-} from "../lib/restream/broadcast.ts";
-import {ensureRestreamCaptureToken} from "../lib/restream/capture.ts";
-import {restreamChannelFile, restreamStatusFile} from "../lib/restream/paths.ts";
+} from "../plugins/restream/host/broadcast.ts";
+import {ensureRestreamCaptureToken} from "../plugins/restream/host/capture.ts";
+import {restreamChannelFile, restreamStatusFile} from "../plugins/restream/host/paths.ts";
 import {
     EMPTY_RESTREAM_CHANNEL,
     broadcastGetResponse,
@@ -25,13 +25,13 @@ import {
     saveRestreamKey,
     setRestreamEnabled,
     writeRestreamChannel,
-} from "../lib/restream/store.ts";
+} from "../plugins/restream/host/store.ts";
 import {
     isInvalidTypedChannelLogin,
     resolveChannelLogin,
     streamKeyForChannelLookup,
     twitchUserIdFromStreamKey,
-} from "../lib/restream/twitch-helix.ts";
+} from "../plugins/restream/host/twitch-helix.ts";
 
 function src(rel: string): string {
     return readFileSync(path.join(process.cwd(), rel), "utf8");
@@ -439,7 +439,7 @@ describe("homepage toast", () => {
         const scene = src(path.join("components", "program-scene.tsx"));
         const lookHud = src(path.join("components", "program-camera-look.tsx"));
         const composeSrc = src("docker-compose.yml");
-        const sidecarSrc = src(path.join("extensions", "GrowCast-Restream", "restream.py"));
+        const sidecarSrc = src(path.join("plugins", "restream", "restream.py"));
         const restream = composeSrc.split(/^  restream:\s*$/m)[1] ?? "";
         assert.match(lookHud, /overlayStream=["']include["']/);
         assert.match(scene, /ProgramCameraLook/);

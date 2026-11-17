@@ -2,16 +2,16 @@ import {readdir, stat} from "node:fs/promises";
 import path from "node:path";
 import {getCurrentGrow} from "@/lib/db";
 import {publicRequestOrigin} from "@/lib/request-trust";
-import {SNAPSHOT_DIR, pathExists} from "@/lib/extension-status";
+import {SNAPSHOT_DIR, pathExists} from "@/plugins/timelapse/host/extension-status";
 import {IMAGE_EXTENSIONS} from "@/lib/safe-media-filename";
-import {withStale} from "@/lib/ggs-live";
-import {readGgsLive} from "@/lib/ggs-live-store";
+import {withStale} from "@/plugins/ggs/host/ggs-live";
+import {readGgsLive} from "@/plugins/ggs/host/ggs-live-store";
 import {
     climateMetrics,
     formatHumidityPct,
     formatTempC,
     shouldShowLiveRow,
-} from "@/lib/live-climate-view";
+} from "@/plugins/ggs/host/live-climate-view";
 import {
     listMediaFiles,
     mediaCollectionDir,

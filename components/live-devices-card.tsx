@@ -1,14 +1,14 @@
 import {DeviceIcon} from "@/components/device-icons";
-import type {GgsLivePublic} from "@/lib/ggs-live";
-import {deviceGaugePercent} from "@/lib/device-gauge";
-import {DEFAULT_DEVICES_DESIGN, type DevicesDesign} from "@/lib/devices-design";
-import {mapDeviceTiles, type LiveDeviceTile} from "@/lib/live-climate-view";
+import type {GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
+import {deviceGaugePercent} from "@/plugins/ggs/host/device-gauge";
+import {DEFAULT_DEVICES_DESIGN, type DevicesDesign} from "@/plugins/ggs/host/devices-design";
+import {mapDeviceTiles, type LiveDeviceTile} from "@/plugins/ggs/host/live-climate-view";
 import {
     LIVE_DEVICE_ITEM_CLASS,
     LIVE_DEVICE_ROW_CLASS,
     LIVE_DEVICE_VOID_CLASS,
     liveDeviceRowItems,
-} from "@/lib/live-devices-layout";
+} from "@/plugins/ggs/host/live-devices-layout";
 import {WORKSPACE_PAD, WORKSPACE_TITLE} from "@/lib/workspace";
 
 const CX = 50;

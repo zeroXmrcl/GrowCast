@@ -1,4 +1,4 @@
-import {climateHistoryGetResponse} from "@/lib/climate/history-http";
+import {climateHistoryGetResponse} from "@/plugins/ggs/host/climate/history-http";
 import {withRequestLog} from "@/lib/logging";
 
 export const dynamic = "force-dynamic";

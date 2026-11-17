@@ -13,7 +13,7 @@ import {
     type StepMorphPiece,
     type StepSample,
     type StepSegment,
-} from "@/lib/climate/plot";
+} from "@/plugins/ggs/host/climate/plot";
 
 const PLOT_W = 600;
 const PLOT_H = 160;

@@ -1,6 +1,6 @@
-import {GGS_PLUGIN_ID, TIMELAPSE_PLUGIN_ID, isKnownMeshPlugin} from "@/lib/mesh-plugins";
+import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
+import {loadHostModule} from "@/lib/plugins/first-party";
 import {requireMeshAuthThrottled} from "@/lib/mesh-throttle";
-import {getTimelapseSettingsRecord} from "@/lib/timelapse-settings";
 import {logMeshPluginUnknown} from "@/lib/logging/security-events";
 
 function noStoreJson(body: unknown, status = 200): Response {
@@ -21,28 +21,26 @@ export async function meshPluginGetResponse(
         return auth;
     }
 
-    if (!isKnownMeshPlugin(pluginId)) {
+    const discovered = await findDiscoveredPlugin(pluginId);
+    const compat = discovered?.manifest.compat;
+    if (!discovered || !(compat?.meshSettings || compat?.meshState)) {
         logMeshPluginUnknown({plugin_id: pluginId});
         return noStoreJson({error: "Unknown plugin"}, 404);
     }
 
-    if (pluginId === GGS_PLUGIN_ID) {
-        return noStoreJson({
-            pluginId: GGS_PLUGIN_ID,
-            settingsVersion: new Date(0).toISOString(),
-            settings: {},
-        });
+    const host = await loadHostModule(discovered);
+    if (host?.meshSettings) {
+        try {
+            const data = await host.meshSettings();
+            return noStoreJson(data);
+        } catch {
+            return noStoreJson({error: "Unavailable"}, 503);
+        }
     }
 
-    if (pluginId !== TIMELAPSE_PLUGIN_ID) {
-        logMeshPluginUnknown({plugin_id: pluginId});
-        return noStoreJson({error: "Unknown plugin"}, 404);
-    }
-
-    try {
-        const data = await getTimelapseSettingsRecord();
-        return noStoreJson(data);
-    } catch {
-        return noStoreJson({error: "Unavailable"}, 503);
-    }
+    return noStoreJson({
+        pluginId: discovered.manifest.id,
+        settingsVersion: new Date(0).toISOString(),
+        settings: {},
+    });
 }

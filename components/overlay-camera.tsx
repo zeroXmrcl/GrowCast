@@ -13,7 +13,7 @@ import {
     cameraLookFilterCss,
     cameraLookTemperatureStyle,
     type CameraLook,
-} from "@/lib/restream/camera-look";
+} from "@/plugins/restream/host/camera-look";
 
 const RETRY_MS = 2000;
 const CLOCK_MS = 250;

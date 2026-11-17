@@ -5,7 +5,7 @@ import {saveProgramAudioAction} from "@/app/admin/actions";
 import {AdminImmediateForm} from "@/app/admin/admin-save-form";
 import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
 import {publishAdminNotice} from "@/lib/admin/publish-notice";
-import type {RestreamAudio} from "@/lib/restream/audio";
+import type {RestreamAudio} from "@/plugins/restream/host/audio";
 
 export function MixerStrip({audio}: {audio: RestreamAudio}) {
     const [alertBusy, setAlertBusy] = useState(false);

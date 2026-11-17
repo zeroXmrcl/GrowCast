@@ -9,27 +9,27 @@ import {
     validateUsernameInput,
 } from "@/lib/admin-credentials";
 import {validatePasswordStrength, MIN_PASSWORD_LENGTH} from "@/lib/password-policy";
-import {prepareSpiderFarmer} from "@/lib/spider-farmer-setup";
-import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
+import {prepareSpiderFarmer} from "@/plugins/ggs/host/spider-farmer-setup";
+import type {SpiderFarmerController} from "@/plugins/ggs/host/spider-farmer-login";
 import {updateCurrentGrow} from "@/lib/db";
 import {adminSetupDecision, isOptionalInstallerStep} from "@/lib/installer-ready";
 import {installerFinishCheck} from "@/lib/installer-progress";
 import {markSetupComplete, readStoredAdminAccount, writeSkippedStep, writeStoredAdminAccount} from "@/lib/setup-account";
 import {clearSetupCode, readSetupCode, setupCodesMatch} from "@/lib/setup-gate";
 import {loginRateLimitKey} from "@/lib/request-trust";
-import {isRtspUrl, writeTimelapseSidecarEnv} from "@/lib/timelapse-sidecar-env";
-import {canonicalTimeZone, updateTimelapseSettings} from "@/lib/timelapse-settings";
+import {isRtspUrl, writeTimelapseSidecarEnv} from "@/plugins/timelapse/host/timelapse-sidecar-env";
+import {canonicalTimeZone, updateTimelapseSettings} from "@/plugins/timelapse/host/timelapse-settings";
 import {
     readRestreamChannel,
     readRestreamKey,
     saveRestreamKey,
     writeRestreamChannel,
-} from "@/lib/restream/store";
+} from "@/plugins/restream/host/store";
 import {
     isInvalidTypedChannelLogin,
     resolveChannelLogin,
     streamKeyForChannelLookup,
-} from "@/lib/restream/twitch-helix";
+} from "@/plugins/restream/host/twitch-helix";
 import {isSafeHttpUrl} from "@/lib/url-policy";
 
 export type SetupStepResult =

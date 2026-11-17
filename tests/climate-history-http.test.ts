@@ -4,11 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {GET} from "../app/api/data/climate-history/route.ts";
-import {climateHistoryGetResponse} from "../lib/climate/history-http.ts";
-import {_resetClimateWriteLockForTests, writeClimateDay} from "../lib/climate/store.ts";
+import {climateHistoryGetResponse} from "../plugins/ggs/host/climate/history-http.ts";
+import {_resetClimateWriteLockForTests, writeClimateDay} from "../plugins/ggs/host/climate/store.ts";
 import {updateCurrentGrow} from "../lib/db.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
-import type {ClimateDayFile, ClimatePoint} from "../lib/climate/types.ts";
+import type {ClimateDayFile, ClimatePoint} from "../plugins/ggs/host/climate/types.ts";
 
 const NOW = Date.parse("2026-10-13T13:00:00.000Z");
 

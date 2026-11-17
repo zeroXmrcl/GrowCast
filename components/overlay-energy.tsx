@@ -1,6 +1,6 @@
 import {OVERLAY_PANEL_CLASS} from "@/components/overlay-shell";
-import {formatEur, formatKwh, formatWatts} from "@/lib/energy/format";
-import type {EnergyPublicDto} from "@/lib/energy/types";
+import {formatEur, formatKwh, formatWatts} from "@/plugins/ggs/host/energy/format";
+import type {EnergyPublicDto} from "@/plugins/ggs/host/energy/types";
 import {overlayEnergyGrowWindow} from "@/lib/overlay-energy-view";
 
 function WindowColumn({

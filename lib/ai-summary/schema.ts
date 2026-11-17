@@ -1,4 +1,4 @@
-import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/plugins/ggs/host/climate/types";
 import {isRecord} from "@/lib/coerce";
 import type {
     AiMetricJudgment,

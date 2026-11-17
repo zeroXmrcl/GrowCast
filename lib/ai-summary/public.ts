@@ -1,5 +1,5 @@
-import {berlinDateOnly, shiftDateOnly} from "@/lib/energy/berlin";
-import {CLIMATE_METRIC_KEYS} from "@/lib/climate/types";
+import {berlinDateOnly, shiftDateOnly} from "@/plugins/ggs/host/energy/berlin";
+import {CLIMATE_METRIC_KEYS} from "@/plugins/ggs/host/climate/types";
 import {aiSummaryDemoMode} from "@/lib/ai-summary/config";
 import {readingsFromStats} from "@/lib/ai-summary/live-metrics";
 import {buildMockAiSummaryRecord} from "@/lib/ai-summary/mock";

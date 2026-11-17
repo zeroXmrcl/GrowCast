@@ -21,7 +21,7 @@ import {passwordLineMet} from "./password-meter";
 import {normalizeUsernameInput, validateUsernameInput} from "@/lib/admin-username";
 import {SETUP_CODE_LENGTH} from "@/lib/setup-code";
 import type {InstallerInitial, InstallerOptionalStep, InstallerStepId} from "@/lib/installer-steps";
-import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
+import type {SpiderFarmerController} from "@/plugins/ggs/host/spider-farmer-login";
 
 type WizardStep = InstallerStepId | "climate-list" | "done";
 

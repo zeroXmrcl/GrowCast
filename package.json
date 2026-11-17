@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/build-plugin-runtime.mjs && next build",
     "start": "next start",
     "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "build:plugin-runtime": "node scripts/build-plugin-runtime.mjs",
     "setup:admin": "node scripts/admin-creator.mjs",
     "setup:admin:insecure": "node scripts/admin-creator.mjs --allow-insecure",
     "test": "NODE_ENV=test node --experimental-strip-types --import ./tests/register.mjs --test \"tests/**/*.test.ts\""
@@ -32,6 +34,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "^16.4.3",
     "pino-pretty": "^13.1.3",

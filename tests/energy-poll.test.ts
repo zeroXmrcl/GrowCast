@@ -6,7 +6,7 @@ import {
     fetchEnergyDto,
     parseEnergyPollBody,
     shouldPollEnergy,
-} from "../lib/energy/poll.ts";
+} from "../plugins/ggs/host/energy/poll.ts";
 
 const sample = {
     grow: "current",

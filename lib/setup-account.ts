@@ -3,7 +3,7 @@ import {existsSync, readFileSync} from "node:fs";
 import path from "node:path";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
-import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
+import type {SpiderFarmerController} from "@/plugins/ggs/host/spider-farmer-login";
 
 export type StoredAdminAccount = {
     username: string;

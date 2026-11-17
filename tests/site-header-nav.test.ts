@@ -69,6 +69,15 @@ describe("navItemsFor", () => {
         );
     });
 
+    it("inserts extra plugin pages after Energy", () => {
+        assert.deepEqual(
+            navItemsFor("/", {...allOn, showSettingsLink: false}, [
+                {href: "/p/solar/energy", label: "Solar"},
+            ]).map((item) => item.href),
+            ["/", "/energy", "/p/solar/energy", "/gallery", "/grows"],
+        );
+    });
+
     it("omits Gallery when the timelapse plugin is not installed", () => {
         assert.deepEqual(
             navItemsFor("/", {...allOn, showGallery: false, showSettingsLink: false}).map(

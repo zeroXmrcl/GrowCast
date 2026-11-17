@@ -4,7 +4,7 @@ import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {withNotice} from "@/lib/admin/notice";
 import {withRequestLog} from "@/lib/logging";
 import {shouldUseSecureCookie} from "@/lib/request-trust";
-import {buildTwitchAuthorizeUrl} from "@/lib/restream/twitch-oauth";
+import {buildTwitchAuthorizeUrl} from "@/plugins/restream/host/twitch-oauth";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
 
 export const dynamic = "force-dynamic";

@@ -8,7 +8,7 @@ import SiteFooter from "@/components/site-footer";
 import {BroadcastToast} from "@/components/broadcast-toast";
 import EnergyScoreboard from "@/components/energy-scoreboard";
 import {useWorkspaceNav} from "@/components/workspace-nav";
-import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/lib/restream/camera-look";
+import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/plugins/restream/host/camera-look";
 import {isWorkspacePath, WORKSPACE_AREA, WORKSPACE_BOARD_CLASS, WORKSPACE_VT} from "@/lib/workspace";
 
 type WorkspaceFrameProps = {

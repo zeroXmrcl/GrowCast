@@ -13,7 +13,7 @@ import {
     getArchiveTimelapseFile,
 } from "@/lib/archives";
 import {snapshotFileVersion} from "@/lib/snapshot-thumb";
-import {buildEnergyDto} from "@/lib/energy/scoreboard";
+import {buildEnergyDto} from "@/plugins/ggs/host/energy/scoreboard";
 import {formatDateDisplay, growDurationDays} from "../format";
 
 export const dynamic = "force-dynamic";

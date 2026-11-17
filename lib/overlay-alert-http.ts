@@ -1,7 +1,7 @@
 import type {OverlayAlert} from "@/lib/overlay-alert";
 import {peekReplayableOverlayAlerts, subscribeOverlayAlerts} from "@/lib/overlay-alert-hub";
-import {resolveRestreamCaptureToken} from "@/lib/restream/capture";
-import {captureTokenFromRequest, isProgramAuthorized} from "@/lib/restream/program-auth";
+import {resolveRestreamCaptureToken} from "@/plugins/restream/host/capture";
+import {captureTokenFromRequest, isProgramAuthorized} from "@/plugins/restream/host/program-auth";
 
 const NO_STORE = "no-store";
 const HEARTBEAT_MS = 15_000;

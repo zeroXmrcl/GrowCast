@@ -1,4 +1,4 @@
-import {getTimelapseFiles} from "@/lib/extension-status";
+import {getTimelapseFiles} from "@/plugins/timelapse/host/extension-status";
 import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
 
 type TimelapsePlayerProps = {

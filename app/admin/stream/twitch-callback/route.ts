@@ -5,8 +5,8 @@ import {safeEqualText} from "@/lib/crypto-equal";
 import {sanitizeError, withRequestLog} from "@/lib/logging";
 import {childLogger} from "@/lib/logging/logger";
 import {shouldUseSecureCookie} from "@/lib/request-trust";
-import {ensureEventsubSubscriptions} from "@/lib/restream/eventsub";
-import {exchangeTwitchCode, writeTwitchOAuthFile} from "@/lib/restream/twitch-oauth";
+import {ensureEventsubSubscriptions} from "@/plugins/restream/host/eventsub";
+import {exchangeTwitchCode, writeTwitchOAuthFile} from "@/plugins/restream/host/twitch-oauth";
 import {shareCardMetadataOrigin} from "@/lib/share-card";
 
 export const dynamic = "force-dynamic";

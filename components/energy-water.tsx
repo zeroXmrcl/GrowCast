@@ -1,9 +1,9 @@
 "use client";
 
 import {APP_TIMEZONE} from "@/lib/app-timezone";
-import {berlinHour} from "@/lib/energy/berlin";
-import {formatKwh} from "@/lib/energy/format";
-import type {EnergyWaterView, EnergyWaterWindows} from "@/lib/energy/types";
+import {berlinHour} from "@/plugins/ggs/host/energy/berlin";
+import {formatKwh} from "@/plugins/ggs/host/energy/format";
+import type {EnergyWaterView, EnergyWaterWindows} from "@/plugins/ggs/host/energy/types";
 import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
 
 const PLOT_H = 160;

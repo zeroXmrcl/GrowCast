@@ -1,5 +1,5 @@
 import {withRequestLog} from "@/lib/logging";
-import {broadcastGetResponse} from "@/lib/restream/store";
+import {broadcastGetResponse} from "@/plugins/restream/host/store";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

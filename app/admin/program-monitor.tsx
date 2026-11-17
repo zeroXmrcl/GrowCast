@@ -7,7 +7,7 @@ import {
     CAMERA_LOOK_MESSAGE_TYPE,
     parseCameraLook,
     type CameraLook,
-} from "@/lib/restream/camera-look";
+} from "@/plugins/restream/host/camera-look";
 
 function postCameraLook(iframe: HTMLIFrameElement | null, look: CameraLook): void {
     iframe?.contentWindow?.postMessage(

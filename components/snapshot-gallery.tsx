@@ -1,5 +1,5 @@
 import path from "node:path";
-import { getSnapshotFiles, SNAPSHOT_DIR } from "@/lib/extension-status";
+import { getSnapshotFiles, SNAPSHOT_DIR } from "@/plugins/timelapse/host/extension-status";
 import {snapshotFileVersion, snapshotThumbSrc} from "@/lib/snapshot-thumb";
 import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
 

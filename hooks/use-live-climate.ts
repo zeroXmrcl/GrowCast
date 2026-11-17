@@ -1,8 +1,8 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {parsePublicLiveBody, type GgsLivePublic} from "@/lib/ggs-live";
-import {isClimateStale, preferLiveSnapshot} from "@/lib/live-climate-view";
+import {parsePublicLiveBody, type GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
+import {isClimateStale, preferLiveSnapshot} from "@/plugins/ggs/host/live-climate-view";
 
 const LIVE_CLIMATE_URL = "/api/data/live-climate";
 const LIVE_CLIMATE_STREAM_URL = "/api/data/live-climate/stream";

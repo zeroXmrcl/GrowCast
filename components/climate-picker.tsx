@@ -10,7 +10,7 @@ import {
     climateTickIndex,
     climateTickLabels,
     type ClimateTickKind,
-} from "@/lib/climate-tick";
+} from "@/plugins/ggs/host/climate-tick";
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 

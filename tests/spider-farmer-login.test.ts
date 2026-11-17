@@ -7,7 +7,7 @@ import {
     mergeGgsSidecarEnv,
     spiderFarmerStatusFromEnv,
     writeSpiderFarmerBrokerEnv,
-} from "../lib/ggs-sidecar-env.ts";
+} from "../plugins/ggs/host/ggs-sidecar-env.ts";
 import {
     SpiderFarmerLoginError,
     brokerFromLogin,
@@ -16,7 +16,7 @@ import {
     spiderFarmerFailureNotice,
     spiderFarmerMailLogin,
     spiderFarmerSystemData,
-} from "../lib/spider-farmer-login.ts";
+} from "../plugins/ggs/host/spider-farmer-login.ts";
 
 const WRITE = {
     email: "grower@example.com",

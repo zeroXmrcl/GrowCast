@@ -3,8 +3,8 @@ import {AdminBand} from "@/app/admin/admin-band";
 import {AdminImmediateForm} from "@/app/admin/admin-save-form";
 import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
 import {ControllerSerialField} from "@/app/setup/controller-list";
-import type {SpiderFarmerBrokerStatus} from "@/lib/ggs-sidecar-env";
-import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
+import type {SpiderFarmerBrokerStatus} from "@/plugins/ggs/host/ggs-sidecar-env";
+import type {SpiderFarmerController} from "@/plugins/ggs/host/spider-farmer-login";
 
 export function SpiderFarmerLoginPanel({
     status,

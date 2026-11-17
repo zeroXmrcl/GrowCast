@@ -8,7 +8,7 @@ import {
     parseIngestBody,
     parsePublicLiveBody,
     withStale,
-} from "../lib/ggs-live.ts";
+} from "../plugins/ggs/host/ggs-live.ts";
 import {asLivePublic} from "../hooks/use-live-climate.ts";
 
 const now = Date.parse("2026-08-22T18:00:00.000Z");

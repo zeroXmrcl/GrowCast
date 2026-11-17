@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {EMPTY_LIVE_PUBLIC, GGS_PLUGIN_ID, type GgsLivePublic} from "../lib/ggs-live.ts";
-import type {EnergyPublicDto} from "../lib/energy/types.ts";
+import {EMPTY_LIVE_PUBLIC, GGS_PLUGIN_ID, type GgsLivePublic} from "../plugins/ggs/host/ggs-live.ts";
+import type {EnergyPublicDto} from "../plugins/ggs/host/energy/types.ts";
 import {
     applyOverlayEnergyPoll,
     overlayClimateGearVisible,
@@ -135,7 +135,7 @@ describe("parseOverlayGrowBody", () => {
             overlayStream: "include",
             overlayScalePct: 75,
             climateTick: "plain",
-            devicesDesign: "needle",
+            devicesDesign: "icons",
             streamUrl: "https://stream.0xmarcel.com/growcam/",
             stage: "Seed",
             lightSchedule: "12/12",
@@ -149,7 +149,7 @@ describe("parseOverlayGrowBody", () => {
         assert.equal(parsed?.overlayStream, "transparent");
         assert.equal(parsed?.overlayScalePct, 100);
         assert.equal(parsed?.climateTick, "plain");
-        assert.equal(parsed?.devicesDesign, "needle");
+        assert.equal(parsed?.devicesDesign, "icons");
         assert.equal(parsed?.stage, "");
         assert.equal(parsed?.lightSchedule, "");
         assert.equal(parsed?.strain, "");

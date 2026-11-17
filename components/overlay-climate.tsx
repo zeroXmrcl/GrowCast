@@ -1,14 +1,14 @@
 import ClimatePickerValue from "@/components/climate-picker";
 import {OVERLAY_PANEL_CLASS} from "@/components/overlay-shell";
-import type {ClimateTick} from "@/lib/climate-tick";
-import type {GgsLivePublic} from "@/lib/ggs-live";
+import type {ClimateTick} from "@/plugins/ggs/host/climate-tick";
+import type {GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
 import {
     climateMetricAlerts,
     climateMetrics,
     formatHumidityPctTenths,
     formatTempC,
     formatVpd,
-} from "@/lib/live-climate-view";
+} from "@/plugins/ggs/host/live-climate-view";
 import type {ReactNode} from "react";
 
 function Metric({

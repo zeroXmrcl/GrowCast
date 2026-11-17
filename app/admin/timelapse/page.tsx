@@ -5,8 +5,8 @@ import {AdminSaveForm} from "@/app/admin/admin-save-form";
 import {AdminChrome, AdminSignOutButton, SETTINGS_SECTION_LINKS} from "@/app/admin/admin-chrome";
 import {TimelapseSettingsFields} from "@/app/admin/timelapse-fields";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
-import {getTimelapseSettings} from "@/lib/timelapse-settings";
-import {readTimelapseRtsp} from "@/lib/timelapse-sidecar-env";
+import {getTimelapseSettings} from "@/plugins/timelapse/host/timelapse-settings";
+import {readTimelapseRtsp} from "@/plugins/timelapse/host/timelapse-sidecar-env";
 
 export default async function AdminTimelapsePage() {
     if (!(await isAdminAuthenticated())) {

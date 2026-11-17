@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {describe, it} from "node:test";
-import {layoutStepAxis, layoutStepRuns, morphStepFrame, pairStepPieces, stepPath} from "../lib/climate/plot.ts";
+import {layoutStepAxis, layoutStepRuns, morphStepFrame, pairStepPieces, stepPath} from "../plugins/ggs/host/climate/plot.ts";
 import {
     CLIMATE_HISTORY_METRIC_CHIPS,
     CLIMATE_HISTORY_METRICS,
     climateHistoryOpenLabel,
-} from "../lib/climate/history-ui.ts";
+} from "../plugins/ggs/host/climate/history-ui.ts";
 
 function src(rel: string): string {
     return readFileSync(rel, "utf8");
@@ -135,9 +135,9 @@ describe("climate history dialog", () => {
 
     it("does not import this branch storage ClimatePoint from types", () => {
         const dialog = src("components/climate-history-dialog.tsx");
-        assert.match(dialog, /@\/lib\/climate\/history-public/);
-        assert.match(dialog, /@\/lib\/climate\/plot/);
-        assert.doesNotMatch(dialog, /@\/lib\/climate\/types/);
+        assert.match(dialog, /@\/plugins\/ggs\/host\/climate\/history-public/);
+        assert.match(dialog, /@\/plugins\/ggs\/host\/climate\/plot/);
+        assert.doesNotMatch(dialog, /@\/plugins\/ggs\/host\/climate\/types/);
         assert.doesNotMatch(dialog, /XAI_API_KEY|requestGrowSummary/);
     });
 });

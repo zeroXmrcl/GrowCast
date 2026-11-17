@@ -9,7 +9,7 @@ import {
     readAlertsSettings,
     shouldEnqueueKind,
     writeAlertsSettings,
-} from "../lib/restream/alerts-settings.ts";
+} from "../plugins/restream/host/alerts-settings.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-alerts-"));

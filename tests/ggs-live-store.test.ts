@@ -3,8 +3,8 @@ import {mkdir, mkdtemp, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {GGS_PLUGIN_ID, parseIngestBody} from "../lib/ggs-live.ts";
-import {readGgsLive, saveGgsLive} from "../lib/ggs-live-store.ts";
+import {GGS_PLUGIN_ID, parseIngestBody} from "../plugins/ggs/host/ggs-live.ts";
+import {readGgsLive, saveGgsLive} from "../plugins/ggs/host/ggs-live-store.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-ggs-store-"));
@@ -67,7 +67,7 @@ describe("ggs live store", () => {
         await withTempDataDir(async (dir) => {
             const ingest = validIngest();
             await saveGgsLive(ingest);
-            const file = path.join(dir, "mesh", `${GGS_PLUGIN_ID}.json`);
+            const file = path.join(dir, "plugins", GGS_PLUGIN_ID, "live.json");
             const written = JSON.parse(await (await import("node:fs/promises")).readFile(file, "utf8"));
             assert.equal(written.pluginId, GGS_PLUGIN_ID);
             const read = await readGgsLive();

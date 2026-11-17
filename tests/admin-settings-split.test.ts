@@ -38,18 +38,20 @@ describe("admin settings split", () => {
         assert.match(chromeSrc, /href: "\/admin\/stream"/);
         assert.match(chromeSrc, /href: "\/admin\/timelapse"/);
         assert.match(chromeSrc, /href: "\/admin\/ggs"/);
+        assert.match(chromeSrc, /href: "\/admin\/plugins"/);
         assert.match(chromeSrc, /href: "\/admin\/archives"/);
         assert.match(chromeSrc, /href: "\/admin\/security"/);
         assert.match(chromeSrc, /label: "Grow"/);
         assert.match(chromeSrc, /label: "Broadcast"/);
         assert.match(chromeSrc, /label: "Timelapse"/);
         assert.match(chromeSrc, /label: "GGS"/);
+        assert.match(chromeSrc, /label: "Plugins"/);
         assert.match(chromeSrc, /label: "Archives"/);
         assert.match(chromeSrc, /label: "Security"/);
         assert.doesNotMatch(chromeSrc, /href: "#[a-z]+"/);
         assert.doesNotMatch(chromeSrc, /hidden lg:block/);
         assert.match(chromeSrc, /AdminSectionNav/);
-        assert.equal([...chromeSrc.matchAll(/href: "\/admin(?:\/[a-z]+)?"/g)].length, 6);
+        assert.equal([...chromeSrc.matchAll(/href: "\/admin(?:\/[a-z]+)?"/g)].length, 7);
     });
 
     it("keeps stream/overlay/twitch/timelapse/energy/complete-grow off the Grow form", () => {
@@ -137,7 +139,7 @@ describe("admin settings split", () => {
     it("points Twitch Start at Stream and does not require a token in .env.local", () => {
         const notice = src(path.join("app", "admin", "admin-notice.tsx"));
         const readme = src("README.md");
-        const restreamReadme = src(path.join("extensions", "GrowCast-Restream", "README.md"));
+        const restreamReadme = src(path.join("plugins", "restream", "README.md"));
         assert.doesNotMatch(notice, /compose profile twitch/);
         assert.match(notice, /restream service is running/);
         assert.match(readme, /\/admin\/stream/);

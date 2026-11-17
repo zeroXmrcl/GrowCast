@@ -1,6 +1,6 @@
 import type {ArchiveEditInput, CompleteGrowInput} from "@/lib/archives";
-import {parseClimateTick} from "@/lib/climate-tick";
-import {parseDevicesDesign} from "@/lib/devices-design";
+import {parseClimateTick} from "@/plugins/ggs/host/climate-tick";
+import {parseDevicesDesign} from "@/plugins/ggs/host/devices-design";
 import type {GrowUpdateInput} from "@/lib/db";
 import {parseOverlayLayout} from "@/lib/overlay-layout";
 import {parseOverlayStream} from "@/lib/overlay-stream";
@@ -9,7 +9,7 @@ import {
     DEFAULT_TIMELAPSE_SETTINGS,
     normalizeTimelapseSettings,
     type TimelapseSettings,
-} from "@/lib/timelapse-settings";
+} from "@/plugins/timelapse/host/timelapse-settings";
 import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 
 export type AdminSettingsFormResult = {

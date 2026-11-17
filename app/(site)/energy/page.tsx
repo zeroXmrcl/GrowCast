@@ -1,5 +1,5 @@
 import {notFound} from "next/navigation";
-import {hasGgsLiveUi} from "@/lib/ggs-live-store";
+import {hasGgsLiveUi} from "@/plugins/ggs/host/ggs-live-store";
 
 export const dynamic = "force-dynamic";
 

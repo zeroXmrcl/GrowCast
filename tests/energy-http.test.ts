@@ -4,14 +4,14 @@ import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {completeCurrentGrow} from "../lib/archives.ts";
-import {energyGetResponse, tariffKindForEnergyGet} from "../lib/energy/http.ts";
-import {listCurrentEnergyDates, writeEnergyCursor, writeEnergyDay} from "../lib/energy/store.ts";
-import {energyCursorFile, energyDayFile} from "../lib/energy/paths.ts";
-import {writeEnergySettings} from "../lib/energy/settings.ts";
+import {energyGetResponse, tariffKindForEnergyGet} from "../plugins/ggs/host/energy/http.ts";
+import {listCurrentEnergyDates, writeEnergyCursor, writeEnergyDay} from "../plugins/ggs/host/energy/store.ts";
+import {energyCursorFile, energyDayFile} from "../plugins/ggs/host/energy/paths.ts";
+import {writeEnergySettings} from "../plugins/ggs/host/energy/settings.ts";
 import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
-import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
-import {saveGgsLive} from "../lib/ggs-live-store.ts";
-import {GGS_PLUGIN_ID, parseIngestBody} from "../lib/ggs-live.ts";
+import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
+import {saveGgsLive} from "../plugins/ggs/host/ggs-live-store.ts";
+import {GGS_PLUGIN_ID, parseIngestBody} from "../plugins/ggs/host/ggs-live.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-energy-http-"));

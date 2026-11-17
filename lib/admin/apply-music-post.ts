@@ -1,5 +1,5 @@
 import type {AdminNoticeId} from "@/lib/admin/notice";
-import {deleteMusicFile, saveMusicFile} from "@/lib/restream/music-files";
+import {deleteMusicFile, saveMusicFile} from "@/plugins/restream/host/music-files";
 
 export type ApplyMusicPostResult =
     | {

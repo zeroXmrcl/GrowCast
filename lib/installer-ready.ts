@@ -1,6 +1,6 @@
 import {isSafeHttpUrl} from "@/lib/url-policy";
 import {INSTALLER_OPTIONAL_STEPS, type InstallerOptionalStep, type InstallerStepId} from "@/lib/installer-steps";
-import {isRtspUrl} from "@/lib/timelapse-sidecar-env";
+import {isRtspUrl} from "@/plugins/timelapse/host/timelapse-sidecar-env";
 
 const STEP_LABEL: Record<InstallerOptionalStep | "admin", string> = {
     admin: "Admin",

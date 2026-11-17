@@ -1,0 +1,78 @@
+import assert from "node:assert/strict";
+import {mkdir, writeFile} from "node:fs/promises";
+import path from "node:path";
+import {describe, it} from "node:test";
+import {enablePlugin, getRegistryRecord, listRegistryRecords} from "../../lib/plugins/registry.ts";
+import {scanAndPauseChangedPlugins} from "../../lib/plugins/lifecycle.ts";
+import {hashPluginFolder} from "../../lib/plugins/hash.ts";
+import {SAMPLE_MANIFEST, withPluginHarness} from "./helpers.ts";
+
+describe("plugin hash pin", {concurrency: 1}, () => {
+    it("pins SHA-256 at enable time", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const dir = await writePlugin("example", SAMPLE_MANIFEST);
+            const hash = await hashPluginFolder(dir);
+            const record = await enablePlugin("community.example");
+            assert.equal(record.status, "enabled");
+            assert.equal(record.pinnedHash, hash);
+            assert.equal(record.hashMatches, true);
+            assert.match(hash, /^sha256:[0-9a-f]{64}$/);
+        });
+    });
+
+    it("auto-pauses when plugin files change after enable", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const dir = await writePlugin("example", SAMPLE_MANIFEST);
+            await enablePlugin("community.example");
+            await writeFile(path.join(dir, "ui/dist/index.js"), "export default { tampered: true }\n");
+            const paused = await scanAndPauseChangedPlugins();
+            assert.deepEqual(paused, ["community.example"]);
+            const record = await getRegistryRecord("community.example");
+            assert.equal(record?.status, "paused");
+            assert.equal(record?.pausedReason, "hash-mismatch");
+            assert.equal(record?.hashMatches, false);
+        });
+    });
+
+    it("rejects ingest after a hash mismatch until re-confirmed", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const dir = await writePlugin("example", SAMPLE_MANIFEST);
+            await enablePlugin("community.example");
+            await writeFile(path.join(dir, "ui/dist/index.js"), "export default { tampered: true }\n");
+            const {ingestPluginPayload} = await import("../../lib/plugins/ingest.ts");
+            const result = await ingestPluginPayload("community.example", {
+                apiVersion: 1,
+                observedAt: "2026-11-17T09:59:50.000Z",
+                metrics: {"battery.soc": {value: 10}},
+            });
+            assert.equal(result.ok, false);
+            if (!result.ok) {
+                assert.equal(result.status, 409);
+            }
+        });
+    });
+
+    it("does not include snapshots or timelapse media in the pin", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const dir = await writePlugin("example", SAMPLE_MANIFEST);
+            const before = await hashPluginFolder(dir);
+            await mkdir(path.join(dir, "snapshots"), {recursive: true});
+            await writeFile(path.join(dir, "snapshots", "frame.jpg"), "jpeg");
+            await mkdir(path.join(dir, "timelapse"), {recursive: true});
+            await writeFile(path.join(dir, "timelapse", "out.mp4"), "mp4");
+            const after = await hashPluginFolder(dir);
+            assert.equal(after, before);
+        });
+    });
+
+    it("does not pause unchanged enabled plugins", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            await writePlugin("example", SAMPLE_MANIFEST);
+            await enablePlugin("community.example");
+            const paused = await scanAndPauseChangedPlugins();
+            assert.deepEqual(paused, []);
+            const records = await listRegistryRecords();
+            assert.equal(records[0]?.status, "enabled");
+        });
+    });
+});

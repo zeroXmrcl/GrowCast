@@ -21,7 +21,7 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-RUN apk add --no-cache su-exec \
+RUN apk add --no-cache su-exec docker-cli docker-cli-compose \
     && addgroup -g 1001 -S growcast \
     && adduser -S -u 1001 -G growcast growcast
 
@@ -38,7 +38,7 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
     && chmod +x /usr/local/bin/docker-entrypoint.sh \
-    && mkdir -p /app/public/setup /app/public/yourPictures /app/extensions /app/data \
+    && mkdir -p /app/public/setup /app/public/yourPictures /app/plugins /app/data \
     && chown -R growcast:growcast /app
 
 # Entrypoint starts as root so bind mounts can be chowned, then su-exec to growcast.

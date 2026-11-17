@@ -1,5 +1,5 @@
 import {isAdminAuthenticated} from "@/lib/admin-auth";
-import {energyGetResponse, tariffKindForEnergyGet} from "@/lib/energy/http";
+import {energyGetResponse, tariffKindForEnergyGet} from "@/plugins/ggs/host/energy/http";
 import {withRequestLog} from "@/lib/logging";
 
 export const dynamic = "force-dynamic";

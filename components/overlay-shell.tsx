@@ -4,7 +4,7 @@ import OverlayWatermark from "@/components/overlay-watermark";
 import type {OverlayLayout} from "@/lib/overlay-layout";
 import {overlayHudScaleStyle} from "@/lib/overlay-scale";
 import {overlayStreamEmbeds, type OverlayStream} from "@/lib/overlay-stream";
-import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/lib/restream/camera-look";
+import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/plugins/restream/host/camera-look";
 import {safeHttpUrlOrEmpty} from "@/lib/url-policy";
 
 export const OVERLAY_PANEL_CLASS =

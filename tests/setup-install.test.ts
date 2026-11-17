@@ -4,9 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import {afterEach, describe, it} from "node:test";
 import {ensureMeshToken, readStoredMeshToken} from "../lib/mesh-token.ts";
-import {controllerPrefix} from "../lib/spider-farmer-login.ts";
-import {prepareSpiderFarmer} from "../lib/spider-farmer-setup.ts";
-import {isRtspUrl} from "../lib/timelapse-sidecar-env.ts";
+import {controllerPrefix} from "../plugins/ggs/host/spider-farmer-login.ts";
+import {prepareSpiderFarmer} from "../plugins/ggs/host/spider-farmer-setup.ts";
+import {isRtspUrl} from "../plugins/timelapse/host/timelapse-sidecar-env.ts";
 
 async function withTempData<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-setup-"));

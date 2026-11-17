@@ -1,7 +1,7 @@
 import {DeviceIcon} from "@/components/device-icons";
 import {OVERLAY_PANEL_CLASS} from "@/components/overlay-shell";
-import type {GgsLivePublic} from "@/lib/ggs-live";
-import {mapDeviceTiles} from "@/lib/live-climate-view";
+import type {GgsLivePublic} from "@/plugins/ggs/host/ggs-live";
+import {mapDeviceTiles} from "@/plugins/ggs/host/live-climate-view";
 import {OVERLAY_CHIP_COLOR_MS} from "@/lib/overlay-motion";
 
 export default function OverlayGear({snapshot}: {snapshot: GgsLivePublic}) {
