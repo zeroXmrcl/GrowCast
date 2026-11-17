@@ -17,8 +17,8 @@ import {SetupCodeInput} from "@/app/setup/setup-code-input";
 import {passwordLineMet} from "./password-meter";
 import {normalizeUsernameInput, validateUsernameInput} from "@/lib/admin-username";
 import {ClimateControllerPicker, PluginSetupFields} from "@/lib/plugins/setup-ui";
-import {installerDoneRows, type InstallerPlanStep} from "@/lib/plugins/installer";
-import type {InstallerProgress} from "@/lib/installer-progress";
+import {installerDoneRows, type InstallerPlanStep} from "@/lib/plugins/installer-plan";
+import type {InstallerProgress} from "@/lib/plugins/installer-plan";
 import {SETUP_CODE_LENGTH} from "@/lib/setup-code";
 import type {PluginSetupResult} from "@/lib/plugins/types";
 
