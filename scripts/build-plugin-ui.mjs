@@ -1,7 +1,9 @@
 import {copyFileSync, existsSync, mkdirSync, readdirSync} from "node:fs";
 import path from "node:path";
 
-const pluginsDir = path.join(process.cwd(), "plugins");
+const pluginsDir = process.env.GROWCAST_PLUGINS_DIR?.trim()
+    ? path.resolve(process.env.GROWCAST_PLUGINS_DIR)
+    : path.join(process.cwd(), "plugins");
 if (!existsSync(pluginsDir)) {
     console.log("no plugins/ directory; skip plugin UI build");
     process.exit(0);
