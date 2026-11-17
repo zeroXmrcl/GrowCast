@@ -597,6 +597,10 @@ html[data-admin-save-bar] .admin-toast {
   min-width: 0;
 }
 
+.growcast-area-plugins > div:has(.gc-solar-absent) {
+  display: none;
+}
+
 .plugin-mount-root {
   display: contents;
 }

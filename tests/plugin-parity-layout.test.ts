@@ -30,7 +30,10 @@ describe("plugin parity layout and public energy", () => {
         assert.doesNotMatch(mount, /Loading plugin…/);
         assert.match(widgets, /slot === "dashboard"/);
         assert.match(widgets, /widgetJoinsDashboardBoard/);
-        assert.match(widgets, /growcast-area-plugins/);
+        assert.match(widgets, /growcast-area-plugins grid sm:grid-cols-2/);
+        assert.match(widgets, /sm:border-b-0 sm:border-r/);
+        assert.doesNotMatch(widgets, /growcast-area-plugins grid gap-4/);
+        assert.match(css, /gc-solar-absent/);
         assert.match(widgets, /OVERLAY_ORDER_CLIMATE/);
     });
 

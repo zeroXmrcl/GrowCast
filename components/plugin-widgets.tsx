@@ -9,6 +9,14 @@ import {widgetColumnSpan, widgetJoinsDashboardBoard} from "@/lib/plugins/widget-
 
 const CONTENTS_SLOTS = new Set<PluginWidgetSlot>(["overlay", "site-chrome", "archive", "dashboard"]);
 
+function dashboardExtraClass(size?: string): string {
+    const hair = "border-zinc-200 dark:border-zinc-800";
+    if (widgetColumnSpan(size) >= 2) {
+        return `border-b ${hair} sm:col-span-2`;
+    }
+    return `border-b last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 ${hair}`;
+}
+
 export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
     const widgets = await widgetsForSlot(slot);
     if (widgets.length === 0) {
@@ -73,11 +81,11 @@ export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
                     />
                 ))}
                 {extras.length > 0 ? (
-                    <section className="growcast-area-plugins grid gap-4 sm:grid-cols-2">
+                    <section className="growcast-area-plugins grid sm:grid-cols-2">
                         {extras.map((entry) => (
                             <div
                                 key={`${entry.item.pluginId}:${entry.item.widget.id}`}
-                                className={widgetColumnSpan(entry.item.widget.size) >= 2 ? "sm:col-span-2" : undefined}
+                                className={dashboardExtraClass(entry.item.widget.size)}
                             >
                                 <PluginMount
                                     pluginId={entry.item.pluginId}
