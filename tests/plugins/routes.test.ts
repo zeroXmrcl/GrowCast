@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {disablePlugin, enablePlugin, getRegistryRecord, pluginIsActive} from "../../lib/plugins/registry.ts";
 import {resolvePluginPage, widgetsForSlot, isRoutablePlugin} from "../../lib/plugins/routes.ts";
-import {pluginSiteNavItems} from "../../lib/plugins/nav.ts";
+import {pluginSiteNavItems, siteNavOrder} from "../../lib/plugins/nav.ts";
 import {SAMPLE_MANIFEST, withPluginHarness} from "./helpers.ts";
 
 describe("plugin route mounting", {concurrency: 1}, () => {
@@ -77,6 +77,39 @@ describe("plugin route mounting", {concurrency: 1}, () => {
             assert.equal(enabled[0]?.label, "HeaderSite");
             await disablePlugin("community.header-site");
             assert.deepEqual(await pluginSiteNavItems(), []);
+        });
+    });
+
+    it("orders site header links Energy, Solar, Gallery by navOrder", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const gallery = {
+                ...SAMPLE_MANIFEST,
+                id: "community.order-gallery",
+                pages: [{id: "gallery", path: "gallery", title: "Gallery", nav: "site" as const, public: true, navOrder: 30}],
+            };
+            const solar = {
+                ...SAMPLE_MANIFEST,
+                id: "community.order-solar",
+                pages: [{id: "home", path: "", title: "Solar", nav: "site" as const, public: true, navOrder: 20}],
+            };
+            const energy = {
+                ...SAMPLE_MANIFEST,
+                id: "community.order-energy",
+                pages: [{id: "energy", path: "energy", title: "Energy", nav: "site" as const, public: true, navOrder: 10}],
+            };
+            await writePlugin("order-gallery", gallery);
+            await writePlugin("order-solar", solar);
+            await writePlugin("order-energy", energy);
+            await enablePlugin("community.order-gallery");
+            await enablePlugin("community.order-solar");
+            await enablePlugin("community.order-energy");
+            assert.deepEqual(
+                (await pluginSiteNavItems()).map((item) => item.label),
+                ["Energy", "Solar", "Gallery"],
+            );
+            assert.equal(siteNavOrder({id: "energy", path: "energy", title: "Energy", nav: "site"}), 10);
+            assert.equal(siteNavOrder({id: "home", path: "", title: "Solar", nav: "site"}), 20);
+            assert.equal(siteNavOrder({id: "gallery", path: "gallery", title: "Gallery", nav: "site"}), 30);
         });
     });
 });

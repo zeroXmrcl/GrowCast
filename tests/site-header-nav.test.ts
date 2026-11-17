@@ -29,20 +29,35 @@ describe("navItemsFor", () => {
         );
     });
 
-    it("keeps Dashboard visible and hides the current plugin page when extra is passed", () => {
-        const extra = [{href: "/p/ggs/energy", label: "Energy"}];
+    it("keeps Energy visible and bold on the energy page, and hides Gallery when it is current", () => {
+        const extra = [
+            {href: "/p/ggs/energy", label: "Energy"},
+            {href: "/p/solar", label: "Solar"},
+            {href: "/p/timelapse/gallery", label: "Gallery"},
+        ];
         assert.deepEqual(
-            navItemsFor("/", allOn, extra).map((item) => item.href),
-            ["/", "/p/ggs/energy", "/grows", "/admin"],
+            navItemsFor("/", {...allOn, showSettingsLink: false}, extra).map((item) => item.label),
+            ["Dashboard", "Energy", "Solar", "Gallery", "Past Grows"],
         );
         assert.deepEqual(
-            navItemsFor("/p/ggs/energy", {...allOn, showSettingsLink: false}, extra).map((item) => item.href),
-            ["/", "/grows"],
+            navItemsFor("/p/ggs/energy", {...allOn, showSettingsLink: false}, extra).map((item) => item.label),
+            ["Dashboard", "Energy", "Solar", "Gallery", "Past Grows"],
         );
-        assert.equal(navItemIsActive("/", "/"), true);
-        assert.equal(navItemIsActive("/", "/p/ggs/energy"), false);
         assert.equal(navItemIsActive("/p/ggs/energy", "/p/ggs/energy"), true);
+        assert.equal(navItemIsActive("/p/ggs/energy/detail", "/p/ggs/energy"), true);
+        assert.equal(navItemIsActive("/p/ggs/energy-other", "/p/ggs/energy"), false);
         assert.equal(navItemIsActive("/p/ggs/energy", "/"), false);
+        assert.equal(navItemIsActive("/", "/p/ggs/energy"), false);
+        assert.deepEqual(
+            navItemsFor("/p/timelapse/gallery", {...allOn, showSettingsLink: false}, extra).map((item) => item.label),
+            ["Dashboard", "Energy", "Solar", "Past Grows"],
+        );
+        assert.equal(navItemIsActive("/p/timelapse/gallery", "/p/timelapse/gallery"), true);
+        assert.equal(navItemIsActive("/p/timelapse/gallery/2026", "/p/timelapse/gallery"), true);
+        assert.deepEqual(
+            navItemsFor("/p/solar", {...allOn, showSettingsLink: false}, extra).map((item) => item.label),
+            ["Dashboard", "Energy", "Gallery", "Past Grows"],
+        );
     });
 
     it("omits Past Grows when no grow has been archived", () => {

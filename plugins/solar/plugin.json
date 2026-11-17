@@ -20,7 +20,7 @@
     "sdk": "^1.0.0"
   },
   "pages": [
-    { "id": "energy", "path": "", "title": "Solar", "nav": "site", "public": true },
+    { "id": "energy", "path": "", "title": "Solar", "nav": "site", "navOrder": 20, "public": true },
     { "id": "widgets", "path": "widgets", "title": "Solar widgets", "nav": "none", "public": true },
     { "id": "settings", "path": "settings", "title": "Solar settings", "nav": "none", "public": true, "shell": "none" },
     { "id": "admin", "path": "", "title": "Solar", "nav": "admin" }

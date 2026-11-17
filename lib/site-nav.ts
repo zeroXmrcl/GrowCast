@@ -1,3 +1,5 @@
+import {isEnergyWorkspacePath} from "@/lib/workspace";
+
 export type NavItem = {href: string; label: string};
 
 export type NavFlags = {
@@ -18,7 +20,7 @@ export function navItemsFor(pathname: string, flags: NavFlags, extra: NavItem[] 
     }
 
     return items.filter((item) => {
-        if (item.href === "/") {
+        if (item.href === "/" || isEnergyWorkspacePath(item.href)) {
             return true;
         }
         return !navItemIsActive(pathname, item.href);
@@ -29,5 +31,5 @@ export function navItemIsActive(pathname: string, href: string): boolean {
     if (href === "/") {
         return pathname === "/";
     }
-    return pathname.startsWith(href);
+    return pathname === href || pathname.startsWith(`${href}/`);
 }

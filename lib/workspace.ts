@@ -49,11 +49,12 @@ export const WORKSPACE_VT = {
     socials: "vt-socials",
 } as const;
 
+export function isEnergyWorkspacePath(pathname: string): boolean {
+    return pathname === "/energy" || /^\/p\/[^/]+\/energy\/?$/.test(pathname);
+}
+
 export function isWorkspacePath(pathname: string): boolean {
-    if (pathname === "/") {
-        return true;
-    }
-    return /^\/p\/[^/]+\/energy\/?$/.test(pathname);
+    return pathname === "/" || isEnergyWorkspacePath(pathname);
 }
 
 export function isWorkspaceHandoff(from: string, to: string): boolean {

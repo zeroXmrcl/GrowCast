@@ -26,6 +26,7 @@
       "path": "gallery",
       "title": "Gallery",
       "nav": "site",
+      "navOrder": 30,
       "public": true
     },
     {

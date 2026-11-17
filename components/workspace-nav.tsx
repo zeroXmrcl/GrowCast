@@ -11,7 +11,7 @@ import {
 } from "react";
 import {flushSync} from "react-dom";
 import {usePathname, useRouter} from "next/navigation";
-import {isWorkspaceHandoff, WORKSPACE_MORPH_MS} from "@/lib/workspace";
+import {isEnergyWorkspacePath, isWorkspaceHandoff, WORKSPACE_MORPH_MS} from "@/lib/workspace";
 
 type WorkspaceNav = {
     view: string;
@@ -25,7 +25,7 @@ export function applyWorkspacePage(href: string): void {
     if (!(board instanceof HTMLElement)) {
         return;
     }
-    const energy = href === "/energy";
+    const energy = isEnergyWorkspacePath(href);
     const named = Boolean(board.querySelector(".growcast-area-name"));
     board.setAttribute("data-page", energy ? "energy" : named ? "dash" : "dash-noname");
 }

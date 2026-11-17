@@ -82,6 +82,8 @@ export type PluginPageSpec = {
     path: string;
     title: string;
     nav: PluginNavPlacement;
+    /** Site header order. Lower comes first. Energy 10, Solar 20, Gallery 30. */
+    navOrder?: number;
     public?: boolean;
     shell?: PluginPageShell;
     viewport?: PluginPageViewport;

@@ -26,6 +26,7 @@
       "path": "energy",
       "title": "Energy",
       "nav": "site",
+      "navOrder": 10,
       "public": true
     },
     {

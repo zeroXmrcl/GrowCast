@@ -141,6 +141,13 @@ function parsePages(raw: unknown): PluginPageSpec[] | string {
         }
         ids.add(id);
         const pathValue = typeof item.path === "string" ? item.path.replace(/^\/+/, "") : "";
+        let navOrder: number | undefined;
+        if (item.navOrder !== undefined) {
+            if (typeof item.navOrder !== "number" || !Number.isInteger(item.navOrder)) {
+                return "page navOrder must be an integer";
+            }
+            navOrder = item.navOrder;
+        }
         const bands = Array.isArray(item.bands)
             ? item.bands.flatMap((band) => {
                 if (!isRecord(band)) {
@@ -156,6 +163,7 @@ function parsePages(raw: unknown): PluginPageSpec[] | string {
             path: pathValue,
             title,
             nav,
+            ...(navOrder !== undefined ? {navOrder} : {}),
             public: item.public === true,
             shell: item.shell === "none" ? "none" : "site",
             viewport: item.viewport === "broadcast" ? "broadcast" : "site",
