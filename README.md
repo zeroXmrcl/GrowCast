@@ -10,7 +10,7 @@ GrowCast lets you share your grow in real time. Visitors see the live stream, cl
 ### Key features
 - Live stream embed on the homepage (an RTSP camera through MediaMTX, RTSP to HLS)
 - Public grow dashboard, gallery, and energy
-- Live tent climate from the Spider Farmer sidecar
+- Live tent climate from the Spider Farmer plugin (`plugins/ggs`)
 - Timelapse snapshots and video
 - OBS overlay at `/overlay` and the Broadcast page (`/admin/stream`) for music, alerts, Twitch, and camera look
 - Settings bands with in-page save
@@ -38,15 +38,15 @@ Clone the repository and start the stack:
 docker compose up --build -d
 ```
 
-That builds and starts the website, the climate sidecar, the Twitch restream image, and the timelapse worker. The first build downloads Chromium for the restream image and can take a while.
+That builds and starts the website. Enable GGS, Timelapse, Restream, and Solar in **Admin → Plugins**; GrowCast then starts those backends from `compose.plugins.generated.yml`. The first Restream build downloads Chromium and can take a while.
 
-Open `http://localhost:3000`. Until an admin account exists, the site opens the setup wizard. The container log prints a setup code (`docker compose logs growcast`). Enter that code on the first step, then create the admin login. The wizard also asks which sidecars to configure:
+Open `http://localhost:3000`. Until an admin account exists, the site opens the setup wizard. The container log prints a setup code (`docker compose logs growcast`). Enter that code on the first step, then create the admin login. The wizard also asks which plugins to configure:
 
 - Climate: Spider Farmer email and password. One controller is saved automatically. Several controllers ask you to choose.
 - Twitch: stream key and channel. Start stays on Broadcast.
 - Timelapse: camera RTSP URL, interval, and timezone.
 
-The mesh token is generated on first boot and shared with the sidecars. You do not paste it.
+The mesh token is generated on first boot and still accepted by first-party plugins. New plugins use a per-plugin host token minted when you enable them in Admin. You do not paste it.
 
 `npm run setup:admin` still writes `.env.local` for an admin account created outside the wizard. Passwords must be at least 12 characters. For local/dev only:
 
@@ -73,10 +73,10 @@ GROWCAST_MESH_TOKEN=optional_existing_token
 Notes:
 - `ADMIN_PASSWORD_HASH` must use the `scrypt$...` format.
 - `ADMIN_SESSION_SECRET` must be at least 32 characters.
-- When `GROWCAST_MESH_TOKEN` is set, that value is copied to `data/mesh.token` and the sidecars use it. When it is unset, the container creates one token on first boot.
+- When `GROWCAST_MESH_TOKEN` is set, that value is copied to `data/mesh.token` and first-party plugins still accept it as a fallback. When it is unset, the container creates one token on first boot.
 - Admin passwords must be at least **12 characters** (`npm run setup:admin` and the wizard enforce this). For local/dev only, use `npm run setup:admin:insecure` (or `npm run setup:admin -- --allow-insecure`).
 - Admin sessions last **24 hours** and live in memory. `docker compose up --build` recreates the website container and signs you out. Sign in again.
-- Optional, Broadcast channel lookup and Twitch EventSub alerts (GrowCast `.env.local`, not the restream sidecar): `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. EventSub webhooks also need `GROWCAST_PUBLIC_URL` (the public HTTPS origin, e.g. the Cloudflare Tunnel hostname).
+- Optional, Broadcast channel lookup and Twitch EventSub alerts (GrowCast `.env.local`, not the Restream plugin): `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. EventSub webhooks also need `GROWCAST_PUBLIC_URL` (the public HTTPS origin, e.g. the Cloudflare Tunnel hostname).
 - Optional daily **AI Assessment** (xAI / Grok). Server-only; visitors cannot trigger the API:
   - `XAI_API_KEY` — required to generate summaries. Never expose this to the browser.
   - `AI_SUMMARY_DEMO` — `1` or `true` shows a sample assessment on the dashboard without calling xAI. A saved summary still wins when one exists. When this and `XAI_API_KEY` are both unset, the dashboard widget is hidden.
@@ -94,7 +94,7 @@ Full schema, event catalog, redaction rules, Docker log shipping, retention guid
 
 ### Docker Compose
 
-`docker compose up --build -d` is the supported start command. It runs four services from [docker-compose.yml](docker-compose.yml): `growcast`, `ggs`, `restream`, and `timelapse`.
+`docker compose up --build -d` is the supported start command. [docker-compose.yml](docker-compose.yml) runs the `growcast` website. Plugin backends are generated into `compose.plugins.generated.yml` and started by GrowCast after you enable them in Admin.
 
 For production, put the origin behind a **Cloudflare Tunnel** (HTTPS public hostname → `http://127.0.0.1:3000`). Compose publishes on `${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}` (loopback unless you set `GROWCAST_BIND=0.0.0.0` for a LAN) and sets `GROWCAST_TRUST_PROXY=1`. Login rate-limits use `CF-Connecting-IP`, then `X-Real-IP`, then the first `X-Forwarded-For` hop, which Caddy sends by default. Those headers are ignored unless the flag is set. Admin cookies are `Secure` when `X-Forwarded-Proto: https` or `CF-Connecting-IP` is present (or `COOKIE_SECURE=1`). Direct HTTP to a public `:3000` is not the supported admin path.
 
@@ -111,18 +111,20 @@ docker compose down
 `docker compose up --build -d` recreates the website container and signs you out. Sessions stay in memory for 24 hours or until logout. Sign in again.
 
 What gets persisted on the host:
-- `./data` -> `/app/data` (grow data, mesh token, sidecar env files, restream state)
-- `./extensions/GrowCast-Timelapse` -> `/app/extensions/GrowCast-Timelapse` (snapshots and timelapse video)
+- `./data` -> `/app/data` (grow data, mesh token, plugin storage under `data/plugins/<id>/`)
+- `./plugins` -> `/app/plugins` (plugin source, including timelapse snapshots and video)
 - `./public/setup` -> `/app/public/setup`
 - `./public/yourPictures` -> `/app/public/yourPictures`
 
-The website writes `data/ggs.env` for the climate sidecar and `data/timelapse.env` for the camera URL. Those files live on the `./data` directory mount, so Docker does not create a directory in place of a missing env file. The climate and timelapse containers read those files and reload their processes when the files change.
+The website writes `data/ggs.env` for GGS and `data/timelapse.env` for the camera URL. After migration those files also live under `data/plugins/growcast.ggs/` and `data/plugins/growcast.timelapse/`. They sit on the `./data` directory mount, so Docker does not create a directory in place of a missing env file.
 
-Sidecars without credentials wait, then start when the wizard (or admin settings) writes the config. Twitch restream stays idle until you save a stream key and press Start on Broadcast (`/admin/stream`). GrowCast writes `data/restream/capture.token` on its own; `GROWCAST_RESTREAM_TOKEN` in `.env.local` is an optional override.
+Drop plugin folders into `plugins/` and enable them in Admin → Plugins. GrowCast pins a SHA-256 of the files, starts the backend, and pauses the plugin if the files change. Plugins without credentials wait, then start when the wizard (or admin settings) writes the config. Twitch restream stays idle until you save a stream key and press Start on Broadcast (`/admin/stream`). GrowCast writes `data/restream/capture.token` (or the migrated plugin path) on its own; `GROWCAST_RESTREAM_TOKEN` in `.env.local` is an optional override.
+
+See [docs/plugins/README.md](docs/plugins/README.md) and [docs/plugins/MIGRATION.md](docs/plugins/MIGRATION.md).
 
 Broadcast (`/admin/stream`) previews the 1920×1080 program with background music (uploaded playlist or a stream URL; URL wins while set) and on-stream alerts (manual Send alert, plus Twitch follow/sub/raid/bits after Connect Twitch). Public `/overlay` and the homepage stay silent.
 
-The website container runs as uid 1001 (`growcast`). The entrypoint `chown`s `./data`, the upload folders, and the timelapse `snapshots` and `timelapse` directories so the process can write them. It does not change ownership of the plugin source, so a later `git pull` still works. After the first run those data folders are owned by `1001:1001` on the host. The climate and timelapse sidecars use the same uid so they can read `./data`.
+The website container runs as uid 1001 (`growcast`). The entrypoint `chown`s `./data`, the upload folders, and the timelapse `snapshots` and `timelapse` directories so the process can write them. It does not change ownership of the plugin source, so a later `git pull` still works. After the first run those data folders are owned by `1001:1001` on the host. Plugin containers use the same uid so they can read `./data`. If enabling a plugin fails with docker.sock permission denied, set `DOCKER_GID` to the host docker group id.
 
 Optional address:
 - The compose file publishes `${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}:3000`.
@@ -160,15 +162,23 @@ app/
   admin/stream/page.tsx        # Broadcast
   admin/ggs/page.tsx           # Climate and energy settings
   admin/timelapse/page.tsx     # Timelapse settings
-extensions/
-  GrowCast-GGS/                # Climate sidecar
-  GrowCast-Restream/           # Twitch restream sidecar
-  GrowCast-Timelapse/          # Timelapse sidecar and media
+  admin/plugins/page.tsx       # Trusted plugin install
+  (site)/p/[pluginId]/         # Plugin pages under /p/<plugin>/...
+plugins/
+  ggs/                         # Spider Farmer climate and tent energy
+  timelapse/                   # Snapshots and video
+  restream/                    # Twitch program capture
+  solar/                       # FENECON / vendor-agnostic solar split
+packages/
+  plugin-sdk/                  # MIT frontend SDK
+  plugin-sdk-python/           # MIT Python host client
+  plugin-template/             # MIT starter plugin
 data/
-  mesh.token                   # Shared sidecar token, created on first boot
-  ggs.env                      # Climate credentials written by the wizard
-  timelapse.env                # Camera URL written by the wizard
-  climate/current/             # 5-min climate day files (gitignored)
+  mesh.token                   # Shared mesh token, created on first boot
+  plugins/<id>/                # Per-plugin storage after migration
+  ggs.env                      # Climate credentials written by the wizard (legacy)
+  timelapse.env                # Camera URL written by the wizard (legacy)
+  climate/current/             # 5-min climate day files until migration (gitignored)
   ai-summary/                  # Daily AI summaries + scheduler state (gitignored)
 ```
 
@@ -198,7 +208,7 @@ If playback still stutters, lower the camera frame rate. 15 fps is a reasonable 
 
 A public stream needs a second Cloudflare hostname for MediaMTX HLS, separate from the GrowCast hostname. Point Broadcast's stream URL at that public HLS path, for example `https://stream.example.com/growcam/`.
 
-The timelapse sidecar uses the camera's RTSP URL directly. That URL is collected in the setup wizard and stored in `data/timelapse.env`.
+The Timelapse plugin uses the camera's RTSP URL directly. That URL is collected in the setup wizard and stored in `data/timelapse.env` (and `data/plugins/growcast.timelapse/timelapse.env` after migration).
 
 ## 7. Usage Guide
 
@@ -226,9 +236,9 @@ This app uses Next.js route handlers and local filesystem storage.
   - Returns the normalized grow record as JSON
   - Uses `Cache-Control: no-store, must-revalidate`
 - `GET /api/snapshots/[filename]`
-  - Serves image files from `extensions/GrowCast-Timelapse/snapshots`
+  - Serves image files from `plugins/timelapse/snapshots`
 - `GET /api/timelapse`
-  - Serves timelapse video from `extensions/GrowCast-Timelapse/timelapse/latest_timelapse.mp4`
+  - Serves timelapse video from `plugins/timelapse/timelapse/latest_timelapse.mp4`
 - `GET /api/data/live-climate`
   - Public latest GGS climate JSON (no credentials)
   - `Cache-Control: no-store`
@@ -283,7 +293,7 @@ Fix:
 
 ### Gallery shows "unavailable"
 Cause:
-- `extensions/GrowCast-Timelapse` folder missing or no media generated.
+- `plugins/timelapse` folder missing or no media generated.
 
 Fix:
 - Install/run the timelapse plugin and ensure snapshots/timelapse files exist.
