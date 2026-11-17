@@ -79,12 +79,16 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
             customWebsite: safeUrl(formData.get("customWebsite")),
         },
         showGrowName: formData.get("showGrowName") === "on",
-        streamUrl: safeUrl(formData.get("streamUrl")),
-        overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
-        overlayStream: parseOverlayStream(formData.get("overlayStream")),
-        overlayScalePct: parseOverlayScalePct(formData.get("overlayScalePct")),
-        climateTick: parseClimateTick(formData.get("climateTick")),
-        devicesDesign: parseDevicesDesign(formData.get("devicesDesign")),
+        ...(formData.has("streamUrl") || formData.has("overlayStream") || formData.has("overlayLayout")
+            ? {
+                streamUrl: safeUrl(formData.get("streamUrl")),
+                overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
+                overlayStream: parseOverlayStream(formData.get("overlayStream")),
+                overlayScalePct: parseOverlayScalePct(formData.get("overlayScalePct")),
+                climateTick: parseClimateTick(formData.get("climateTick")),
+                devicesDesign: parseDevicesDesign(formData.get("devicesDesign")),
+            }
+            : {}),
     };
 
     return {
@@ -94,7 +98,19 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
 }
 
 export function parseStreamSettingsForm(formData: FormData): AdminSettingsFormResult {
-    return parseAdminSettingsForm(formData);
+    const grow: GrowUpdateInput = {
+        showGrowName: formData.get("showGrowName") === "on",
+        streamUrl: safeUrl(formData.get("streamUrl")),
+        overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
+        overlayStream: parseOverlayStream(formData.get("overlayStream")),
+        overlayScalePct: parseOverlayScalePct(formData.get("overlayScalePct")),
+        climateTick: parseClimateTick(formData.get("climateTick")),
+        devicesDesign: parseDevicesDesign(formData.get("devicesDesign")),
+    };
+    return {
+        grow,
+        ...expectedGrowIdFrom(formData),
+    };
 }
 
 export function parseCompleteGrowForm(formData: FormData): CompleteGrowInput {

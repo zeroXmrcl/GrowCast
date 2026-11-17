@@ -59,7 +59,6 @@
       "title": "Capture",
       "nav": "none",
       "shell": "none",
-      "public": true,
       "viewport": "broadcast"
     },
     {

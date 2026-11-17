@@ -1,0 +1,88 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import path from "node:path";
+import {describe, it} from "node:test";
+import {widgetColumnSpan, widgetJoinsDashboardBoard} from "../lib/plugins/widget-layout.ts";
+
+function src(rel: string): string {
+    return readFileSync(path.join(process.cwd(), rel), "utf8");
+}
+
+describe("plugin parity layout and public energy", () => {
+    it("treats 2x1 live-climate as the dashboard board row", () => {
+        assert.equal(widgetColumnSpan("2x1"), 2);
+        assert.equal(widgetColumnSpan("1x1"), 1);
+        assert.equal(widgetColumnSpan(undefined), 1);
+        assert.equal(widgetJoinsDashboardBoard({id: "live-climate", size: "2x1"}), true);
+        assert.equal(widgetJoinsDashboardBoard({id: "energy-flow", size: "2x1"}), false);
+        assert.equal(widgetJoinsDashboardBoard({id: "energy-flow", size: "2x1"}, {liveClimate: true}), true);
+    });
+
+    it("plugin-mount-root is display:contents and does not paint a loading card", () => {
+        const css = src(path.join("app", "globals.css"));
+        const mount = src(path.join("components", "plugin-mount.tsx"));
+        const widgets = src(path.join("components", "plugin-widgets.tsx"));
+        assert.match(css, /\.plugin-mount-root\s*\{\s*display:\s*contents;/);
+        assert.match(css, /grid-area:\s*plugins/);
+        assert.match(mount, /failed && message/);
+        assert.doesNotMatch(mount, /Loading plugin…/);
+        assert.match(widgets, /slot === "dashboard"/);
+        assert.match(widgets, /widgetJoinsDashboardBoard/);
+        assert.match(widgets, /growcast-area-plugins/);
+        assert.match(widgets, /OVERLAY_ORDER_CLIMATE/);
+    });
+
+    it("public GGS energy always uses the public tariff", () => {
+        const host = src(path.join("plugins", "ggs", "host", "index.ts"));
+        const poll = src(path.join("plugins", "ggs", "host", "energy", "poll.ts"));
+        const scoreboard = src(path.join("plugins", "ggs", "ui", "energy-scoreboard.tsx"));
+        const overlay = src(path.join("plugins", "ggs", "ui", "src", "index.tsx"));
+        assert.match(host, /energyGetResponse\(request, "public"\)/);
+        assert.match(host, /pathName === "energy" && request.method === "GET"/);
+        assert.match(poll, /tariff=public/);
+        assert.match(poll, /ENERGY_ADMIN_POLL_PATH/);
+        assert.match(scoreboard, /ENERGY_PUBLIC_POLL_PATH/);
+        assert.match(scoreboard, /ENERGY_ADMIN_POLL_PATH/);
+        assert.match(overlay, /ENERGY_PUBLIC_POLL_PATH/);
+    });
+
+    it("capture is token-gated and solar overlay widgets default off", () => {
+        const restream = JSON.parse(src(path.join("plugins", "restream", "plugin.json"))) as {
+            pages: Array<{id: string; public?: boolean}>;
+        };
+        const solar = JSON.parse(src(path.join("plugins", "solar", "plugin.json"))) as {
+            config: Record<string, {default?: unknown}>;
+        };
+        const capture = restream.pages.find((page) => page.id === "capture");
+        assert.equal(capture?.public, undefined);
+        const host = src(path.join("plugins", "restream", "host", "index.ts"));
+        const site = src(path.join("app", "p", "[pluginId]", "[[...path]]", "page.tsx"));
+        assert.match(host, /export async function authorizePage/);
+        assert.match(site, /authorizePage/);
+        assert.match(site, /pageData/);
+        assert.equal(solar.config.overlayWidgets.default, false);
+        const routes = src(path.join("lib", "plugins", "routes.ts"));
+        assert.match(routes, /overlayWidgets/);
+    });
+
+    it("admin toast does not fetch plugin-notices until signed in", () => {
+        const layout = src(path.join("app", "admin", "layout.tsx"));
+        const toast = src(path.join("app", "admin", "admin-toast.tsx"));
+        assert.match(layout, /loggedIn \? \(/);
+        assert.match(layout, /<AdminToast enabled\/>/);
+        assert.match(toast, /if \(!enabled\)/);
+    });
+
+    it("keeps overlay settings on Broadcast and AI Assessment on GGS admin", () => {
+        const grow = src(path.join("app", "admin", "page.tsx"));
+        const pluginAdmin = src(path.join("app", "admin", "plugins", "[pluginId]", "[[...path]]", "page.tsx"));
+        assert.doesNotMatch(grow, /StreamSettingsFields/);
+        assert.match(pluginAdmin, /StreamSettingsFields/);
+        assert.match(pluginAdmin, /AiSummaryPanel/);
+        assert.match(pluginAdmin, /pluginAdminShowsStreamSettings/);
+        assert.match(pluginAdmin, /pluginAdminShowsAiSummary/);
+        const extras = src(path.join("lib", "plugins", "admin-host-extras.ts"));
+        assert.match(extras, /exports\?\.broadcast/);
+        assert.match(extras, /exports\?\.liveClimate/);
+    });
+});

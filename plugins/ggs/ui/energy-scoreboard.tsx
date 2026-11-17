@@ -1,9 +1,16 @@
 "use client";
 
 import {useEffect, useState} from "react";
+import {useAuth} from "@growcast/plugin-sdk/ui";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/plugins/ggs/host/energy/berlin";
-import {ENERGY_POLL_MS, fetchEnergyDto, shouldPollEnergy} from "@/plugins/ggs/host/energy/poll";
+import {
+    ENERGY_ADMIN_POLL_PATH,
+    ENERGY_POLL_MS,
+    ENERGY_PUBLIC_POLL_PATH,
+    fetchEnergyDto,
+    shouldPollEnergy,
+} from "@/plugins/ggs/host/energy/poll";
 import EnergyFlowmap from "@/plugins/ggs/ui/energy-flowmap";
 import EnergyWater from "@/plugins/ggs/ui/energy-water";
 import {
@@ -439,6 +446,8 @@ function EnergyGraphCard({
 }
 
 function usePolledEnergyDto(initial: EnergyPublicDto | null): EnergyPublicDto | null {
+    const {role} = useAuth();
+    const pollPath = role === "admin" ? ENERGY_ADMIN_POLL_PATH : ENERGY_PUBLIC_POLL_PATH;
     const [dto, setDto] = useState(initial);
     useEffect(() => {
         setDto(initial);
@@ -449,7 +458,7 @@ function usePolledEnergyDto(initial: EnergyPublicDto | null): EnergyPublicDto | 
             if (!shouldPollEnergy(document.visibilityState === "visible")) {
                 return;
             }
-            const next = await fetchEnergyDto();
+            const next = await fetchEnergyDto(fetch, pollPath);
             if (!cancelled && next) {
                 setDto(next);
             }
@@ -469,7 +478,7 @@ function usePolledEnergyDto(initial: EnergyPublicDto | null): EnergyPublicDto | 
             window.clearInterval(id);
             document.removeEventListener("visibilitychange", onVisibility);
         };
-    }, []);
+    }, [pollPath]);
     return dto;
 }
 

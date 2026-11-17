@@ -3,8 +3,9 @@ import type {EnergyPublicDto} from "@/plugins/ggs/host/energy/types";
 
 /** Live snapshots land about every 15s. Faster polls repeat the same watts. */
 export const ENERGY_POLL_MS = 15_000;
-export const ENERGY_POLL_PATH = "/api/data/plugins/ggs/energy?grow=current";
 export const ENERGY_PUBLIC_POLL_PATH = "/api/data/plugins/ggs/energy?grow=current&tariff=public";
+export const ENERGY_POLL_PATH = ENERGY_PUBLIC_POLL_PATH;
+export const ENERGY_ADMIN_POLL_PATH = "/api/plugins/v1/growcast.ggs/x/energy?grow=current";
 
 let energyPollInFlight = false;
 
@@ -32,7 +33,7 @@ export function parseEnergyPollBody(raw: unknown): EnergyPublicDto | null {
 
 export async function fetchEnergyDto(
     fetcher: typeof fetch = fetch,
-    path: string = ENERGY_POLL_PATH,
+    path: string = ENERGY_PUBLIC_POLL_PATH,
 ): Promise<EnergyPublicDto | null> {
     if (energyPollInFlight) {
         return null;

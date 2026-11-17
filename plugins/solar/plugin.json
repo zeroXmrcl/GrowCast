@@ -52,6 +52,7 @@
     "publicBattery": { "type": "boolean", "label": "Public: battery", "default": true },
     "publicGrid": { "type": "boolean", "label": "Public: grid", "default": true },
     "publicTentShare": { "type": "boolean", "label": "Public: tent solar share", "default": true },
+    "overlayWidgets": { "type": "boolean", "label": "Show solar widgets on the overlay", "default": false },
     "modbusPort": { "type": "integer", "default": 502 },
     "modbusUnitId": { "type": "integer", "default": 1 }
   },

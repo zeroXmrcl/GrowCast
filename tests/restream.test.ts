@@ -325,8 +325,9 @@ describe("restream chrome", () => {
             path.join(process.cwd(), "plugins", "restream", "host", "index.ts"),
             "utf8",
         );
-        assert.match(captureSrc, /isRestreamCaptureAuthorized/);
-        assert.match(captureSrc, /ensureRestreamCaptureToken/);
+        assert.match(captureSrc, /usePluginRuntime/);
+        assert.match(captureSrc, /pageData/);
+        assert.match(hostSrc, /authorizePage/);
         assert.match(hostSrc, /ensureRestreamCaptureToken/);
         assert.match(hostSrc, /isRestreamCaptureAuthorized/);
         const restreamBlock = composeServiceBlock(composeSrc, "restream");

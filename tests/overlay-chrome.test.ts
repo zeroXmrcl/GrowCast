@@ -61,7 +61,7 @@ describe("overlay chrome", () => {
 
     it("builds the OBS URL from the public origin helper on the Stream page", () => {
         const pageSrc = readFileSync(
-            path.join(process.cwd(), "app", "admin", "page.tsx"),
+            path.join(process.cwd(), "app", "admin", "plugins", "[pluginId]", "[[...path]]", "page.tsx"),
             "utf8",
         );
         const fieldsSrc = readFileSync(

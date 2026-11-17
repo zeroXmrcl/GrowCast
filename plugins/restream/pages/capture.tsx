@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect, useState, type ReactNode} from "react";
+import {usePluginRuntime} from "@growcast/plugin-sdk/ui";
 import PluginMount from "@/components/plugin-mount";
 import ProgramScene from "@/plugins/restream/ui/program-scene";
 import type {OverlayGrowView} from "@/lib/overlay-grow";
@@ -46,7 +47,10 @@ function OverlayWidgets() {
 }
 
 function CaptureScene({children}: {children?: ReactNode}) {
-    const [scene, setScene] = useState<(Omit<OverlayGrowView, "overlayStream"> & {captureToken?: string}) | null>(null);
+    const runtime = usePluginRuntime();
+    const [scene, setScene] = useState<(Omit<OverlayGrowView, "overlayStream"> & {captureToken?: string}) | null>(
+        (runtime.pageData as (Omit<OverlayGrowView, "overlayStream"> & {captureToken?: string}) | undefined) ?? null,
+    );
 
     useEffect(() => {
         const token = new URLSearchParams(window.location.search).get("token") ?? "";

@@ -1,6 +1,6 @@
 "use client";
 
-import {usePluginLive} from "@growcast/plugin-sdk/ui";
+import {usePluginLive, usePluginRuntime} from "@growcast/plugin-sdk/ui";
 import {
     useEffect,
     useId,
@@ -157,6 +157,27 @@ function pluginActionUrl(pluginId: string, actionPath: string): string {
     return `/api/plugins/v1/${encodeURIComponent(pluginId)}/x/${actionPath.replace(/^\/+/, "")}`;
 }
 
+function pluginIdFromLocation(): string {
+    if (typeof window === "undefined") {
+        return "";
+    }
+    const match = window.location.pathname.match(/\/admin\/plugins\/([^/]+)/);
+    return match?.[1] ? decodeURIComponent(match[1]) : "";
+}
+
+function resolvePluginId(explicit?: string, liveId?: string, runtimeId?: string): string {
+    if (explicit) {
+        return explicit;
+    }
+    if (runtimeId && runtimeId !== "unknown") {
+        return runtimeId;
+    }
+    if (liveId && liveId !== "unknown") {
+        return liveId;
+    }
+    return pluginIdFromLocation();
+}
+
 export function PluginImmediateForm({
     actionPath,
     pluginId,
@@ -171,7 +192,8 @@ export function PluginImmediateForm({
     onSaved?: () => void;
 }) {
     const live = usePluginLive();
-    const id = pluginId ?? live.pluginId;
+    const runtime = usePluginRuntime();
+    const id = resolvePluginId(pluginId, live.pluginId, runtime.pluginId);
     const [pending, setPending] = useState(false);
 
     async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -228,7 +250,8 @@ export function PluginSaveForm({
     onSaved?: () => void;
 }) {
     const live = usePluginLive();
-    const id = pluginId ?? live.pluginId;
+    const runtime = usePluginRuntime();
+    const id = resolvePluginId(pluginId, live.pluginId, runtime.pluginId);
     const formRef = useRef<HTMLFormElement>(null);
     const baseline = useRef("");
     const [dirty, setDirty] = useState(false);
@@ -353,10 +376,14 @@ export function usePluginAdminState<T>(actionPath: string, pluginId?: string): {
     reload: () => void;
 } {
     const live = usePluginLive();
-    const id = pluginId ?? live.pluginId;
+    const runtime = usePluginRuntime();
+    const id = resolvePluginId(pluginId, live.pluginId, runtime.pluginId);
     const [data, setData] = useState<T | null>(null);
 
     const reload = () => {
+        if (!id) {
+            return;
+        }
         void fetch(pluginActionUrl(id, actionPath), {credentials: "include", cache: "no-store"})
             .then((response) => (response.ok ? response.json() : null))
             .then((raw) => {

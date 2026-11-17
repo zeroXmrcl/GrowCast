@@ -48,7 +48,7 @@ function showToast(
     setTick((value) => value + 1);
 }
 
-export function AdminToast() {
+export function AdminToast({enabled = true}: {enabled?: boolean}) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -58,6 +58,9 @@ export function AdminToast() {
     const seenNotice = useRef<string | null>(null);
 
     useEffect(() => {
+        if (!enabled) {
+            return;
+        }
         void fetch("/api/admin/plugin-notices", {credentials: "include", cache: "no-store"})
             .then((response) => (response.ok ? response.json() : {}))
             .then((raw) => {
@@ -66,7 +69,7 @@ export function AdminToast() {
                 }
             })
             .catch(() => undefined);
-    }, []);
+    }, [enabled]);
 
     useEffect(() => {
         function onNotice(event: Event) {

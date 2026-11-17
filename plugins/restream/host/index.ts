@@ -240,6 +240,18 @@ export async function handleAction(request: Request, remainder: string): Promise
     return json({error: "Not found"}, 404);
 }
 
+export async function authorizePage(input: {
+    pageId: string;
+    searchParams: Record<string, string | string[] | undefined>;
+}): Promise<boolean> {
+    if (input.pageId !== "capture") {
+        return false;
+    }
+    const token = typeof input.searchParams.token === "string" ? input.searchParams.token : undefined;
+    const expected = await ensureRestreamCaptureToken();
+    return isRestreamCaptureAuthorized(expected, token);
+}
+
 export async function overlayLook() {
     const look = await readCameraLook();
     return {

@@ -48,6 +48,7 @@ describe("first-party plugin.json files", () => {
         assert.equal(raw.config.publicBattery.default, true);
         assert.equal(raw.config.publicGrid.default, true);
         assert.equal(raw.config.publicTentShare.default, true);
+        assert.equal(raw.config.overlayWidgets.default, false);
         assert.equal(raw.config.batteryDischargeOrigin.default, "always-solar");
     });
 

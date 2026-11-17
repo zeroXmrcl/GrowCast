@@ -28,13 +28,16 @@ export type PluginDefinition = {
     widgets: Record<string, ComponentType>;
 };
 
-type RuntimeValue = {
+export type PluginRuntimeValue = {
     pluginId: string;
     pageId?: string;
     widgetId?: string;
     role: PluginRole;
     publicPage: boolean;
+    pageData?: Record<string, unknown>;
 };
+
+type RuntimeValue = PluginRuntimeValue;
 
 const RuntimeContext = createContext<RuntimeValue | null>(null);
 const LiveContext = createContext<PluginLiveView | null>(null);
@@ -49,6 +52,7 @@ export function PluginRuntimeProvider({
     widgetId,
     role,
     publicPage,
+    pageData,
     children,
 }: RuntimeValue & {children: ReactNode}) {
     const [live, setLive] = useState<PluginLiveView>(() => emptyLive(pluginId));
@@ -85,8 +89,8 @@ export function PluginRuntimeProvider({
         };
     }, [pluginId]);
     const runtime = useMemo(
-        () => ({pluginId, pageId, widgetId, role, publicPage}),
-        [pluginId, pageId, widgetId, role, publicPage],
+        () => ({pluginId, pageId, widgetId, role, publicPage, pageData}),
+        [pluginId, pageId, widgetId, role, publicPage, pageData],
     );
     return createElement(
         RuntimeContext.Provider,
@@ -188,8 +192,18 @@ export function useGrowCycle(): GrowCycle {
     return fetched ?? fromLive;
 }
 
+export function usePluginRuntime(): PluginRuntimeValue {
+    return useContext(RuntimeContext) ?? {
+        pluginId: "",
+        role: "visitor",
+        publicPage: true,
+    };
+}
+
 export function usePluginLive(): PluginLiveView {
-    return useContext(LiveContext) ?? emptyLive("unknown");
+    const live = useContext(LiveContext);
+    const runtime = useContext(RuntimeContext);
+    return live ?? emptyLive(runtime?.pluginId || "unknown");
 }
 
 export function usePluginSeries(keys?: string[], opts?: {window?: string}) {
@@ -209,12 +223,16 @@ export function usePluginApi() {
     const pluginId = runtime?.pluginId ?? "";
     return {
         async get(path: string) {
-            const res = await fetch(`/api/plugins/v1/${pluginId}/x/${path.replace(/^\//, "")}`);
+            const res = await fetch(`/api/plugins/v1/${encodeURIComponent(pluginId)}/x/${path.replace(/^\//, "")}`, {
+                credentials: "include",
+                cache: "no-store",
+            });
             return res.json();
         },
         async post(path: string, body: unknown) {
-            const res = await fetch(`/api/plugins/v1/${pluginId}/x/${path.replace(/^\//, "")}`, {
+            const res = await fetch(`/api/plugins/v1/${encodeURIComponent(pluginId)}/x/${path.replace(/^\//, "")}`, {
                 method: "POST",
+                credentials: "include",
                 headers: {"content-type": "application/json"},
                 body: JSON.stringify(body),
             });

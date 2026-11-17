@@ -78,6 +78,9 @@ export async function handleAction(request: Request, remainder: string): Promise
         return Response.json({error: "Unauthorized"}, {status: 401, headers: {"Cache-Control": "no-store"}});
     }
     const pathName = remainder.replace(/^\/+|\/+$/g, "");
+    if (pathName === "energy" && request.method === "GET") {
+        return energyGetResponse(request, tariffKindForEnergyGet(true, request));
+    }
     if (pathName === "admin-state" && request.method === "GET") {
         const [energySettings, live, spiderFarmer, controllers] = await Promise.all([
             readEnergySettings(),
@@ -110,8 +113,7 @@ export async function handleAction(request: Request, remainder: string): Promise
 export async function handlePublic(request: Request, remainder: string): Promise<Response> {
     const path = remainder.replace(/^\/+|\/+$/g, "");
     if (path === "energy") {
-        const isAdmin = await isAdminAuthenticated();
-        return energyGetResponse(request, tariffKindForEnergyGet(isAdmin, request));
+        return energyGetResponse(request, "public");
     }
     if (path === "live-climate") {
         return liveClimateGetResponse();

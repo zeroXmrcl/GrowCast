@@ -1,3 +1,4 @@
+import {readPluginConfig} from "@/lib/plugins/config";
 import {discoverPlugins, findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {pluginIdMatchesParam} from "@/lib/plugins/ids";
 import {getRegistryRecord, listRegistryRecords, pluginIsActive} from "@/lib/plugins/registry";
@@ -122,10 +123,19 @@ export async function widgetsForSlot(slot: PluginWidgetSpec["slots"][number]): P
         if (!isRoutablePlugin(record ?? null)) {
             continue;
         }
+        let overlayEnabled = true;
+        if (slot === "overlay" && plugin.manifest.config.overlayWidgets) {
+            const config = await readPluginConfig(plugin.manifest.id);
+            overlayEnabled = config.overlayWidgets === true;
+        }
         for (const widget of plugin.manifest.widgets) {
-            if (widget.slots.includes(slot)) {
-                widgets.push({pluginId: plugin.manifest.id, widget});
+            if (!widget.slots.includes(slot)) {
+                continue;
             }
+            if (slot === "overlay" && !overlayEnabled) {
+                continue;
+            }
+            widgets.push({pluginId: plugin.manifest.id, widget});
         }
     }
     return widgets;

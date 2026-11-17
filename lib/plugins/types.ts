@@ -320,6 +320,10 @@ export type PluginHostModule = {
     overlayLook?: () => Promise<PluginOverlayLook | null>;
     setupStatus?: () => Promise<{complete: boolean; detail: string | null}>;
     handleSetup?: (formData: FormData) => Promise<PluginSetupResult>;
+    authorizePage?: (input: {
+        pageId: string;
+        searchParams: Record<string, string | string[] | undefined>;
+    }) => Promise<boolean>;
 };
 
 export const INSTALL_WARNING =

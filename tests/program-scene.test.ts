@@ -20,9 +20,13 @@ describe("program scene", () => {
         assert.match(scene, /captureToken=\{captureToken\}/);
         assert.match(capture, /ProgramScene/);
         assert.match(preview, /ProgramScene/);
-        assert.match(preview, /isAdminAuthenticated/);
-        assert.doesNotMatch(preview, /token/);
-        assert.match(capture, /isRestreamCaptureAuthorized/);
+        assert.match(preview, /usePluginRuntime/);
+        assert.match(preview, /pageData/);
+        assert.doesNotMatch(preview, /searchParams/);
+        const host = src(path.join("plugins", "restream", "host", "index.ts"));
+        assert.match(host, /authorizePage/);
+        assert.match(host, /isRestreamCaptureAuthorized/);
+        assert.match(capture, /usePluginRuntime/);
         assert.match(scene, /ProgramAudioGraphProvider/);
         assert.match(scene, /OverlayMusicWave/);
         assert.match(scene, /extra=\{/);

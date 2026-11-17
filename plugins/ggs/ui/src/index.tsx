@@ -10,7 +10,7 @@ import {EnergyArchiveSection} from "@/plugins/ggs/ui/energy-scoreboard";
 import EnergyPage from "@/plugins/ggs/pages/energy";
 import AdminGgsPage from "@/plugins/ggs/admin/page";
 import {useLiveClimate} from "@/plugins/ggs/ui/use-live-climate";
-import {ENERGY_POLL_MS, fetchEnergyDto} from "@/plugins/ggs/host/energy/poll";
+import {ENERGY_POLL_MS, ENERGY_PUBLIC_POLL_PATH, fetchEnergyDto} from "@/plugins/ggs/host/energy/poll";
 import {OVERLAY_GROW_PATH, parseOverlayGrowBody} from "@/lib/overlay-grow";
 import type {ClimateTick} from "@/plugins/ggs/host/climate-tick";
 import type {EnergyPublicDto} from "@/plugins/ggs/host/energy/types";
@@ -69,7 +69,7 @@ function OverlayEnergyWidget() {
     useEffect(() => {
         let cancelled = false;
         async function tick() {
-            const next = await fetchEnergyDto();
+            const next = await fetchEnergyDto(fetch, ENERGY_PUBLIC_POLL_PATH);
             if (!cancelled) {
                 setDto(next);
             }

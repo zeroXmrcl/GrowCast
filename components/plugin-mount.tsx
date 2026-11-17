@@ -14,6 +14,7 @@ type PluginMountProps = {
     role: PluginRole;
     publicPage: boolean;
     styles?: string[];
+    pageData?: Record<string, unknown>;
 };
 
 type ImportMapReact = {
@@ -32,7 +33,7 @@ type ImportMapSdk = {
 
 export default function PluginMount(props: PluginMountProps) {
     const hostRef = useRef<HTMLDivElement>(null);
-    const [message, setMessage] = useState("Loading plugin…");
+    const [message, setMessage] = useState("");
     const [failed, setFailed] = useState(false);
     const [webComponent, setWebComponent] = useState<string | null>(null);
 
@@ -86,6 +87,7 @@ export default function PluginMount(props: PluginMountProps) {
                             widgetId: props.widgetId,
                             role: props.role,
                             publicPage: props.publicPage,
+                            pageData: props.pageData,
                         },
                         createElement(Cmp, null),
                     ),
@@ -120,14 +122,19 @@ export default function PluginMount(props: PluginMountProps) {
         props.widgetId,
         props.role,
         props.publicPage,
+        props.pageData,
     ]);
 
     return (
         <>
-            {props.styles?.map((href) => (
-                <link key={href} rel="stylesheet" href={pluginAssetUrl(props.pluginId, href, props.version)} />
-            ))}
-            {message ? <PluginErrorCard message={message} tone={failed ? undefined : "muted"} /> : null}
+            {props.styles?.length ? (
+                <div hidden>
+                    {props.styles.map((href) => (
+                        <link key={href} rel="stylesheet" href={pluginAssetUrl(props.pluginId, href, props.version)} />
+                    ))}
+                </div>
+            ) : null}
+            {failed && message ? <PluginErrorCard message={message} /> : null}
             {webComponent ? (
                 <div
                     dangerouslySetInnerHTML={{

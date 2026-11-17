@@ -60,7 +60,7 @@ describe("admin settings split", () => {
         assert.doesNotMatch(growPage, /RestreamPanel/);
         assert.doesNotMatch(growPage, /GROWCAST_RESTREAM_STREAM_URL/);
         assert.match(growPage, /GrowSettingsFields/);
-        assert.match(growPage, /StreamSettingsFields/);
+        assert.doesNotMatch(growPage, /StreamSettingsFields/);
         assert.match(growPage, /MediaManager/);
         assert.match(growFields, /name="showSettingsLink"/);
     });

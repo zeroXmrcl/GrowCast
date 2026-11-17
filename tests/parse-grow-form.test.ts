@@ -122,7 +122,7 @@ describe("parseStreamSettingsForm", () => {
         assert.equal(bad.grow.showGrowName, false);
     });
 
-    it("parses overlay and identity together because overlay lives on Grow", () => {
+    it("parses overlay fields without rewriting grow identity", () => {
         const result = parseStreamSettingsForm(
             formFrom({
                 name: "Hijack",
@@ -130,9 +130,21 @@ describe("parseStreamSettingsForm", () => {
                 streamUrl: "https://stream.example.com/hls/",
             }),
         );
-        assert.equal(result.grow.name, "Hijack");
-        assert.equal(result.grow.plant, "Tomato");
+        assert.equal(result.grow.name, undefined);
+        assert.equal(result.grow.plant, undefined);
         assert.equal(result.grow.streamUrl, "https://stream.example.com/hls/");
+    });
+
+    it("does not clear overlay fields when the Grow form omits them", () => {
+        const result = parseAdminSettingsForm(
+            formFrom({
+                name: "Test Grow",
+                plant: "Tomato",
+            }),
+        );
+        assert.equal(result.grow.overlayStream, undefined);
+        assert.equal(result.grow.overlayLayout, undefined);
+        assert.equal(result.grow.streamUrl, undefined);
     });
 
     it("parses overlayLayout radios with left-rail as the missing/junk default", () => {

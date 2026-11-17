@@ -99,6 +99,7 @@ describe("broadcast chrome", () => {
     it("wires overlay and camera grow fields to the disconnected broadcast-grow form", () => {
         const fields = src(path.join("app", "admin", "overlay-fields.tsx"));
         const growPage = src(path.join("app", "admin", "page.tsx"));
+        const pluginAdmin = src(path.join("app", "admin", "plugins", "[pluginId]", "[[...path]]", "page.tsx"));
         assert.match(fields, /name="overlayStream"/);
         assert.match(fields, /name="overlayLayout"/);
         assert.match(fields, /name="climateTick"/);
@@ -106,7 +107,8 @@ describe("broadcast chrome", () => {
         assert.match(fields, /name="streamUrl"/);
         assert.match(fields, /name="showGrowName"/);
         assert.match(growPage, /saveGrowAction/);
-        assert.match(growPage, /StreamSettingsFields/);
+        assert.doesNotMatch(growPage, /StreamSettingsFields/);
+        assert.match(pluginAdmin, /StreamSettingsFields/);
         assert.doesNotMatch(growPage, /id="broadcast-grow"/);
     });
 });
@@ -444,7 +446,10 @@ describe("homepage toast", () => {
         assert.match(lookHud, /overlayStream=["']include["']/);
         assert.match(scene, /ProgramCameraLook/);
         assert.match(scene, /lockStream/);
-        assert.match(captureSrc, /isRestreamCaptureAuthorized/);
+        assert.match(captureSrc, /usePluginRuntime/);
+        const hostSrc = src(path.join("plugins", "restream", "host", "index.ts"));
+        assert.match(hostSrc, /authorizePage/);
+        assert.match(hostSrc, /isRestreamCaptureAuthorized/);
         assert.doesNotMatch(restream, /path:\s*\.env\.local/);
         assert.doesNotMatch(
             restream,
