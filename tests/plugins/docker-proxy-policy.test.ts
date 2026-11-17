@@ -9,7 +9,7 @@ import {
 } from "../../services/docker-plugin-proxy/policy.mjs";
 
 const env = {
-    GROWCAST_HOST_PROJECT: "/opt/growcast",
+    GROWCAST_HOST_PROJECT: "<install-dir>",
     GROWCAST_PLUGIN_NETWORK: "growcast_default",
     GROWCAST_PLUGIN_IMAGES: "growcast-plugin-ggs:local",
 };
@@ -71,8 +71,8 @@ describe("docker plugin proxy policy", () => {
                 Devices: [],
                 NetworkMode: "growcast_default",
                 Binds: [
-                    "/opt/growcast/plugins/ggs:/plugin:ro",
-                    "/opt/growcast/data/plugins/growcast.ggs:/data",
+                    "<install-dir>/plugins/ggs:/plugin:ro",
+                    "<install-dir>/data/plugins/growcast.ggs:/data",
                 ],
             },
         };
@@ -85,7 +85,7 @@ describe("docker plugin proxy policy", () => {
             Image: "growcast-plugin-ggs:local",
             Labels: {"growcast.plugin": "growcast.ggs"},
             HostConfig: {
-                Binds: ["/opt/growcast/plugins/ggs:/plugin:ro", "/opt/growcast/data/plugins/growcast.ggs:/data"],
+                Binds: ["<install-dir>/plugins/ggs:/plugin:ro", "<install-dir>/data/plugins/growcast.ggs:/data"],
             },
         };
         assert.equal(authorizeCreate("plugin-growcast-ggs", {
@@ -121,8 +121,8 @@ describe("docker plugin proxy policy", () => {
     it("checks image and bind helpers", () => {
         assert.equal(imageAllowed("growcast-plugin-ggs:local", env), true);
         assert.equal(imageAllowed("ubuntu:24.04", env), false);
-        assert.equal(bindAllowed("/opt/growcast/plugins/ggs:/plugin:ro", "growcast.ggs", env), true);
-        assert.equal(bindAllowed("/opt/growcast/plugins/ggs:/plugin", "growcast.ggs", env), false);
+        assert.equal(bindAllowed("<install-dir>/plugins/ggs:/plugin:ro", "growcast.ggs", env), true);
+        assert.equal(bindAllowed("<install-dir>/plugins/ggs:/plugin", "growcast.ggs", env), false);
         assert.equal(bindAllowed("/etc/passwd:/plugin:ro", "growcast.ggs", env), false);
         assert.equal(networkModeAllowed("host", env), false);
         assert.equal(networkModeAllowed("growcast_default", env), true);

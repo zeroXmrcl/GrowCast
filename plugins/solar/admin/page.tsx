@@ -39,7 +39,7 @@ const PREVIEW_STATE: SolarAdminState = {
         publicBattery: true,
         publicGrid: true,
         publicTentShare: true,
-        host: "192.168.1.40",
+        host: "192.0.2.10",
         transport: "rest",
         intervalS: 10,
         pvPeakW: 11000,

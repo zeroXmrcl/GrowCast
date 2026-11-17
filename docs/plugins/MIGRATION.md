@@ -1,12 +1,20 @@
-# vm-202 plugin cutover runbook
+# Plugin cutover runbook
 
-This is the operator procedure for the GrowCast host **vm-202**. A human ops agent runs it later. **Never run this from a laptop against production. Never delete legacy data folders until the owner gives an explicit go.**
+## Placeholders
+
+| Placeholder | Meaning |
+|-------------|---------|
+| `<host>` | SSH name of the GrowCast machine |
+| `<install-dir>` | Compose project directory on that machine |
+| `<your-domain>` | Public HTTPS hostname of this instance |
+
+This is the operator procedure for the GrowCast host **`<host>`**. A human ops agent runs it later. **Never run this from a laptop against production. Never delete legacy data folders until the owner gives an explicit go.**
 
 First-party plugins (GGS, Timelapse, Restream, Solar) are **not** auto-enabled. After the update they stay discovered until you enable them in **Admin → Plugins**. Enable them immediately after start or climate, energy, snapshots, and broadcast ingest stop and you will see gaps.
 
 ## 0. Prerequisites
 
-- SSH to **vm-202** as the account that owns the GrowCast compose project.
+- SSH to **`<host>`** as the account that owns the GrowCast compose project.
 - Docker Engine and Compose v2 on the host (the host, not the GrowCast container, builds plugin images).
 - Disk space: at least 2× `data/` plus plugin media (`plugins/timelapse/snapshots`, `plugins/timelapse/timelapse`).
 - Confirm you are in the GrowCast project directory (the folder that contains `docker-compose.yml`, `.env.local`, `data/`, `plugins/`).
@@ -17,7 +25,7 @@ First-party plugins (GGS, Timelapse, Restream, Solar) are **not** auto-enabled. 
 Suggested working directory:
 
 ```bash
-cd /opt/growcast   # or the real compose project path on vm-202
+cd <install-dir>
 pwd
 ls docker-compose.yml .env.local data plugins
 ```
@@ -132,7 +140,7 @@ The proxy may mount `/var/run/docker.sock:ro`. The GrowCast container must not.
 
 ## 3. Migration dry-run, then apply
 
-Still on vm-202, in the project directory. Default is dry-run:
+Still on `<host>`, in the project directory. Default is dry-run:
 
 ```bash
 GROWCAST_DATA_DIR=./data node --experimental-strip-types scripts/migrate-plugin-data.ts --dry-run

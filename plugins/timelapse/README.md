@@ -16,7 +16,7 @@ Key features:
 
 ## 2. Demo / Screenshots
 
-No screenshots here right now, but if you want to check how it looks, see [my instance](https://grow.0xmarcel.com).
+No screenshots here right now, but if you want to check how it looks, see [an example instance](https://<your-domain>).
 
 ## 3. Getting Started
 

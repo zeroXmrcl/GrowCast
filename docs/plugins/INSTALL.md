@@ -49,7 +49,7 @@ SHA-256 of the tarball.
 On the GrowCast host, in the compose project directory:
 
 ```bash
-cd /opt/growcast   # or your project path
+cd <install-dir>
 ls docker-compose.yml plugins
 ```
 

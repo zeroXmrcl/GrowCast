@@ -51,7 +51,7 @@ export async function handleSetup(formData: FormData): Promise<PluginSetupResult
     const intervalRaw = String(formData.get("interval") ?? "").trim();
     const interval = Number(intervalRaw);
     if (!isRtspUrl(rtsp)) {
-        return {ok: false, message: "Use the camera’s local rtsp:// address, like rtsp://user:password@192.168.1.20:554/stream."};
+        return {ok: false, message: "Use the camera’s local rtsp:// address, like rtsp://user:password@<camera-ip>:554/stream."};
     }
     if (!Number.isInteger(interval) || interval < 1) {
         return {ok: false, message: "Interval is a whole number of minutes, at least 1."};
