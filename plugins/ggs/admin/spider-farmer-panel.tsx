@@ -1,7 +1,4 @@
-import {connectSpiderFarmerAction} from "@/plugins/ggs/admin/actions";
-import {AdminBand} from "@/app/admin/admin-band";
-import {AdminImmediateForm} from "@/app/admin/admin-save-form";
-import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
+import {AdminBand, AdminButton, AdminField, AdminInput, PluginImmediateForm} from "@/lib/plugins/admin-kit";
 import {ControllerSerialField} from "@/plugins/ggs/admin/controller-list";
 import type {SpiderFarmerBrokerStatus} from "@/plugins/ggs/host/ggs-sidecar-env";
 import type {SpiderFarmerController} from "@/plugins/ggs/host/spider-farmer-login";
@@ -20,7 +17,7 @@ export function SpiderFarmerLoginPanel({
             : "No controller saved yet.";
     return (
         <AdminBand id="spider-farmer" title="Spider Farmer">
-            <AdminImmediateForm action={connectSpiderFarmerAction} className="space-y-3">
+            <PluginImmediateForm actionPath="spider-farmer" className="space-y-3">
                 <p className="text-sm text-(--admin-muted)">{summary}</p>
                 <AdminField label="Email">
                     <AdminInput
@@ -48,7 +45,7 @@ export function SpiderFarmerLoginPanel({
                 <AdminButton type="submit" tone="primary">
                     Log in
                 </AdminButton>
-            </AdminImmediateForm>
+            </PluginImmediateForm>
         </AdminBand>
     );
 }

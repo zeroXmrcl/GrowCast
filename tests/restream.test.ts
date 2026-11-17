@@ -321,8 +321,14 @@ describe("restream chrome", () => {
         assert.match(sceneSrc, /ProgramCameraLook/);
         assert.match(sceneSrc, /lockStream/);
         assert.match(hudSrc, /mergeOverlayGrowPoll/);
+        const hostSrc = readFileSync(
+            path.join(process.cwd(), "plugins", "restream", "host", "index.ts"),
+            "utf8",
+        );
         assert.match(captureSrc, /isRestreamCaptureAuthorized/);
         assert.match(captureSrc, /ensureRestreamCaptureToken/);
+        assert.match(hostSrc, /ensureRestreamCaptureToken/);
+        assert.match(hostSrc, /isRestreamCaptureAuthorized/);
         const restreamBlock = composeServiceBlock(composeSrc, "restream");
         assert.doesNotMatch(restreamBlock, /path:\s*\.env\.local/);
         assert.doesNotMatch(restreamBlock, /env_file:/);

@@ -7,8 +7,8 @@ import {
     ADMIN_NOTICE_EVENT,
     type AdminToastDetail,
 } from "@/lib/admin/publish-notice";
-import {isAdminNoticeId} from "@/lib/admin/notice";
 import type {Tone} from "@/components/admin/ui";
+import type {PluginNotice} from "@/lib/plugins/types";
 
 type ToastView = {
     title: string;
@@ -23,9 +23,9 @@ const TONE_MARK: Record<Tone, string> = {
     neutral: "bg-zinc-800 text-zinc-200",
 };
 
-function viewFromDetail(detail: AdminToastDetail): ToastView | null {
+function viewFromDetail(detail: AdminToastDetail, pluginNotices: Record<string, PluginNotice>): ToastView | null {
     if (typeof detail === "string") {
-        const content = adminNoticeContent(detail);
+        const content = adminNoticeContent(detail) ?? pluginNotices[detail];
         if (!content) {
             return null;
         }
@@ -36,10 +36,11 @@ function viewFromDetail(detail: AdminToastDetail): ToastView | null {
 
 function showToast(
     detail: AdminToastDetail,
+    pluginNotices: Record<string, PluginNotice>,
     setView: (view: ToastView | null) => void,
     setTick: (update: (value: number) => number) => void,
 ): void {
-    const next = viewFromDetail(detail);
+    const next = viewFromDetail(detail, pluginNotices);
     if (!next) {
         return;
     }
@@ -53,30 +54,45 @@ export function AdminToast() {
     const router = useRouter();
     const [view, setView] = useState<ToastView | null>(null);
     const [tick, setTick] = useState(0);
+    const [pluginNotices, setPluginNotices] = useState<Record<string, PluginNotice>>({});
     const seenNotice = useRef<string | null>(null);
 
     useEffect(() => {
+        void fetch("/api/admin/plugin-notices", {credentials: "include", cache: "no-store"})
+            .then((response) => (response.ok ? response.json() : {}))
+            .then((raw) => {
+                if (raw && typeof raw === "object") {
+                    setPluginNotices(raw as Record<string, PluginNotice>);
+                }
+            })
+            .catch(() => undefined);
+    }, []);
+
+    useEffect(() => {
         function onNotice(event: Event) {
-            showToast((event as CustomEvent<AdminToastDetail>).detail, setView, setTick);
+            showToast((event as CustomEvent<AdminToastDetail>).detail, pluginNotices, setView, setTick);
         }
 
         window.addEventListener(ADMIN_NOTICE_EVENT, onNotice);
 
         const notice = searchParams.get("notice");
-        if (notice && isAdminNoticeId(notice)) {
-            const key = `${pathname}?${searchParams.toString()}`;
-            if (seenNotice.current !== key) {
-                seenNotice.current = key;
-                showToast(notice, setView, setTick);
-                const next = new URLSearchParams(searchParams.toString());
-                next.delete("notice");
-                const query = next.toString();
-                router.replace(query ? `${pathname}?${query}` : pathname, {scroll: false});
+        if (notice) {
+            const known = Boolean(adminNoticeContent(notice) ?? pluginNotices[notice]);
+            if (known) {
+                const key = `${pathname}?${searchParams.toString()}`;
+                if (seenNotice.current !== key) {
+                    seenNotice.current = key;
+                    showToast(notice, pluginNotices, setView, setTick);
+                    const next = new URLSearchParams(searchParams.toString());
+                    next.delete("notice");
+                    const query = next.toString();
+                    router.replace(query ? `${pathname}?${query}` : pathname, {scroll: false});
+                }
             }
         }
 
         return () => window.removeEventListener(ADMIN_NOTICE_EVENT, onNotice);
-    }, [pathname, router, searchParams]);
+    }, [pathname, pluginNotices, router, searchParams]);
 
     useEffect(() => {
         if (!view) {

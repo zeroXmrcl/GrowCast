@@ -11,6 +11,7 @@
   "runtime": {
     "type": "docker",
     "dockerfile": "Dockerfile",
+    "image": "growcast-plugin-solar:local",
     "entry": "backend/main.py"
   },
   "ui": {
@@ -19,7 +20,9 @@
     "sdk": "^1.0.0"
   },
   "pages": [
-    { "id": "energy", "path": "energy", "title": "Solar", "nav": "site", "public": true },
+    { "id": "energy", "path": "", "title": "Solar", "nav": "site", "public": true },
+    { "id": "widgets", "path": "widgets", "title": "Solar widgets", "nav": "none", "public": true },
+    { "id": "settings", "path": "settings", "title": "Solar settings", "nav": "none", "public": true, "shell": "none" },
     { "id": "admin", "path": "", "title": "Solar", "nav": "admin" }
   ],
   "widgets": [
@@ -67,6 +70,8 @@
     "battery.discharge": { "unit": "Wh", "kind": "counter" },
     "tent.power": { "unit": "W", "kind": "gauge", "min": 0 },
     "tent.from_solar": { "unit": "W", "kind": "gauge", "min": 0 },
+    "tent.from_pv": { "unit": "W", "kind": "gauge", "min": 0 },
+    "tent.from_battery": { "unit": "W", "kind": "gauge", "min": 0 },
     "tent.from_grid": { "unit": "W", "kind": "gauge", "min": 0 }
   }
 }

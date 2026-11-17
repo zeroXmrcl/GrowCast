@@ -1,5 +1,4 @@
 import {createCipheriv, createDecipheriv} from "node:crypto";
-import type {AdminNoticeId} from "@/lib/admin/notice";
 
 const LOGIN_URL = "https://api.spider-farmer.com/api/ios/ulogin/mailLogin/v2";
 const KEY = Buffer.from("Meizhi1234567890", "utf8");
@@ -146,7 +145,7 @@ export async function spiderFarmerMailLogin(
     return brokerFromLogin(decodeResponse(await response.text()));
 }
 
-export function spiderFarmerFailureNotice(error: SpiderFarmerLoginError): AdminNoticeId {
+export function spiderFarmerFailureNotice(error: SpiderFarmerLoginError): string {
     if (error.code === "100" && /not registered/i.test(error.msg)) {
         return "spider_farmer_unknown_account";
     }

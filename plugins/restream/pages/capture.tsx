@@ -1,43 +1,95 @@
-import {notFound} from "next/navigation";
-import PluginWidgets from "@/components/plugin-widgets";
+"use client";
+
+import {useEffect, useState, type ReactNode} from "react";
+import PluginMount from "@/components/plugin-mount";
 import ProgramScene from "@/plugins/restream/ui/program-scene";
-import {getCurrentGrow} from "@/lib/db";
-import {
-    captureStreamUrl,
-    ensureRestreamCaptureToken,
-    isRestreamCaptureAuthorized,
-} from "@/plugins/restream/host/capture";
+import type {OverlayGrowView} from "@/lib/overlay-grow";
 
-export const dynamic = "force-dynamic";
+type WidgetMount = {
+    pluginId: string;
+    widgetId: string;
+    version: string;
+    entry?: string;
+    webComponent?: string;
+    styles?: string[];
+};
 
-export default async function OverlayCapturePage({
-    searchParams,
-}: {
-    searchParams?: Promise<{token?: string}>;
-}) {
-    const params = (await searchParams) ?? {};
-    const expected = await ensureRestreamCaptureToken();
-    if (!isRestreamCaptureAuthorized(expected, params.token)) {
-        notFound();
+function OverlayWidgets() {
+    const [widgets, setWidgets] = useState<WidgetMount[]>([]);
+    useEffect(() => {
+        void fetch("/api/data/plugin-widgets?slot=overlay", {cache: "no-store"})
+            .then((response) => (response.ok ? response.json() : null))
+            .then((raw) => {
+                if (raw && Array.isArray(raw.widgets)) {
+                    setWidgets(raw.widgets as WidgetMount[]);
+                }
+            })
+            .catch(() => undefined);
+    }, []);
+    return (
+        <>
+            {widgets.map((item) => (
+                <PluginMount
+                    key={`${item.pluginId}:${item.widgetId}`}
+                    pluginId={item.pluginId}
+                    version={item.version}
+                    entry={item.entry}
+                    webComponent={item.webComponent}
+                    styles={item.styles}
+                    widgetId={item.widgetId}
+                    role="visitor"
+                    publicPage
+                />
+            ))}
+        </>
+    );
+}
+
+function CaptureScene({children}: {children?: ReactNode}) {
+    const [scene, setScene] = useState<(Omit<OverlayGrowView, "overlayStream"> & {captureToken?: string}) | null>(null);
+
+    useEffect(() => {
+        const token = new URLSearchParams(window.location.search).get("token") ?? "";
+        const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+        void fetch(`/api/data/plugins/restream/scene${qs}`, {cache: "no-store", credentials: "include"})
+            .then((response) => (response.ok ? response.json() : null))
+            .then((raw) => {
+                if (raw) {
+                    setScene(raw);
+                }
+            })
+            .catch(() => undefined);
+    }, []);
+
+    if (!scene) {
+        return null;
     }
-
-    const grow = await getCurrentGrow();
+    const grow = scene;
     return (
         <ProgramScene
             plant={grow.plant}
             name={grow.name}
-            seededAt={grow.details.seededAt}
+            seededAt={grow.seededAt}
             overlayLayout={grow.overlayLayout}
             overlayScalePct={grow.overlayScalePct}
             climateTick={grow.climateTick}
             devicesDesign={grow.devicesDesign}
-            streamUrl={captureStreamUrl(grow.streamUrl)}
-            stage={grow.details.stage}
-            lightSchedule={grow.details.lightSchedule}
-            strain={grow.details.strain}
-            captureToken={params.token}
+            streamUrl={grow.streamUrl}
+            stage={grow.stage}
+            lightSchedule={grow.lightSchedule}
+            strain={grow.strain}
+            captureToken={grow.captureToken}
         >
-            <PluginWidgets slot="overlay" />
+            {children}
         </ProgramScene>
+    );
+}
+
+/** Host API authorizes with isRestreamCaptureAuthorized after ensureRestreamCaptureToken. */
+export default function OverlayCapturePage() {
+    return (
+        <CaptureScene>
+            <OverlayWidgets />
+        </CaptureScene>
     );
 }

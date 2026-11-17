@@ -43,8 +43,9 @@ while true; do
     export API_TOKEN="$TOKEN"
     export GROWCAST_MESH_TOKEN="$TOKEN"
     export GROWCAST_PLUGIN_TOKEN="$TOKEN"
-    export SNAPSHOT_DIR_OUT=./snapshots
-    export TIMELAPSE_DIR_OUT=./timelapse
+    export SNAPSHOT_DIR_OUT=/data/snapshots
+    export TIMELAPSE_DIR_OUT=/data/timelapse
+    mkdir -p "$SNAPSHOT_DIR_OUT" "$TIMELAPSE_DIR_OUT"
     if [ -n "${GROWCAST_URL:-}" ]; then
       export API_URL="$GROWCAST_URL"
     fi

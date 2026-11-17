@@ -1,3 +1,5 @@
+import type {PluginInstallerChoose, PluginInstallerField} from "@/lib/plugins/types";
+
 export type InstallerPlanStep = {
     id: string;
     sort: number;
@@ -7,6 +9,8 @@ export type InstallerPlanStep = {
     optional: boolean;
     kind: "core" | "plugin";
     pluginId?: string;
+    fields?: PluginInstallerField[];
+    choose?: PluginInstallerChoose;
 };
 
 export const CORE_INSTALLER_STEPS: InstallerPlanStep[] = [

@@ -120,11 +120,20 @@ function asLiveView(pluginId: string, raw: Record<string, unknown>): PluginLiveV
     };
 }
 
+export const ENERGY_TOKENS = {
+    solar: "#16a34a",
+    battery: "#0c7700",
+    grid: "#0369a1",
+} as const;
+
 export function useTheme() {
     return {
         colors: {
             bg: "var(--background)",
             fg: "var(--foreground)",
+            solar: "var(--gc-solar, #16a34a)",
+            battery: "var(--gc-battery, #0c7700)",
+            grid: "var(--gc-grid, #0369a1)",
         },
         fonts: {
             sans: "var(--font-geist-sans)",
@@ -135,6 +144,48 @@ export function useTheme() {
         },
         dark: false,
     };
+}
+
+export type GrowCycle = {
+    active: boolean;
+    startedAt: string | null;
+    endedAt: string | null;
+};
+
+function parseGrowCycle(raw: unknown): GrowCycle {
+    if (!raw || typeof raw !== "object") {
+        return {active: false, startedAt: null, endedAt: null};
+    }
+    const value = raw as {active?: unknown; startedAt?: unknown; endedAt?: unknown};
+    return {
+        active: value.active === true,
+        startedAt: typeof value.startedAt === "string" ? value.startedAt : null,
+        endedAt: typeof value.endedAt === "string" ? value.endedAt : null,
+    };
+}
+
+export function useGrowCycle(): GrowCycle {
+    const live = usePluginLive();
+    const fromState = live.state && typeof live.state === "object"
+        ? (live.state as {growCycle?: unknown}).growCycle
+        : null;
+    const fromLive = parseGrowCycle(fromState);
+    const [fetched, setFetched] = useState<GrowCycle | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        void fetch("/api/data/grow-cycle", {cache: "no-store"})
+            .then((response) => (response.ok ? response.json() : null))
+            .then((raw) => {
+                if (!cancelled && raw) {
+                    setFetched(parseGrowCycle(raw));
+                }
+            })
+            .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+    return fetched ?? fromLive;
 }
 
 export function usePluginLive(): PluginLiveView {
@@ -179,6 +230,12 @@ export function useCoreData(name: string) {
             ? (live.state as {tentEnergy?: unknown}).tentEnergy
             : null;
         return energy;
+    }
+    if (name === "grow") {
+        const grow = live.state && typeof live.state === "object"
+            ? (live.state as {growCycle?: unknown}).growCycle
+            : null;
+        return grow ?? null;
     }
     return null;
 }

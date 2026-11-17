@@ -1,4 +1,3 @@
-import type {AdminNoticeId} from "@/lib/admin/notice";
 import {deleteMusicFile, saveMusicFile} from "@/plugins/restream/host/music-files";
 
 export type ApplyMusicPostResult =
@@ -20,7 +19,7 @@ export type ApplyMusicPostResult =
       }
     | {
           ok: false;
-          notice: AdminNoticeId;
+          notice: string;
           reason: string;
           filename?: string;
       };

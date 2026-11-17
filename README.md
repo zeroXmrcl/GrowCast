@@ -38,7 +38,7 @@ Clone the repository and start the stack:
 docker compose up --build -d
 ```
 
-That builds and starts the website. Enable GGS, Timelapse, Restream, and Solar in **Admin → Plugins**; GrowCast then starts those backends from `compose.plugins.generated.yml`. The first Restream build downloads Chromium and can take a while.
+That builds and starts the website. Enable GGS, Timelapse, Restream, and Solar in **Admin → Plugins**; GrowCast then starts those backends through `docker-plugin-proxy`. The first Restream image build downloads Chromium and can take a while.
 
 Open `http://localhost:3000`. Until an admin account exists, the site opens the setup wizard. The container log prints a setup code (`docker compose logs growcast`). Enter that code on the first step, then create the admin login. The wizard also asks which plugins to configure:
 
@@ -94,7 +94,7 @@ Full schema, event catalog, redaction rules, Docker log shipping, retention guid
 
 ### Docker Compose
 
-`docker compose up --build -d` is the supported start command. [docker-compose.yml](docker-compose.yml) runs the `growcast` website. Plugin backends are generated into `compose.plugins.generated.yml` and started by GrowCast after you enable them in Admin.
+`docker compose up --build -d` is the supported start command. [docker-compose.yml](docker-compose.yml) runs the `growcast` website and `docker-plugin-proxy`. Plugin backends are started by GrowCast after you enable them in Admin. `compose.plugins.generated.yml` is an operator snapshot; GrowCast does not run `docker compose` against it.
 
 For production, put the origin behind a **Cloudflare Tunnel** (HTTPS public hostname → `http://127.0.0.1:3000`). Compose publishes on `${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}` (loopback unless you set `GROWCAST_BIND=0.0.0.0` for a LAN) and sets `GROWCAST_TRUST_PROXY=1`. Login rate-limits use `CF-Connecting-IP`, then `X-Real-IP`, then the first `X-Forwarded-For` hop, which Caddy sends by default. Those headers are ignored unless the flag is set. Admin cookies are `Secure` when `X-Forwarded-Proto: https` or `CF-Connecting-IP` is present (or `COOKIE_SECURE=1`). Direct HTTP to a public `:3000` is not the supported admin path.
 
@@ -112,7 +112,7 @@ docker compose down
 
 What gets persisted on the host:
 - `./data` -> `/app/data` (grow data, mesh token, plugin storage under `data/plugins/<id>/`)
-- `./plugins` -> `/app/plugins` (plugin source, including timelapse snapshots and video)
+- `./plugins` -> `/app/plugins` (plugin source, read-only in the website container)
 - `./public/setup` -> `/app/public/setup`
 - `./public/yourPictures` -> `/app/public/yourPictures`
 
@@ -124,7 +124,7 @@ See [docs/plugins/README.md](docs/plugins/README.md) and [docs/plugins/MIGRATION
 
 Broadcast (`/admin/plugins/growcast.restream`) previews the 1920×1080 program with background music (uploaded playlist or a stream URL; URL wins while set) and on-stream alerts (manual Send alert, plus Twitch follow/sub/raid/bits after Connect Twitch). Public `/overlay` and the homepage stay silent.
 
-The website container runs as uid 1001 (`growcast`). The entrypoint `chown`s `./data`, the upload folders, and the timelapse `snapshots` and `timelapse` directories so the process can write them. It does not change ownership of the plugin source, so a later `git pull` still works. After the first run those data folders are owned by `1001:1001` on the host. Plugin containers use the same uid so they can read `./data`. GrowCast never mounts `/var/run/docker.sock`. It talks to `docker-socket-proxy` (`DOCKER_HOST=tcp://docker-socket-proxy:2375`) with rights limited to container inspect/start/stop for `plugin-*` services. Build plugin images on the host.
+The website container runs as uid 1001 (`growcast`). The entrypoint `chown`s `./data` and the upload folders so the process can write them. It does not create or chown plugin source folders, so a later `git pull` still works and an empty `plugins/` is valid. After the first run those data folders are owned by `1001:1001` on the host. Plugin containers use the same uid so they can read `./data`. GrowCast never mounts `/var/run/docker.sock`. It talks to in-repo `docker-plugin-proxy` (`DOCKER_HOST=tcp://docker-plugin-proxy:2375`) which allowlists list/inspect/start/stop/restart/logs (and a checked create) for containers labeled `growcast.plugin=<id>`. See `docs/plugins/DOCKER-PROXY.md`. Build plugin images on the host.
 
 Optional address:
 - The compose file publishes `${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}:3000`.

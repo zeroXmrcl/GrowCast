@@ -7,6 +7,8 @@ import OverlayClimate from "@/plugins/ggs/ui/overlay-climate";
 import OverlayGear from "@/plugins/ggs/ui/overlay-gear";
 import OverlayEnergy from "@/plugins/ggs/ui/overlay-energy";
 import {EnergyArchiveSection} from "@/plugins/ggs/ui/energy-scoreboard";
+import EnergyPage from "@/plugins/ggs/pages/energy";
+import AdminGgsPage from "@/plugins/ggs/admin/page";
 import {useLiveClimate} from "@/plugins/ggs/ui/use-live-climate";
 import {ENERGY_POLL_MS, fetchEnergyDto} from "@/plugins/ggs/host/energy/poll";
 import {OVERLAY_GROW_PATH, parseOverlayGrowBody} from "@/lib/overlay-grow";
@@ -111,7 +113,10 @@ function ArchiveEnergyWidget() {
 }
 
 export default definePlugin({
-    pages: {},
+    pages: {
+        energy: EnergyPage,
+        admin: AdminGgsPage,
+    },
     widgets: {
         "live-climate": LiveClimateWidget,
         "overlay-climate": OverlayClimateWidget,

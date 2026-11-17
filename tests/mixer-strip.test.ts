@@ -19,11 +19,12 @@ describe("mixer strip", () => {
 
     it("wires MusicPanel files and URL save onto the stream racks", () => {
         const page = src(path.join("plugins", "restream", "admin", "page.tsx"));
-        assert.match(page, /listMusicFiles/);
+        const host = src(path.join("plugins", "restream", "host", "index.ts"));
+        assert.match(host, /listMusicFiles/);
         assert.match(page, /MusicPanel/);
         const panel = src(path.join("plugins", "restream", "admin", "music-panel.tsx"));
         assert.match(panel, /title="Music"/);
-        assert.match(panel, /saveProgramAudioUrlAction/);
+        assert.match(panel, /actionPath="program-audio-url"/);
         assert.match(panel, /\/api\/admin\/music/);
         assert.match(panel, /name="url"/);
         assert.match(panel, /name="file"/);
@@ -34,6 +35,7 @@ describe("mixer strip", () => {
         assert.match(page, /waveSmoothPct=\{audio\.waveSmoothPct\}/);
         assert.match(page, /musicLook=\{audio\.musicLook\}/);
         assert.match(page, /waveBars=\{audio\.waveBars\}/);
+        assert.match(host, /readRestreamAudio/);
         assert.match(panel, /WaveSmoothInput/);
         assert.match(panel, /name="musicLook"/);
         assert.match(panel, /value="wave"/);
@@ -62,12 +64,11 @@ describe("mixer strip", () => {
         assert.match(strip, /name="paused"/);
         assert.match(strip, /name="volume"/);
         assert.match(strip, /name="alertBody"/);
-        assert.match(strip, /saveProgramAudioAction/);
+        assert.match(strip, /actionPath="program-audio"/);
         assert.match(strip, /\/api\/admin\/program-alert/);
         assert.match(strip, /event.preventDefault/);
         assert.doesNotMatch(strip, /sendProgramAlertAction/);
         const page = src(path.join("plugins", "restream", "admin", "page.tsx"));
-        assert.match(page, /readRestreamAudio/);
         assert.match(page, /MixerStrip audio=\{audio\}/);
         const actions = src(path.join("plugins", "restream", "admin", "actions.ts"));
         assert.match(actions, /export async function saveProgramAudioAction/);
@@ -86,13 +87,14 @@ describe("mixer strip", () => {
 
     it("wires AlertsPanel onto the stream racks", () => {
         const page = src(path.join("plugins", "restream", "admin", "page.tsx"));
+        const host = src(path.join("plugins", "restream", "host", "index.ts"));
         assert.match(page, /AlertsPanel/);
-        assert.match(page, /readAlertsSettings/);
-        assert.match(page, /readTwitchOAuthFile/);
-        assert.match(page, /twitchLogin=\{oauth\?\.login/);
+        assert.match(host, /readAlertsSettings/);
+        assert.match(host, /readTwitchOAuthFile/);
+        assert.match(page, /twitchLogin=\{oauthLogin\}/);
         const panel = src(path.join("plugins", "restream", "admin", "alerts-panel.tsx"));
         assert.match(panel, /title="Alerts"/);
-        assert.match(panel, /saveAlertsSettingsAction/);
+        assert.match(panel, /actionPath="alerts"/);
         assert.match(panel, /\/admin\/stream\/twitch-connect/);
         assert.match(panel, /Connect Twitch/);
         assert.match(panel, /Connected as \$\{twitchLogin\}/);

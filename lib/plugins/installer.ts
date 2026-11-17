@@ -32,6 +32,8 @@ function pluginInstallerStep(pluginId: string, spec: PluginInstallerSpec): Insta
         optional: true,
         kind: "plugin",
         pluginId,
+        fields: spec.fields,
+        choose: spec.choose,
     };
 }
 

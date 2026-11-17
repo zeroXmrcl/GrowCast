@@ -9,7 +9,10 @@ import {
     type PluginConfigField,
     type PluginConfigFieldType,
     type PluginExports,
+    type PluginInstallerField,
+    type PluginInstallerChoose,
     type PluginInstallerSpec,
+    type PluginNotice,
     type PluginManifest,
     type PluginMetricSpec,
     type PluginNavPlacement,
@@ -309,6 +312,63 @@ function parseExports(raw: unknown): PluginExports | undefined | string {
     };
 }
 
+const NOTICE_TONES = new Set(["success", "warning", "danger", "neutral"]);
+
+function parseInstallerFields(raw: unknown): PluginInstallerField[] | string {
+    if (raw === undefined) {
+        return [];
+    }
+    if (!Array.isArray(raw)) {
+        return "installer.fields must be an array";
+    }
+    const fields: PluginInstallerField[] = [];
+    for (const item of raw) {
+        if (!isRecord(item)) {
+            return "installer.fields entries must be objects";
+        }
+        const name = asTrimmed(item.name);
+        const label = asTrimmed(item.label);
+        if (!name || !label) {
+            return "installer.fields require name and label";
+        }
+        const type = asTrimmed(item.type) ?? "text";
+        if (type !== "text" && type !== "password" && type !== "number") {
+            return `installer.fields.${name}.type is invalid`;
+        }
+        fields.push({
+            name,
+            label,
+            type,
+            required: item.required !== false,
+            autoComplete: optionalString(item.autoComplete),
+            defaultValue: optionalString(item.defaultValue),
+        });
+    }
+    return fields;
+}
+
+function parseInstallerChoose(raw: unknown): PluginInstallerChoose | undefined | string {
+    if (raw === undefined) {
+        return undefined;
+    }
+    if (!isRecord(raw)) {
+        return "installer.choose must be an object";
+    }
+    const valueName = asTrimmed(raw.valueName);
+    if (!valueName) {
+        return "installer.choose.valueName is required";
+    }
+    const keepNames = Array.isArray(raw.keepNames)
+        ? raw.keepNames.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+        : [];
+    return {
+        valueName,
+        keepNames,
+        title: optionalString(raw.title),
+        line: optionalString(raw.line),
+    };
+}
+
 function parseInstaller(raw: unknown): PluginInstallerSpec | undefined | string {
     if (raw === undefined) {
         return undefined;
@@ -324,7 +384,41 @@ function parseInstaller(raw: unknown): PluginInstallerSpec | undefined | string 
     if (!stepId || !label || !title || !line || sort === null) {
         return "installer requires stepId, sort, label, title, and line";
     }
-    return {stepId, sort, label, title, line};
+    const fields = parseInstallerFields(raw.fields);
+    if (typeof fields === "string") {
+        return fields;
+    }
+    const choose = parseInstallerChoose(raw.choose);
+    if (typeof choose === "string") {
+        return choose;
+    }
+    return {stepId, sort, label, title, line, fields, choose};
+}
+
+function parseNotices(raw: unknown): Record<string, PluginNotice> | undefined | string {
+    if (raw === undefined) {
+        return undefined;
+    }
+    if (!isRecord(raw)) {
+        return "notices must be an object";
+    }
+    const notices: Record<string, PluginNotice> = {};
+    for (const [key, value] of Object.entries(raw)) {
+        if (!/^[a-z][a-z0-9_]*$/.test(key)) {
+            return `notices.${key} is not a valid notice id`;
+        }
+        if (!isRecord(value)) {
+            return `notices.${key} must be an object`;
+        }
+        const tone = asTrimmed(value.tone);
+        const title = asTrimmed(value.title);
+        const body = asTrimmed(value.body) ?? "";
+        if (!tone || !NOTICE_TONES.has(tone) || !title) {
+            return `notices.${key} requires tone and title`;
+        }
+        notices[key] = {tone: tone as PluginNotice["tone"], title, body};
+    }
+    return notices;
 }
 
 function parseCompat(raw: unknown): PluginCompat | undefined | string {
@@ -403,6 +497,10 @@ export function parsePluginManifest(raw: unknown): ManifestResult {
     if (typeof installer === "string") {
         return {ok: false, error: installer};
     }
+    const notices = parseNotices(raw.notices);
+    if (typeof notices === "string") {
+        return {ok: false, error: notices};
+    }
     for (const page of pages) {
         if (page.public && !permissions.publicPages) {
             return {ok: false, error: `page "${page.id}" is public but permissions.publicPages is not set`};
@@ -431,6 +529,7 @@ export function parsePluginManifest(raw: unknown): ManifestResult {
             compat,
             installer,
             hostModule: optionalString(raw.hostModule),
+            notices,
         },
     };
 }

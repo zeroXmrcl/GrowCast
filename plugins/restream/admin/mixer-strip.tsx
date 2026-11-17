@@ -1,9 +1,7 @@
 "use client";
 
 import {useState, type FormEvent} from "react";
-import {saveProgramAudioAction} from "@/plugins/restream/admin/actions";
-import {AdminImmediateForm} from "@/app/admin/admin-save-form";
-import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
+import {AdminButton, AdminField, AdminInput, PluginImmediateForm} from "@/lib/plugins/admin-kit";
 import {publishAdminNotice} from "@/lib/admin/publish-notice";
 import type {RestreamAudio} from "@/plugins/restream/host/audio";
 
@@ -47,7 +45,7 @@ export function MixerStrip({audio}: {audio: RestreamAudio}) {
 
     return (
         <div className="space-y-3">
-            <AdminImmediateForm action={saveProgramAudioAction} className="flex flex-wrap items-end gap-3">
+            <PluginImmediateForm actionPath="program-audio" className="flex flex-wrap items-end gap-3">
                 <label className="flex h-10 items-center gap-2 text-sm font-medium text-(--admin-text)">
                     <input
                         type="checkbox"
@@ -73,7 +71,7 @@ export function MixerStrip({audio}: {audio: RestreamAudio}) {
                 <AdminButton type="submit" tone="secondary">
                     Apply
                 </AdminButton>
-            </AdminImmediateForm>
+            </PluginImmediateForm>
             {audio.url ? (
                 <p className="text-xs text-(--admin-muted)">{audio.url}</p>
             ) : null}

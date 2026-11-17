@@ -58,6 +58,46 @@ function publicNameLabel(refs: Map<string, EnergyActuatorRef>, key: string): {na
     return {name: "Device", label: id};
 }
 
+export type EnergyNowDevice = {
+    name: string;
+    label: string;
+    kind: EnergyActuatorRef["kind"];
+    watts: number;
+};
+
+export function nowDeviceRowsFromSnapshot(
+    live: GgsLiveIngest | null,
+    overrides: Parameters<typeof lookupWatts>[0]["overrides"],
+): EnergyNowDevice[] {
+    if (!live) {
+        return [];
+    }
+    const rows: EnergyNowDevice[] = [];
+    for (const device of live.devices) {
+        for (const actuator of device.actuators) {
+            if (!actuatorCountsTowardEnergy(actuator)) {
+                continue;
+            }
+            const watts = lookupWatts({
+                key: actuatorKey(device.serial, actuator.id),
+                kind: actuator.kind,
+                id: actuator.id,
+                level: String(actuator.level),
+                on: true,
+                overrides,
+            });
+            rows.push({
+                name: device.name,
+                label: actuatorLabel(actuator),
+                kind: actuator.kind,
+                watts: Math.round(watts),
+            });
+        }
+    }
+    rows.sort((a, b) => b.watts - a.watts || a.name.localeCompare(b.name) || a.label.localeCompare(b.label));
+    return rows;
+}
+
 export function nowWattsFromSnapshot(
     live: GgsLiveIngest | null,
     overrides: Parameters<typeof lookupWatts>[0]["overrides"],

@@ -155,6 +155,7 @@ export type PluginManifest = {
     compat?: PluginCompat;
     installer?: PluginInstallerSpec;
     hostModule?: string;
+    notices?: Record<string, PluginNotice>;
 };
 
 export type DiscoveredPlugin = {
@@ -257,12 +258,36 @@ export type PluginMediaSources = {
     timelapseDir?: string;
 };
 
+export type PluginInstallerField = {
+    name: string;
+    label: string;
+    type?: "text" | "password" | "number";
+    required?: boolean;
+    autoComplete?: string;
+    defaultValue?: string;
+};
+
+export type PluginInstallerChoose = {
+    valueName: string;
+    keepNames: string[];
+    title?: string;
+    line?: string;
+};
+
+export type PluginNotice = {
+    tone: "success" | "warning" | "danger" | "neutral";
+    title: string;
+    body: string;
+};
+
 export type PluginInstallerSpec = {
     stepId: string;
     sort: number;
     label: string;
     title: string;
     line: string;
+    fields?: PluginInstallerField[];
+    choose?: PluginInstallerChoose;
 };
 
 export type PluginSetupResult =

@@ -1,24 +1,11 @@
 import {BroadcastToastSwitch} from "@/plugins/restream/admin/broadcast-toast-switch";
-import {AdminBand} from "@/app/admin/admin-band";
-import {AdminImmediateForm} from "@/app/admin/admin-save-form";
-import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
-import type {AdminActionResult} from "@/lib/admin/action-result";
+import {AdminBand, AdminButton, AdminField, AdminInput, PluginImmediateForm} from "@/lib/plugins/admin-kit";
 import type {RestreamPublicView} from "@/plugins/restream/host/store";
-
-type RestreamAction = (formData: FormData) => Promise<AdminActionResult>;
 
 export function RestreamPanel({
     view,
-    startAction,
-    stopAction,
-    saveToastAction,
-    saveKeyAction,
 }: {
     view: RestreamPublicView;
-    startAction: RestreamAction;
-    stopAction: RestreamAction;
-    saveToastAction: RestreamAction;
-    saveKeyAction: RestreamAction;
 }) {
     const status = view.status.state;
     const statusLabel =
@@ -41,21 +28,21 @@ export function RestreamPanel({
                     {view.hasKey ? "" : " — no stream key saved"}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                    <AdminImmediateForm action={startAction}>
+                    <PluginImmediateForm actionPath="twitch-start">
                         <AdminButton type="submit" tone="primary">
                             Start
                         </AdminButton>
-                    </AdminImmediateForm>
-                    <AdminImmediateForm action={stopAction}>
+                    </PluginImmediateForm>
+                    <PluginImmediateForm actionPath="twitch-stop">
                         <AdminButton type="submit" tone="secondary">
                             Stop
                         </AdminButton>
-                    </AdminImmediateForm>
+                    </PluginImmediateForm>
                 </div>
-                <AdminImmediateForm action={saveToastAction}>
+                <PluginImmediateForm actionPath="twitch-toast">
                     <BroadcastToastSwitch defaultChecked={view.toastEnabled}/>
-                </AdminImmediateForm>
-                <AdminImmediateForm action={saveKeyAction} className="space-y-3">
+                </PluginImmediateForm>
+                <PluginImmediateForm actionPath="twitch-key" className="space-y-3">
                     <AdminField label="Stream key">
                         <AdminInput
                             type="password"
@@ -75,7 +62,7 @@ export function RestreamPanel({
                     <AdminButton type="submit" tone="secondary">
                         Save key
                     </AdminButton>
-                </AdminImmediateForm>
+                </PluginImmediateForm>
             </div>
         </AdminBand>
     );

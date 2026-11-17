@@ -1,8 +1,27 @@
 import {isAdminAuthenticated} from "@/lib/admin-auth";
+import {getCurrentGrow} from "@/lib/db";
 import {isSameOriginRequest} from "@/lib/same-origin";
+import {
+    saveAlertsSettingsAction,
+    saveBroadcastToastAction,
+    saveProgramAudioAction,
+    saveProgramAudioUrlAction,
+    saveTwitchKeyAction,
+    startTwitchRestreamAction,
+    stopTwitchRestreamAction,
+} from "@/plugins/restream/admin/actions";
 import {applyCameraLook} from "@/plugins/restream/admin/apply-camera-look";
 import {applyMusicPost} from "@/plugins/restream/admin/apply-music-post";
 import {applyProgramAlert} from "@/plugins/restream/admin/apply-program-alert";
+import {readAlertsSettings} from "@/plugins/restream/host/alerts-settings";
+import {readRestreamAudio} from "@/plugins/restream/host/audio";
+import {
+    captureStreamUrl,
+    ensureRestreamCaptureToken,
+    isRestreamCaptureAuthorized,
+} from "@/plugins/restream/host/capture";
+import {listMusicFiles} from "@/plugins/restream/host/music-files";
+import {readTwitchOAuthFile} from "@/plugins/restream/host/twitch-oauth";
 import {eventsubNotificationResponse, ensureEventsubSubscriptionsOnBoot} from "@/plugins/restream/host/eventsub";
 import {programAlertsSseResponse} from "@/plugins/restream/host/overlay-alert-http";
 import {
@@ -10,7 +29,15 @@ import {
     programCameraGetResponse,
     programMusicGetResponse,
 } from "@/plugins/restream/host/program-http";
-import {broadcastGetResponse, hasRestreamKey, readRestreamChannel, readRestreamKey, saveRestreamKey, writeRestreamChannel} from "@/plugins/restream/host/store";
+import {
+    broadcastGetResponse,
+    hasRestreamKey,
+    readRestreamChannel,
+    readRestreamKey,
+    readRestreamPublicView,
+    saveRestreamKey,
+    writeRestreamChannel,
+} from "@/plugins/restream/host/store";
 import {isInvalidTypedChannelLogin, resolveChannelLogin, streamKeyForChannelLookup} from "@/plugins/restream/host/twitch-helix";
 import {cameraLookFilterCss, cameraLookTemperatureStyle} from "@/plugins/restream/host/camera-look";
 import {readCameraLook} from "@/plugins/restream/host/camera-look-store";
@@ -39,9 +66,37 @@ function json(body: unknown, status: number): Response {
     return Response.json(body, {status, headers: {"Cache-Control": "no-store"}});
 }
 
+function actionNotice(notice: string): Response {
+    const failed = /failed|missing|invalid|need_|too_many/.test(notice);
+    return noticeJson(notice, failed ? 400 : 200);
+}
+
 export async function handlePublic(request: Request, remainder: string): Promise<Response> {
     const pathName = remainder.replace(/^\/+|\/+$/g, "");
     const admin = await isAdminAuthenticated();
+    if (pathName === "scene") {
+        const token = new URL(request.url).searchParams.get("token") ?? undefined;
+        const expected = await ensureRestreamCaptureToken();
+        const capture = isRestreamCaptureAuthorized(expected, token);
+        if (!admin && !capture) {
+            return json({error: "Not found"}, 404);
+        }
+        const grow = await getCurrentGrow();
+        return json({
+            plant: grow.plant,
+            name: grow.name,
+            seededAt: grow.details.seededAt,
+            overlayLayout: grow.overlayLayout,
+            overlayScalePct: grow.overlayScalePct,
+            climateTick: grow.climateTick,
+            devicesDesign: grow.devicesDesign,
+            streamUrl: capture ? captureStreamUrl(grow.streamUrl) : grow.streamUrl,
+            stage: grow.details.stage,
+            lightSchedule: grow.details.lightSchedule,
+            strain: grow.details.strain,
+            captureToken: capture ? token : undefined,
+        }, 200);
+    }
     if (pathName === "broadcast") {
         return broadcastGetResponse();
     }
@@ -73,6 +128,49 @@ export async function handlePublic(request: Request, remainder: string): Promise
 
 export async function handleAction(request: Request, remainder: string): Promise<Response> {
     const pathName = remainder.replace(/^\/+|\/+$/g, "");
+    if (pathName === "admin-state" && request.method === "GET") {
+        if (!(await isAdminAuthenticated())) {
+            return json({error: "Unauthorized"}, 401);
+        }
+        const [restream, audio, alerts, oauth, look, musicFiles] = await Promise.all([
+            readRestreamPublicView(),
+            readRestreamAudio(),
+            readAlertsSettings(),
+            readTwitchOAuthFile(),
+            readCameraLook(),
+            listMusicFiles(),
+            ensureRestreamCaptureToken(),
+        ]);
+        return json({
+            restream,
+            audio,
+            alerts,
+            oauthLogin: oauth?.login ?? "",
+            look,
+            musicFiles,
+        }, 200);
+    }
+    if (pathName === "twitch-key" && request.method === "POST") {
+        return actionNotice((await saveTwitchKeyAction(await request.formData())).notice);
+    }
+    if (pathName === "twitch-toast" && request.method === "POST") {
+        return actionNotice((await saveBroadcastToastAction(await request.formData())).notice);
+    }
+    if (pathName === "twitch-start" && request.method === "POST") {
+        return actionNotice((await startTwitchRestreamAction(await request.formData())).notice);
+    }
+    if (pathName === "twitch-stop" && request.method === "POST") {
+        return actionNotice((await stopTwitchRestreamAction(await request.formData())).notice);
+    }
+    if (pathName === "program-audio" && request.method === "POST") {
+        return actionNotice((await saveProgramAudioAction(await request.formData())).notice);
+    }
+    if (pathName === "program-audio-url" && request.method === "POST") {
+        return actionNotice((await saveProgramAudioUrlAction(await request.formData())).notice);
+    }
+    if (pathName === "alerts" && request.method === "POST") {
+        return actionNotice((await saveAlertsSettingsAction(await request.formData())).notice);
+    }
     if (pathName === "camera-look" && request.method === "POST") {
         if (!isSameOriginRequest(request)) {
             return json({ok: false, reason: "cross_origin"}, 403);

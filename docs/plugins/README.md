@@ -7,9 +7,9 @@ First-party plugins (this repo):
 - `growcast.ggs` — Spider Farmer climate and tent energy
 - `growcast.timelapse` — snapshots and video
 - `growcast.restream` — Twitch program capture
-- `growcast.solar` — FENECON / vendor-agnostic solar split
+- `growcast.solar` — FENECON / vendor-agnostic solar split (Live / 24H / 7D / 30D / This Grow, tent-first view, dashboard and overlay widgets)
 
-Install: copy the folder into `plugins/`, open **Admin → Plugins**, read the warning, confirm the hash, enable. First-party plugins are **not** auto-enabled. GrowCast starts the backend through `docker-socket-proxy` (never a raw `docker.sock` mount). If files change, the plugin is paused until the new hash is confirmed.
+Install: copy the folder into `plugins/`, open **Admin → Plugins**, read the warning, confirm the hash, enable. First-party plugins are **not** auto-enabled. GrowCast starts the backend through `docker-plugin-proxy` (never a raw `docker.sock` mount). If files change, the plugin is paused until the new hash is confirmed. See [DOCKER-PROXY.md](./DOCKER-PROXY.md).
 
 Plugin pages live under `/p/<plugin>/...`. Admin pages under `/admin/plugins/<id>/...`. Core routes always win.
 

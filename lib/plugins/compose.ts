@@ -2,6 +2,7 @@ import {atomicWriteFile} from "@/lib/atomic-file";
 import {readPluginConfigForBackend} from "@/lib/plugins/config";
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {generatedComposeFile, pluginDataDir, pluginRuntimeEnvFile} from "@/lib/plugins/paths";
+import {pluginRuntimeImage} from "@/lib/plugins/docker-engine";
 import {pluginServiceName} from "@/lib/plugins/ids";
 import {listRegistryRecords, pluginIsActive} from "@/lib/plugins/registry";
 import {readPluginToken} from "@/lib/plugins/tokens";
@@ -23,19 +24,10 @@ function serviceBlock(plugin: DiscoveredPlugin, token: string): string {
         ...(runtime?.extraEnv ?? {}),
     };
     const header: string[] = [`  ${service}:`];
-    if (runtime?.type === "docker" || runtime?.dockerfile || runtime?.image) {
-        if (runtime.image) {
-            header.push(`    image: ${yamlQuote(runtime.image)}`);
-        } else {
-            header.push("    build:");
-            header.push(`      context: ./plugins/${folder}`);
-            header.push(`      dockerfile: ${runtime.dockerfile ?? "Dockerfile"}`);
-        }
-    } else if (runtime?.type === "python") {
-        header.push("    image: python:3.12-slim");
-    } else if (runtime?.type === "node") {
-        header.push("    image: node:24-alpine");
-    }
+    header.push(`    image: ${yamlQuote(pluginRuntimeImage(plugin))}`);
+    header.push(`    container_name: ${service}`);
+    header.push("    labels:");
+    header.push(`      growcast.plugin: ${yamlQuote(plugin.manifest.id)}`);
     header.push("    restart: unless-stopped");
     header.push('    user: "1001:1001"');
     header.push("    environment:");
@@ -48,9 +40,6 @@ function serviceBlock(plugin: DiscoveredPlugin, token: string): string {
     header.push("    volumes:");
     header.push(`      - ./plugins/${folder}:/plugin:ro`);
     header.push(`      - ./data/plugins/${plugin.manifest.id}:/data`);
-    for (const volume of runtime?.extraVolumes ?? []) {
-        header.push(`      - ${yamlQuote(volume)}`);
-    }
     header.push("    depends_on: [growcast]");
     if (runtime?.type === "python") {
         header.push("    working_dir: /plugin");

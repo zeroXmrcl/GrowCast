@@ -2,9 +2,15 @@ import {spawn} from "node:child_process";
 import path from "node:path";
 import {generatePluginsCompose} from "@/lib/plugins/compose";
 import {assertDockerHostIsProxy, assertPluginRuntimeTarget, dockerEngineBaseUrl} from "@/lib/plugins/docker-guard";
+import {
+    createPluginContainer,
+    removePluginContainer,
+    startPluginContainer,
+    stopPluginContainer,
+} from "@/lib/plugins/docker-engine";
 import {pluginServiceName} from "@/lib/plugins/ids";
 import {pluginLogger} from "@/lib/plugins/log";
-import {generatedComposeFile} from "@/lib/plugins/paths";
+import {readPluginToken} from "@/lib/plugins/tokens";
 
 export type PluginRuntimeAdapter = {
     start(serviceName: string): Promise<void>;
@@ -13,77 +19,36 @@ export type PluginRuntimeAdapter = {
 
 const children = new Map<string, ReturnType<typeof spawn>>();
 
-function composeDir(): string {
-    const override = process.env.GROWCAST_COMPOSE_DIR?.trim();
-    return override ? path.resolve(override) : process.cwd();
-}
-
-function dockerEnv(): NodeJS.ProcessEnv {
-    return {
-        ...process.env,
-        DOCKER_HOST: assertDockerHostIsProxy(process.env.DOCKER_HOST ?? "tcp://docker-socket-proxy:2375"),
-    };
-}
-
-function run(command: string, args: string[]): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const child = spawn(command, args, {
-            cwd: composeDir(),
-            stdio: "pipe",
-            env: dockerEnv(),
-        });
-        let stderr = "";
-        child.stderr?.on("data", (chunk) => {
-            stderr += String(chunk);
-        });
-        child.on("error", reject);
-        child.on("exit", (code) => {
-            if (code === 0) {
-                resolve();
-                return;
-            }
-            reject(new Error(stderr.trim() || `${command} exited ${code}`));
-        });
-    });
-}
-
-const dockerAdapter: PluginRuntimeAdapter = {
-    async start(serviceName) {
-        assertPluginRuntimeTarget(serviceName);
-        await generatePluginsCompose();
-        await run("docker", [
-            "compose",
-            "-f",
-            "docker-compose.yml",
-            "-f",
-            path.basename(generatedComposeFile()),
-            "up",
-            "-d",
-            "--no-deps",
-            "--no-build",
-            serviceName,
-        ]);
-    },
-    async stop(serviceName) {
-        assertPluginRuntimeTarget(serviceName);
-        await generatePluginsCompose();
-        await run("docker", [
-            "compose",
-            "-f",
-            "docker-compose.yml",
-            "-f",
-            path.basename(generatedComposeFile()),
-            "stop",
-            serviceName,
-        ]).catch(() => undefined);
-    },
-};
-
 async function discoveredForService(serviceName: string) {
     const {discoverPlugins} = await import("@/lib/plugins/discovery");
     const {plugins} = await discoverPlugins();
     return plugins.find((plugin) => pluginServiceName(plugin.manifest.id) === serviceName) ?? null;
 }
+
+const dockerAdapter: PluginRuntimeAdapter = {
+    async start(serviceName) {
+        assertPluginRuntimeTarget(serviceName);
+        assertDockerHostIsProxy(process.env.DOCKER_HOST ?? "tcp://docker-plugin-proxy:2375");
+        await generatePluginsCompose();
+        const discovered = await discoveredForService(serviceName);
+        if (!discovered) {
+            throw new Error(`Unknown plugin service ${serviceName}`);
+        }
+        const token = await readPluginToken(discovered.manifest.id);
+        if (!token) {
+            throw new Error(`No plugin token for ${discovered.manifest.id}`);
+        }
+        await stopPluginContainer(serviceName);
+        await removePluginContainer(serviceName);
+        await createPluginContainer(discovered, token);
+        await startPluginContainer(serviceName);
+    },
+    async stop(serviceName) {
+        assertPluginRuntimeTarget(serviceName);
+        await generatePluginsCompose();
+        await stopPluginContainer(serviceName).catch(() => undefined);
+    },
+};
 
 const processAdapter: PluginRuntimeAdapter = {
     async start(serviceName) {

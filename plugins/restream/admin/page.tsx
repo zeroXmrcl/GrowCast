@@ -1,33 +1,32 @@
-import {
-    saveBroadcastToastAction,
-    saveTwitchKeyAction,
-    startTwitchRestreamAction,
-    stopTwitchRestreamAction,
-} from "@/plugins/restream/admin/actions";
-import {AdminBand, AdminBandGroup} from "@/app/admin/admin-band";
+"use client";
+
+import {AdminBand, AdminBandGroup, usePluginAdminState} from "@/lib/plugins/admin-kit";
 import {AlertsPanel} from "@/plugins/restream/admin/alerts-panel";
 import {CameraLookPanel} from "@/plugins/restream/admin/camera-look-panel";
 import {MixerStrip} from "@/plugins/restream/admin/mixer-strip";
 import {MusicPanel} from "@/plugins/restream/admin/music-panel";
 import {ProgramMonitor} from "@/plugins/restream/admin/program-monitor";
 import {RestreamPanel} from "@/plugins/restream/admin/restream-panel";
-import {readAlertsSettings} from "@/plugins/restream/host/alerts-settings";
-import {readRestreamAudio} from "@/plugins/restream/host/audio";
-import {readCameraLook} from "@/plugins/restream/host/camera-look-store";
-import {ensureRestreamCaptureToken} from "@/plugins/restream/host/capture";
-import {listMusicFiles} from "@/plugins/restream/host/music-files";
-import {readRestreamPublicView} from "@/plugins/restream/host/store";
-import {readTwitchOAuthFile} from "@/plugins/restream/host/twitch-oauth";
+import type {AlertsSettings} from "@/plugins/restream/host/alerts-settings";
+import type {RestreamAudio} from "@/plugins/restream/host/audio";
+import type {CameraLook} from "@/plugins/restream/host/camera-look";
+import type {RestreamPublicView} from "@/plugins/restream/host/store";
 
-export default async function AdminStreamPage() {
-    const [restream, audio, alerts, oauth, look] = await Promise.all([
-        readRestreamPublicView(),
-        readRestreamAudio(),
-        readAlertsSettings(),
-        readTwitchOAuthFile(),
-        readCameraLook(),
-        ensureRestreamCaptureToken(),
-    ]);
+type RestreamAdminState = {
+    restream: RestreamPublicView;
+    audio: RestreamAudio;
+    alerts: AlertsSettings;
+    oauthLogin: string;
+    look: CameraLook;
+    musicFiles: string[];
+};
+
+export default function AdminStreamPage() {
+    const {data} = usePluginAdminState<RestreamAdminState>("admin-state");
+    if (!data) {
+        return <p className="text-sm text-(--admin-muted)">Loading Broadcast…</p>;
+    }
+    const {restream, audio, alerts, oauthLogin, look, musicFiles} = data;
 
     return (
         <AdminBandGroup>
@@ -37,22 +36,16 @@ export default async function AdminStreamPage() {
             <AdminBand id="mixer" title="Mixer">
                 <MixerStrip audio={audio}/>
             </AdminBand>
-            <RestreamPanel
-                view={restream}
-                startAction={startTwitchRestreamAction}
-                stopAction={stopTwitchRestreamAction}
-                saveToastAction={saveBroadcastToastAction}
-                saveKeyAction={saveTwitchKeyAction}
-            />
+            <RestreamPanel view={restream} />
             <CameraLookPanel look={look}/>
             <MusicPanel
-                files={await listMusicFiles()}
+                files={musicFiles}
                 url={audio.url}
                 waveSmoothPct={audio.waveSmoothPct}
                 musicLook={audio.musicLook}
                 waveBars={audio.waveBars}
             />
-            <AlertsPanel settings={alerts} twitchLogin={oauth?.login ?? ""}/>
+            <AlertsPanel settings={alerts} twitchLogin={oauthLogin} />
         </AdminBandGroup>
     );
 }

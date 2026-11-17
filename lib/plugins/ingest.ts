@@ -87,6 +87,12 @@ export async function ingestPluginPayload(
             err: error instanceof Error ? error.message : "unknown",
         });
     }
+    for (const key of Object.keys(discovered.manifest.metrics)) {
+        const value = liveNumbers[key];
+        if (typeof value === "number" && Number.isFinite(value)) {
+            metrics[key] = {value, observedAt: parsed.observedAt};
+        }
+    }
     await writePluginState({
         pluginId,
         observedAt: parsed.observedAt,

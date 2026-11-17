@@ -65,6 +65,8 @@ describe("solar allocation math", () => {
         }, "proportional");
         assert.equal(split.solarSupplyW, 400);
         assert.equal(split.tentFromSolarW, 100);
+        assert.equal(split.tentFromPvW, 25);
+        assert.equal(split.tentFromBatteryW, 75);
     });
 
     it("can treat battery discharge as grid when configured", () => {

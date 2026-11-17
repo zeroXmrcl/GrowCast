@@ -3,17 +3,18 @@ import {readFileSync} from "node:fs";
 import path from "node:path";
 import {describe, it} from "node:test";
 
-describe("docker socket proxy compose", () => {
+describe("docker plugin proxy compose", () => {
     const compose = readFileSync(path.join(process.cwd(), "docker-compose.yml"), "utf8");
     const dockerfile = readFileSync(path.join(process.cwd(), "Dockerfile"), "utf8");
+    const proxyDocker = readFileSync(
+        path.join(process.cwd(), "services", "docker-plugin-proxy", "Dockerfile"),
+        "utf8",
+    );
 
     it("does not mount raw docker.sock on the GrowCast container", () => {
-        assert.match(compose, /docker-socket-proxy:/);
-        assert.match(compose, /tecnativa\/docker-socket-proxy/);
-        assert.match(compose, /DOCKER_HOST: tcp:\/\/docker-socket-proxy:2375/);
-        assert.match(compose, /CONTAINERS: "1"/);
-        assert.match(compose, /POST: "1"/);
-        assert.match(compose, /BUILD: "0"/);
+        assert.match(compose, /docker-plugin-proxy:/);
+        assert.doesNotMatch(compose, /tecnativa\/docker-socket-proxy/);
+        assert.match(compose, /DOCKER_HOST: tcp:\/\/docker-plugin-proxy:2375/);
         const growcast = compose.split(/^  growcast:\s*$/m)[1] ?? "";
         assert.doesNotMatch(growcast, /\/var\/run\/docker\.sock/);
         assert.doesNotMatch(growcast, /DOCKER_GID/);
@@ -21,8 +22,18 @@ describe("docker socket proxy compose", () => {
         assert.match(compose, /\/var\/run\/docker\.sock:\/var\/run\/docker\.sock:ro/);
     });
 
-    it("keeps docker CLI in the image so compose can talk to DOCKER_HOST", () => {
-        assert.match(dockerfile, /docker-cli/);
-        assert.match(dockerfile, /docker-cli-compose/);
+    it("does not ship a Docker CLI in the GrowCast image", () => {
+        assert.doesNotMatch(dockerfile, /docker-cli/);
+        assert.doesNotMatch(dockerfile, /docker-cli-compose/);
+        assert.match(proxyDocker, /CMD \["node", "server.mjs"\]/);
+    });
+
+    it("does not create first-party plugin folders in the GrowCast entrypoint", () => {
+        const entrypoint = readFileSync(path.join(process.cwd(), "docker-entrypoint.sh"), "utf8");
+        assert.doesNotMatch(entrypoint, /plugins\/timelapse/);
+        assert.doesNotMatch(entrypoint, /growcast\.timelapse/);
+        assert.doesNotMatch(entrypoint, /growcast\.ggs/);
+        assert.doesNotMatch(entrypoint, /growcast\.solar/);
+        assert.doesNotMatch(entrypoint, /growcast\.restream/);
     });
 });

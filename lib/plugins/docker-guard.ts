@@ -4,6 +4,7 @@ const PLUGIN_SERVICE = /^plugin-[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const REFUSED_NAMES = new Set([
     "growcast",
     "docker-socket-proxy",
+    "docker-plugin-proxy",
     "plugin-host",
     "host",
 ]);
@@ -22,7 +23,7 @@ export function assertPluginRuntimeTarget(serviceName: string, pluginId?: string
 }
 
 export function assertDockerHostIsProxy(host: string): string {
-    const value = host.trim() || "tcp://docker-socket-proxy:2375";
+    const value = host.trim() || "tcp://docker-plugin-proxy:2375";
     if (value.startsWith("unix:") || value.includes("docker.sock") || value.startsWith("/")) {
         throw new Error("Refused: raw docker.sock is not allowed; use the docker socket proxy");
     }
@@ -30,12 +31,12 @@ export function assertDockerHostIsProxy(host: string): string {
 }
 
 export function dockerEngineBaseUrl(env: NodeJS.ProcessEnv = process.env): string {
-    const host = assertDockerHostIsProxy(env.DOCKER_HOST ?? "tcp://docker-socket-proxy:2375");
+    const host = assertDockerHostIsProxy(env.DOCKER_HOST ?? "tcp://docker-plugin-proxy:2375");
     if (host.startsWith("tcp://")) {
         return `http://${host.slice("tcp://".length)}`;
     }
     if (host.startsWith("http://") || host.startsWith("https://")) {
         return host;
     }
-    return "http://docker-socket-proxy:2375";
+    return "http://docker-plugin-proxy:2375";
 }

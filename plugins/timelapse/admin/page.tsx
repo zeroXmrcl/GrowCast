@@ -1,21 +1,24 @@
-import {saveTimelapseAction} from "@/plugins/timelapse/admin/actions";
-import {AdminBandGroup} from "@/app/admin/admin-band";
-import {AdminSaveForm} from "@/app/admin/admin-save-form";
+"use client";
+
+import {AdminBandGroup, PluginSaveForm, usePluginAdminState} from "@/lib/plugins/admin-kit";
 import {TimelapseSettingsFields} from "@/plugins/timelapse/admin/timelapse-fields";
-import {getTimelapseSettings} from "@/plugins/timelapse/host/timelapse-settings";
-import {readTimelapseRtsp} from "@/plugins/timelapse/host/timelapse-sidecar-env";
+import type {TimelapseSettings} from "@/plugins/timelapse/host/timelapse-settings";
 
-export default async function AdminTimelapsePage() {
-    const [timelapseSettings, rtspStream] = await Promise.all([
-        getTimelapseSettings(),
-        readTimelapseRtsp().catch(() => ""),
-    ]);
+type TimelapseAdminState = {
+    timelapseSettings: TimelapseSettings;
+    rtspStream: string;
+};
 
+export default function AdminTimelapsePage() {
+    const {data, reload} = usePluginAdminState<TimelapseAdminState>("admin-state");
+    if (!data) {
+        return <p className="text-sm text-(--admin-muted)">Loading Timelapse…</p>;
+    }
     return (
         <AdminBandGroup>
-            <AdminSaveForm action={saveTimelapseAction}>
-                <TimelapseSettingsFields timelapseSettings={timelapseSettings} rtspStream={rtspStream}/>
-            </AdminSaveForm>
+            <PluginSaveForm actionPath="settings" onSaved={reload}>
+                <TimelapseSettingsFields timelapseSettings={data.timelapseSettings} rtspStream={data.rtspStream}/>
+            </PluginSaveForm>
         </AdminBandGroup>
     );
 }

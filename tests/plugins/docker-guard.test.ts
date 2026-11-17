@@ -14,6 +14,7 @@ describe("plugin docker supervisor target", () => {
         assert.equal(isPluginContainerName("plugin-community-example"), true);
         assert.equal(isPluginContainerName("growcast"), false);
         assert.equal(isPluginContainerName("docker-socket-proxy"), false);
+        assert.equal(isPluginContainerName("docker-plugin-proxy"), false);
         assert.equal(isPluginContainerName("plugin-host"), false);
         assert.equal(isPluginContainerName("../growcast"), false);
         assert.equal(isPluginContainerName("plugin-GrowCast-ggs"), false);
@@ -22,6 +23,7 @@ describe("plugin docker supervisor target", () => {
     it("refuses start/stop of the GrowCast website and the proxy", () => {
         assert.throws(() => assertPluginRuntimeTarget("growcast"), /Refused/);
         assert.throws(() => assertPluginRuntimeTarget("docker-socket-proxy"), /Refused/);
+        assert.throws(() => assertPluginRuntimeTarget("docker-plugin-proxy"), /Refused/);
         assert.throws(
             () => assertPluginRuntimeTarget("plugin-growcast-ggs", "growcast.timelapse"),
             /does not match/,
@@ -34,11 +36,11 @@ describe("plugin docker supervisor target", () => {
     it("points the Engine client at the socket proxy by default", () => {
         assert.equal(
             dockerEngineBaseUrl({}),
-            "http://docker-socket-proxy:2375",
+            "http://docker-plugin-proxy:2375",
         );
         assert.equal(
-            dockerEngineBaseUrl({DOCKER_HOST: "tcp://docker-socket-proxy:2375"}),
-            "http://docker-socket-proxy:2375",
+            dockerEngineBaseUrl({DOCKER_HOST: "tcp://docker-plugin-proxy:2375"}),
+            "http://docker-plugin-proxy:2375",
         );
         assert.throws(
             () => assertDockerHostIsProxy("unix:///var/run/docker.sock"),

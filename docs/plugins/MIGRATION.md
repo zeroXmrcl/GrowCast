@@ -91,30 +91,32 @@ git pull --ff-only origin feat/plugin-system
 git log -1 --oneline
 ```
 
-Build plugin UI (ES modules under `plugins/*/ui/dist`) and the website image on the host. The GrowCast container does **not** mount `/var/run/docker.sock`; it talks to `docker-socket-proxy`. Plugin images are built here, on the host:
+Build plugin UI (ES modules under `plugins/*/ui/dist`), plugin host bundles (`plugins/*/host/dist`), and the website image on the host. The GrowCast container does **not** mount `/var/run/docker.sock`; it talks to in-repo `docker-plugin-proxy`. That proxy allowlists list/inspect/start/stop/restart/logs (and a checked create/delete) for containers labeled `growcast.plugin=<id>`. See [DOCKER-PROXY.md](./DOCKER-PROXY.md). Plugin images are built here, on the host:
 
 ```bash
 npm ci
 npm run build:plugin-runtime
+npm run build:plugin-host
 npm run build:plugin-ui
-docker compose build growcast
+docker compose build growcast docker-plugin-proxy
 ```
 
-After first enable, generated plugin services appear in `compose.plugins.generated.yml`. Build those images on the host **after** enable, or pre-build from the plugin Dockerfiles:
+Set `GROWCAST_HOST_PROJECT` to this directory (the engine bind-mounts host paths). After first enable, generated plugin services appear in `compose.plugins.generated.yml` for operators; GrowCast does not run `docker compose` against it. Pre-build plugin images from the plugin Dockerfiles:
 
 ```bash
+export GROWCAST_HOST_PROJECT="$(pwd)"
 docker build -t growcast-plugin-ggs:local plugins/ggs
 docker build -t growcast-plugin-timelapse:local plugins/timelapse
 docker build -t growcast-plugin-restream:local plugins/restream
 docker build -t growcast-plugin-solar:local plugins/solar
 ```
 
-The supervisor starts/stops plugin containers only (`plugin-<id>`). It cannot build, and it will refuse `growcast` and `docker-socket-proxy`.
+The supervisor starts/stops plugin containers only (`plugin-<id>` with label `growcast.plugin=<id>`). It cannot exec, build, or manage images/networks/volumes, and it will refuse `growcast` and `docker-plugin-proxy`.
 
 Start the website (proxy + GrowCast). Plugins stay off until Admin enable:
 
 ```bash
-docker compose up -d docker-socket-proxy growcast
+GROWCAST_HOST_PROJECT="$(pwd)" docker compose up -d docker-plugin-proxy growcast
 docker compose ps
 docker compose logs -n 80 growcast
 ```
@@ -177,11 +179,10 @@ Do this **immediately** after apply. Until enable:
 - Restream capture/program/EventSub stay off.
 - Solar public tiles stay empty.
 
-Then, on the host, start plugin containers if GrowCast has written `compose.plugins.generated.yml`:
+GrowCast starts each plugin container through `docker-plugin-proxy` when you enable it. You do not need to run `docker compose` against `compose.plugins.generated.yml`; that file is an operator snapshot of the intended services.
 
 ```bash
-docker compose -f docker-compose.yml -f compose.plugins.generated.yml up -d --no-build
-docker compose -f docker-compose.yml -f compose.plugins.generated.yml ps
+docker ps --filter label=growcast.plugin
 ```
 
 ## 5. Verification checklist

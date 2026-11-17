@@ -10,44 +10,102 @@
   "runtime": {
     "type": "docker",
     "dockerfile": "Dockerfile",
-    "command": ["/bin/sh", "/app/run.sh"],
-    "extraVolumes": [
-      "./plugins/timelapse/snapshots:/app/GrowCast-Timelapse/snapshots",
-      "./plugins/timelapse/timelapse:/app/GrowCast-Timelapse/timelapse",
-      "./data:/host-data:ro"
+    "image": "growcast-plugin-timelapse:local",
+    "command": [
+      "/bin/sh",
+      "/app/run.sh"
     ]
   },
-  "ui": { "entry": "ui/dist/index.js", "sdk": "^1.0.0" },
+  "ui": {
+    "entry": "ui/dist/index.js",
+    "sdk": "^1.0.0"
+  },
   "pages": [
-    { "id": "gallery", "path": "gallery", "title": "Gallery", "nav": "site", "public": true },
+    {
+      "id": "gallery",
+      "path": "gallery",
+      "title": "Gallery",
+      "nav": "site",
+      "public": true
+    },
     {
       "id": "admin",
       "path": "",
       "title": "Timelapse",
       "nav": "admin",
       "bands": [
-        { "id": "capture", "label": "Capture" },
-        { "id": "triggers", "label": "Triggers" },
-        { "id": "output", "label": "Output" }
+        {
+          "id": "capture",
+          "label": "Capture"
+        },
+        {
+          "id": "triggers",
+          "label": "Triggers"
+        },
+        {
+          "id": "output",
+          "label": "Output"
+        }
       ]
     }
   ],
   "widgets": [
-    { "id": "archive-media", "title": "Archived snapshots", "slots": ["archive"] }
+    {
+      "id": "archive-media",
+      "title": "Archived snapshots",
+      "slots": [
+        "archive"
+      ]
+    }
   ],
-  "permissions": { "network": "lan", "media": true, "publicPages": true },
+  "permissions": {
+    "network": "lan",
+    "media": true,
+    "publicPages": true
+  },
   "installer": {
     "stepId": "timelapse",
     "sort": 40,
     "label": "Timelapse",
     "title": "Point it at the camera",
-    "line": "Use the camera’s local rtsp:// address."
+    "line": "Use the camera’s local rtsp:// address.",
+    "fields": [
+      {
+        "name": "rtspStream",
+        "label": "Camera address",
+        "required": true,
+        "autoComplete": "off"
+      },
+      {
+        "name": "interval",
+        "label": "Interval (minutes)",
+        "required": true,
+        "defaultValue": "15",
+        "autoComplete": "off"
+      },
+      {
+        "name": "timezone",
+        "label": "Timezone",
+        "required": false,
+        "defaultValue": "UTC",
+        "autoComplete": "off"
+      }
+    ]
   },
   "hostModule": "host/index.ts",
-  "exports": { "gallery": true },
-  "compat": { "meshSettings": true },
+  "exports": {
+    "gallery": true
+  },
+  "compat": {
+    "meshSettings": true
+  },
   "config": {
-    "intervalS": { "type": "integer", "min": 60, "max": 86400, "default": 900 }
+    "intervalS": {
+      "type": "integer",
+      "min": 60,
+      "max": 86400,
+      "default": 900
+    }
   },
   "metrics": {}
 }

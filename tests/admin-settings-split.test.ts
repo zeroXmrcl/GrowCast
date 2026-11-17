@@ -71,6 +71,7 @@ describe("admin settings split", () => {
         const lookHud = src(path.join("plugins", "restream", "ui", "program-camera-look.tsx"));
         const monitor = src(path.join("plugins", "restream", "admin", "program-monitor.tsx"));
         const streamPage = src(path.join("plugins", "restream", "admin", "page.tsx"));
+        const host = src(path.join("plugins", "restream", "host", "index.ts"));
         assert.match(lookHud, /overlayStream="include"/);
         assert.match(scene, /ProgramCameraLook/);
         assert.match(scene, /lockStream/);
@@ -88,7 +89,7 @@ describe("admin settings split", () => {
         assert.doesNotMatch(streamPage, /capture\.token/);
         assert.doesNotMatch(streamPage, /GROWCAST_RESTREAM_TOKEN/);
         assert.doesNotMatch(programPage, /token/i);
-        assert.match(streamPage, /ensureRestreamCaptureToken/);
+        assert.match(host, /ensureRestreamCaptureToken/);
         assert.match(streamPage, /RestreamPanel/);
     });
 
@@ -126,10 +127,12 @@ describe("admin settings split", () => {
 
     it("points Twitch Start at Stream and does not require a token in .env.local", () => {
         const notice = src(path.join("app", "admin", "admin-notice.tsx"));
+        const pluginNotices = src(path.join("plugins", "restream", "plugin.json"));
         const readme = src("README.md");
         const restreamReadme = src(path.join("plugins", "restream", "README.md"));
         assert.doesNotMatch(notice, /compose profile twitch/);
-        assert.match(notice, /plugin container is running/);
+        assert.doesNotMatch(notice, /plugin container is running/);
+        assert.match(pluginNotices, /plugin container is running/);
         assert.match(readme, /\/admin\/plugins\/growcast\.restream/);
         assert.match(readme, /capture\.token/);
         assert.match(readme, /optional override/);

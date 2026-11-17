@@ -1,4 +1,3 @@
-import type {AdminNoticeId} from "@/lib/admin/notice";
 import {writeSpiderFarmerBrokerEnv} from "@/plugins/ggs/host/ggs-sidecar-env";
 import {ensureMeshToken} from "@/lib/mesh-token";
 import {
@@ -16,7 +15,7 @@ import {
 export type SpiderFarmerSetupResult =
     | {ok: true; account: string; serial: string; name: string}
     | {ok: false; choose: SpiderFarmerController[]}
-    | {ok: false; notice: AdminNoticeId};
+    | {ok: false; notice: string};
 
 function normalizeSerial(value: string): string {
     return value.replace(/:/g, "").toUpperCase();

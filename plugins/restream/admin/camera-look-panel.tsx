@@ -1,8 +1,7 @@
 "use client";
 
 import {useState} from "react";
-import {AdminBand} from "@/app/admin/admin-band";
-import {AdminButton} from "@/components/admin/ui";
+import {AdminBand, AdminButton} from "@/lib/plugins/admin-kit";
 import {publishAdminNotice} from "@/lib/admin/publish-notice";
 import {
     CAMERA_LOOK_DRAFT_EVENT,

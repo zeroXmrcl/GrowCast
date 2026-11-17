@@ -21,7 +21,7 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-RUN apk add --no-cache su-exec docker-cli docker-cli-compose \
+RUN apk add --no-cache su-exec \
     && addgroup -g 1001 -S growcast \
     && adduser -S -u 1001 -G growcast growcast
 

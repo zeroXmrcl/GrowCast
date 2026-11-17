@@ -1,8 +1,4 @@
-import {saveProgramAudioUrlAction} from "@/plugins/restream/admin/actions";
-import {AdminBand} from "@/app/admin/admin-band";
-import {AdminFetchForm} from "@/app/admin/admin-fetch-form";
-import {AdminImmediateForm} from "@/app/admin/admin-save-form";
-import {AdminButton, AdminField, AdminInput} from "@/components/admin/ui";
+import {AdminBand, AdminButton, AdminField, AdminInput, PluginFetchForm, PluginImmediateForm} from "@/lib/plugins/admin-kit";
 import WaveBarsInput from "@/plugins/restream/ui/wave-bars-input";
 import WaveSmoothInput from "@/plugins/restream/ui/wave-smooth-input";
 import type {MusicLook} from "@/plugins/restream/host/program-music-wave";
@@ -25,7 +21,7 @@ export function MusicPanel({
     return (
         <AdminBand id="music" title="Music">
             <div className="space-y-4">
-                <AdminImmediateForm action={saveProgramAudioUrlAction} className="space-y-3">
+                <PluginImmediateForm actionPath="program-audio-url" className="space-y-3">
                     <AdminField label="Stream URL">
                         <AdminInput
                             name="url"
@@ -65,9 +61,9 @@ export function MusicPanel({
                     <AdminButton type="submit" tone="secondary">
                         Save URL
                     </AdminButton>
-                </AdminImmediateForm>
+                </PluginImmediateForm>
 
-                <AdminFetchForm
+                <PluginFetchForm
                     endpoint={MUSIC_ENDPOINT}
                     className="flex flex-col gap-3"
                 >
@@ -85,7 +81,7 @@ export function MusicPanel({
                     <AdminButton type="submit" tone="primary">
                         Upload
                     </AdminButton>
-                </AdminFetchForm>
+                </PluginFetchForm>
 
                 {files.length === 0 ? (
                     <p className="rounded-md border border-(--admin-border) bg-(--admin-surface) px-3 py-3 text-sm text-(--admin-muted)">
@@ -101,7 +97,7 @@ export function MusicPanel({
                                 <span className="truncate text-sm text-(--admin-text)" title={filename}>
                                     {filename}
                                 </span>
-                                <AdminFetchForm endpoint={MUSIC_ENDPOINT}>
+                                <PluginFetchForm endpoint={MUSIC_ENDPOINT}>
                                     <input type="hidden" name="intent" value="delete"/>
                                     <input type="hidden" name="filename" value={filename}/>
                                     <button
@@ -110,7 +106,7 @@ export function MusicPanel({
                                     >
                                         Delete
                                     </button>
-                                </AdminFetchForm>
+                                </PluginFetchForm>
                             </li>
                         ))}
                     </ul>

@@ -7,6 +7,7 @@ import {fileURLToPath, pathToFileURL} from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const nextHeadersStub = pathToFileURL(path.join(root, "tests/next-headers-stub.mjs")).href;
 const nextNavigationStub = pathToFileURL(path.join(root, "tests/next-navigation-stub.mjs")).href;
+const nextCacheStub = pathToFileURL(path.join(root, "tests/next-cache-stub.mjs")).href;
 
 export async function resolve(specifier, context, nextResolve) {
     if (specifier === "next/headers" || specifier === "next/headers.js") {
@@ -14,6 +15,9 @@ export async function resolve(specifier, context, nextResolve) {
     }
     if (specifier === "next/navigation" || specifier === "next/navigation.js") {
         return {url: nextNavigationStub, shortCircuit: true};
+    }
+    if (specifier === "next/cache" || specifier === "next/cache.js") {
+        return {url: nextCacheStub, shortCircuit: true};
     }
 
     let next = specifier;

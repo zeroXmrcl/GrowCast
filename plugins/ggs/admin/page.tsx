@@ -1,31 +1,30 @@
-import {saveEnergyAction} from "@/plugins/ggs/admin/actions";
-import {AdminBand, AdminBandGroup} from "@/app/admin/admin-band";
-import {AdminSaveForm} from "@/app/admin/admin-save-form";
+"use client";
+
+import {AdminBand, AdminBandGroup, PluginSaveForm, usePluginAdminState} from "@/lib/plugins/admin-kit";
 import {EnergySettingsFields} from "@/plugins/ggs/admin/energy-fields";
 import {SpiderFarmerLoginPanel} from "@/plugins/ggs/admin/spider-farmer-panel";
-import {readSpiderFarmerBrokerStatus} from "@/plugins/ggs/host/ggs-sidecar-env";
-import {readStoredControllers} from "@/plugins/ggs/host/controllers";
-import {energyActuatorRows, readEnergySettings} from "@/plugins/ggs/host/energy/settings";
-import {withStale} from "@/plugins/ggs/host/ggs-live";
-import {readGgsLive} from "@/plugins/ggs/host/ggs-live-store";
+import type {EnergyActuatorRow, EnergySettings} from "@/plugins/ggs/host/energy/settings";
+import type {SpiderFarmerBrokerStatus} from "@/plugins/ggs/host/ggs-sidecar-env";
+import type {SpiderFarmerController} from "@/plugins/ggs/host/spider-farmer-login";
 
-export default async function AdminGgsPage() {
-    const [energySettings, live, spiderFarmer, controllers] = await Promise.all([
-        readEnergySettings(),
-        readGgsLive(),
-        readSpiderFarmerBrokerStatus().catch(() => ({
-            configured: false,
-            account: null,
-            serial: null,
-            pathKind: "missing" as const,
-        })),
-        readStoredControllers(),
-    ]);
-    const view = live ? withStale(live) : null;
+type GgsAdminState = {
+    energySettings: EnergySettings;
+    energyActuators: EnergyActuatorRow[];
+    spiderFarmer: SpiderFarmerBrokerStatus;
+    controllers: SpiderFarmerController[];
+    live: {updatedAt?: string | null; online?: boolean; devices?: Array<{name: string; online: boolean}>} | null;
+};
+
+export default function AdminGgsPage() {
+    const {data, reload} = usePluginAdminState<GgsAdminState>("admin-state");
+    if (!data) {
+        return <p className="text-sm text-(--admin-muted)">Loading GGS…</p>;
+    }
+    const view = data.live;
 
     return (
         <AdminBandGroup>
-            <SpiderFarmerLoginPanel status={spiderFarmer} controllers={controllers}/>
+            <SpiderFarmerLoginPanel status={data.spiderFarmer} controllers={data.controllers}/>
             <AdminBand id="sidecar" title="Sidecar">
                 {view ? (
                     <div className="space-y-1 text-sm text-(--admin-text)">
@@ -37,7 +36,7 @@ export default async function AdminGgsPage() {
                 )}
             </AdminBand>
             <AdminBand id="devices" title="Devices">
-                {view && view.devices.length > 0 ? (
+                {view && view.devices && view.devices.length > 0 ? (
                     <ul className="space-y-2">
                         {view.devices.map((device, index) => (
                             <li key={`${device.name}-${index}`} className="text-sm text-(--admin-text)">
@@ -53,12 +52,12 @@ export default async function AdminGgsPage() {
                     <p className="text-sm text-(--admin-muted)">sidecar not reporting</p>
                 )}
             </AdminBand>
-            <AdminSaveForm action={saveEnergyAction}>
+            <PluginSaveForm actionPath="energy" onSaved={reload}>
                 <EnergySettingsFields
-                    energySettings={energySettings}
-                    energyActuators={energyActuatorRows(live, energySettings)}
+                    energySettings={data.energySettings}
+                    energyActuators={data.energyActuators}
                 />
-            </AdminSaveForm>
+            </PluginSaveForm>
         </AdminBandGroup>
     );
 }

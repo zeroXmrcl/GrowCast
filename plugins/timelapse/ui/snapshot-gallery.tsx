@@ -1,6 +1,6 @@
-import path from "node:path";
-import { getSnapshotFiles, SNAPSHOT_DIR } from "@/plugins/timelapse/host/extension-status";
-import {snapshotFileVersion, snapshotThumbSrc} from "@/lib/snapshot-thumb";
+"use client";
+
+import {useEffect, useState} from "react";
 import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
 
 export type SnapshotItem = {
@@ -16,18 +16,34 @@ type SnapshotGalleryProps = {
     sheet?: boolean;
 };
 
-async function loadLiveSnapshots(): Promise<SnapshotItem[]> {
-    const files = await getSnapshotFiles();
-
-    return Promise.all(files.map(async (name) => ({
-        name,
-        url: `/api/snapshots/${encodeURIComponent(name)}`,
-        version: await snapshotFileVersion(path.join(SNAPSHOT_DIR, name)),
-    })));
+function snapshotThumbSrc(url: string, version?: string): string {
+    const hashAt = url.indexOf("#");
+    const hash = hashAt === -1 ? "" : url.slice(hashAt);
+    const withoutHash = hashAt === -1 ? url : url.slice(0, hashAt);
+    const separator = withoutHash.includes("?") ? "&" : "?";
+    const versionQuery = version ? `&v=${encodeURIComponent(version)}` : "";
+    return `${withoutHash}${separator}thumb=1${versionQuery}${hash}`;
 }
 
-export default async function SnapshotGallery({ snapshots, sheet = false }: SnapshotGalleryProps = {}) {
-    const resolved = snapshots ?? (await loadLiveSnapshots());
+export default function SnapshotGallery({snapshots, sheet = false}: SnapshotGalleryProps = {}) {
+    const [live, setLive] = useState<SnapshotItem[] | null>(snapshots ?? null);
+
+    useEffect(() => {
+        if (snapshots) {
+            setLive(snapshots);
+            return;
+        }
+        void fetch("/api/data/plugins/timelapse/gallery-index", {cache: "no-store"})
+            .then((response) => (response.ok ? response.json() : null))
+            .then((raw) => {
+                if (raw && Array.isArray(raw.snapshots)) {
+                    setLive(raw.snapshots as SnapshotItem[]);
+                }
+            })
+            .catch(() => undefined);
+    }, [snapshots]);
+
+    const resolved = snapshots ?? live ?? [];
 
     if (resolved.length === 0) {
         return (

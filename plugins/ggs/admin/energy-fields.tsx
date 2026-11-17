@@ -1,5 +1,4 @@
-import {AdminBand} from "@/app/admin/admin-band";
-import {AdminField, AdminInput} from "@/components/admin/ui";
+import {AdminBand, AdminField, AdminInput} from "@/lib/plugins/admin-kit";
 import type {EnergyActuatorRow, EnergySettings} from "@/plugins/ggs/host/energy/settings";
 
 export function EnergySettingsFields({

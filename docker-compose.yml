@@ -1,24 +1,24 @@
-# Plugin backends are started by GrowCast from compose.plugins.generated.yml
-# (docker compose -f docker-compose.yml -f compose.plugins.generated.yml).
-# GrowCast never mounts /var/run/docker.sock. It talks to a restricted
-# docker-socket-proxy (tecnativa/docker-socket-proxy) that only allows
-# container inspect/start/stop (CONTAINERS+POST) plus NETWORKS and IMAGES so
-# `docker compose up --no-deps --no-build` can attach plugin containers.
-# BUILD is off: build plugin images on the host, then enable the plugin in Admin.
+# Plugin backends are started by GrowCast through docker-plugin-proxy.
+# GrowCast never mounts /var/run/docker.sock. The proxy allowlists
+# list/inspect/start/stop/restart/logs (and a checked create/delete)
+# for containers labeled growcast.plugin=<id> only.
+# compose.plugins.generated.yml is still written for operators; GrowCast
+# does not run docker compose against it.
 services:
-  docker-socket-proxy:
-    image: tecnativa/docker-socket-proxy:0.2.0
+  docker-plugin-proxy:
+    build:
+      context: ./services/docker-plugin-proxy
+      dockerfile: Dockerfile
+    image: growcast-docker-plugin-proxy:local
     restart: unless-stopped
     environment:
-      CONTAINERS: "1"
-      POST: "1"
-      NETWORKS: "1"
-      IMAGES: "1"
-      BUILD: "0"
-      EXEC: "0"
-      VOLUMES: "0"
+      GROWCAST_HOST_PROJECT: ${GROWCAST_HOST_PROJECT:-}
+      GROWCAST_PLUGIN_NETWORK: ${COMPOSE_PROJECT_NAME:-growcast}_default
+      GROWCAST_PLUGIN_IMAGES: ${GROWCAST_PLUGIN_IMAGES:-growcast-plugin-ggs:local,growcast-plugin-timelapse:local,growcast-plugin-restream:local,growcast-plugin-solar:local}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - "2375"
 
   growcast:
     image: 0xmrcl/growcast:latest
@@ -27,7 +27,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - docker-socket-proxy
+      - docker-plugin-proxy
     ports:
       - "${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}:3000"
     env_file:
@@ -42,13 +42,13 @@ services:
       GROWCAST_BIND: ${GROWCAST_BIND:-127.0.0.1}
       GROWCAST_PORT: ${GROWCAST_PORT:-3000}
       GROWCAST_COMPOSE_DIR: /host-project
+      GROWCAST_HOST_PROJECT: ${GROWCAST_HOST_PROJECT:-}
+      GROWCAST_PLUGIN_NETWORK: ${COMPOSE_PROJECT_NAME:-growcast}_default
       GROWCAST_PLUGIN_RUNTIME: docker
-      DOCKER_HOST: tcp://docker-socket-proxy:2375
+      DOCKER_HOST: tcp://docker-plugin-proxy:2375
     volumes:
       - ./data:/app/data
       - ./plugins:/app/plugins:ro
       - ./public/setup:/app/public/setup
       - ./public/yourPictures:/app/public/yourPictures
       - ./:/host-project
-      - ./plugins/timelapse/snapshots:/app/plugins/timelapse/snapshots
-      - ./plugins/timelapse/timelapse:/app/plugins/timelapse/timelapse

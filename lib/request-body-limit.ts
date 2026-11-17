@@ -30,7 +30,7 @@ export function maxBodyBytesFor(method: string, pathname: string): number {
         if (path === MEDIA_PATH) {
             return MEDIA_MAX_BODY_BYTES;
         }
-        if (path === MUSIC_PATH) {
+        if (path === MUSIC_PATH || (path.startsWith("/api/plugins/v1/") && path.endsWith("/x/music"))) {
             return MUSIC_MAX_BODY_BYTES;
         }
     }
@@ -59,7 +59,7 @@ export function payloadTooLargeResponse(method: string, pathname: string): Respo
         if (path === MEDIA_PATH) {
             return noticeJson("media_payload_too_large", 413);
         }
-        if (path === MUSIC_PATH) {
+        if (path === MUSIC_PATH || (path.startsWith("/api/plugins/v1/") && path.endsWith("/x/music"))) {
             return noticeJson("music_payload_too_large", 413);
         }
     }

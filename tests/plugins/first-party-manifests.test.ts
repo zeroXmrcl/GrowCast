@@ -45,10 +45,14 @@ describe("first-party plugin.json files", () => {
         const mount = readFileSync(path.join(process.cwd(), "components", "plugin-mount.tsx"), "utf8");
         const map = readFileSync(path.join(process.cwd(), "components", "plugin-import-map.tsx"), "utf8");
         assert.match(mount, /webpackIgnore: true/);
+        assert.match(mount, /turbopackIgnore: true/);
         assert.match(mount, /pluginAssetUrl/);
-        assert.match(mount, /web-component/);
+        assert.match(mount, /webComponent/);
+        assert.match(mount, /createRoot/);
         assert.doesNotMatch(mount, /FIRST_PARTY/);
         assert.doesNotMatch(mount, /from ['"]@\/plugins\//);
         assert.match(map, /type="importmap"/);
+        const hostLoader = readFileSync(path.join(process.cwd(), "lib", "plugins", "first-party.ts"), "utf8");
+        assert.doesNotMatch(hostLoader, /@\/plugins\//);
     });
 });

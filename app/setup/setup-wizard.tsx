@@ -16,7 +16,7 @@ import {PasswordLine} from "@/app/setup/password-line";
 import {SetupCodeInput} from "@/app/setup/setup-code-input";
 import {passwordLineMet} from "./password-meter";
 import {normalizeUsernameInput, validateUsernameInput} from "@/lib/admin-username";
-import {ClimateControllerPicker, PluginSetupFields} from "@/lib/plugins/setup-ui";
+import {PluginChoicePicker, PluginSetupFields} from "@/lib/plugins/setup-ui";
 import {installerDoneRows, type InstallerPlanStep} from "@/lib/plugins/installer-plan";
 import type {InstallerProgress} from "@/lib/plugins/installer-plan";
 import {SETUP_CODE_LENGTH} from "@/lib/setup-code";
@@ -38,18 +38,15 @@ function nextAfter(plan: InstallerPlanStep[], currentId: string): string {
     return plan[idx + 1]?.id ?? "done";
 }
 
+function keepLine(keepValues: Record<string, string>): string {
+    const email = Object.entries(keepValues).find(([name, value]) => /email/i.test(name) && value)?.[1];
+    return email ? `Signed in as ${email}.` : "";
+}
+
 function stepCopy(
     step: WizardStep,
     plan: InstallerPlanStep[],
 ): {eyebrow: string; title: string; line: string} {
-    if (step === "climate-list") {
-        const climate = plan.find((item) => item.id === "climate");
-        return {
-            eyebrow: climate?.label ?? "Climate",
-            title: "Choose the controller",
-            line: "",
-        };
-    }
     if (step === "done") {
         return INSTALLER_COPY.done;
     }
@@ -94,14 +91,21 @@ export function SetupWizard({initial}: {initial: InstallerProgress}) {
     const [codeInvalid, setCodeInvalid] = useState(false);
     const [username, setUsername] = useState(initial.username);
     const [password, setPassword] = useState("");
-    const [sfEmail, setSfEmail] = useState("");
-    const [sfPassword, setSfPassword] = useState("");
     const [controllers, setControllers] = useState<ControllerChoice[]>([]);
     const [selectedSerial, setSelectedSerial] = useState("");
+    const [chooseFor, setChooseFor] = useState<string | null>(null);
+    const [keepValues, setKeepValues] = useState<Record<string, string>>({});
     const [streamUrl, setStreamUrl] = useState("");
 
-    const copy = stepCopy(step, plan);
-    const line = step === "climate-list" ? `Signed in as ${sfEmail}.` : copy.line;
+    const chooseStep = plan.find((item) => item.id === chooseFor);
+    const copy = chooseFor
+        ? {
+            eyebrow: chooseStep?.label ?? "Setup",
+            title: chooseStep?.choose?.title ?? "Choose one",
+            line: chooseStep?.choose?.line || keepLine(keepValues),
+        }
+        : stepCopy(step, plan);
+    const line = copy.line;
     const adminReady = validateUsernameInput(normalizeUsernameInput(username))
         && passwordLineMet(password);
     const codeReady = setupCode.replace(/[^a-z0-9]/gi, "").length === SETUP_CODE_LENGTH;
@@ -191,7 +195,8 @@ export function SetupWizard({initial}: {initial: InstallerProgress}) {
                 return;
             }
             setSkipped((prev) => (prev.includes(id) ? prev : [...prev, id]));
-            await go(nextAfter(plan, id === "climate-list" ? "climate" : id), false);
+            setChooseFor(null);
+            await go(nextAfter(plan, id), false);
         });
     }
 
@@ -251,12 +256,18 @@ export function SetupWizard({initial}: {initial: InstallerProgress}) {
         const stepId = String(new FormData(form).get("stepId") ?? step);
         await runLocked(async () => {
             const formData = new FormData(form);
-            if (stepId === "climate") {
-                setSfEmail(String(formData.get("sfEmail") ?? ""));
-                setSfPassword(String(formData.get("sfPassword") ?? ""));
+            const planStep = plan.find((item) => item.id === stepId);
+            const keepNames = planStep?.choose?.keepNames ?? [];
+            if (keepNames.length > 0) {
+                const nextKeep: Record<string, string> = {};
+                for (const name of keepNames) {
+                    nextKeep[name] = String(formData.get(name) ?? "");
+                }
+                setKeepValues(nextKeep);
             }
             const result = await setupPluginAction(formData);
             if (result.ok) {
+                setChooseFor(null);
                 setDetails((prev) => ({...prev, [stepId]: result.detail ?? prev[stepId] ?? "Saved"}));
                 markFinished(stepId);
                 await go(nextAfter(plan, stepId), true);
@@ -265,7 +276,7 @@ export function SetupWizard({initial}: {initial: InstallerProgress}) {
             if (result.choose?.length) {
                 setControllers(result.choose);
                 setSelectedSerial(result.choose[0]?.serial ?? "");
-                await go("climate-list", true);
+                setChooseFor(stepId);
                 return;
             }
             setMessage(result.message);
@@ -298,7 +309,7 @@ export function SetupWizard({initial}: {initial: InstallerProgress}) {
             }}
         >
             <InstallerRail
-                current={step === "climate-list" ? "climate" : step}
+                current={chooseFor ?? step}
                 finished={finished}
                 steps={railSteps}
             />
@@ -394,9 +405,10 @@ export function SetupWizard({initial}: {initial: InstallerProgress}) {
                         </form>
                     ) : null}
 
-                    {pluginStep ? (
+                    {pluginStep && !chooseFor ? (
                         <PluginSetupFields
                             stepId={pluginStep.id}
+                            fields={pluginStep.fields}
                             locked={locked}
                             saveClass={saveClass}
                             saveLabel={saveLabel}
@@ -405,11 +417,12 @@ export function SetupWizard({initial}: {initial: InstallerProgress}) {
                         />
                     ) : null}
 
-                    {step === "climate-list" ? (
-                        <ClimateControllerPicker
-                            email={sfEmail}
-                            password={sfPassword}
-                            controllers={controllers}
+                    {chooseFor ? (
+                        <PluginChoicePicker
+                            stepId={chooseFor}
+                            keepValues={keepValues}
+                            valueName={chooseStep?.choose?.valueName ?? "serial"}
+                            choices={controllers}
                             selected={selectedSerial}
                             onSelect={setSelectedSerial}
                             locked={locked}

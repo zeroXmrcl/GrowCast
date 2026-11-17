@@ -63,6 +63,7 @@ __pycache__/
 /plugins/timelapse/snapshots/
 /plugins/timelapse/timelapse/
 /plugins/**/ui/node_modules/
+/plugins/**/host/dist/
 /plugins/**/__pycache__/
 .superpowers/
 .worktrees/

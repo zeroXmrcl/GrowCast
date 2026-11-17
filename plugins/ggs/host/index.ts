@@ -1,7 +1,11 @@
 import {isAdminAuthenticated} from "@/lib/admin-auth";
+import {noticeJson} from "@/lib/admin/notice-response";
 import {berlinDateOnly, berlinDateWindow} from "@/lib/berlin-date";
 import {airVpdKPa} from "@/lib/air-vpd";
 import {PLUGIN_API_VERSION, type PluginHostModule, type PluginIngestBody} from "@/lib/plugins/types";
+import {connectSpiderFarmerAction, saveEnergyAction} from "@/plugins/ggs/admin/actions";
+import {energyActuatorRows, readEnergySettings} from "@/plugins/ggs/host/energy/settings";
+import {readStoredControllers} from "@/plugins/ggs/host/controllers";
 import {accrueEnergyOnIngest} from "@/plugins/ggs/host/energy/accrue";
 import {recordClimateOnIngestBestEffort} from "@/plugins/ggs/host/climate/writer";
 import {parseIngestBody, withStale, type GgsLiveIngest} from "@/plugins/ggs/host/ggs-live";
@@ -50,17 +54,57 @@ export async function onIngest(input: Parameters<NonNullable<PluginHostModule["o
         /* energy is best-effort on the live path */
     }
     try {
-        const {nowWattsFromSnapshot} = await import("@/plugins/ggs/host/energy/scoreboard");
+        const {nowDeviceRowsFromSnapshot, nowWattsFromSnapshot} = await import("@/plugins/ggs/host/energy/scoreboard");
         const {readEnergySettings} = await import("@/plugins/ggs/host/energy/settings");
         const settings = await readEnergySettings();
         const watts = nowWattsFromSnapshot(snapshot, settings.overrides);
         input.state.energy = {
             nowWatts: watts === null ? null : Math.round(watts),
+            devices: nowDeviceRowsFromSnapshot(snapshot, settings.overrides),
         };
     } catch {
         /* tent watts on plugin state are best-effort */
     }
     publishLive(withStale(snapshot));
+}
+
+function actionNotice(notice: string): Response {
+    const failed = /failed|missing|invalid|need_|choose|no_controller|bad_password|unknown_account/.test(notice);
+    return noticeJson(notice, failed ? 400 : 200);
+}
+
+export async function handleAction(request: Request, remainder: string): Promise<Response> {
+    if (!(await isAdminAuthenticated())) {
+        return Response.json({error: "Unauthorized"}, {status: 401, headers: {"Cache-Control": "no-store"}});
+    }
+    const pathName = remainder.replace(/^\/+|\/+$/g, "");
+    if (pathName === "admin-state" && request.method === "GET") {
+        const [energySettings, live, spiderFarmer, controllers] = await Promise.all([
+            readEnergySettings(),
+            readGgsLive(),
+            readSpiderFarmerBrokerStatus().catch(() => ({
+                configured: false,
+                account: null,
+                serial: null,
+                pathKind: "missing" as const,
+            })),
+            readStoredControllers(),
+        ]);
+        return Response.json({
+            energySettings,
+            energyActuators: energyActuatorRows(live, energySettings),
+            spiderFarmer,
+            controllers,
+            live: live ? withStale(live) : null,
+        }, {headers: {"Cache-Control": "no-store"}});
+    }
+    if (pathName === "energy" && request.method === "POST") {
+        return actionNotice((await saveEnergyAction(await request.formData())).notice);
+    }
+    if (pathName === "spider-farmer" && request.method === "POST") {
+        return actionNotice((await connectSpiderFarmerAction(await request.formData())).notice);
+    }
+    return Response.json({error: "Not found"}, {status: 404, headers: {"Cache-Control": "no-store"}});
 }
 
 export async function handlePublic(request: Request, remainder: string): Promise<Response> {

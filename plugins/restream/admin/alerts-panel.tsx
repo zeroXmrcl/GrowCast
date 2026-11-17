@@ -1,7 +1,4 @@
-import {saveAlertsSettingsAction} from "@/plugins/restream/admin/actions";
-import {AdminBand} from "@/app/admin/admin-band";
-import {AdminImmediateForm} from "@/app/admin/admin-save-form";
-import {AdminButton, AdminCheckboxRow} from "@/components/admin/ui";
+import {AdminBand, AdminButton, AdminCheckboxRow, PluginImmediateForm} from "@/lib/plugins/admin-kit";
 import OverlayScaleInput from "@/components/overlay-scale-input";
 import type {AlertsSettings} from "@/plugins/restream/host/alerts-settings";
 
@@ -26,7 +23,7 @@ export function AlertsPanel({
                     Connect Twitch
                 </a>
             </div>
-            <AdminImmediateForm action={saveAlertsSettingsAction} className="space-y-3">
+            <PluginImmediateForm actionPath="alerts" className="space-y-3">
                 {!connected && settings.follow ? <input type="hidden" name="follow" value="on"/> : null}
                 <AdminCheckboxRow
                     name="follow"
@@ -68,7 +65,7 @@ export function AlertsPanel({
                 <AdminButton type="submit" tone="secondary">
                     Save
                 </AdminButton>
-            </AdminImmediateForm>
+            </PluginImmediateForm>
         </AdminBand>
     );
 }

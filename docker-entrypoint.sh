@@ -16,9 +16,7 @@ if [ "$(id -u)" = "0" ]; then
     /app/data/mesh \
     /app/data/plugins \
     /app/public/setup \
-    /app/public/yourPictures \
-    /app/plugins/timelapse/snapshots \
-    /app/plugins/timelapse/timelapse
+    /app/public/yourPictures
   umask 077
   if [ -n "$GROWCAST_MESH_TOKEN" ]; then
     printf '%s\n' "$GROWCAST_MESH_TOKEN" > /app/data/mesh.token
@@ -33,8 +31,6 @@ if [ "$(id -u)" = "0" ]; then
     /app/data \
     /app/public/setup \
     /app/public/yourPictures \
-    /app/plugins/timelapse/snapshots \
-    /app/plugins/timelapse/timelapse \
     || echo "growcast: could not change ownership of data folders; continuing"
   exec su-exec growcast:growcast "$@"
 fi

@@ -1,4 +1,4 @@
-import {existsSync, mkdirSync, readdirSync} from "node:fs";
+import {copyFileSync, existsSync, mkdirSync, readdirSync} from "node:fs";
 import path from "node:path";
 
 const pluginsDir = path.join(process.cwd(), "plugins");
@@ -21,7 +21,9 @@ try {
     throw error;
 }
 
-const folders = readdirSync(pluginsDir);
+const folders = readdirSync(pluginsDir, {withFileTypes: true})
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith(".") && existsSync(path.join(pluginsDir, entry.name, "plugin.json")))
+    .map((entry) => entry.name);
 let built = 0;
 for (const folder of folders) {
     const entryTsx = path.join(pluginsDir, folder, "ui", "src", "index.tsx");
@@ -54,6 +56,10 @@ for (const folder of folders) {
             "@": process.cwd(),
         },
     });
+    const styleSrc = path.join(pluginsDir, folder, "ui", "src", "style.css");
+    if (existsSync(styleSrc)) {
+        copyFileSync(styleSrc, path.join(outdir, "style.css"));
+    }
     built += 1;
 }
 

@@ -52,6 +52,18 @@ describe("plugin hash pin", {concurrency: 1}, () => {
         });
     });
 
+    it("does not include host/dist in the pin, but does include ui/dist", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const dir = await writePlugin("example", SAMPLE_MANIFEST);
+            const before = await hashPluginFolder(dir);
+            await mkdir(path.join(dir, "host", "dist"), {recursive: true});
+            await writeFile(path.join(dir, "host", "dist", "index.js"), "export const host = 1\n");
+            assert.equal(await hashPluginFolder(dir), before);
+            await writeFile(path.join(dir, "ui/dist/index.js"), "export default { ui: true }\n");
+            assert.notEqual(await hashPluginFolder(dir), before);
+        });
+    });
+
     it("does not include snapshots or timelapse media in the pin", async () => {
         await withPluginHarness(async ({writePlugin}) => {
             const dir = await writePlugin("example", SAMPLE_MANIFEST);

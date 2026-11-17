@@ -28,30 +28,6 @@ export const ADMIN_NOTICE_IDS = [
     "archive_none_selected",
     "archive_delete_not_confirmed",
     "archive_delete_failed",
-    "twitch_key_saved",
-    "twitch_started",
-    "twitch_stopped",
-    "twitch_need_key",
-    "twitch_login_invalid",
-    "audio_saved",
-    "alert_sent",
-    "alerts_saved",
-    "twitch_connected",
-    "twitch_oauth_failed",
-    "twitch_need_connect",
-    "music_uploaded",
-    "music_uploaded_partial",
-    "music_deleted",
-    "music_invalid_file",
-    "music_too_many_files",
-    "music_payload_too_large",
-    "spider_farmer_connected",
-    "spider_farmer_missing",
-    "spider_farmer_bad_password",
-    "spider_farmer_unknown_account",
-    "spider_farmer_failed",
-    "spider_farmer_choose",
-    "spider_farmer_no_controller",
     "ai_summary_ready",
     "ai_summary_failed",
     "ai_summary_rate_limited",
@@ -65,6 +41,6 @@ export function isAdminNoticeId(value: string): value is AdminNoticeId {
     return (ADMIN_NOTICE_IDS as readonly string[]).includes(value);
 }
 
-export function withNotice(path: string, notice: AdminNoticeId): string {
+export function withNotice(path: string, notice: string): string {
     return `${path}?notice=${notice}`;
 }

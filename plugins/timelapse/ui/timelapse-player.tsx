@@ -1,4 +1,6 @@
-import {getTimelapseFiles} from "@/plugins/timelapse/host/extension-status";
+"use client";
+
+import {useEffect, useState} from "react";
 import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
 
 type TimelapsePlayerProps = {
@@ -11,15 +13,27 @@ type TimelapsePlayerProps = {
     sheet?: boolean;
 };
 
-export default async function TimelapsePlayer({videoUrl, sheet = false}: TimelapsePlayerProps = {}) {
-    let resolvedUrl: string | null;
+export default function TimelapsePlayer({videoUrl, sheet = false}: TimelapsePlayerProps = {}) {
+    const [liveUrl, setLiveUrl] = useState<string | null | undefined>(videoUrl);
 
-    if (videoUrl === undefined) {
-        const files = await getTimelapseFiles();
-        resolvedUrl = files[0] ? "/api/timelapse" : null;
-    } else {
-        resolvedUrl = videoUrl;
-    }
+    useEffect(() => {
+        if (videoUrl !== undefined) {
+            setLiveUrl(videoUrl);
+            return;
+        }
+        void fetch("/api/data/plugins/timelapse/gallery-index", {cache: "no-store"})
+            .then((response) => (response.ok ? response.json() : null))
+            .then((raw) => {
+                if (raw && typeof raw.videoUrl === "string") {
+                    setLiveUrl(raw.videoUrl);
+                } else if (raw) {
+                    setLiveUrl(null);
+                }
+            })
+            .catch(() => undefined);
+    }, [videoUrl]);
+
+    const resolvedUrl = videoUrl !== undefined ? videoUrl : (liveUrl ?? null);
 
     if (!resolvedUrl) {
         return (

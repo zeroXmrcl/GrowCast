@@ -5,7 +5,7 @@ import {describe, it} from "node:test";
 
 const ROOT = process.cwd();
 const TREES = ["app", "components", "hooks", "lib"];
-const PLUGIN_IMPORT = /from\s+['"]@\/plugins\//;
+const PLUGIN_IMPORT = /(?:from\s+|import\s*\()\s*['"]@\/plugins\//;
 const PLUGIN_IDS = /growcast\.(ggs|timelapse|restream|solar)/;
 
 async function walk(dir: string): Promise<string[]> {
@@ -30,14 +30,11 @@ function isPluginHost(file: string): boolean {
 }
 
 describe("core isolation from first-party plugins", () => {
-    it("does not import @/plugins from app, components, hooks, or lib outside lib/plugins", async () => {
+    it("does not import @/plugins from app, components, hooks, or lib (including lib/plugins)", async () => {
         const hits: string[] = [];
         for (const tree of TREES) {
             const files = await walk(path.join(ROOT, tree));
             for (const file of files) {
-                if (isPluginHost(file)) {
-                    continue;
-                }
                 const text = await readFile(file, "utf8");
                 if (PLUGIN_IMPORT.test(text)) {
                     hits.push(path.relative(ROOT, file));

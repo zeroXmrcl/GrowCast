@@ -2,17 +2,14 @@ import {notFound} from "next/navigation";
 import PluginMount from "@/components/plugin-mount";
 import {isAdminAuthenticated} from "@/lib/admin-auth";
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
-import {loadFirstPartyServerPage} from "@/lib/plugins/server-pages";
 import {resolvePluginPage} from "@/lib/plugins/routes";
 
 export const dynamic = "force-dynamic";
 
 export default async function PluginSitePage({
     params,
-    searchParams,
 }: {
     params: Promise<{pluginId: string; path?: string[]}>;
-    searchParams: Promise<{token?: string}>;
 }) {
     const {pluginId, path} = await params;
     const resolved = await resolvePluginPage(pluginId, path, "site");
@@ -25,10 +22,6 @@ export default async function PluginSitePage({
     const discovered = await findDiscoveredPlugin(resolved.pluginId);
     if (!discovered) {
         notFound();
-    }
-    const ServerPage = await loadFirstPartyServerPage(resolved.pluginId, resolved.page.id);
-    if (ServerPage) {
-        return <ServerPage searchParams={searchParams} />;
     }
     return (
         <PluginMount

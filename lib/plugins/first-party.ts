@@ -1,18 +1,30 @@
 import path from "node:path";
 import {pathToFileURL} from "node:url";
+import {pluginLogger} from "@/lib/plugins/log";
 import type {DiscoveredPlugin, PluginHostModule} from "@/lib/plugins/types";
 
 const cache = new Map<string, PluginHostModule | null>();
 
-const BUNDLED: Record<string, () => Promise<PluginHostModule>> = {
-    "growcast.solar": () => import("@/plugins/solar/host/index"),
-    "growcast.ggs": () => import("@/plugins/ggs/host/index"),
-    "growcast.timelapse": () => import("@/plugins/timelapse/host/index"),
-    "growcast.restream": () => import("@/plugins/restream/host/index"),
-};
-
 export function _resetHostModuleCacheForTests(): void {
     cache.clear();
+}
+
+function hostCandidates(plugin: DiscoveredPlugin): string[] {
+    const spec = plugin.manifest.hostModule?.trim();
+    const folder = plugin.folderPath;
+    const fromSpec = spec
+        ? [path.resolve(folder, spec)]
+        : [
+            path.join(folder, "host", "index.js"),
+            path.join(folder, "host", "index.ts"),
+        ];
+    if (process.env.NODE_ENV === "test") {
+        return [...new Set(fromSpec.filter((candidate) => candidate.endsWith(".ts")))];
+    }
+    return [...new Set([
+        path.join(folder, "host", "dist", "index.js"),
+        ...fromSpec,
+    ])];
 }
 
 export async function loadHostModule(plugin: DiscoveredPlugin): Promise<PluginHostModule | null> {
@@ -20,31 +32,25 @@ export async function loadHostModule(plugin: DiscoveredPlugin): Promise<PluginHo
     if (cached !== undefined) {
         return cached;
     }
-    const bundled = BUNDLED[plugin.manifest.id];
-    if (bundled) {
+    for (const candidate of hostCandidates(plugin)) {
         try {
-            const loaded = await bundled();
+            const href = pathToFileURL(candidate).href;
+            const loaded = await import(
+                /* webpackIgnore: true */
+                /* turbopackIgnore: true */
+                href
+            ) as PluginHostModule;
             cache.set(plugin.manifest.id, loaded);
             return loaded;
-        } catch {
-            cache.set(plugin.manifest.id, null);
-        }
-    }
-    const spec = plugin.manifest.hostModule;
-    if (!spec) {
-        cache.set(plugin.manifest.id, null);
-        return null;
-    }
-    const abs = path.resolve(plugin.folderPath, spec);
-    for (const candidate of [abs, `${abs}.ts`, `${abs}.js`]) {
-        try {
-            const loaded = await import(pathToFileURL(candidate).href) as PluginHostModule;
-            cache.set(plugin.manifest.id, loaded);
-            return loaded;
-        } catch {
+        } catch (error) {
+            pluginLogger().warn({
+                event: "plugin.host_module.load_failed",
+                plugin_id: plugin.manifest.id,
+                candidate,
+                err: error instanceof Error ? error.message : "unknown",
+            });
             continue;
         }
     }
-    cache.set(plugin.manifest.id, null);
     return null;
 }

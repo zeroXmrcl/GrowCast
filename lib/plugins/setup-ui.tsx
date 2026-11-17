@@ -1,12 +1,13 @@
 "use client";
 
 import type {FormEvent, ReactNode} from "react";
-import type {PluginSetupResult} from "@/lib/plugins/types";
+import type {PluginInstallerField, PluginSetupResult} from "@/lib/plugins/types";
 
 type ControllerChoice = NonNullable<Extract<PluginSetupResult, {ok: false}>["choose"]>[number];
 
 export function PluginSetupFields({
     stepId,
+    fields = [],
     locked,
     saveClass,
     saveLabel,
@@ -15,6 +16,7 @@ export function PluginSetupFields({
     children,
 }: {
     stepId: string;
+    fields?: PluginInstallerField[];
     locked: boolean;
     saveClass: string;
     saveLabel?: string;
@@ -25,9 +27,18 @@ export function PluginSetupFields({
     return (
         <form className="mt-8 space-y-5" onSubmit={onSubmit}>
             <input type="hidden" name="stepId" value={stepId} />
-            {stepId === "climate" ? <ClimateFields /> : null}
-            {stepId === "twitch" ? <TwitchFields /> : null}
-            {stepId === "timelapse" ? <TimelapseFields /> : null}
+            {fields.map((field) => (
+                <InstallerField key={field.name} label={field.label} htmlFor={`installer-${stepId}-${field.name}`}>
+                    <InstallerInput
+                        id={`installer-${stepId}-${field.name}`}
+                        name={field.name}
+                        type={field.type === "password" ? "password" : field.type === "number" ? "number" : "text"}
+                        autoComplete={field.autoComplete}
+                        required={field.required !== false}
+                        defaultValue={field.defaultValue}
+                    />
+                </InstallerField>
+            ))}
             {children}
             <PrimaryButton className={saveClass} disabled={locked}>
                 {saveLabel ?? "Continue"}
@@ -39,10 +50,11 @@ export function PluginSetupFields({
     );
 }
 
-export function ClimateControllerPicker({
-    email,
-    password,
-    controllers,
+export function PluginChoicePicker({
+    stepId,
+    keepValues,
+    valueName,
+    choices,
     selected,
     onSelect,
     locked,
@@ -50,9 +62,10 @@ export function ClimateControllerPicker({
     saveLabel,
     onSubmit,
 }: {
-    email: string;
-    password: string;
-    controllers: ControllerChoice[];
+    stepId: string;
+    keepValues: Record<string, string>;
+    valueName: string;
+    choices: ControllerChoice[];
     selected: string;
     onSelect: (serial: string) => void;
     locked: boolean;
@@ -62,12 +75,13 @@ export function ClimateControllerPicker({
 }) {
     return (
         <form className="mt-8 space-y-5" onSubmit={onSubmit}>
-            <input type="hidden" name="stepId" value="climate" />
-            <input type="hidden" name="sfEmail" value={email} />
-            <input type="hidden" name="sfPassword" value={password} />
-            <input type="hidden" name="sfSerial" value={selected} />
+            <input type="hidden" name="stepId" value={stepId} />
+            {Object.entries(keepValues).map(([name, value]) => (
+                <input key={name} type="hidden" name={name} value={value} />
+            ))}
+            <input type="hidden" name={valueName} value={selected} />
             <PluginChoiceList
-                choices={controllers}
+                choices={choices}
                 selected={selected}
                 onSelect={onSelect}
             />
@@ -142,48 +156,6 @@ function PluginChoiceList({
     );
 }
 
-function ClimateFields() {
-    return (
-        <>
-            <InstallerField label="Email" htmlFor="installer-sf-email">
-                <InstallerInput id="installer-sf-email" name="sfEmail" autoComplete="username" />
-            </InstallerField>
-            <InstallerField label="Password" htmlFor="installer-sf-password">
-                <InstallerInput id="installer-sf-password" name="sfPassword" type="password" autoComplete="current-password" />
-            </InstallerField>
-        </>
-    );
-}
-
-function TwitchFields() {
-    return (
-        <>
-            <InstallerField label="Stream key" htmlFor="installer-twitch-key">
-                <InstallerInput id="installer-twitch-key" name="twitchKey" autoComplete="off" />
-            </InstallerField>
-            <InstallerField label="Channel (optional)" htmlFor="installer-twitch-login">
-                <InstallerInput id="installer-twitch-login" name="twitchLogin" autoComplete="off" />
-            </InstallerField>
-        </>
-    );
-}
-
-function TimelapseFields() {
-    return (
-        <>
-            <InstallerField label="Camera address" htmlFor="installer-rtsp">
-                <InstallerInput id="installer-rtsp" name="rtspStream" autoComplete="off" />
-            </InstallerField>
-            <InstallerField label="Interval (minutes)" htmlFor="installer-interval">
-                <InstallerInput id="installer-interval" name="interval" autoComplete="off" />
-            </InstallerField>
-            <InstallerField label="Timezone" htmlFor="installer-timezone">
-                <InstallerInput id="installer-timezone" name="timezone" autoComplete="off" />
-            </InstallerField>
-        </>
-    );
-}
-
 function InstallerField({
     label,
     htmlFor,
@@ -220,11 +192,15 @@ function InstallerInput({
     id,
     type = "text",
     autoComplete,
+    required = true,
+    defaultValue,
 }: {
     name: string;
     id: string;
     type?: string;
     autoComplete?: string;
+    required?: boolean;
+    defaultValue?: string;
 }) {
     return (
         <input
@@ -232,8 +208,8 @@ function InstallerInput({
             name={name}
             type={type}
             autoComplete={autoComplete}
-            required={name !== "twitchLogin" && name !== "timezone"}
-            defaultValue={name === "interval" ? "15" : name === "timezone" ? "UTC" : undefined}
+            required={required}
+            defaultValue={defaultValue}
             style={{
                 display: "block",
                 width: "100%",

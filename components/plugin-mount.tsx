@@ -1,7 +1,7 @@
 "use client";
 
-import {useEffect, useState, type ReactNode} from "react";
-import {PluginRuntimeProvider, type PluginDefinition, type PluginRole} from "@growcast/plugin-sdk/ui";
+import {useEffect, useRef, useState, type ReactNode} from "react";
+import type {PluginDefinition, PluginRole} from "@growcast/plugin-sdk/ui";
 import {pluginAssetUrl} from "@/lib/plugins/import-map";
 
 type PluginMountProps = {
@@ -16,82 +16,128 @@ type PluginMountProps = {
     styles?: string[];
 };
 
-type LoadState =
-    | {kind: "loading"}
-    | {kind: "ready"; definition: PluginDefinition; via: "import-map"}
-    | {kind: "web-component"; tag: string}
-    | {kind: "error"; message: string};
+type ImportMapReact = {
+    default?: {createElement: (...args: unknown[]) => unknown};
+    createElement?: (...args: unknown[]) => unknown;
+};
+
+type ImportMapReactDom = {
+    default?: {createRoot: (el: Element) => {render: (node: unknown) => void; unmount: () => void}};
+    createRoot?: (el: Element) => {render: (node: unknown) => void; unmount: () => void};
+};
+
+type ImportMapSdk = {
+    PluginRuntimeProvider: unknown;
+};
 
 export default function PluginMount(props: PluginMountProps) {
-    const [state, setState] = useState<LoadState>({kind: "loading"});
+    const hostRef = useRef<HTMLDivElement>(null);
+    const [message, setMessage] = useState("Loading plugin…");
+    const [failed, setFailed] = useState(false);
+    const [webComponent, setWebComponent] = useState<string | null>(null);
 
     useEffect(() => {
+        const host = hostRef.current;
         let cancelled = false;
+        let root: {render: (node: unknown) => void; unmount: () => void} | null = null;
+
         async function load() {
-            if (props.entry) {
-                const url = pluginAssetUrl(props.pluginId, props.entry, props.version);
-                try {
-                    const mod = await import(/* webpackIgnore: true */ url) as {default?: PluginDefinition} & PluginDefinition;
-                    const definition = mod.default ?? mod;
-                    if (!cancelled && definition?.pages && definition?.widgets) {
-                        setState({kind: "ready", definition, via: "import-map"});
-                        return;
-                    }
-                } catch {
-                    /* fall through to web components */
+            if (!props.entry) {
+                if (props.webComponent) {
+                    setWebComponent(props.webComponent);
+                    setMessage("");
+                    return;
                 }
-            }
-            if (!cancelled && props.webComponent) {
-                setState({kind: "web-component", tag: props.webComponent});
+                setFailed(true);
+                setMessage("Plugin UI failed to load");
                 return;
             }
-            if (!cancelled) {
-                setState({kind: "error", message: "Plugin UI failed to load"});
+            const url = pluginAssetUrl(props.pluginId, props.entry, props.version);
+            try {
+                const [reactMod, reactDomMod, sdkMod, pluginMod] = await Promise.all([
+                    import(/* webpackIgnore: true */ /* turbopackIgnore: true */ "react") as Promise<ImportMapReact>,
+                    import(/* webpackIgnore: true */ /* turbopackIgnore: true */ "react-dom/client") as Promise<ImportMapReactDom>,
+                    import(/* webpackIgnore: true */ /* turbopackIgnore: true */ "@growcast/plugin-sdk/ui") as Promise<ImportMapSdk>,
+                    import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url) as Promise<{default?: PluginDefinition} & PluginDefinition>,
+                ]);
+                if (cancelled) {
+                    return;
+                }
+                const definition = pluginMod.default ?? pluginMod;
+                const Cmp = props.pageId
+                    ? definition.pages?.[props.pageId]
+                    : props.widgetId
+                        ? definition.widgets?.[props.widgetId]
+                        : null;
+                const createElement = reactMod.createElement ?? reactMod.default?.createElement;
+                const createRoot = reactDomMod.createRoot ?? reactDomMod.default?.createRoot;
+                if (!Cmp || !host || !createElement || !createRoot || !sdkMod.PluginRuntimeProvider) {
+                    setFailed(true);
+                    setMessage("This plugin did not export the requested view.");
+                    return;
+                }
+                root = createRoot(host);
+                root.render(
+                    createElement(
+                        sdkMod.PluginRuntimeProvider,
+                        {
+                            pluginId: props.pluginId,
+                            pageId: props.pageId,
+                            widgetId: props.widgetId,
+                            role: props.role,
+                            publicPage: props.publicPage,
+                        },
+                        createElement(Cmp, null),
+                    ),
+                );
+                setMessage("");
+            } catch (error) {
+                console.error("plugin ui import failed", url, error);
+                if (cancelled) {
+                    return;
+                }
+                if (props.webComponent) {
+                    setWebComponent(props.webComponent);
+                    setMessage("");
+                    return;
+                }
+                setFailed(true);
+                setMessage("Plugin UI failed to load");
             }
         }
+
         void load();
         return () => {
             cancelled = true;
+            root?.unmount();
         };
-    }, [props.entry, props.pluginId, props.version, props.webComponent]);
+    }, [
+        props.entry,
+        props.pluginId,
+        props.version,
+        props.webComponent,
+        props.pageId,
+        props.widgetId,
+        props.role,
+        props.publicPage,
+    ]);
 
-    if (state.kind === "loading") {
-        return <PluginErrorCard message="Loading plugin…" tone="muted" />;
-    }
-    if (state.kind === "error") {
-        return <PluginErrorCard message={state.message} />;
-    }
-    if (state.kind === "web-component") {
-        return (
-            <div
-                dangerouslySetInnerHTML={{
-                    __html: `<${state.tag} data-plugin-id="${props.pluginId}"></${state.tag}>`,
-                }}
-            />
-        );
-    }
-
-    const Cmp = props.pageId
-        ? state.definition.pages[props.pageId]
-        : props.widgetId
-            ? state.definition.widgets[props.widgetId]
-            : null;
-    if (!Cmp) {
-        return <PluginErrorCard message="This plugin did not export the requested view." />;
-    }
     return (
-        <PluginRuntimeProvider
-            pluginId={props.pluginId}
-            pageId={props.pageId}
-            widgetId={props.widgetId}
-            role={props.role}
-            publicPage={props.publicPage}
-        >
+        <>
             {props.styles?.map((href) => (
                 <link key={href} rel="stylesheet" href={pluginAssetUrl(props.pluginId, href, props.version)} />
             ))}
-            <Cmp />
-        </PluginRuntimeProvider>
+            {message ? <PluginErrorCard message={message} tone={failed ? undefined : "muted"} /> : null}
+            {webComponent ? (
+                <div
+                    dangerouslySetInnerHTML={{
+                        __html: `<${webComponent} data-plugin-id="${props.pluginId}"></${webComponent}>`,
+                    }}
+                />
+            ) : (
+                <div ref={hostRef} className="plugin-mount-root" />
+            )}
+        </>
     );
 }
 

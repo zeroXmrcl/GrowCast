@@ -1,11 +1,11 @@
-import {AdminBand} from "@/app/admin/admin-band";
-import {AdminOptionalTimeInput} from "@/components/admin/optional-time-input";
 import {
+    AdminBand,
     AdminCheckboxRow,
     AdminField,
     AdminInput,
+    AdminOptionalTimeInput,
     AdminSelect,
-} from "@/components/admin/ui";
+} from "@/lib/plugins/admin-kit";
 import type {TimelapseSettings} from "@/plugins/timelapse/host/timelapse-settings";
 
 export function TimelapseSettingsFields({

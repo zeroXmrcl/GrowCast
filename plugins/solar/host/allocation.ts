@@ -15,6 +15,8 @@ export type SolarInstantSplit = {
     solarSupplyW: number | null;
     gridSupplyW: number | null;
     tentFromSolarW: number | null;
+    tentFromPvW: number | null;
+    tentFromBatteryW: number | null;
     tentFromGridW: number | null;
     houseOtherFromSolarW: number | null;
     houseOtherFromGridW: number | null;
@@ -115,6 +117,8 @@ export function allocateSolarInstant(
         solarSupplyW,
         gridSupplyW: gridImportW,
         tentFromSolarW: null,
+        tentFromPvW: null,
+        tentFromBatteryW: null,
         tentFromGridW: null,
         houseOtherFromSolarW: null,
         houseOtherFromGridW: null,
@@ -151,11 +155,19 @@ export function allocateSolarInstant(
 
     const tentFromGridW = tentW - tentFromSolarW;
     const houseOtherFromGridW = houseOtherW - houseOtherFromSolarW;
+    const {tentFromPvW, tentFromBatteryW} = splitTentSolar(
+        tentFromSolarW,
+        solarSupplyW,
+        input.pvW,
+        batt.solarW,
+    );
 
     return {
         solarSupplyW,
         gridSupplyW: gridImportW,
         tentFromSolarW,
+        tentFromPvW,
+        tentFromBatteryW,
         tentFromGridW,
         houseOtherFromSolarW,
         houseOtherFromGridW,
@@ -165,6 +177,24 @@ export function allocateSolarInstant(
         solarShareOfTent: tentW > 0 ? tentFromSolarW / tentW : null,
         solarShareOfHouse: input.houseW > 0 ? coveredBySolar / input.houseW : null,
         missing,
+    };
+}
+
+function splitTentSolar(
+    tentFromSolarW: number,
+    solarSupplyW: number,
+    pvW: number | null,
+    batterySolarW: number | null,
+): {tentFromPvW: number | null; tentFromBatteryW: number | null} {
+    if (!finite(pvW) || !finite(batterySolarW)) {
+        return {tentFromPvW: null, tentFromBatteryW: null};
+    }
+    if (solarSupplyW <= 0) {
+        return {tentFromPvW: 0, tentFromBatteryW: 0};
+    }
+    return {
+        tentFromPvW: tentFromSolarW * (Math.max(0, pvW) / solarSupplyW),
+        tentFromBatteryW: tentFromSolarW * (batterySolarW / solarSupplyW),
     };
 }
 

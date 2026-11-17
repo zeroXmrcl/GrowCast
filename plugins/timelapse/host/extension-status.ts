@@ -1,5 +1,6 @@
 import {promises as fs} from "node:fs";
 import path from "node:path";
+import {pluginDataDir} from "@/lib/plugins/paths";
 
 export const TIMELAPSE_PLUGIN_DIR = path.resolve(
     process.cwd(),
@@ -9,8 +10,10 @@ export const TIMELAPSE_PLUGIN_DIR = path.resolve(
 
 export const TIMELAPSE_PLUGIN_MARKERS = ["Dockerfile", "requirements.txt", "plugin.json"] as const;
 
-export const SNAPSHOT_DIR = path.join(TIMELAPSE_PLUGIN_DIR, "snapshots");
-export const TIMELAPSE_DIR = path.join(TIMELAPSE_PLUGIN_DIR, "timelapse");
+export const SNAPSHOT_DIR = path.join(pluginDataDir("growcast.timelapse"), "snapshots");
+export const TIMELAPSE_DIR = path.join(pluginDataDir("growcast.timelapse"), "timelapse");
+export const LEGACY_SNAPSHOT_DIR = path.join(TIMELAPSE_PLUGIN_DIR, "snapshots");
+export const LEGACY_TIMELAPSE_DIR = path.join(TIMELAPSE_PLUGIN_DIR, "timelapse");
 
 function timelapsePluginRoot(): string {
     const override = (process.env.GROWCAST_TIMELAPSE_DIR ?? "").trim();
@@ -47,30 +50,30 @@ export async function isTimelapsePluginInstalled(): Promise<boolean> {
     return dirHasMatchingFile(path.join(root, "timelapse"), /\.mp4$/i);
 }
 
-export async function getSnapshotFiles(): Promise<string[]> {
-    if (!(await pathExists(SNAPSHOT_DIR))) {
+async function listMatching(dir: string, pattern: RegExp): Promise<string[]> {
+    if (!(await pathExists(dir))) {
         return [];
     }
-
-    const entries = await fs.readdir(SNAPSHOT_DIR, { withFileTypes: true });
-
+    const entries = await fs.readdir(dir, {withFileTypes: true});
     return entries
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)
-        .filter((name) => /\.(webp)$/i.test(name))
-        .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+        .filter((name) => pattern.test(name));
+}
+
+export async function getSnapshotFiles(): Promise<string[]> {
+    const names = new Set([
+        ...await listMatching(SNAPSHOT_DIR, /\.(webp)$/i),
+        ...await listMatching(LEGACY_SNAPSHOT_DIR, /\.(webp)$/i),
+    ]);
+    return [...names].sort((a, b) => b.localeCompare(a, undefined, {numeric: true}));
 }
 
 export async function getTimelapseFiles(): Promise<string[]> {
-    if (!(await pathExists(TIMELAPSE_DIR))) {
-        return [];
-    }
-
-    const entries = await fs.readdir(TIMELAPSE_DIR, { withFileTypes: true });
-
-    return entries
-        .filter((entry) => entry.isFile())
-        .map((entry) => entry.name)
-        .filter((name) => /\.(mp4)$/i.test(name) && !name.toLowerCase().includes(".partial"))
-        .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+    const names = new Set([
+        ...await listMatching(TIMELAPSE_DIR, /\.(mp4)$/i),
+        ...await listMatching(LEGACY_TIMELAPSE_DIR, /\.(mp4)$/i),
+    ]);
+    return [...names].filter((name) => !name.toLowerCase().includes(".partial"))
+        .sort((a, b) => b.localeCompare(a, undefined, {numeric: true}));
 }
