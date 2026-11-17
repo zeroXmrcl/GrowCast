@@ -2,6 +2,14 @@
 
 GrowCast is a Next.js web app for a live garden: climate, energy, gallery, an OBS overlay, and Twitch broadcast, with a protected admin panel.
 
+## Quick install
+
+1. Clone this repository.
+2. Run `docker compose up --build -d`.
+3. Open `http://localhost:3000` and finish the setup wizard (the container log prints the setup code).
+
+Enable plugins in **Admin → Plugins**. First-party plugins are not on until you do that. Details: [docs/plugins/README.md](docs/plugins/README.md).
+
 ## 1. Project Overview
 
 ### What the app does
@@ -119,6 +127,101 @@ What gets persisted on the host:
 The website writes `data/ggs.env` for GGS and `data/timelapse.env` for the camera URL. After migration those files also live under `data/plugins/growcast.ggs/` and `data/plugins/growcast.timelapse/`. They sit on the `./data` directory mount, so Docker does not create a directory in place of a missing env file.
 
 Drop plugin folders into `plugins/` and enable them in Admin → Plugins. First-party plugins are not auto-enabled. GrowCast pins a SHA-256 of the files, starts the backend, and pauses the plugin if the files change. Plugins without credentials wait, then start when the wizard (or admin settings) writes the config. Twitch restream stays idle until you save a stream key and press Start on Broadcast (`/admin/plugins/growcast.restream`). GrowCast writes `data/restream/capture.token` (or the migrated plugin path) on its own; `GROWCAST_RESTREAM_TOKEN` in `.env.local` is an optional override.
+
+### Architecture
+
+The host is a Next.js app. Plugin dists live in `plugins/`. Public plugin pages are `/p/<pluginId>/…` (`pluginUrlSlug` uses the last DNS label, so `growcast.ggs` is `/p/ggs`). Backends start through `docker-plugin-proxy`, never a raw Docker socket.
+
+```mermaid
+flowchart TD
+  Visitor[Visitor]
+  Operator[Admin]
+  Host[GrowCast Next.js host]
+  Folder["plugins/ folder"]
+  Pages["/p/pluginId pages"]
+  AdminUI["/admin/plugins/id"]
+  Proxy[docker-plugin-proxy]
+  Boxes[Plugin Docker containers]
+  Data[("data/plugins/id")]
+
+  Visitor --> Pages
+  Pages --> Host
+  Operator --> AdminUI
+  AdminUI --> Host
+  Host --> Folder
+  Host -->|"Bearer ingest, heartbeat, config"| Boxes
+  Host --> Proxy
+  Proxy -->|"allowlisted start and stop"| Boxes
+  Boxes -->|"POST /api/plugins/v1/id/ingest"| Host
+  Host --> Data
+```
+
+### Plugin lifecycle
+
+A folder in `plugins/` is discovered. It is **not** in the public header until it is enabled **and** a page declares `nav: "site"` (`lib/plugins/nav.ts` `pluginSiteNavItems` → `listEnabledSitePages`). Enable also mints a per-plugin token and calls `startPluginRuntime`.
+
+```mermaid
+sequenceDiagram
+  actor Operator
+  participant Folder as plugins folder
+  participant Host as GrowCast host
+  participant Admin as Admin Plugins
+  participant Proxy as docker-plugin-proxy
+  participant Header as Site header
+
+  Operator->>Folder: Drop dist so plugin.json is at plugins/id/plugin.json
+  Folder->>Host: discoverPlugins
+  Host->>Admin: Status discovered
+  Operator->>Admin: Confirm hash and enable
+  Admin->>Host: enablePlugin pins SHA-256 and mints token
+  Host->>Proxy: startPluginRuntime
+  alt page nav is site
+    Host->>Header: pluginSiteNavItems adds /p/slug
+  else nav is admin or none
+    Note over Header: No extra public link
+  end
+```
+
+### Host API endpoints
+
+```mermaid
+flowchart TD
+  subgraph publicApi ["Public, no session"]
+    Pages["GET /p/slug and /overlay"]
+    Live["GET /api/data/plugins/id"]
+    Stream["GET /api/data/plugins/id/stream"]
+    Dispatch["GET /api/data/plugins/id/remainder"]
+    Widgets["GET /api/data/plugin-widgets"]
+  end
+  subgraph adminApi ["Admin session cookie"]
+    AdminPages["GET /admin/plugins"]
+    ProxyX["GET or POST /api/plugins/v1/id/x/remainder"]
+    Notices["GET /api/admin/plugin-notices"]
+  end
+  subgraph backendApi ["Plugin backend Bearer token"]
+    Config["GET /api/plugins/v1/id/config"]
+    Ingest["POST /api/plugins/v1/id/ingest"]
+    Heartbeat["POST /api/plugins/v1/id/heartbeat"]
+    Mesh["GET /api/mesh/id and POST /api/mesh/id/state"]
+  end
+```
+
+| Method | Path | Auth | public/admin | Purpose |
+|--------|------|------|----------|---------|
+| GET | `/p/:pluginId/…` | none, unless the page sets `public: false` | public or admin | Plugin UI from `plugin.json` `pages` |
+| GET | `/admin/plugins` | admin session | admin | Trusted install list |
+| GET | `/admin/plugins/:pluginId/…` | admin session | admin | Plugin admin UI |
+| GET | `/api/data/plugins/:id` | none | public | Live metrics/state |
+| GET | `/api/data/plugins/:id/stream` | none | public | Live SSE |
+| GET | `/api/data/plugins/:id/:path` | none | public | `handlePublic` dispatch |
+| GET | `/api/data/plugin-widgets?slot=` | none | public | Widget entries for a slot |
+| GET | `/api/plugins/v1/:id/config` | plugin Bearer | backend | Config including secrets |
+| POST | `/api/plugins/v1/:id/ingest` | plugin Bearer | backend | Metrics + state |
+| POST | `/api/plugins/v1/:id/heartbeat` | plugin Bearer | backend | Liveness |
+| GET, POST | `/api/plugins/v1/:id/x/:path` | admin session | admin | `handleAction` proxy |
+| GET | `/api/mesh/:id` | mesh Bearer | sidecar | Legacy mesh settings |
+| POST | `/api/mesh/:id/state` | mesh Bearer | sidecar | Legacy mesh state ingest |
+| GET | `/api/admin/plugin-notices` | admin session | admin | Admin toasts after login |
 
 See [docs/plugins/README.md](docs/plugins/README.md) and [docs/plugins/MIGRATION.md](docs/plugins/MIGRATION.md).
 

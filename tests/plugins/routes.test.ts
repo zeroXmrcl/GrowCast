@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {enablePlugin, getRegistryRecord, pluginIsActive} from "../../lib/plugins/registry.ts";
+import {disablePlugin, enablePlugin, getRegistryRecord, pluginIsActive} from "../../lib/plugins/registry.ts";
 import {resolvePluginPage, widgetsForSlot, isRoutablePlugin} from "../../lib/plugins/routes.ts";
 import {pluginSiteNavItems} from "../../lib/plugins/nav.ts";
 import {SAMPLE_MANIFEST, withPluginHarness} from "./helpers.ts";
@@ -50,6 +50,33 @@ describe("plugin route mounting", {concurrency: 1}, () => {
             assert.equal(widgets[0]?.widget.id, "stat");
             const nav = await pluginSiteNavItems();
             assert.equal(nav[0]?.href, "/p/routes-nav");
+        });
+    });
+
+    it("adds a site header link only when installed, enabled, and nav is site", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const site = {
+                ...SAMPLE_MANIFEST,
+                id: "community.header-site",
+                pages: [{id: "home", path: "", title: "HeaderSite", nav: "site" as const, public: true}],
+            };
+            const hidden = {
+                ...SAMPLE_MANIFEST,
+                id: "community.header-none",
+                pages: [{id: "home", path: "", title: "Hidden", nav: "none" as const, public: true}],
+            };
+            await writePlugin("header-site", site);
+            await writePlugin("header-none", hidden);
+            assert.deepEqual(await pluginSiteNavItems(), []);
+            await enablePlugin("community.header-none");
+            assert.deepEqual(await pluginSiteNavItems(), []);
+            await enablePlugin("community.header-site");
+            const enabled = await pluginSiteNavItems();
+            assert.equal(enabled.length, 1);
+            assert.equal(enabled[0]?.href, "/p/header-site");
+            assert.equal(enabled[0]?.label, "HeaderSite");
+            await disablePlugin("community.header-site");
+            assert.deepEqual(await pluginSiteNavItems(), []);
         });
     });
 });
