@@ -18,6 +18,7 @@ import {
   getAdminSessionStore,
 } from "@/lib/admin-session-store";
 import {shouldUseSecureCookie} from "@/lib/request-trust";
+import {bindPackedPluginAdminAuth} from "@/lib/plugins/packed-host-auth";
 import {
   extractClientIp,
   extractUserAgent,
@@ -809,3 +810,5 @@ export async function requireAdmin(): Promise<void> {
     }
   });
 }
+
+bindPackedPluginAdminAuth(() => isAdminAuthenticated());

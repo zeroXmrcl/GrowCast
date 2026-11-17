@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import path from "node:path";
 import {describe, it} from "node:test";
+import {isAdminAuthenticated} from "../lib/admin-auth.ts";
+import {PACKED_PLUGIN_ADMIN_AUTH} from "../lib/plugins/packed-host-auth.ts";
 import {widgetColumnSpan, widgetJoinsDashboardBoard} from "../lib/plugins/widget-layout.ts";
 
 function src(rel: string): string {
@@ -63,6 +65,12 @@ describe("plugin parity layout and public energy", () => {
         assert.equal(solar.config.overlayWidgets.default, false);
         const routes = src(path.join("lib", "plugins", "routes.ts"));
         assert.match(routes, /overlayWidgets/);
+    });
+
+    it("binds packed plugin admin auth onto globalThis", async () => {
+        const bound = (globalThis as Record<symbol, unknown>)[PACKED_PLUGIN_ADMIN_AUTH];
+        assert.equal(typeof bound, "function");
+        assert.equal(await (bound as typeof isAdminAuthenticated)(), await isAdminAuthenticated());
     });
 
     it("admin toast does not fetch plugin-notices until signed in", () => {
