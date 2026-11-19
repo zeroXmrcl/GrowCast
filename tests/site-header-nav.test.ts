@@ -29,7 +29,7 @@ describe("navItemsFor", () => {
         );
     });
 
-    it("keeps Energy visible and bold on the energy page, and hides Gallery when it is current", () => {
+    it("keeps every site plugin link on its own page", () => {
         const extra = [
             {href: "/p/ggs/energy", label: "Energy"},
             {href: "/p/solar", label: "Solar"},
@@ -50,14 +50,16 @@ describe("navItemsFor", () => {
         assert.equal(navItemIsActive("/", "/p/ggs/energy"), false);
         assert.deepEqual(
             navItemsFor("/p/timelapse/gallery", {...allOn, showSettingsLink: false}, extra).map((item) => item.label),
-            ["Dashboard", "Energy", "Solar", "Past Grows"],
+            ["Dashboard", "Energy", "Solar", "Gallery", "Past Grows"],
         );
         assert.equal(navItemIsActive("/p/timelapse/gallery", "/p/timelapse/gallery"), true);
         assert.equal(navItemIsActive("/p/timelapse/gallery/2026", "/p/timelapse/gallery"), true);
         assert.deepEqual(
             navItemsFor("/p/solar", {...allOn, showSettingsLink: false}, extra).map((item) => item.label),
-            ["Dashboard", "Energy", "Gallery", "Past Grows"],
+            ["Dashboard", "Energy", "Solar", "Gallery", "Past Grows"],
         );
+        assert.equal(navItemIsActive("/p/solar", "/p/solar"), true);
+        assert.equal(navItemIsActive("/p/solar/live", "/p/solar"), true);
     });
 
     it("omits Past Grows when no grow has been archived", () => {

@@ -8,6 +8,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const nextHeadersStub = pathToFileURL(path.join(root, "tests/next-headers-stub.mjs")).href;
 const nextNavigationStub = pathToFileURL(path.join(root, "tests/next-navigation-stub.mjs")).href;
 const nextCacheStub = pathToFileURL(path.join(root, "tests/next-cache-stub.mjs")).href;
+const nextLinkStub = pathToFileURL(path.join(root, "tests/next-link-stub.mjs")).href;
+const nextImageStub = pathToFileURL(path.join(root, "tests/next-image-stub.mjs")).href;
 
 export async function resolve(specifier, context, nextResolve) {
     if (specifier === "next/headers" || specifier === "next/headers.js") {
@@ -18,6 +20,12 @@ export async function resolve(specifier, context, nextResolve) {
     }
     if (specifier === "next/cache" || specifier === "next/cache.js") {
         return {url: nextCacheStub, shortCircuit: true};
+    }
+    if (specifier === "next/link" || specifier === "next/link.js") {
+        return {url: nextLinkStub, shortCircuit: true};
+    }
+    if (specifier === "next/image" || specifier === "next/image.js") {
+        return {url: nextImageStub, shortCircuit: true};
     }
 
     let next = specifier;
