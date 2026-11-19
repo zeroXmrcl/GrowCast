@@ -31,18 +31,28 @@ export default function LiveTentRow({
 }) {
     const {snapshot, stale} = useLiveClimate();
     const [climateTick, setClimateTick] = useState(initialTick);
+    const [seenTick, setSeenTick] = useState(initialTick);
+    if (initialTick !== seenTick) {
+        setSeenTick(initialTick);
+        setClimateTick(initialTick);
+    }
     const [devicesDesign, setDevicesDesign] = useState(initialDesign);
+    const [seenDesign, setSeenDesign] = useState(initialDesign);
+    if (initialDesign !== seenDesign) {
+        setSeenDesign(initialDesign);
+        setDevicesDesign(initialDesign);
+    }
     const [historyOpen, setHistoryOpen] = useState(false);
     const [historyMetric, setHistoryMetric] = useState<ClimateHistoryMetric>("tempC");
     const triggerRef = useRef<HTMLButtonElement | null>(null);
-
-    useEffect(() => {
-        setClimateTick(initialTick);
-    }, [initialTick]);
-
-    useEffect(() => {
-        setDevicesDesign(initialDesign);
-    }, [initialDesign]);
+    const rowVisible = shouldShowLiveRow(snapshot);
+    const [seenRow, setSeenRow] = useState(rowVisible);
+    if (rowVisible !== seenRow) {
+        setSeenRow(rowVisible);
+        if (!rowVisible) {
+            setHistoryOpen(false);
+        }
+    }
 
     useEffect(() => {
         const abort = new AbortController();
@@ -71,12 +81,6 @@ export default function LiveTentRow({
             window.clearInterval(timer);
         };
     }, []);
-
-    useEffect(() => {
-        if (!shouldShowLiveRow(snapshot) && historyOpen) {
-            setHistoryOpen(false);
-        }
-    }, [snapshot, historyOpen]);
 
     function openHistory(metric: ClimateHistoryMetric, button: HTMLButtonElement) {
         triggerRef.current = button;

@@ -56,14 +56,17 @@ function persistWindowKey(slot: string, key: WindowKey): void {
 function usePersistedWindowKey(slot: string): [WindowKey, (key: WindowKey) => void] {
     const [windowKey, setWindowKey] = useState<WindowKey>("today");
     useEffect(() => {
-        try {
-            const saved = parseWindowKey(sessionStorage.getItem(slot));
-            if (saved) {
-                setWindowKey(saved);
+        const timer = window.setTimeout(() => {
+            try {
+                const saved = parseWindowKey(sessionStorage.getItem(slot));
+                if (saved) {
+                    setWindowKey(saved);
+                }
+            } catch {
+                // private mode
             }
-        } catch {
-            // private mode
-        }
+        }, 0);
+        return () => window.clearTimeout(timer);
     }, [slot]);
     function onWindowKey(key: WindowKey) {
         setWindowKey(key);

@@ -30,17 +30,20 @@ export default function SnapshotGallery({snapshots, sheet = false}: SnapshotGall
 
     useEffect(() => {
         if (snapshots) {
-            setLive(snapshots);
             return;
         }
+        let cancelled = false;
         void fetch("/api/data/plugins/timelapse/gallery-index", {cache: "no-store"})
             .then((response) => (response.ok ? response.json() : null))
             .then((raw) => {
-                if (raw && Array.isArray(raw.snapshots)) {
+                if (!cancelled && raw && Array.isArray(raw.snapshots)) {
                     setLive(raw.snapshots as SnapshotItem[]);
                 }
             })
             .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
     }, [snapshots]);
 
     const resolved = snapshots ?? live ?? [];

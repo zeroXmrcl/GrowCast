@@ -18,12 +18,15 @@ export default function TimelapsePlayer({videoUrl, sheet = false}: TimelapsePlay
 
     useEffect(() => {
         if (videoUrl !== undefined) {
-            setLiveUrl(videoUrl);
             return;
         }
+        let cancelled = false;
         void fetch("/api/data/plugins/timelapse/gallery-index", {cache: "no-store"})
             .then((response) => (response.ok ? response.json() : null))
             .then((raw) => {
+                if (cancelled) {
+                    return;
+                }
                 if (raw && typeof raw.videoUrl === "string") {
                     setLiveUrl(raw.videoUrl);
                 } else if (raw) {
@@ -31,6 +34,9 @@ export default function TimelapsePlayer({videoUrl, sheet = false}: TimelapsePlay
                 }
             })
             .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
     }, [videoUrl]);
 
     const resolvedUrl = videoUrl !== undefined ? videoUrl : (liveUrl ?? null);
