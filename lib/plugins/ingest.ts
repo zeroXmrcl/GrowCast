@@ -72,14 +72,14 @@ export async function ingestPluginPayload(
         }
     }
     const host = await loadHostModule(discovered);
-    const state = parsed.state ? {...parsed.state} : {};
+    const ingestInput = {
+        pluginId,
+        observedAt: parsed.observedAt,
+        metrics: liveNumbers,
+        state: parsed.state ? {...parsed.state} : {},
+    };
     try {
-        await host?.onIngest?.({
-            pluginId,
-            observedAt: parsed.observedAt,
-            metrics: liveNumbers,
-            state,
-        });
+        await host?.onIngest?.(ingestInput);
     } catch (error) {
         pluginLogger().warn({
             event: "plugin.ingest.host_module_failed",
@@ -93,11 +93,14 @@ export async function ingestPluginPayload(
             metrics[key] = {value, observedAt: parsed.observedAt};
         }
     }
+    const pluginState = ingestInput.state && typeof ingestInput.state === "object" && !Array.isArray(ingestInput.state)
+        ? ingestInput.state
+        : {};
     await writePluginState({
         pluginId,
         observedAt: parsed.observedAt,
         metrics,
-        state: Object.keys(state).length > 0 ? state : parsed.state,
+        state: Object.keys(pluginState).length > 0 ? pluginState : parsed.state,
     });
     await writePluginCounters(pluginId, counters);
     await appendPluginSeries(pluginId, parsed.observedAt, liveNumbers);

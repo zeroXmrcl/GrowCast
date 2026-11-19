@@ -18,13 +18,14 @@ function hostCandidates(plugin: DiscoveredPlugin): string[] {
             path.join(folder, "host", "index.js"),
             path.join(folder, "host", "index.ts"),
         ];
+    const dist = path.join(folder, "host", "dist", "index.js");
     if (process.env.NODE_ENV === "test") {
-        return [...new Set(fromSpec.filter((candidate) => candidate.endsWith(".ts")))];
+        // Source when the checkout has it. The built module is what production
+        // loads, so a dist-only plugin (the deployed tree) still runs in tests.
+        const ts = fromSpec.filter((candidate) => candidate.endsWith(".ts"));
+        return [...new Set([...ts, dist, ...fromSpec.filter((candidate) => candidate.endsWith(".js"))])];
     }
-    return [...new Set([
-        path.join(folder, "host", "dist", "index.js"),
-        ...fromSpec,
-    ])];
+    return [...new Set([dist, ...fromSpec])];
 }
 
 export async function loadHostModule(plugin: DiscoveredPlugin): Promise<PluginHostModule | null> {

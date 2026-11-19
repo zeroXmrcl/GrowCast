@@ -1,8 +1,10 @@
 "use client";
 
 import {useEffect, useRef, useState, type ReactNode} from "react";
+import {usePathname} from "next/navigation";
 import type {PluginDefinition, PluginRole} from "@growcast/plugin-sdk/ui";
 import {pluginAssetUrl} from "@/lib/plugins/import-map";
+import {WORKSPACE_AREA, WORKSPACE_PAD, WORKSPACE_VT, isEnergyWorkspacePath} from "@/lib/workspace";
 
 type PluginMountProps = {
     pluginId: string;
@@ -33,9 +35,15 @@ type ImportMapSdk = {
 
 export default function PluginMount(props: PluginMountProps) {
     const hostRef = useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
     const [message, setMessage] = useState("");
     const [failed, setFailed] = useState(false);
+    const [painted, setPainted] = useState(false);
     const [webComponent, setWebComponent] = useState<string | null>(null);
+    const showEnergySkeleton = !painted && !failed && !webComponent
+        && Boolean(props.pageId)
+        && !props.widgetId
+        && isEnergyWorkspacePath(pathname);
 
     useEffect(() => {
         const host = hostRef.current;
@@ -92,7 +100,10 @@ export default function PluginMount(props: PluginMountProps) {
                         createElement(Cmp, null),
                     ),
                 );
-                setMessage("");
+                if (!cancelled) {
+                    setPainted(true);
+                    setMessage("");
+                }
             } catch (error) {
                 console.error("plugin ui import failed", url, error);
                 if (cancelled) {
@@ -135,6 +146,7 @@ export default function PluginMount(props: PluginMountProps) {
                 </div>
             ) : null}
             {failed && message ? <PluginErrorCard message={message} /> : null}
+            {showEnergySkeleton ? <EnergyRouteSkeleton /> : null}
             {webComponent ? (
                 <div
                     dangerouslySetInnerHTML={{
@@ -144,6 +156,38 @@ export default function PluginMount(props: PluginMountProps) {
             ) : (
                 <div ref={hostRef} className="plugin-mount-root" />
             )}
+        </>
+    );
+}
+
+function EnergyRouteSkeleton() {
+    const bars = ["Now", "24h", "7 days", "30 days", "This grow"];
+    return (
+        <>
+            <section
+                aria-busy="true"
+                aria-label="Energy"
+                className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} grid min-h-24 grid-cols-2 lg:grid-cols-5`}
+            >
+                {bars.map((label) => (
+                    <div key={label} className="border-b border-zinc-200 p-4 lg:border-b-0 lg:border-r dark:border-zinc-800">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</p>
+                        <div className="mt-3 h-6 w-16 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+                    </div>
+                ))}
+            </section>
+            <section aria-hidden="true" className={`${WORKSPACE_AREA.watts} ${WORKSPACE_VT.mid} ${WORKSPACE_PAD} min-h-40`}>
+                <div className="h-32 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+            </section>
+            <section aria-hidden="true" className={`${WORKSPACE_AREA.flow} ${WORKSPACE_VT.flow} ${WORKSPACE_PAD} min-h-24`}>
+                <div className="h-16 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+            </section>
+            <section aria-hidden="true" className={`${WORKSPACE_AREA.water} ${WORKSPACE_VT.water} ${WORKSPACE_PAD} min-h-40`}>
+                <div className="h-32 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+            </section>
+            <section aria-hidden="true" className={`${WORKSPACE_AREA.table} ${WORKSPACE_VT.table} min-h-24 p-4`}>
+                <div className="h-16 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+            </section>
         </>
     );
 }

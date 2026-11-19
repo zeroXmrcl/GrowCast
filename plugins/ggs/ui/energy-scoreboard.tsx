@@ -430,6 +430,40 @@ function EnergyGraphCard({
     );
 }
 
+function EnergyPending() {
+    const bars = ["Now", "24h", "7 days", "30 days", "This grow"];
+    return (
+        <>
+            <section
+                aria-busy="true"
+                aria-label="Energy"
+                className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} grid h-full min-h-24 grid-cols-2 lg:grid-cols-5`}
+            >
+                {bars.map((label) => (
+                    <div key={label} className={`border-b p-4 lg:border-b-0 lg:border-r ${WORKSPACE_HAIRLINE}`}>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</p>
+                        <div className="mt-3 h-6 w-16 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+                    </div>
+                ))}
+            </section>
+            <section aria-hidden="true" className={`${WORKSPACE_AREA.watts} ${WORKSPACE_VT.mid} ${WORKSPACE_PAD} min-h-40`}>
+                <div className="mb-4 h-8 w-56 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-32 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+            </section>
+            <section aria-hidden="true" className={`${WORKSPACE_AREA.flow} ${WORKSPACE_VT.flow} ${WORKSPACE_PAD} min-h-24`}>
+                <div className="h-16 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+            </section>
+            <section aria-hidden="true" className={`${WORKSPACE_AREA.water} ${WORKSPACE_VT.water} ${WORKSPACE_PAD} min-h-40`}>
+                <div className="mb-4 h-8 w-40 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+                <div className="h-32 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+            </section>
+            <section aria-hidden="true" className={`${WORKSPACE_AREA.table} ${WORKSPACE_VT.table} min-h-24 p-4`}>
+                <div className="h-16 rounded-md bg-zinc-200 dark:bg-zinc-800" />
+            </section>
+        </>
+    );
+}
+
 function usePolledEnergyDto(initial: EnergyPublicDto | null): EnergyPublicDto | null {
     const {role} = useAuth();
     const pollPath = role === "admin" ? ENERGY_ADMIN_POLL_PATH : ENERGY_PUBLIC_POLL_PATH;
@@ -471,15 +505,7 @@ export default function EnergyScoreboard({dto: initial = null}: {dto?: EnergyPub
     const [graphWindow, setGraphWindow] = usePersistedWindowKey(GRAPH_WINDOW_SLOT);
     const [waterWindow, setWaterWindow] = usePersistedWindowKey(WATER_WINDOW_SLOT);
     if (!dto) {
-        return (
-            <>
-                <section className={`${WORKSPACE_AREA.kwh} ${WORKSPACE_VT.side} ${WORKSPACE_PAD}`} />
-                <section className={`${WORKSPACE_AREA.watts} ${WORKSPACE_VT.mid} ${WORKSPACE_PAD}`} />
-                <section className={`${WORKSPACE_AREA.flow} ${WORKSPACE_VT.flow} ${WORKSPACE_PAD}`} />
-                <section className={`${WORKSPACE_AREA.water} ${WORKSPACE_VT.water} ${WORKSPACE_PAD}`} />
-                <section className={`${WORKSPACE_AREA.table} ${WORKSPACE_VT.table}`} />
-            </>
-        );
+        return <EnergyPending />;
     }
     return (
         <>
