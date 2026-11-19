@@ -1,6 +1,7 @@
 "use client";
 
-import {useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject} from "react";
+import {useEffect, useId, useMemo, useRef, useState, type CSSProperties, type RefObject} from "react";
+import {RangeSelector} from "@growcast/plugin-sdk/ui";
 import {createPortal} from "react-dom";
 import ClimateHistoryChart from "@/plugins/ggs/ui/climate-history-chart";
 import type {ClimateHistoryPublic, ClimatePoint, ClimateWindow} from "@/plugins/ggs/host/climate/history-public";
@@ -164,12 +165,10 @@ export default function ClimateHistoryDialog({
     const [phase, setPhase] = useState<Phase>(() => (prefersReducedMotion() ? "open" : "enter"));
     const [reduced] = useState(() => prefersReducedMotion());
     const [openedMetric] = useState(metric);
-    const [bar, setBar] = useState({x: 0, y: 0, width: 0});
     const onCloseRef = useRef(onClose);
     const closing = useRef(false);
     const timer = useRef<number | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
-    const scaleRef = useRef<HTMLDivElement | null>(null);
     const mounted = typeof document !== "undefined";
     const metricIndex = Math.max(0, METRICS.findIndex((item) => item.key === metric));
     const activeMetric = METRICS[metricIndex];
@@ -269,30 +268,6 @@ export default function ClimateHistoryDialog({
         };
     }, [active, history]);
 
-    useLayoutEffect(() => {
-        const row = scaleRef.current;
-        if (!row) {
-            return;
-        }
-        function place() {
-            const btn = row?.querySelector<HTMLButtonElement>(`[data-range="${active}"]`);
-            if (!row || !btn) {
-                return;
-            }
-            const rowBox = row.getBoundingClientRect();
-            const buttonBox = btn.getBoundingClientRect();
-            setBar({
-                x: buttonBox.left - rowBox.left,
-                y: buttonBox.bottom - rowBox.top - 2,
-                width: buttonBox.width,
-            });
-        }
-        place();
-        const observer = new ResizeObserver(place);
-        observer.observe(row);
-        return () => observer.disconnect();
-    }, [active, chips]);
-
     const shown = phase === "open";
     const dimStyle: CSSProperties = reduced
         ? {opacity: 1}
@@ -349,36 +324,12 @@ export default function ClimateHistoryDialog({
                             ×
                         </button>
                     </div>
-                    <div
-                        ref={scaleRef}
-                        role="group"
-                        aria-label="Time range"
-                        className="relative mt-3 mb-2.5 flex flex-wrap gap-x-[22px] gap-y-1"
-                    >
-                        <span
-                            className="absolute top-0 left-0 h-0.5 rounded-sm bg-zinc-900 dark:bg-zinc-100"
-                            style={{
-                                width: bar.width,
-                                transform: `translate(${bar.x}px, ${bar.y}px)`,
-                                transition: reduced ? "none" : `transform 220ms ${OPEN_EASE}, width 220ms ${OPEN_EASE}`,
-                            }}
-                        />
-                        {chips.map((chip) => {
-                            const pressed = chip.key === active;
-                            return (
-                                <button
-                                    key={chip.key}
-                                    type="button"
-                                    data-range={chip.key}
-                                    aria-pressed={pressed}
-                                    onClick={() => setKey(chip.key)}
-                                    className={`relative z-[1] pb-2 text-sm hover:text-zinc-900 dark:hover:text-zinc-100 ${pressed ? "font-semibold text-zinc-900 dark:text-zinc-100" : "font-medium text-zinc-500 dark:text-zinc-400"}`}
-                                >
-                                    {chip.label}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    <RangeSelector
+                        className="mt-3 mb-2.5"
+                        options={chips.map((chip) => ({id: chip.key, label: chip.label}))}
+                        value={active}
+                        onChange={(id) => setKey(id as HistoryKey)}
+                    />
                     {empty || series === null ? (
                         <p className="text-sm text-zinc-600 dark:text-zinc-300">No climate history yet</p>
                     ) : (

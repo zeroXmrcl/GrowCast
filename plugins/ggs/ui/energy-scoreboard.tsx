@@ -1,14 +1,16 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {useAuth} from "@growcast/plugin-sdk/ui";
+import {RangeSelector, useAuth} from "@growcast/plugin-sdk/ui";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/plugins/ggs/host/energy/berlin";
 import {
     ENERGY_ADMIN_POLL_PATH,
     ENERGY_POLL_MS,
     ENERGY_PUBLIC_POLL_PATH,
+    energyDtoInFlight,
     fetchEnergyDto,
+    peekEnergyDto,
     shouldPollEnergy,
 } from "@/plugins/ggs/host/energy/poll";
 import EnergyFlowmap from "@/plugins/ggs/ui/energy-flowmap";
@@ -416,30 +418,13 @@ function EnergyGraphCard({
 
     return (
         <section className={`${WORKSPACE_AREA.watts} ${WORKSPACE_VT.mid} ${WORKSPACE_PAD}`}>
-            <div className="relative z-10 mb-4 flex flex-wrap gap-2">
-                {CHIPS.map((chip) => {
-                    const pressed = chip.key === windowKey;
-                    return (
-                        <button
-                            key={chip.key}
-                            type="button"
-                            aria-pressed={pressed}
-                            onPointerDown={(event) => {
-                                event.preventDefault();
-                                onWindowKey(chip.key);
-                            }}
-                            onClick={() => onWindowKey(chip.key)}
-                            className={
-                                pressed
-                                    ? "rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-                                    : "rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
-                            }
-                        >
-                            {chip.label}
-                        </button>
-                    );
-                })}
-            </div>
+            <RangeSelector
+                className="relative z-10 mb-4"
+                label="Energy range"
+                options={CHIPS.map((chip) => ({id: chip.key, label: chip.label}))}
+                value={windowKey}
+                onChange={(id) => onWindowKey(id as WindowKey)}
+            />
             <EnergyWattsPlot series={selected}/>
         </section>
     );
@@ -448,10 +433,7 @@ function EnergyGraphCard({
 function usePolledEnergyDto(initial: EnergyPublicDto | null): EnergyPublicDto | null {
     const {role} = useAuth();
     const pollPath = role === "admin" ? ENERGY_ADMIN_POLL_PATH : ENERGY_PUBLIC_POLL_PATH;
-    const [dto, setDto] = useState(initial);
-    useEffect(() => {
-        setDto(initial);
-    }, [initial]);
+    const [dto, setDto] = useState(() => initial ?? peekEnergyDto());
     useEffect(() => {
         let cancelled = false;
         async function tick() {
@@ -459,8 +441,10 @@ function usePolledEnergyDto(initial: EnergyPublicDto | null): EnergyPublicDto | 
                 return;
             }
             const next = await fetchEnergyDto(fetch, pollPath);
-            if (!cancelled && next) {
-                setDto(next);
+            const pending = next ? null : energyDtoInFlight();
+            const resolved = next ?? (pending ? await pending : null);
+            if (!cancelled && resolved) {
+                setDto(resolved);
             }
         }
         void tick();

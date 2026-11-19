@@ -1,5 +1,6 @@
 "use client";
 
+import {RangeSelector} from "@growcast/plugin-sdk/ui";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
 import {berlinHour} from "@/plugins/ggs/host/energy/berlin";
 import {formatKwh} from "@/plugins/ggs/host/energy/format";
@@ -137,30 +138,13 @@ export default function EnergyWater({
                     {formatKwh(selected.liters)} L
                 </p>
             </div>
-            <div className="relative z-10 mb-4 flex flex-wrap gap-2">
-                {CHIPS.map((chip) => {
-                    const pressed = chip.key === windowKey;
-                    return (
-                        <button
-                            key={chip.key}
-                            type="button"
-                            aria-pressed={pressed}
-                            onPointerDown={(event) => {
-                                event.preventDefault();
-                                onWindowKey(chip.key);
-                            }}
-                            onClick={() => onWindowKey(chip.key)}
-                            className={
-                                pressed
-                                    ? "rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
-                                    : "rounded-full border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
-                            }
-                        >
-                            {chip.label}
-                        </button>
-                    );
-                })}
-            </div>
+            <RangeSelector
+                className="relative z-10 mb-4"
+                label="Water range"
+                options={CHIPS.map((chip) => ({id: chip.key, label: chip.label}))}
+                value={windowKey}
+                onChange={(id) => onWindowKey(id as WindowKey)}
+            />
             <div className="flex">
                 <div
                     className="flex w-12 shrink-0 flex-col justify-between pr-1 text-right text-[10px] leading-none text-zinc-400"

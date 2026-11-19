@@ -119,10 +119,11 @@ describe("energy water view", () => {
         assert.match(drip, /aria-label=\{label\}/);
         assert.match(drip, /stroke-zinc-200/);
         assert.match(drip, /group-hover:block/);
-        assert.match(page, /onPointerDown/);
+        assert.match(page, /RangeSelector/);
         assert.match(page, /onWindowKey=\{setWaterWindow\}/);
         assert.match(page, /group-hover:block/);
         assert.doesNotMatch(page, /onPointerMove/);
+        assert.match(drip, /RangeSelector/);
         assert.doesNotMatch(drip, /bg-zinc-200/);
         assert.doesNotMatch(drip, /tanks/);
     });

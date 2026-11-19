@@ -18,3 +18,4 @@ export {
     type PluginRuntimeValue,
 } from "./runtime";
 export {Card, Gauge, LineChart, PageShell, PowerFlow, Stat} from "./kit";
+export {RangeSelector, type RangeSelectorOption} from "./range-selector";

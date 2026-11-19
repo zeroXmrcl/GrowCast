@@ -44,6 +44,9 @@ function useClimateTick(): ClimateTick {
 }
 
 function LiveClimateWidget() {
+    useEffect(() => {
+        void fetchEnergyDto(fetch);
+    }, []);
     return <LiveTentRow />;
 }
 

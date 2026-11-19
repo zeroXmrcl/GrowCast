@@ -50,8 +50,32 @@ async function listFiles(root: string, relative = ""): Promise<string[]> {
     return files;
 }
 
-export async function hashPluginFolder(folderPath: string): Promise<string> {
+type HashCacheEntry = {signature: string; hash: string};
+
+const hashCache = new Map<string, HashCacheEntry>();
+
+export function _resetPluginHashCacheForTests(): void {
+    hashCache.clear();
+}
+
+function stampOf(info: {size: number; mtimeNs?: bigint; mtimeMs: number}): string {
+    const mtime = typeof info.mtimeNs === "bigint" ? info.mtimeNs.toString() : String(Math.trunc(info.mtimeMs));
+    return `${info.size}\0${mtime}`;
+}
+
+/** Cheap identity of the hashed files. Content is read again only when this changes. */
+export async function pluginFolderSignature(folderPath: string): Promise<string> {
     const files = (await listFiles(folderPath)).sort((a, b) => a.localeCompare(b));
+    const parts: string[] = [];
+    for (const rel of files) {
+        const info = await stat(path.join(folderPath, rel));
+        parts.push(`${rel}\0${stampOf(info)}`);
+    }
+    return parts.join("\n");
+}
+
+async function hashListed(folderPath: string, signature: string): Promise<string> {
+    const files = signature.length === 0 ? [] : signature.split("\n").map((line) => line.split("\0")[0] ?? "");
     const outer = createHash("sha256");
     for (const rel of files) {
         const abs = path.join(folderPath, rel);
@@ -66,6 +90,17 @@ export async function hashPluginFolder(folderPath: string): Promise<string> {
         outer.update("\n");
     }
     return `sha256:${outer.digest("hex")}`;
+}
+
+export async function hashPluginFolder(folderPath: string): Promise<string> {
+    const signature = await pluginFolderSignature(folderPath);
+    const cached = hashCache.get(folderPath);
+    if (cached && cached.signature === signature) {
+        return cached.hash;
+    }
+    const hash = await hashListed(folderPath, signature);
+    hashCache.set(folderPath, {signature, hash});
+    return hash;
 }
 
 export function hashesEqual(left: string | null | undefined, right: string | null | undefined): boolean {

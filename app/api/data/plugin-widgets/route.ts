@@ -1,5 +1,6 @@
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {widgetsForSlot} from "@/lib/plugins/routes";
+import {withServerTiming} from "@/lib/plugins/server-timing";
 import type {PluginWidgetSlot} from "@/lib/plugins/types";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ const SLOTS = new Set<PluginWidgetSlot>([
 ]);
 
 export async function GET(request: Request) {
+    const started = performance.now();
     const slot = new URL(request.url).searchParams.get("slot") ?? "";
     if (!SLOTS.has(slot as PluginWidgetSlot)) {
         return Response.json({error: "Unknown slot"}, {status: 400, headers: {"Cache-Control": "no-store"}});
@@ -36,5 +38,9 @@ export async function GET(request: Request) {
             styles: discovered.manifest.ui?.styles,
         });
     }
-    return Response.json({slot, widgets: items}, {headers: {"Cache-Control": "no-store"}});
+    return withServerTiming(
+        Response.json({slot, widgets: items}, {headers: {"Cache-Control": "no-store"}}),
+        "plugin-widgets",
+        started,
+    );
 }

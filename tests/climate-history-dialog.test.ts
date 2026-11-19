@@ -84,6 +84,7 @@ describe("climate history dialog", () => {
         assert.match(dialog, /translateY/);
         assert.match(dialog, /transition: shown/);
         assert.match(dialog, /24 hours/);
+        assert.match(dialog, /RangeSelector/);
         assert.match(dialog, /ArrowLeft/);
         assert.match(dialog, /Show \$\{previous.label\}/);
         assert.doesNotMatch(dialog, /Past climate/);

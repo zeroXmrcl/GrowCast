@@ -1,4 +1,4 @@
-import {readdir, readFile} from "node:fs/promises";
+import {readdir, readFile, stat} from "node:fs/promises";
 import path from "node:path";
 import {pluginIdMatchesParam} from "@/lib/plugins/ids";
 import {parsePluginManifest} from "@/lib/plugins/manifest";
@@ -15,6 +15,38 @@ export type DiscoveryResult = {
     issues: DiscoveryIssue[];
 };
 
+const discoveryCache = new Map<string, {signature: string; result: DiscoveryResult}>();
+
+export function _resetDiscoveryCacheForTests(): void {
+    discoveryCache.clear();
+}
+
+async function discoverySignature(root: string): Promise<string> {
+    let entries;
+    try {
+        entries = await readdir(root, {withFileTypes: true});
+    } catch {
+        return "missing";
+    }
+    const parts: string[] = [];
+    for (const entry of entries) {
+        if (!entry.isDirectory() || entry.name.startsWith(".")) {
+            continue;
+        }
+        const manifestPath = path.join(root, entry.name, "plugin.json");
+        try {
+            const info = await stat(manifestPath);
+            const mtimeNs = (info as {mtimeNs?: bigint}).mtimeNs;
+            const mtime = typeof mtimeNs === "bigint" ? mtimeNs.toString() : String(Math.trunc(info.mtimeMs));
+            parts.push(`${entry.name}\0${info.size}\0${mtime}`);
+        } catch {
+            parts.push(`${entry.name}\0missing`);
+        }
+    }
+    parts.sort();
+    return parts.join("\n");
+}
+
 export async function readPluginJson(folderPath: string): Promise<PluginManifest | {error: string}> {
     try {
         const raw = JSON.parse(await readFile(path.join(folderPath, "plugin.json"), "utf8")) as unknown;
@@ -30,6 +62,17 @@ export async function readPluginJson(folderPath: string): Promise<PluginManifest
 }
 
 export async function discoverPlugins(root = pluginsRoot()): Promise<DiscoveryResult> {
+    const signature = await discoverySignature(root);
+    const cached = discoveryCache.get(root);
+    if (cached && cached.signature === signature) {
+        return cached.result;
+    }
+    const result = await discoverPluginsUncached(root);
+    discoveryCache.set(root, {signature, result});
+    return result;
+}
+
+async function discoverPluginsUncached(root: string): Promise<DiscoveryResult> {
     let entries;
     try {
         entries = await readdir(root, {withFileTypes: true});

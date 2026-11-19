@@ -8,6 +8,16 @@ export const ENERGY_POLL_PATH = ENERGY_PUBLIC_POLL_PATH;
 export const ENERGY_ADMIN_POLL_PATH = "/api/plugins/v1/growcast.ggs/x/energy?grow=current";
 
 let energyPollInFlight = false;
+let energyDtoCache: EnergyPublicDto | null = null;
+let energyDtoPending: Promise<EnergyPublicDto | null> | null = null;
+
+export function peekEnergyDto(): EnergyPublicDto | null {
+    return energyDtoCache;
+}
+
+export function energyDtoInFlight(): Promise<EnergyPublicDto | null> | null {
+    return energyDtoPending;
+}
 
 export function parseEnergyPollBody(raw: unknown): EnergyPublicDto | null {
     if (!isRecord(raw) || raw.estimated !== true) {
@@ -39,20 +49,29 @@ export async function fetchEnergyDto(
         return null;
     }
     energyPollInFlight = true;
-    try {
-        const response = await fetcher(path, {
-            credentials: "same-origin",
-            cache: "no-store",
-        });
-        if (!response.ok) {
+    const pending = (async () => {
+        try {
+            const response = await fetcher(path, {
+                credentials: "same-origin",
+                cache: "no-store",
+            });
+            if (!response.ok) {
+                return null;
+            }
+            const parsed = parseEnergyPollBody(await response.json());
+            if (parsed) {
+                energyDtoCache = parsed;
+            }
+            return parsed;
+        } catch {
             return null;
+        } finally {
+            energyPollInFlight = false;
+            energyDtoPending = null;
         }
-        return parseEnergyPollBody(await response.json());
-    } catch {
-        return null;
-    } finally {
-        energyPollInFlight = false;
-    }
+    })();
+    energyDtoPending = pending;
+    return pending;
 }
 
 export function shouldPollEnergy(visible: boolean): boolean {

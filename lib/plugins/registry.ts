@@ -1,10 +1,10 @@
-import {readFile} from "node:fs/promises";
+import {mkdir, readFile, stat} from "node:fs/promises";
 import {isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {discoverPlugins, findDiscoveredPlugin} from "@/lib/plugins/discovery";
-import {hashPluginFolder, hashesEqual} from "@/lib/plugins/hash";
+import {hashPluginFolder, hashesEqual, pluginFolderSignature} from "@/lib/plugins/hash";
 import {pluginLogger} from "@/lib/plugins/log";
-import {pluginDataDir, pluginRegistryFile} from "@/lib/plugins/paths";
+import {pluginDataDir, pluginRegistryFile, pluginTokensFile, pluginsRoot} from "@/lib/plugins/paths";
 import {pluginHasToken, mintPluginToken, revokePluginToken} from "@/lib/plugins/tokens";
 import type {
     PluginPauseReason,
@@ -13,7 +13,28 @@ import type {
     PluginRegistryRecord,
     PluginStatus,
 } from "@/lib/plugins/types";
-import {mkdir} from "node:fs/promises";
+const listedRecords = new Map<string, {signature: string; records: PluginRegistryRecord[]}>();
+const listingRecords = new Map<string, Promise<PluginRegistryRecord[]>>();
+
+export function _resetRegistryListCacheForTests(): void {
+    listedRecords.clear();
+    listingRecords.clear();
+}
+
+function registryCacheKey(): string {
+    return `${pluginRegistryFile()}\0${pluginsRoot()}`;
+}
+
+async function fileStamp(filePath: string): Promise<string> {
+    try {
+        const info = await stat(filePath);
+        const mtimeNs = (info as {mtimeNs?: bigint}).mtimeNs;
+        const mtime = typeof mtimeNs === "bigint" ? mtimeNs.toString() : String(Math.trunc(info.mtimeMs));
+        return `${info.size}\0${mtime}`;
+    } catch {
+        return "missing";
+    }
+}
 
 const EMPTY_FILE: PluginRegistryFile = {version: 1, plugins: {}};
 
@@ -31,16 +52,43 @@ async function readRegistryFile(): Promise<PluginRegistryFile> {
 
 async function writeRegistryFile(file: PluginRegistryFile): Promise<void> {
     await atomicWriteFile(pluginRegistryFile(), `${JSON.stringify(file, null, 2)}\n`, 0o600);
+    listedRecords.clear();
 }
 
 export async function listRegistryRecords(): Promise<PluginRegistryRecord[]> {
+    const key = registryCacheKey();
+    const pending = listingRecords.get(key);
+    if (pending) {
+        return pending;
+    }
+    const promise = loadRegistryRecords(key).finally(() => {
+        listingRecords.delete(key);
+    });
+    listingRecords.set(key, promise);
+    return promise;
+}
+
+async function loadRegistryRecords(key: string): Promise<PluginRegistryRecord[]> {
     const file = await readRegistryFile();
     const {plugins: discovered, issues} = await discoverPlugins();
+    const signature = [
+        await fileStamp(pluginRegistryFile()),
+        await fileStamp(pluginTokensFile()),
+        ...(await Promise.all(discovered.map(async (item) => `${item.folderPath}\0${await pluginFolderSignature(item.folderPath)}`))),
+        ...issues.map((issue) => `${issue.folderName}\0${issue.error}`),
+    ].join("\n");
+    const cached = listedRecords.get(key);
+    if (cached && cached.signature === signature) {
+        return cached.records;
+    }
     const records: PluginRegistryRecord[] = [];
     const seen = new Set<string>();
-    for (const item of discovered) {
+    const hashed = await Promise.all(discovered.map(async (item) => ({
+        item,
+        currentHash: await hashPluginFolder(item.folderPath),
+    })));
+    for (const {item, currentHash} of hashed) {
         seen.add(item.manifest.id);
-        const currentHash = await hashPluginFolder(item.folderPath);
         const stored = file.plugins[item.manifest.id];
         const hashMatches = hashesEqual(stored?.pinnedHash, currentHash);
         let status: PluginStatus = stored?.status ?? "discovered";
@@ -95,7 +143,9 @@ export async function listRegistryRecords(): Promise<PluginRegistryRecord[]> {
             pausedReason: stored.pausedReason ?? "invalid-manifest",
         });
     }
-    return records.sort((a, b) => a.id.localeCompare(b.id));
+    const sorted = records.sort((a, b) => a.id.localeCompare(b.id));
+    listedRecords.set(key, {signature, records: sorted});
+    return sorted;
 }
 
 export async function getRegistryRecord(pluginId: string): Promise<PluginRegistryRecord | null> {
