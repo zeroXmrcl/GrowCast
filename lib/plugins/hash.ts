@@ -16,17 +16,15 @@ const SKIP_DIR_NAMES = new Set([
 
 const SKIP_FILE_NAMES = new Set([".ds_store", "thumbs.db"]);
 
-function shouldSkipDir(name: string, relativeParent = ""): boolean {
-    if (SKIP_DIR_NAMES.has(name) || name.startsWith(".")) {
-        return true;
-    }
-    // host/dist is a build artifact (core bundles it on start). ui/dist is the shipped UI pin.
-    return name === "dist" && (relativeParent === "host" || relativeParent.endsWith("/host"));
+// host/dist is the bundle production imports. A change there must change this pin.
+function shouldSkipDir(name: string): boolean {
+    return SKIP_DIR_NAMES.has(name) || name.startsWith(".");
 }
 
 function shouldSkipFile(name: string): boolean {
     const lower = name.toLowerCase();
-    return SKIP_FILE_NAMES.has(lower) || lower.endsWith(".pyc") || lower.endsWith(".pyo");
+    // GROWCAST-HASH records the pin. It is written after hashing, so it is not an input.
+    return SKIP_FILE_NAMES.has(lower) || lower === "growcast-hash" || lower.endsWith(".pyc") || lower.endsWith(".pyo");
 }
 
 async function listFiles(root: string, relative = ""): Promise<string[]> {
@@ -36,7 +34,7 @@ async function listFiles(root: string, relative = ""): Promise<string[]> {
     for (const entry of entries) {
         const rel = relative ? `${relative}/${entry.name}` : entry.name;
         if (entry.isDirectory()) {
-            if (shouldSkipDir(entry.name, relative)) {
+            if (shouldSkipDir(entry.name)) {
                 continue;
             }
             files.push(...await listFiles(root, rel));

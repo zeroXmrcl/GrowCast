@@ -40,9 +40,14 @@ A good release also publishes:
 - `GROWCAST-HASH` — the GrowCast folder pin (`sha256:` + 64 hex chars) for
   the extracted tree, which is what Admin shows
 
-GrowCast's pin is a hash of the extracted files (it skips `host/dist`,
-`node_modules`, snapshots, and other build/media dirs). It is **not** the
-SHA-256 of the tarball.
+GrowCast's pin is a hash of the extracted files. It includes `plugin.json`,
+`host/dist` (the server bundle), `ui/dist`, Dockerfiles, and other shipped
+backend files. It skips `node_modules`, VCS and dot-directories, `__pycache__`,
+`*.pyc`, `snapshots/`, `timelapse/` media, `media/`, `coverage/`, and
+`dist-info/`. `GROWCAST-HASH` is not an input to the pin; pack scripts write
+it after hashing so the file matches the hash Admin shows. The pin is **not**
+the SHA-256 of the tarball. Any change under `host/dist` pauses the plugin
+until you confirm the new hash.
 
 ## Install
 

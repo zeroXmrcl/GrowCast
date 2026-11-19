@@ -8,6 +8,15 @@
 
 A plugin is a folder in `plugins/` with `plugin.json`, an optional backend, and an optional `ui/dist` bundle. Core is the generic host: discovery, trusted install (SHA-256 pin), per-plugin tokens, ingest/heartbeat validation, storage under `data/plugins/<id>/`, generic routes, and compose generation. Core builds, tests, and runs with `plugins/` empty except [plugins/README.md](../../plugins/README.md).
 
+The folder pin is the SHA-256 Admin shows at enable time. It covers every file the host can execute, plus the manifest:
+
+- `plugin.json`
+- `host/dist/**` (production `require`s `host/dist/index.js` first) and any other host entry such as `host/index.js` or `host/index.ts` when that file is what the loader runs
+- `ui/dist/**`
+- Dockerfiles, Python/Node backends, and the rest of the shipped folder
+
+It does not cover `node_modules`, `.git` and other dot-directories, `__pycache__`, `*.pyc` / `*.pyo`, `snapshots/`, `timelapse/` media, `media/`, `coverage/`, or `dist-info/`. `GROWCAST-HASH` is the recorded pin, not an input, so the file can match Admin. A change to a covered file, including a rebuilt `host/dist`, pauses an enabled plugin until you confirm the new hash. The cached check is size plus mtime of those same files.
+
 First-party plugins currently still live in this tree under `plugins/{ggs,timelapse,restream,solar}` and will move to their own GitHub repos. Install a release dist with [INSTALL.md](./INSTALL.md).
 
 - `growcast.ggs` — Spider Farmer climate and tent energy

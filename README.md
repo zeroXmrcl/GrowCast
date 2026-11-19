@@ -10,6 +10,8 @@ GrowCast is a Next.js web app for a live garden: climate, energy, gallery, an OB
 
 Enable plugins in **Admin → Plugins**. First-party plugins are not on until you do that. Details: [docs/plugins/README.md](docs/plugins/README.md).
 
+Enabling a plugin pins a SHA-256 of its folder. GrowCast pauses the plugin when any pinned file changes, and it stays paused until you confirm the new hash. The pin covers `plugin.json`, `host/dist` (the bundle the server imports), `ui/dist`, Dockerfiles, and other shipped backend files. It skips `node_modules`, VCS and other dot-directories, `__pycache__`, `*.pyc`, `snapshots/`, `timelapse/` media, `media/`, `coverage/`, and `dist-info/`. `GROWCAST-HASH` records that pin and is not itself an input, so a release file can match the hash Admin shows. See [docs/plugins/INSTALL.md](docs/plugins/INSTALL.md).
+
 ## 1. Project Overview
 
 ### What the app does

@@ -4,7 +4,7 @@ import path from "node:path";
 import {describe, it} from "node:test";
 import {enablePlugin, getRegistryRecord, listRegistryRecords} from "../../lib/plugins/registry.ts";
 import {scanAndPauseChangedPlugins} from "../../lib/plugins/lifecycle.ts";
-import {hashPluginFolder} from "../../lib/plugins/hash.ts";
+import {hashPluginFolder, pluginFolderSignature} from "../../lib/plugins/hash.ts";
 import {SAMPLE_MANIFEST, withPluginHarness} from "./helpers.ts";
 
 describe("plugin hash pin", {concurrency: 1}, () => {
@@ -52,15 +52,33 @@ describe("plugin hash pin", {concurrency: 1}, () => {
         });
     });
 
-    it("does not include host/dist in the pin, but does include ui/dist", async () => {
+    it("includes host/dist in the pin and pauses when that bundle changes", async () => {
         await withPluginHarness(async ({writePlugin}) => {
             const dir = await writePlugin("example", SAMPLE_MANIFEST);
             const before = await hashPluginFolder(dir);
+            const beforeSig = await pluginFolderSignature(dir);
+            await enablePlugin("community.example");
             await mkdir(path.join(dir, "host", "dist"), {recursive: true});
             await writeFile(path.join(dir, "host", "dist", "index.js"), "export const host = 1\n");
-            assert.equal(await hashPluginFolder(dir), before);
+            const after = await hashPluginFolder(dir);
+            assert.notEqual(after, before);
+            const signature = await pluginFolderSignature(dir);
+            assert.notEqual(signature, beforeSig);
+            assert.match(signature, /host\/dist\/index\.js/);
+            assert.match(signature, /plugin\.json\u0000/);
+            const paused = await scanAndPauseChangedPlugins();
+            assert.deepEqual(paused, ["community.example"]);
+            const record = await getRegistryRecord("community.example");
+            assert.equal(record?.status, "paused");
+            assert.equal(record?.pausedReason, "hash-mismatch");
+            assert.equal(record?.hashMatches, false);
             await writeFile(path.join(dir, "ui/dist/index.js"), "export default { ui: true }\n");
-            assert.notEqual(await hashPluginFolder(dir), before);
+            const afterUi = await hashPluginFolder(dir);
+            assert.notEqual(afterUi, after);
+            await writeFile(path.join(dir, "GROWCAST-HASH"), `${before}\n`);
+            assert.equal(await hashPluginFolder(dir), afterUi);
+            await writeFile(path.join(dir, "host", "dist", "index.js"), "export const host = 2\n// rebuilt\n");
+            assert.notEqual(await hashPluginFolder(dir), afterUi);
         });
     });
 
