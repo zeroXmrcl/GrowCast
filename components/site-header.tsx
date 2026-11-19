@@ -73,11 +73,11 @@ export default function SiteHeader({
         <header
             className={`${WORKSPACE_VT.header} sticky top-0 z-40 bg-white/90 backdrop-blur dark:bg-zinc-950/90`}
         >
-            <div className={`${SITE_FRAME_CLASS} flex items-center justify-between py-3`}>
+            <div className={`${SITE_FRAME_CLASS} flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-3`}>
                 {workspace ? (
                     <Link
                         href="/"
-                        className="flex cursor-pointer items-center gap-3"
+                        className="flex shrink-0 cursor-pointer items-center gap-3"
                         onClick={(event) => {
                             if (isPlainWorkspaceClick(event)) {
                                 go("/", event);
@@ -87,17 +87,17 @@ export default function SiteHeader({
                         {logo}
                     </Link>
                 ) : (
-                    <Link href="/" className="flex items-center gap-3">
+                    <Link href="/" className="flex shrink-0 items-center gap-3">
                         {logo}
                     </Link>
                 )}
 
-                <nav className="flex items-center gap-3">
+                <nav className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-1 gap-y-0.5 sm:gap-x-3">
                     {navItems.map((item) => {
                         const active = navItemIsActive(view, item.href);
                         const className = active
-                            ? "cursor-pointer px-3 py-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100"
-                            : "cursor-pointer px-3 py-2 text-sm text-zinc-700 hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-zinc-400";
+                            ? "cursor-pointer whitespace-nowrap px-2 py-2 text-sm font-semibold text-zinc-900 sm:px-3 dark:text-zinc-100"
+                            : "cursor-pointer whitespace-nowrap px-2 py-2 text-sm text-zinc-700 hover:text-zinc-800 sm:px-3 dark:text-zinc-300 dark:hover:text-zinc-400";
                         const workspaceTab = workspace && isWorkspacePath(item.href);
                         return (
                             <Link

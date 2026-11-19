@@ -84,6 +84,7 @@ describe("SiteHeader on a plugin page", () => {
             "/p/timelapse/gallery",
             "/grows",
         ]);
+        assert.match(html, /<nav class="[^"]*min-w-0[^"]*flex-wrap/);
         assert.match(html, /href="\/p\/solar"[^>]*aria-current="page"/);
         assert.match(html, />Solar</);
         assert.doesNotMatch(html, /href="\/p\/ggs\/energy"[^>]*aria-current="page"/);
