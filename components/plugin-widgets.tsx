@@ -105,6 +105,26 @@ export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
         );
     }
 
+    if (slot === "banner") {
+        return (
+            <div className="growcast-plugin-banner">
+                {present.map((entry) => (
+                    <PluginMount
+                        key={`${entry.item.pluginId}:${entry.item.widget.id}`}
+                        pluginId={entry.item.pluginId}
+                        version={entry.discovered.manifest.version}
+                        entry={entry.discovered.manifest.ui?.entry}
+                        webComponent={entry.discovered.manifest.ui?.webComponent}
+                        styles={entry.discovered.manifest.ui?.styles}
+                        widgetId={entry.item.widget.id}
+                        role="visitor"
+                        publicPage
+                    />
+                ))}
+            </div>
+        );
+    }
+
     const className = CONTENTS_SLOTS.has(slot)
         ? "contents"
         : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";

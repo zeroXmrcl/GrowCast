@@ -40,6 +40,7 @@ const SLOTS = new Set<PluginWidgetSlot>([
     "gallery-page",
     "archive",
     "site-chrome",
+    "banner",
 ]);
 const NETWORK = new Set<PluginNetworkPermission>(["none", "lan", "internet"]);
 const METRIC_KINDS = new Set(["gauge", "counter", "enum"]);

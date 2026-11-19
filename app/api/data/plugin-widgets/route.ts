@@ -12,6 +12,7 @@ const SLOTS = new Set<PluginWidgetSlot>([
     "gallery-page",
     "archive",
     "site-chrome",
+    "banner",
 ]);
 
 export async function GET(request: Request) {

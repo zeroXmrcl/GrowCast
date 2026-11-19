@@ -601,6 +601,23 @@ html[data-admin-save-bar] .admin-toast {
   display: none;
 }
 
+.growcast-plugin-banner:not(:has(.gc-power-notice)) {
+  display: none;
+}
+
+.growcast-plugin-banner:has(.gc-power-notice) {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+}
+
+html:has([data-overlay-root]) .growcast-plugin-banner:has(.gc-power-notice) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
 .plugin-mount-root {
   display: contents;
 }

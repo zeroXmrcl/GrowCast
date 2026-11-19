@@ -30,7 +30,8 @@ export type PluginWidgetSlot =
     | "energy-page"
     | "gallery-page"
     | "archive"
-    | "site-chrome";
+    | "site-chrome"
+    | "banner";
 
 export type PluginNetworkPermission = "none" | "lan" | "internet";
 
