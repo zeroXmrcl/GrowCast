@@ -1,4 +1,5 @@
 import {atomicWriteFile} from "@/lib/atomic-file";
+import {lexicalPluginRelative} from "@/lib/plugins/containment";
 import {readPluginConfigForBackend} from "@/lib/plugins/config";
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {generatedComposeFile, pluginDataDir, pluginRuntimeEnvFile} from "@/lib/plugins/paths";
@@ -41,12 +42,15 @@ function serviceBlock(plugin: DiscoveredPlugin, token: string): string {
     header.push(`      - ./plugins/${folder}:/plugin:ro`);
     header.push(`      - ./data/plugins/${plugin.manifest.id}:/data`);
     header.push("    depends_on: [growcast]");
-    if (runtime?.type === "python") {
+    if (runtime?.type === "python" || runtime?.type === "node") {
+        const entry = lexicalPluginRelative(runtime.entry ?? (runtime.type === "python" ? "backend/main.py" : "backend/main.js"));
+        if (!entry) {
+            throw new Error(`Plugin runtime entry escapes the plugin directory: ${plugin.manifest.id}`);
+        }
         header.push("    working_dir: /plugin");
-        header.push(`    command: ["python", "-u", ${yamlQuote(runtime.entry ?? "backend/main.py")}]`);
-    } else if (runtime?.type === "node") {
-        header.push("    working_dir: /plugin");
-        header.push(`    command: ["node", ${yamlQuote(runtime.entry ?? "backend/main.js")}]`);
+        header.push(runtime.type === "python"
+            ? `    command: ["python", "-u", ${yamlQuote(entry)}]`
+            : `    command: ["node", ${yamlQuote(entry)}]`);
     }
     if (runtime?.command && runtime.command.length > 0) {
         header.push(`    command: [${runtime.command.map((item) => yamlQuote(item)).join(", ")}]`);

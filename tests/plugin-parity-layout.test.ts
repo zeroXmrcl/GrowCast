@@ -37,20 +37,6 @@ describe("plugin parity layout and public energy", () => {
         assert.match(widgets, /OVERLAY_ORDER_CLIMATE/);
     });
 
-    it("public GGS energy always uses the public tariff", () => {
-        const host = src(path.join("plugins", "ggs", "host", "index.ts"));
-        const poll = src(path.join("plugins", "ggs", "host", "energy", "poll.ts"));
-        const scoreboard = src(path.join("plugins", "ggs", "ui", "energy-scoreboard.tsx"));
-        const overlay = src(path.join("plugins", "ggs", "ui", "src", "index.tsx"));
-        assert.match(host, /energyGetResponse\(request, "public"\)/);
-        assert.match(host, /pathName === "energy" && request.method === "GET"/);
-        assert.match(poll, /tariff=public/);
-        assert.match(poll, /ENERGY_ADMIN_POLL_PATH/);
-        assert.match(scoreboard, /ENERGY_PUBLIC_POLL_PATH/);
-        assert.match(scoreboard, /ENERGY_ADMIN_POLL_PATH/);
-        assert.match(overlay, /ENERGY_PUBLIC_POLL_PATH/);
-    });
-
     it("capture is token-gated and solar overlay widgets default off", () => {
         const restream = JSON.parse(src(path.join("plugins", "restream", "plugin.json"))) as {
             pages: Array<{id: string; public?: boolean}>;

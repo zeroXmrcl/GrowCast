@@ -56,7 +56,6 @@ describe("workspace morph", () => {
         const layout = src(path.join("components", "site-shell.tsx"));
         const frame = src(path.join("components", "workspace-frame.tsx"));
         const home = src(path.join("app", "(site)", "page.tsx"));
-        const energy = src(path.join("plugins", "ggs", "pages", "energy.tsx"));
         assert.match(layout, /WorkspaceFrame/);
         assert.match(frame, /OverlayCamera/);
         assert.match(frame, /isWorkspacePath\(pathname\)/);
@@ -68,18 +67,12 @@ describe("workspace morph", () => {
         assert.match(home, /PluginWidgets slot="dashboard"/);
         assert.match(home, /AiSummaryCard/);
         assert.match(home, /readAiSummaryPublic/);
-        assert.doesNotMatch(energy, /<h1/);
-        assert.doesNotMatch(energy, /py-10/);
-        assert.doesNotMatch(energy, /buildEnergyDto/);
     });
 
     it("pairs dashboard and energy panels with shared view-transition names", () => {
         const css = src(path.join("app", "globals.css"));
         const home = src(path.join("app", "(site)", "page.tsx"));
         const header = src(path.join("components", "site-header.tsx"));
-        const workspace = src(path.join("lib", "workspace.ts"));
-        const scoreboard = src(path.join("plugins", "ggs", "ui", "energy-scoreboard.tsx"));
-        const row = src(path.join("plugins", "ggs", "ui", "live-tent-row.tsx"));
         const pictures = src(path.join("components", "dash-pictures.tsx"));
         const frame = src(path.join("components", "workspace-frame.tsx"));
         const aiCard = src(path.join("components", "ai-summary-card.tsx"));
@@ -131,13 +124,6 @@ describe("workspace morph", () => {
         assert.match(aiCard, /WORKSPACE_VT\.ai/);
         assert.match(css, /growcast-area-ai/);
         assert.match(css, /grid-area: ai/);
-        assert.match(row, /WORKSPACE_VT\.mid/);
         assert.match(pictures, /WORKSPACE_VT\.water/);
-        assert.match(scoreboard, /WORKSPACE_VT\.side/);
-        assert.match(scoreboard, /WORKSPACE_VT\.mid/);
-        assert.match(scoreboard, /WORKSPACE_VT\.table/);
-        assert.doesNotMatch(scoreboard, /<h1/);
-        assert.match(scoreboard, /EnergyArchiveSection/);
-        assert.match(scoreboard, /rounded-2xl border border-zinc-200/);
     });
 });

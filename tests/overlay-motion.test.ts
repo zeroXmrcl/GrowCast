@@ -56,7 +56,6 @@ describe("overlay components import motion tokens", () => {
     it("does not hardcode the motion values in overlay JSX", () => {
         const files = [
             path.join("components", "overlay-motion-item.tsx"),
-            path.join("plugins", "ggs", "ui", "overlay-gear.tsx"),
             path.join("components", "overlay-hud.tsx"),
         ];
         for (const file of files) {

@@ -12,6 +12,7 @@ const SKIP_DIR_NAMES = new Set([
     "timelapse",
     "media",
     "coverage",
+    "dist-release",
 ]);
 
 const SKIP_FILE_NAMES = new Set([".ds_store", "thumbs.db"]);

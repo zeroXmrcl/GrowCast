@@ -31,10 +31,8 @@ describe("installer copy", () => {
             "Paste the MediaMTX HLS source, like http://stream.example.com/growcam/.",
         );
         assert.equal(INSTALLER_COPY.done.line, "You can change any of this later in admin settings.");
-        const ggs = readFileSync(path.join(process.cwd(), "plugins", "ggs", "plugin.json"), "utf8");
         const restream = readFileSync(path.join(process.cwd(), "plugins", "restream", "plugin.json"), "utf8");
         const timelapse = readFileSync(path.join(process.cwd(), "plugins", "timelapse", "plugin.json"), "utf8");
-        assert.match(ggs, /Email and password only\. Google or Apple sign-in will not work\./);
         assert.match(restream, /Creator Dashboard -> Settings -> Stream\./);
         assert.match(timelapse, /Use the camera’s local rtsp:\/\/ address\./);
     });

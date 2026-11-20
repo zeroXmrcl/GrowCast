@@ -1,4 +1,5 @@
 import {readFile} from "node:fs/promises";
+import {lexicalPluginRelative} from "@/lib/plugins/containment";
 import {assertDockerHostIsProxy, dockerEngineBaseUrl} from "@/lib/plugins/docker-guard";
 import {pluginRuntimeEnvFile} from "@/lib/plugins/paths";
 import {pluginServiceName} from "@/lib/plugins/ids";
@@ -86,12 +87,13 @@ export async function pluginCreateConfig(plugin: DiscoveredPlugin, token: string
     };
     if (runtime?.command && runtime.command.length > 0) {
         body.Cmd = runtime.command;
-    } else if (runtime?.type === "python") {
+    } else if (runtime?.type === "python" || runtime?.type === "node") {
+        const entry = lexicalPluginRelative(runtime.entry ?? (runtime.type === "python" ? "backend/main.py" : "backend/main.js"));
+        if (!entry) {
+            throw new Error(`Plugin runtime entry escapes the plugin directory: ${pluginId}`);
+        }
         body.WorkingDir = "/plugin";
-        body.Cmd = ["python", "-u", runtime.entry ?? "backend/main.py"];
-    } else if (runtime?.type === "node") {
-        body.WorkingDir = "/plugin";
-        body.Cmd = ["node", runtime.entry ?? "backend/main.js"];
+        body.Cmd = runtime.type === "python" ? ["python", "-u", entry] : ["node", entry];
     }
     return body;
 }

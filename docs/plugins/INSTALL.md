@@ -14,6 +14,13 @@ First-party plugins:
 | GrowCast Restream | [GrowCast-Restream](https://github.com/zeroXmrcl/GrowCast-Restream) | `plugins/restream/` |
 | GrowCast Solar | [GrowCast-Solar](https://github.com/zeroXmrcl/GrowCast-Solar) | `plugins/solar/` |
 
+GrowCast GGS is not vendored in the host image. Place the GrowCast-GGS
+checkout (or its release dist) at `plugins/ggs/`. The image build does not
+scan that folder, so GGS publishes its own stylesheet at `ui/dist/style.css`
+and lists it under `ui.styles`. The host loads that file with the widget,
+including when `plugins/` is a bind mount. The stylesheet includes the
+utilities the climate card uses, including its three-column layout.
+
 The SDK is [GrowCast-SDK](https://github.com/zeroXmrcl/GrowCast-SDK). You do
 not install the SDK into `plugins/`. Core serves one import-map runtime
 (`public/plugin-runtime/plugin-sdk-ui.js`) built from `@growcast/plugin-sdk`.

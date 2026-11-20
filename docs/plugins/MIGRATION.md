@@ -113,7 +113,8 @@ Set `GROWCAST_HOST_PROJECT` to this directory (the engine bind-mounts host paths
 
 ```bash
 export GROWCAST_HOST_PROJECT="$(pwd)"
-docker build -t growcast-plugin-ggs:local plugins/ggs
+# GGS source is the GrowCast-GGS repo, not this host checkout.
+docker build -t growcast-plugin-ggs:local /path/to/GrowCast-GGS/plugins/ggs
 docker build -t growcast-plugin-timelapse:local plugins/timelapse
 docker build -t growcast-plugin-restream:local plugins/restream
 docker build -t growcast-plugin-solar:local plugins/solar

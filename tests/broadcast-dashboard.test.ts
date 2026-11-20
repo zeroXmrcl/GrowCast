@@ -423,7 +423,6 @@ describe("homepage toast", () => {
 
         for (const rel of [
             path.join("app", "(site)", "layout.tsx"),
-            path.join("plugins", "ggs", "pages", "energy.tsx"),
             path.join("plugins", "timelapse", "pages", "gallery.tsx"),
             path.join("app", "(site)", "grows", "page.tsx"),
             path.join("app", "overlay", "page.tsx"),

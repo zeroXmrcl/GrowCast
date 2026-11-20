@@ -38,17 +38,10 @@ describe("admin notice query", () => {
     });
 
     it("keeps plugin notice copy on the plugin manifests", () => {
-        const ggs = parsePluginManifest(JSON.parse(
-            readFileSync(path.join(process.cwd(), "plugins", "ggs", "plugin.json"), "utf8"),
-        ));
         const restream = parsePluginManifest(JSON.parse(
             readFileSync(path.join(process.cwd(), "plugins", "restream", "plugin.json"), "utf8"),
         ));
-        assert.equal(ggs.ok, true);
         assert.equal(restream.ok, true);
-        if (ggs.ok) {
-            assert.equal(ggs.value.notices?.spider_farmer_connected?.title, "Spider Farmer connected");
-        }
         if (restream.ok) {
             assert.equal(restream.value.notices?.twitch_connected?.title, "Twitch connected");
             assert.equal(restream.value.notices?.music_uploaded?.title, "Tracks uploaded");

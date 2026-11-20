@@ -3,9 +3,8 @@ import {mkdir, mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {berlinDateOnly} from "../plugins/ggs/host/energy/berlin.ts";
-import {writeClimateDay, _resetClimateWriteLockForTests} from "../plugins/ggs/host/climate/store.ts";
-import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "../plugins/ggs/host/climate/types.ts";
+import {berlinDateOnly} from "../lib/berlin-date.ts";
+import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "../lib/ai-summary/climate.ts";
 import {shareFromRow, verdictsFromMosaic} from "../lib/ai-summary/mosaic.ts";
 import {
     currentMosaicSlotIndex,
@@ -25,9 +24,9 @@ import {
 import {toPublicAiSummary} from "../lib/ai-summary/public.ts";
 import {writeAiSummaryRecord, _resetAiSummaryLockForTests} from "../lib/ai-summary/store.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
-import {_resetEnergyAccrueLockForTests} from "../plugins/ggs/host/energy/accrue.ts";
 import {AI_SUMMARY_MOSAIC_SLOTS, type AiSummaryRecord, type ClimateWindowStats, type MosaicCell, type StageContext} from "../lib/ai-summary/types.ts";
-import {enableGgsForTests} from "./enable-ggs.ts";
+import {writeClimateDay} from "./climate-fixture.ts";
+import {enableGgsForTests, restoreGgsPluginsDirForTests} from "./enable-ggs.ts";
 
 function emptyStats(): ClimateWindowStats {
     const metric = {
@@ -112,16 +111,13 @@ async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     await mkdir(process.env.GROWCAST_DATA_DIR, {recursive: true});
     _resetAiSummaryLockForTests();
     _resetGrowWriteLockForTests();
-    _resetEnergyAccrueLockForTests();
-    _resetClimateWriteLockForTests();
     await enableGgsForTests();
     try {
         return await fn();
     } finally {
         _resetAiSummaryLockForTests();
         _resetGrowWriteLockForTests();
-        _resetEnergyAccrueLockForTests();
-        _resetClimateWriteLockForTests();
+        restoreGgsPluginsDirForTests();
         if (previous === undefined) {
             delete process.env.GROWCAST_DATA_DIR;
         } else {

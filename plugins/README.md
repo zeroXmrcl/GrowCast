@@ -8,8 +8,10 @@
 
 Installed plugin distributions live here, one folder per plugin.
 
-Core does not ship plugins. GrowCast builds, tests, and runs with this
-directory empty except for this README. A site header link appears only
-when a plugin is installed, enabled, and declares `nav: "site"`.
+GrowCast GGS is not vendored in this repository. Install it from
+GrowCast-GGS at `plugins/ggs/`. This branch still contains Timelapse,
+Restream, and Solar under `plugins/{timelapse,restream,solar}`. A site
+header link appears only when a plugin is installed, enabled, and
+declares `nav: "site"`.
 
 See [docs/plugins/INSTALL.md](../docs/plugins/INSTALL.md).

@@ -1,4 +1,5 @@
 import {readPluginConfigForBackend} from "@/lib/plugins/config";
+import {PLUGIN_FILES_CHANGED_ERROR} from "@/lib/plugins/messages";
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {loadHostModule} from "@/lib/plugins/first-party";
 import {pluginLogger} from "@/lib/plugins/log";
@@ -32,7 +33,7 @@ export async function ingestPluginPayload(
     const record = await getRegistryRecord(pluginId);
     if (record && !record.hashMatches && record.pinnedHash) {
         await pausePlugin(pluginId, "hash-mismatch");
-        return {ok: false, status: 409, error: "Plugin files changed; re-confirm the hash in Admin"};
+        return {ok: false, status: 409, error: PLUGIN_FILES_CHANGED_ERROR};
     }
     if (!pluginIsActive(record) && record?.status !== "enabled") {
         return {ok: false, status: 409, error: "Plugin is not enabled"};

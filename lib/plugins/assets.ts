@@ -1,4 +1,4 @@
-import path from "node:path";
+import {containedPluginPath} from "@/lib/plugins/containment";
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {getRegistryRecord, pluginIsActive} from "@/lib/plugins/registry";
 
@@ -25,5 +25,5 @@ export async function resolvePluginAsset(pluginId: string, relative: string): Pr
     if (!pluginIsActive(record) && !(record.status === "enabled" && record.hashMatches)) {
         return null;
     }
-    return path.join(discovered.folderPath, relative);
+    return containedPluginPath(discovered.folderPath, relative);
 }

@@ -1,5 +1,5 @@
-import path from "node:path";
 import {pathToFileURL} from "node:url";
+import {containedPluginPath} from "@/lib/plugins/containment";
 import {pluginLogger} from "@/lib/plugins/log";
 import type {DiscoveredPlugin, PluginHostModule} from "@/lib/plugins/types";
 
@@ -9,23 +9,35 @@ export function _resetHostModuleCacheForTests(): void {
     cache.clear();
 }
 
+function inside(folder: string, spec: string): string | null {
+    const resolved = containedPluginPath(folder, spec);
+    if (!resolved && spec.trim()) {
+        pluginLogger().warn({
+            event: "plugin.host_module.escape",
+            plugin_id: folder,
+            candidate: spec,
+        });
+    }
+    return resolved;
+}
+
 function hostCandidates(plugin: DiscoveredPlugin): string[] {
     const spec = plugin.manifest.hostModule?.trim();
     const folder = plugin.folderPath;
-    const fromSpec = spec
-        ? [path.resolve(folder, spec)]
+    const fromSpec = (spec
+        ? [inside(folder, spec)]
         : [
-            path.join(folder, "host", "index.js"),
-            path.join(folder, "host", "index.ts"),
-        ];
-    const dist = path.join(folder, "host", "dist", "index.js");
+            inside(folder, "host/index.js"),
+            inside(folder, "host/index.ts"),
+        ]).filter((candidate): candidate is string => candidate !== null);
+    const dist = inside(folder, "host/dist/index.js");
     if (process.env.NODE_ENV === "test") {
         // Source when the checkout has it. The built module is what production
         // loads, so a dist-only plugin (the deployed tree) still runs in tests.
         const ts = fromSpec.filter((candidate) => candidate.endsWith(".ts"));
-        return [...new Set([...ts, dist, ...fromSpec.filter((candidate) => candidate.endsWith(".js"))])];
+        return [...new Set([...ts, dist, ...fromSpec.filter((candidate) => candidate.endsWith(".js"))].filter((candidate): candidate is string => Boolean(candidate)))];
     }
-    return [...new Set([dist, ...fromSpec])];
+    return [...new Set([dist, ...fromSpec].filter((candidate): candidate is string => Boolean(candidate)))];
 }
 
 export async function loadHostModule(plugin: DiscoveredPlugin): Promise<PluginHostModule | null> {

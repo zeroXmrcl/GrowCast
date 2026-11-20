@@ -27,19 +27,15 @@ describe("admin settings bands", () => {
         assert.doesNotMatch(grow, /redirect\(/);
         const timelapse = src(path.join("plugins", "timelapse", "admin", "actions.ts"));
         assert.match(timelapse, /notice: "saved"/);
-        const energy = src(path.join("plugins", "ggs", "admin", "actions.ts"));
-        assert.match(energy, /notice: "saved"/);
     });
 
     it("returns a notice from immediate actions", () => {
         const restream = src(path.join("plugins", "restream", "admin", "actions.ts"));
-        const ggs = src(path.join("plugins", "ggs", "admin", "actions.ts"));
         assert.match(restream, /notice: "twitch_started"/);
         assert.match(restream, /notice: "twitch_stopped"/);
         assert.match(restream, /twitch_key_saved/);
         assert.match(restream, /notice: "audio_saved"/);
         assert.match(restream, /notice: "alerts_saved"/);
-        assert.match(ggs, /notice: "spider_farmer_connected"|spider_farmer/);
         assert.match(actions, /"archived"/);
         const complete = actions.slice(actions.indexOf("export async function completeGrowAction"));
         assert.doesNotMatch(complete, /redirect\(/);
@@ -70,7 +66,6 @@ describe("admin settings bands", () => {
             path.join("app", "admin", "page.tsx"),
             path.join("plugins", "restream", "admin", "page.tsx"),
             path.join("plugins", "timelapse", "admin", "page.tsx"),
-            path.join("plugins", "ggs", "admin", "page.tsx"),
             path.join("app", "admin", "archives", "page.tsx"),
             path.join("app", "admin", "archives", "[archiveId]", "page.tsx"),
         ]) {
@@ -99,12 +94,6 @@ describe("admin settings bands", () => {
         for (const title of ["Capture", "Triggers", "Output"]) {
             assert.match(timelapse, new RegExp(`title="${title}"`));
         }
-        const ggs = src(path.join("plugins", "ggs", "admin", "page.tsx"))
-            + src(path.join("plugins", "ggs", "admin", "spider-farmer-panel.tsx"))
-            + src(path.join("plugins", "ggs", "admin", "energy-fields.tsx"));
-        for (const title of ["Spider Farmer", "Sidecar", "Devices", "Energy"]) {
-            assert.match(ggs, new RegExp(`title="${title}"`));
-        }
         const archives = src(path.join("app", "admin", "archives", "page.tsx"))
             + src(path.join("app", "admin", "complete-grow-panel.tsx"));
         assert.match(archives, /title="Complete Grow"/);
@@ -120,10 +109,8 @@ describe("admin settings bands", () => {
         for (const label of ["General", "OBS", "Complete Grow", "Danger Zone"]) {
             assert.match(nav, new RegExp(`label: "${label}"`));
         }
-        const ggs = src(path.join("plugins", "ggs", "plugin.json"));
         const restream = src(path.join("plugins", "restream", "plugin.json"));
         const timelapse = src(path.join("plugins", "timelapse", "plugin.json"));
-        assert.match(ggs, /"label": "Spider Farmer"/);
         assert.match(restream, /"label": "Program"/);
         assert.match(timelapse, /"label": "Capture"/);
         assert.match(nav, /admin-nav-roll-open/);

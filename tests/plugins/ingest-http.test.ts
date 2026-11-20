@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
 import {enablePlugin} from "../../lib/plugins/registry.ts";
+import {PLUGIN_FILES_CHANGED_ERROR} from "../../lib/plugins/messages.ts";
 import {ingestPluginPayload} from "../../lib/plugins/ingest.ts";
 import {pluginIngestPostResponse, pluginHeartbeatPostResponse} from "../../lib/plugins/http.ts";
 import {readPluginToken as readToken} from "../../lib/plugins/tokens.ts";
@@ -100,15 +101,9 @@ describe("plugin host ingest HTTP", {concurrency: 1}, () => {
     });
 
     it("accepts the shared mesh token as fallback for first-party GGS", async () => {
-        const {mkdtemp, rm} = await import("node:fs/promises");
-        const os = await import("node:os");
-        const path = await import("node:path");
-        const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-ggs-mesh-"));
-        const previousData = process.env.GROWCAST_DATA_DIR;
-        const previousToken = process.env.GROWCAST_MESH_TOKEN;
-        process.env.GROWCAST_DATA_DIR = dir;
-        process.env.GROWCAST_MESH_TOKEN = "mesh-fallback-token-value";
-        try {
+        await withPluginHarness(async ({writePlugin}) => {
+            process.env.GROWCAST_MESH_TOKEN = "mesh-fallback-token-value";
+            await writePlugin("ggs", {...SAMPLE_MANIFEST, id: "growcast.ggs", name: "GGS"});
             await enablePlugin("growcast.ggs");
             const denied = await pluginIngestPostResponse(
                 new Request("http://growcast.local/api/plugins/v1/growcast.ggs/ingest", {
@@ -134,18 +129,33 @@ describe("plugin host ingest HTTP", {concurrency: 1}, () => {
                 "growcast.ggs",
             );
             assert.notEqual(mesh.status, 401);
-        } finally {
-            if (previousData === undefined) {
-                delete process.env.GROWCAST_DATA_DIR;
-            } else {
-                process.env.GROWCAST_DATA_DIR = previousData;
-            }
-            if (previousToken === undefined) {
-                delete process.env.GROWCAST_MESH_TOKEN;
-            } else {
-                process.env.GROWCAST_MESH_TOKEN = previousToken;
-            }
-            await rm(dir, {recursive: true, force: true});
-        }
+            delete process.env.GROWCAST_MESH_TOKEN;
+        });
+    });
+
+    it("tells the caller to re-confirm when the pin no longer matches", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const dir = await writePlugin("example", SAMPLE_MANIFEST);
+            await enablePlugin("community.example");
+            const token = await readToken("community.example");
+            assert.ok(token);
+            const {writeFile} = await import("node:fs/promises");
+            const path = await import("node:path");
+            await writeFile(path.join(dir, "ui/dist/index.js"), "export default { tampered: true }\n");
+            const response = await pluginIngestPostResponse(
+                new Request("http://growcast.local/api/plugins/v1/community.example/ingest", {
+                    method: "POST",
+                    headers: {
+                        "content-type": "application/json",
+                        authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(ingestBody({"battery.soc": 10})),
+                }),
+                "community.example",
+            );
+            assert.equal(response.status, 409);
+            const body = await response.json() as {error?: string};
+            assert.equal(body.error, PLUGIN_FILES_CHANGED_ERROR);
+        });
     });
 });

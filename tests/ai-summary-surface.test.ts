@@ -16,11 +16,9 @@ describe("ai summary surface", () => {
         const prompt = src(path.join("lib", "ai-summary", "prompt.ts"));
         const publicApi = src(path.join("app", "api", "data", "ai-summary", "route.ts"));
         const action = src(path.join("app", "admin", "actions.ts"));
-        const http = src(path.join("plugins", "ggs", "host", "ggs-live-http.ts"));
         const archives = src(path.join("lib", "archives.ts"));
 
         assert.match(instrumentation, /startAiSummaryScheduler/);
-        assert.match(http, /recordClimateOnIngestBestEffort/);
         assert.match(archives, /runPluginGrowArchived/);
         assert.match(archives, /stageAiSummaryArchive/);
         assert.match(generate, /stageContextFromGrow/);

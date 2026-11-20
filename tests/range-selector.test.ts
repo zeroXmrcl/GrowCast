@@ -20,11 +20,4 @@ describe("shared range selector", () => {
         assert.match(selector, /translateY\(1px\)/);
         assert.match(selector, /transform 220ms/);
     });
-
-    it("replaces the climate, energy, and water copies", () => {
-        assert.match(src("plugins/ggs/ui/climate-history-dialog.tsx"), /RangeSelector/);
-        assert.match(src("plugins/ggs/ui/energy-scoreboard.tsx"), /RangeSelector/);
-        assert.match(src("plugins/ggs/ui/energy-water.tsx"), /RangeSelector/);
-        assert.doesNotMatch(src("plugins/ggs/ui/climate-history-dialog.tsx"), /scaleRef/);
-    });
 });

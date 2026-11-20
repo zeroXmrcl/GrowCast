@@ -28,6 +28,8 @@ RUN apk add --no-cache su-exec \
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+# plugins/ggs is not in this image. GrowCast-GGS is bind-mounted at runtime
+# and ships ui/dist/style.css for the classes its UI uses.
 COPY --from=builder /app/plugins ./plugins
 # File tracing often omits @img/sharp-libvips-* (libvips-cpp.so). Copy the
 # full Alpine musl prebuilds from the deps/build install.

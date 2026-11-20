@@ -96,11 +96,6 @@ describe("overlay chrome", () => {
         assert.equal(hudSrc.includes("shouldPollEnergy"), false);
         assert.doesNotMatch(hudSrc, /ENERGY_POLL_MS/);
         assert.match(hudSrc, /OVERLAY_GROW_POLL_MS/);
-        const energyWidget = readFileSync(
-            path.join(process.cwd(), "plugins", "ggs", "ui", "src", "index.tsx"),
-            "utf8",
-        );
-        assert.match(energyWidget, /ENERGY_POLL_MS/);
     });
 
     it("embeds the grow stream only when overlayStream is include", () => {
@@ -110,10 +105,6 @@ describe("overlay chrome", () => {
         );
         const hudSrc = readFileSync(
             path.join(process.cwd(), "components", "overlay-hud.tsx"),
-            "utf8",
-        );
-        const energySrc = readFileSync(
-            path.join(process.cwd(), "plugins", "ggs", "ui", "overlay-energy.tsx"),
             "utf8",
         );
         const identitySrc = readFileSync(
@@ -133,9 +124,6 @@ describe("overlay chrome", () => {
         assert.match(hudSrc, /lookCss/);
         assert.match(hudSrc, /lookCss=\{lookCss/);
         assert.doesNotMatch(hudSrc, /OVERLAY_ORDER_MUSIC/);
-        assert.match(energySrc, /overlayEnergyGrowWindow/);
-        assert.match(energySrc, /label="24h"/);
-        assert.doesNotMatch(energySrc, /Today/);
         assert.match(identitySrc, /overlayIdentityView/);
         assert.doesNotMatch(identitySrc, /health/i);
     });
@@ -183,24 +171,6 @@ describe("overlay chrome", () => {
         assert.match(page, /lookCss=/);
         assert.doesNotMatch(page, /growcast-camera-look/);
         assert.doesNotMatch(page, /addEventListener\("message"/);
-    });
-
-    it("omits the LIVE badge and shows humidity to one decimal", () => {
-        const climateSrc = readFileSync(
-            path.join(process.cwd(), "plugins", "ggs", "ui", "overlay-climate.tsx"),
-            "utf8",
-        );
-        assert.doesNotMatch(climateSrc, /overlay-live-dot/);
-        assert.doesNotMatch(climateSrc, /["']LIVE["']/);
-        assert.doesNotMatch(climateSrc, /climateBadge/);
-        assert.match(climateSrc, /growcast-stale-pulse/);
-        assert.match(climateSrc, /formatHumidityPctTenths/);
-        assert.doesNotMatch(climateSrc, /formatHumidityPct\(/);
-        assert.match(climateSrc, /growcast-alert-pulse/);
-        assert.match(climateSrc, /climateMetricAlerts/);
-        assert.match(climateSrc, /ClimatePickerValue/);
-        assert.match(climateSrc, /climateTick === "picker"/);
-        assert.doesNotMatch(climateSrc, /grow\.climate/);
     });
 
     it("plays HLS in OverlayCamera with the GrowCast reconnect cover", () => {

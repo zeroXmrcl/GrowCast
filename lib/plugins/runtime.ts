@@ -1,5 +1,4 @@
 import {spawn} from "node:child_process";
-import path from "node:path";
 import {generatePluginsCompose} from "@/lib/plugins/compose";
 import {assertDockerHostIsProxy, assertPluginRuntimeTarget, dockerEngineBaseUrl} from "@/lib/plugins/docker-guard";
 import {
@@ -9,6 +8,7 @@ import {
     stopPluginContainer,
 } from "@/lib/plugins/docker-engine";
 import {pluginServiceName} from "@/lib/plugins/ids";
+import {containedPluginPath} from "@/lib/plugins/containment";
 import {pluginLogger} from "@/lib/plugins/log";
 import {readPluginToken} from "@/lib/plugins/tokens";
 
@@ -58,7 +58,15 @@ const processAdapter: PluginRuntimeAdapter = {
             return;
         }
         await generatePluginsCompose();
-        const entry = path.join(discovered.folderPath, discovered.manifest.runtime.entry);
+        const entry = containedPluginPath(discovered.folderPath, discovered.manifest.runtime.entry);
+        if (!entry) {
+            pluginLogger().warn({
+                event: "plugin.runtime.escape",
+                plugin_id: discovered.manifest.id,
+                candidate: discovered.manifest.runtime.entry,
+            });
+            return;
+        }
         const cmd = discovered.manifest.runtime.type === "node" ? "node" : "python";
         const child = spawn(cmd, ["-u", entry], {
             cwd: discovered.folderPath,

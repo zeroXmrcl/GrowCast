@@ -5,6 +5,7 @@ import {describe, it} from "node:test";
 import {enablePlugin, getRegistryRecord, listRegistryRecords} from "../../lib/plugins/registry.ts";
 import {scanAndPauseChangedPlugins} from "../../lib/plugins/lifecycle.ts";
 import {hashPluginFolder, pluginFolderSignature} from "../../lib/plugins/hash.ts";
+import {PLUGIN_FILES_CHANGED_ERROR} from "../../lib/plugins/messages.ts";
 import {SAMPLE_MANIFEST, withPluginHarness} from "./helpers.ts";
 
 describe("plugin hash pin", {concurrency: 1}, () => {
@@ -48,6 +49,7 @@ describe("plugin hash pin", {concurrency: 1}, () => {
             assert.equal(result.ok, false);
             if (!result.ok) {
                 assert.equal(result.status, 409);
+                assert.equal(result.error, PLUGIN_FILES_CHANGED_ERROR);
             }
         });
     });
@@ -82,10 +84,12 @@ describe("plugin hash pin", {concurrency: 1}, () => {
         });
     });
 
-    it("does not include snapshots or timelapse media in the pin", async () => {
+    it("does not include dist-release, snapshots, or timelapse media in the pin", async () => {
         await withPluginHarness(async ({writePlugin}) => {
             const dir = await writePlugin("example", SAMPLE_MANIFEST);
             const before = await hashPluginFolder(dir);
+            await mkdir(path.join(dir, "dist-release"), {recursive: true});
+            await writeFile(path.join(dir, "dist-release", "growcast-solar.zip"), "zip");
             await mkdir(path.join(dir, "snapshots"), {recursive: true});
             await writeFile(path.join(dir, "snapshots", "frame.jpg"), "jpeg");
             await mkdir(path.join(dir, "timelapse"), {recursive: true});

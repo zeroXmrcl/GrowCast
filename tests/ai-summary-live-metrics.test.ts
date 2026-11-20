@@ -10,9 +10,8 @@ import {
     readingsFromStats,
 } from "../lib/ai-summary/live-metrics.ts";
 import {encodeMosaicRow} from "../lib/ai-summary/mosaic.ts";
+import type {ClimateMetricKey} from "../lib/ai-summary/climate.ts";
 import type {AiMetricJudgment, ClimateWindowStats, MosaicCell} from "../lib/ai-summary/types.ts";
-import {GGS_PLUGIN_ID, type GgsLivePublic} from "../plugins/ggs/host/ggs-live.ts";
-import type {ClimateMetricKey} from "../plugins/ggs/host/climate/types.ts";
 
 function judgment(overrides: Partial<AiMetricJudgment> = {}): AiMetricJudgment {
     return {verdict: "in_range", pctInRange: 90, note: "on target", ...overrides};
@@ -24,43 +23,6 @@ function mosaicRow(cells: MosaicCell[]): string {
 
 function allInRangeRow(): string {
     return mosaicRow(Array<MosaicCell>(288).fill(1));
-}
-
-function snapshot(sensor: {
-    tempC?: number | null;
-    humidityPct?: number | null;
-    vpd?: number | null;
-    co2?: number | null;
-    ppfd?: number | null;
-    isDay?: boolean | null;
-}): GgsLivePublic {
-    return {
-        pluginId: GGS_PLUGIN_ID,
-        source: "ggs-cloud",
-        updatedAt: "2026-10-15T10:00:00.000Z",
-        online: true,
-        stale: false,
-        devices: [
-            {
-                name: "SF-GGS-CB-7088",
-                prefix: "CB",
-                productType: "SF-GGS-CB",
-                online: true,
-                sensor: {
-                    tempC: sensor.tempC ?? 25.3,
-                    humidityPct: sensor.humidityPct ?? 47.1,
-                    vpd: sensor.vpd ?? 9.99,
-                    co2: sensor.co2 ?? 810,
-                    ppfd: sensor.ppfd ?? 420,
-                    tempSoilC: null,
-                    humiditySoilPct: null,
-                    ecSoil: null,
-                    isDay: sensor.isDay ?? true,
-                },
-                actuators: [],
-            },
-        ],
-    };
 }
 
 function emptySplit() {

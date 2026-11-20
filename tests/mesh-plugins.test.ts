@@ -5,23 +5,15 @@ import {describe, it} from "node:test";
 import {parsePluginManifest} from "../lib/plugins/manifest.ts";
 
 describe("mesh plugin compat", () => {
-    it("declares mesh settings/state on GGS and Timelapse only", () => {
-        const ggs = parsePluginManifest(JSON.parse(
-            readFileSync(path.join(process.cwd(), "plugins", "ggs", "plugin.json"), "utf8"),
-        ) as unknown);
+    it("declares mesh settings on Timelapse and not on Restream", () => {
         const timelapse = parsePluginManifest(JSON.parse(
             readFileSync(path.join(process.cwd(), "plugins", "timelapse", "plugin.json"), "utf8"),
         ) as unknown);
         const restream = parsePluginManifest(JSON.parse(
             readFileSync(path.join(process.cwd(), "plugins", "restream", "plugin.json"), "utf8"),
         ) as unknown);
-        assert.equal(ggs.ok, true);
         assert.equal(timelapse.ok, true);
         assert.equal(restream.ok, true);
-        if (ggs.ok) {
-            assert.equal(ggs.value.compat?.meshState, true);
-            assert.equal(ggs.value.compat?.meshSettings, true);
-        }
         if (timelapse.ok) {
             assert.equal(timelapse.value.compat?.meshSettings, true);
             assert.equal(timelapse.value.compat?.meshState ?? false, false);

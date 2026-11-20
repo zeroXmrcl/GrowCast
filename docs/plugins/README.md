@@ -15,9 +15,9 @@ The folder pin is the SHA-256 Admin shows at enable time. It covers every file t
 - `ui/dist/**`
 - Dockerfiles, Python/Node backends, and the rest of the shipped folder
 
-It does not cover `node_modules`, `.git` and other dot-directories, `__pycache__`, `*.pyc` / `*.pyo`, `snapshots/`, `timelapse/` media, `media/`, `coverage/`, or `dist-info/`. `GROWCAST-HASH` is the recorded pin, not an input, so the file can match Admin. A change to a covered file, including a rebuilt `host/dist`, pauses an enabled plugin until you confirm the new hash. The cached check is size plus mtime of those same files.
+It does not cover `node_modules`, `.git` and other dot-directories, `__pycache__`, `*.pyc` / `*.pyo`, `snapshots/`, `timelapse/` media, `media/`, `coverage/`, `dist-info/`, or `dist-release/` (a local pack of a plugin release). `GROWCAST-HASH` is the recorded pin, not an input, so the file can match Admin. A change to a covered file, including a rebuilt `host/dist`, pauses an enabled plugin until you confirm the new hash. The cached check is size plus mtime of those same files.
 
-First-party plugins currently still live in this tree under `plugins/{ggs,timelapse,restream,solar}` and will move to their own GitHub repos. Install a release dist with [INSTALL.md](./INSTALL.md).
+GrowCast GGS is not in this repository. Its source is [GrowCast-GGS](https://github.com/zeroXmrcl/GrowCast-GGS), installed at `plugins/ggs/`. The host image does not scan that folder for Tailwind classes. GGS ships `ui/dist/style.css` and lists it in `plugin.json` `ui.styles`, so a bind-mounted checkout still styles the climate card. Timelapse, Restream, and Solar copies are still in this branch under `plugins/{timelapse,restream,solar}` and will move to their own GitHub repos. Install a release dist with [INSTALL.md](./INSTALL.md).
 
 - `growcast.ggs` — Spider Farmer climate and tent energy
 - `growcast.timelapse` — snapshots and video

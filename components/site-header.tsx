@@ -5,6 +5,7 @@ import Image from "next/image";
 import {usePathname} from "next/navigation";
 import {useEffect, useState} from "react";
 import {useWorkspaceNav} from "@/components/workspace-nav";
+import {logoCrossfadeAllowed, prefersReducedMotion} from "@/lib/logo-motion";
 import {SITE_FRAME_CLASS} from "@/lib/site-frame";
 import {navItemIsActive, navItemsFor, type NavFlags, type NavItem} from "@/lib/site-nav";
 import {isPlainWorkspaceClick, isWorkspacePath, WORKSPACE_VT} from "@/lib/workspace";
@@ -26,6 +27,9 @@ export default function SiteHeader({
     const [logoFading, setLogoFading] = useState(false);
 
     useEffect(() => {
+        if (!logoCrossfadeAllowed(prefersReducedMotion())) {
+            return;
+        }
         const timeouts: ReturnType<typeof setTimeout>[] = [];
 
         timeouts.push(

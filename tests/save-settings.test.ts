@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {mkdir, mkdtemp, readFile, rm} from "node:fs/promises";
+import {mkdir, mkdtemp, readFile, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
@@ -12,9 +12,8 @@ import {
 } from "../lib/admin/save-settings.ts";
 import {completeCurrentGrow, listArchivedGrows} from "../lib/archives.ts";
 import {getCurrentGrow, updateCurrentGrow} from "../lib/db.ts";
-import {energySettingsFile} from "../plugins/ggs/host/energy/paths.ts";
-import {readEnergySettings, writeEnergySettings} from "../plugins/ggs/host/energy/settings.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
+import {pluginDataDir} from "../lib/plugins/paths.ts";
 import {getTimelapseSettings, updateTimelapseSettings} from "../plugins/timelapse/host/timelapse-settings.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
@@ -33,6 +32,23 @@ async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
         }
         await rm(dir, {recursive: true, force: true});
     }
+}
+
+function energySettingsPath(): string {
+    return path.join(pluginDataDir("growcast.ggs"), "energy", "settings.json");
+}
+
+async function writeEnergyFixture(body: unknown): Promise<void> {
+    const file = energySettingsPath();
+    await mkdir(path.dirname(file), {recursive: true});
+    await writeFile(file, JSON.stringify(body));
+}
+
+async function readEnergyFixture(): Promise<{publicTariffEurPerKwh?: number; privateTariffEurPerKwh?: number | null}> {
+    return JSON.parse(await readFile(energySettingsPath(), "utf8")) as {
+        publicTariffEurPerKwh?: number;
+        privateTariffEurPerKwh?: number | null;
+    };
 }
 
 function settingsForm(entries: Record<string, string>): FormData {
@@ -257,7 +273,7 @@ describe("saveAdminSettings orchestration", () => {
 
     it("grow save does not write energy settings", async () => {
         await withTempDataDir(async () => {
-            await writeEnergySettings({
+            await writeEnergyFixture({
                 publicTariffEurPerKwh: 0.31,
                 privateTariffEurPerKwh: 0.4,
                 overrides: [],
@@ -273,7 +289,7 @@ describe("saveAdminSettings orchestration", () => {
             );
             const result = await saveAdminSettings(parsed);
             assert.equal(result.ok, true);
-            const energy = await readEnergySettings();
+            const energy = await readEnergyFixture();
             assert.equal(energy.publicTariffEurPerKwh, 0.31);
             assert.equal(energy.privateTariffEurPerKwh, 0.4);
         });
@@ -289,7 +305,7 @@ describe("saveAdminSettings orchestration", () => {
             const growPath = path.join(dir, "current-grow.json");
             const before = await readFile(growPath, "utf8");
 
-            await writeEnergySettings({
+            await writeEnergyFixture({
                 publicTariffEurPerKwh: 0.22,
                 privateTariffEurPerKwh: null,
                 overrides: [],
@@ -297,8 +313,8 @@ describe("saveAdminSettings orchestration", () => {
             assert.equal(await readFile(growPath, "utf8"), before);
             assert.equal((await getCurrentGrow()).id, live.id);
             assert.equal((await getCurrentGrow()).name, "Leave Me");
-            assert.equal((await readEnergySettings()).publicTariffEurPerKwh, 0.22);
-            assert.equal(energySettingsFile().includes(dir), true);
+            assert.equal((await readEnergyFixture()).publicTariffEurPerKwh, 0.22);
+            assert.equal(energySettingsPath().includes(dir), true);
         });
     });
 
