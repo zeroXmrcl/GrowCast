@@ -1,3 +1,6 @@
+/* Plugin stylesheets opt into this layer. It is declared first so their
+   utilities cannot override host utilities, including responsive variants. */
+@layer plugin;
 @import "tailwindcss";
 
 :root {
