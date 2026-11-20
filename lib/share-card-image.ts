@@ -13,7 +13,7 @@ function asDataUrl(mime: string, buffer: Buffer): string {
 }
 
 async function stillSrcFromFile(still: ShareCardStill): Promise<string | null> {
-    const filePath = shareCardStillPath(still);
+    const filePath = await shareCardStillPath(still);
     const mime = stillImageMime(still.name);
     if (!mime) {
         return null;

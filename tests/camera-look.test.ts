@@ -14,9 +14,9 @@ import {
     isCameraLookMessage,
     parseCameraLook,
     parseCameraLookPct,
-} from "../lib/restream/camera-look.ts";
-import {readCameraLook, writeCameraLook} from "../lib/restream/camera-look-store.ts";
-import {restreamCameraLookFile} from "../lib/restream/paths.ts";
+} from "../plugins/restream/host/camera-look.ts";
+import {readCameraLook, writeCameraLook} from "../plugins/restream/host/camera-look-store.ts";
+import {restreamCameraLookFile} from "../plugins/restream/host/paths.ts";
 
 async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-look-"));

@@ -1,6 +1,6 @@
 import {randomBytes} from "node:crypto";
 import {readFile} from "node:fs/promises";
-import {berlinDateOnly, berlinHour} from "@/lib/energy/berlin";
+import {berlinDateOnly, berlinHour} from "@/lib/berlin-date";
 import {asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {hasXaiApiKey} from "@/lib/ai-summary/config";

@@ -23,9 +23,9 @@ describe("buildShareCardCopy", () => {
         });
         assert.equal(copy.title, "GrowCast");
         assert.equal(copy.plant, "Tomatoes");
-        assert.equal(copy.stats, "Day 176 · 23.7° · 47%");
+        assert.equal(copy.stats, "Day 176 · 23.7°C · 47%");
         assert.equal(copy.host, "grow.0xmarcel.com");
-        assert.equal(copy.description, "Live tent · Tomatoes · Day 176 · 23.7°");
+        assert.equal(copy.description, "Live tent · Tomatoes · Day 176 · 23.7°C");
     });
 
     it("falls back to Plants and omits missing climate and day", () => {

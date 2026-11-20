@@ -1,0 +1,14 @@
+{
+  "name": "@growcast/plugin-sdk",
+  "version": "1.0.0",
+  "license": "MIT",
+  "description": "GrowCast plugin frontend SDK. Plugins share core React 19 through an import map.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

@@ -21,7 +21,7 @@ import {
     programMusicWaveActive,
     shouldAttachMediaElementSource,
     waveSmoothTimeConstant,
-} from "../lib/program-music-wave.ts";
+} from "../plugins/restream/host/program-music-wave.ts";
 
 describe("programMusicWaveActive", () => {
     it("is true only while a local playlist file is playing", () => {

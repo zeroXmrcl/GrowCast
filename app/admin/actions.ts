@@ -4,46 +4,14 @@ import {revalidatePath} from "next/cache";
 import {headers} from "next/headers";
 import {redirect} from "next/navigation";
 import {clearPendingAdminLogin, loginAdmin, requireAdmin, verifyAdminSecondFactor} from "@/lib/admin-auth";
-import {
-    parseAdminSettingsForm,
-    parseCompleteGrowForm,
-    parseStreamSettingsForm,
-    parseTimelapseSettingsForm,
-} from "@/lib/admin/parse-grow-form";
-import {
-    saveAdminSettings,
-    saveEnergyAdminSettings,
-    saveTimelapseAdminSettings,
-} from "@/lib/admin/save-settings";
-import {parseEnergySettingsForm, readEnergySettings} from "@/lib/energy/settings";
+import {parseAdminSettingsForm, parseCompleteGrowForm} from "@/lib/admin/parse-grow-form";
+import {saveAdminSettings} from "@/lib/admin/save-settings";
 import type {AdminActionResult} from "@/lib/admin/action-result";
-import {prepareSpiderFarmer} from "@/lib/spider-farmer-setup";
-import {isRtspUrl, readTimelapseRtsp, writeTimelapseSidecarEnv} from "@/lib/timelapse-sidecar-env";
 import {completeCurrentGrow} from "@/lib/archives";
-import {parseOverlayScalePct} from "@/lib/overlay-scale";
-import {parseMusicLook, parseWaveBars, parseWaveSmoothPct} from "@/lib/program-music-wave";
-import {readAlertsSettings, writeAlertsSettings} from "@/lib/restream/alerts-settings";
-import {readRestreamAudio, writeRestreamAudio} from "@/lib/restream/audio";
-import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
-import {
-    hasRestreamKey,
-    patchRestreamChannel,
-    readRestreamChannel,
-    readRestreamKey,
-    saveRestreamKey,
-    setRestreamEnabled,
-    writeRestreamChannel,
-} from "@/lib/restream/store";
-import {
-    isInvalidTypedChannelLogin,
-    resolveChannelLogin,
-    streamKeyForChannelLookup,
-} from "@/lib/restream/twitch-helix";
 import {clientIdentityKey, loginRateLimitKey, secondFactorRateLimitKey} from "@/lib/request-trust";
 import {hasXaiApiKey} from "@/lib/ai-summary/config";
 import {generateDailyAiSummary} from "@/lib/ai-summary/generate";
 import {allowAiSummaryRegenerate} from "@/lib/ai-summary/rate-limit";
-import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
 import {
     logAdminGrowArchiveFailed,
     logAdminGrowArchived,
@@ -133,223 +101,6 @@ export async function saveGrowAction(formData: FormData): Promise<AdminActionRes
     });
 }
 
-export async function saveStreamAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-
-        const parsed = parseStreamSettingsForm(formData);
-        const result = await saveAdminSettings(parsed);
-
-        if (!result.ok) {
-            logAdminGrowUpdateFailed({err: sanitizeError(result.error)});
-            return {notice: result.error === "stale_grow" ? "stale_grow" : "save_failed"};
-        }
-
-        logAdminGrowUpdated();
-        revalidatePath("/");
-        revalidatePath("/overlay");
-        revalidatePath("/overlay/capture");
-        revalidatePath("/program");
-        revalidatePath("/admin/stream");
-        return {notice: "saved"};
-    });
-}
-
-export async function saveTimelapseAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/timelapse", async () => {
-        await requireAdmin();
-
-        const submittedRtsp = String(formData.get("rtspStream") ?? "").trim();
-        if (submittedRtsp && !isRtspUrl(submittedRtsp)) {
-            return {notice: "save_failed"};
-        }
-        const result = await saveTimelapseAdminSettings(parseTimelapseSettingsForm(formData));
-        if (!result.ok) {
-            logAdminGrowUpdateFailed({err: sanitizeError(result.error)});
-            return {notice: "save_failed"};
-        }
-        const settings = result.timelapse;
-        const rtsp = submittedRtsp || await readTimelapseRtsp();
-        if (rtsp) {
-            await writeTimelapseSidecarEnv({
-                RTSP_STREAM: rtsp,
-                TZ: settings.timezone,
-                INTERVAL: settings.intervalMinutes == null ? "" : String(settings.intervalMinutes),
-                TIME_1: settings.time1,
-                TIME_2: settings.time2,
-                TIME_3: settings.time3,
-                TIMELAPSE_LENGTH_SECONDS: String(settings.timelapseLengthSeconds),
-                TIMELAPSE_QUALITY: settings.timelapseQuality,
-            });
-        }
-
-        revalidatePath("/gallery");
-        revalidatePath("/admin/timelapse");
-        return {notice: "saved"};
-    });
-}
-
-export async function saveEnergyAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/ggs", async () => {
-        await requireAdmin();
-
-        const previousEnergy = await readEnergySettings();
-        const energy = parseEnergySettingsForm(formData, previousEnergy);
-        if (!energy.ok || energy.settings === undefined) {
-            logAdminGrowUpdateFailed({
-                err: sanitizeError(energy.ok ? "missing_energy" : energy.error),
-            });
-            return {notice: "save_failed"};
-        }
-
-        const result = await saveEnergyAdminSettings(energy.settings);
-        if (!result.ok) {
-            logAdminGrowUpdateFailed({err: sanitizeError(result.error)});
-            return {notice: "save_failed"};
-        }
-
-        revalidatePath("/energy");
-        revalidatePath("/overlay");
-        revalidatePath("/admin/ggs");
-        return {notice: "saved"};
-    });
-}
-
-export async function connectSpiderFarmerAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/ggs", async () => {
-        await requireAdmin();
-        const email = String(formData.get("sfEmail") ?? "").trim();
-        const password = String(formData.get("sfPassword") ?? "");
-        const serial = String(formData.get("sfSerial") ?? "").trim();
-        const result = await prepareSpiderFarmer({email, password, serial});
-        if (!result.ok) {
-            return {notice: "choose" in result ? "spider_farmer_choose" : result.notice};
-        }
-        revalidatePath("/admin/ggs");
-        return {notice: "spider_farmer_connected"};
-    });
-}
-
-export async function saveTwitchKeyAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-        const twitchKey = String(formData.get("twitchKey") ?? "");
-        const typedLogin = String(formData.get("twitchLogin") ?? "");
-        await saveRestreamKey(twitchKey);
-        const previous = await readRestreamChannel();
-        const login = await resolveChannelLogin({
-            typedLogin,
-            streamKey: streamKeyForChannelLookup(twitchKey, await readRestreamKey()),
-            previousLogin: previous.login,
-        });
-        await writeRestreamChannel({login, toastEnabled: previous.toastEnabled});
-        revalidatePath("/");
-        revalidatePath("/admin/stream");
-        return {
-            notice: isInvalidTypedChannelLogin(typedLogin, previous.login)
-                ? "twitch_login_invalid"
-                : "twitch_key_saved",
-        };
-    });
-}
-
-export async function saveBroadcastToastAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-        await patchRestreamChannel({toastEnabled: formData.get("toastEnabled") === "on"});
-        revalidatePath("/");
-        revalidatePath("/admin/stream");
-        return {notice: "saved"};
-    });
-}
-
-export async function startTwitchRestreamAction(_formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-        await ensureRestreamCaptureToken();
-        if (!(await hasRestreamKey())) {
-            return {notice: "twitch_need_key"};
-        }
-        await setRestreamEnabled(true);
-        revalidatePath("/");
-        revalidatePath("/admin/stream");
-        return {notice: "twitch_started"};
-    });
-}
-
-export async function stopTwitchRestreamAction(_formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-        await setRestreamEnabled(false);
-        revalidatePath("/");
-        revalidatePath("/admin/stream");
-        return {notice: "twitch_stopped"};
-    });
-}
-
-export async function saveProgramAudioAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-        const existing = await readRestreamAudio();
-        const parsedVolume = Number(formData.get("volume"));
-        const volume = Math.min(1, Math.max(0, Number.isFinite(parsedVolume) ? parsedVolume : existing.volume));
-        await writeRestreamAudio({
-            url: existing.url,
-            volume,
-            paused: formData.get("paused") === "on",
-            waveSmoothPct: existing.waveSmoothPct,
-            musicLook: existing.musicLook,
-            waveBars: existing.waveBars,
-        });
-        revalidatePath("/admin/stream");
-        revalidatePath("/program");
-        revalidatePath("/overlay/capture");
-        return {notice: "audio_saved"};
-    });
-}
-
-export async function saveProgramAudioUrlAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-        const existing = await readRestreamAudio();
-        const raw = String(formData.get("url") ?? formData.get("streamUrl") ?? formData.get("musicUrl") ?? "");
-        const url = normalizeOptionalHttpUrl(raw);
-        if (url === null) {
-            return {notice: "save_failed"};
-        }
-        await writeRestreamAudio({
-            url,
-            volume: existing.volume,
-            paused: existing.paused,
-            waveSmoothPct: parseWaveSmoothPct(formData.get("waveSmoothPct")),
-            musicLook: parseMusicLook(formData.get("musicLook")),
-            waveBars: parseWaveBars(formData.get("waveBars")),
-        });
-        revalidatePath("/admin/stream");
-        revalidatePath("/program");
-        revalidatePath("/overlay/capture");
-        return {notice: "audio_saved"};
-    });
-}
-
-export async function saveAlertsSettingsAction(formData: FormData): Promise<AdminActionResult> {
-    return withNextRequestLogContext("/admin/stream", async () => {
-        await requireAdmin();
-        await writeAlertsSettings({
-            follow: formData.get("follow") === "on",
-            sub: formData.get("sub") === "on",
-            raid: formData.get("raid") === "on",
-            bits: formData.get("bits") === "on",
-            stingEnabled: formData.get("stingEnabled") === "on",
-            alertScalePct: parseOverlayScalePct(formData.get("alertScalePct")),
-        });
-        revalidatePath("/admin/stream");
-        revalidatePath("/program");
-        revalidatePath("/overlay/capture");
-        return {notice: "alerts_saved"};
-    });
-}
-
 export async function completeGrowAction(formData: FormData): Promise<AdminActionResult> {
     return withNextRequestLogContext("/admin/archives", async () => {
         await requireAdmin();
@@ -371,8 +122,6 @@ export async function completeGrowAction(formData: FormData): Promise<AdminActio
             ...(result.warning ? {warning: result.warning} : {}),
         });
         revalidatePath("/");
-        revalidatePath("/energy");
-        revalidatePath("/gallery");
         revalidatePath("/grows");
         revalidatePath(`/grows/${result.archive.archiveId}`);
         revalidatePath("/admin");
@@ -389,7 +138,7 @@ export async function completeGrowAction(formData: FormData): Promise<AdminActio
 
 export async function regenerateAiSummaryAction(formData: FormData): Promise<AdminActionResult> {
     void formData;
-    return withNextRequestLogContext("/admin/ggs", async () => {
+    return withNextRequestLogContext("/admin", async () => {
         await requireAdmin();
         const h = await headers();
         const limited = allowAiSummaryRegenerate(`ai-summary-regen:${clientIdentityKey(h)}`);
@@ -410,8 +159,7 @@ export async function regenerateAiSummaryAction(formData: FormData): Promise<Adm
             return {notice: "ai_summary_failed"};
         }
         revalidatePath("/");
-        revalidatePath("/admin/ggs");
+        revalidatePath("/admin");
         return {notice: "ai_summary_ready"};
     });
 }
-

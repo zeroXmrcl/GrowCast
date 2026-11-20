@@ -7,7 +7,7 @@ import {
     DEFAULT_TIMELAPSE_SETTINGS,
     getTimelapseSettingsRecord,
     TIMELAPSE_PLUGIN_ID,
-} from "../lib/timelapse-settings.ts";
+} from "../plugins/timelapse/host/timelapse-settings.ts";
 import {meshPluginGetResponse} from "../lib/mesh-http.ts";
 import {_resetMeshAuthThrottleForTests} from "../lib/mesh-throttle.ts";
 

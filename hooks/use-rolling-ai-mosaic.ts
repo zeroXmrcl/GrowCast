@@ -9,7 +9,7 @@ import {
     rollMosaicForDisplay,
 } from "@/lib/ai-summary/rolling-mosaic";
 import type {AiSummaryPublic} from "@/lib/ai-summary/types";
-import type {ClimateMetricKey} from "@/lib/climate/types";
+import type {ClimateMetricKey} from "@/lib/ai-summary/climate";
 
 type PolledMosaic = {
     key: string;

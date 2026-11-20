@@ -3,7 +3,7 @@ import {mkdir, mkdtemp, rm, writeFile} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {isTimelapsePluginInstalled} from "../lib/extension-status.ts";
+import {isTimelapsePluginInstalled} from "../plugins/timelapse/host/extension-status.ts";
 
 async function withPluginDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-timelapse-"));

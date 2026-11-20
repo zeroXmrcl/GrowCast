@@ -86,16 +86,16 @@ export function logMeshPluginUnknown(
   logSecurityEvent("mesh.plugin.unknown", fields, "warn");
 }
 
-export function logGgsStateIngested(
+export function logMeshPluginStateIngested(
   fields: Record<string, unknown> = {},
 ): void {
-  logSecurityEvent("mesh.ggs.state_ingested", fields, "info");
+  logSecurityEvent("mesh.plugin.state_ingested", fields, "info");
 }
 
-export function logGgsStateRejected(
+export function logMeshPluginStateRejected(
   fields: Record<string, unknown> = {},
 ): void {
-  logSecurityEvent("mesh.ggs.state_rejected", fields, "warn");
+  logSecurityEvent("mesh.plugin.state_rejected", fields, "warn");
 }
 
 export function logValidationFailed(

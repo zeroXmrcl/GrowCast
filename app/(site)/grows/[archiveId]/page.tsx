@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {notFound} from "next/navigation";
-import {EnergyArchiveSection} from "@/components/energy-scoreboard";
-import SnapshotGallery from "@/components/snapshot-gallery";
-import TimelapsePlayer from "@/components/timelapse-player";
+import PluginWidgets from "@/components/plugin-widgets";
 import path from "node:path";
 import {
     archiveMediaDir,
@@ -13,7 +11,6 @@ import {
     getArchiveTimelapseFile,
 } from "@/lib/archives";
 import {snapshotFileVersion} from "@/lib/snapshot-thumb";
-import {buildEnergyDto} from "@/lib/energy/scoreboard";
 import {formatDateDisplay, growDurationDays} from "../format";
 
 export const dynamic = "force-dynamic";
@@ -57,14 +54,10 @@ export default async function ArchivedGrowPage({
         notFound();
     }
 
-    const [snapshotFiles, pictureFiles, timelapseFile, energy] = await Promise.all([
+    const [snapshotFiles, pictureFiles, timelapseFile] = await Promise.all([
         getArchiveSnapshotFiles(archiveId),
         getArchivePictureFiles(archiveId),
         getArchiveTimelapseFile(archiveId),
-        buildEnergyDto({
-            grow: archiveId,
-            tariffKind: "public",
-        }),
     ]);
 
     const snapshotDir = archiveMediaDir(archiveId, "snapshots");
@@ -167,10 +160,51 @@ export default async function ArchivedGrowPage({
                     </article>
                 </section>
 
-                {energy.ok ? <EnergyArchiveSection dto={energy.dto}/> : null}
+                <PluginWidgets slot="archive" />
 
-                {videoUrl ? <TimelapsePlayer videoUrl={videoUrl}/> : null}
-                <SnapshotGallery snapshots={snapshots}/>
+                {videoUrl ? (
+                    <section className="space-y-3">
+                        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Video</h2>
+                        <video
+                            src={videoUrl}
+                            controls
+                            playsInline
+                            className="w-full rounded-2xl border border-zinc-200 bg-black dark:border-zinc-800"
+                        />
+                    </section>
+                ) : null}
+
+                {snapshots.length > 0 ? (
+                    <section className="space-y-6">
+                        <div>
+                            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                                Stills
+                            </h2>
+                            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                                {snapshots.length} images available
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                            {snapshots.map((snapshot) => (
+                                <a
+                                    key={snapshot.name}
+                                    href={snapshot.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+                                >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={snapshot.url}
+                                        alt=""
+                                        className="aspect-video w-full object-cover"
+                                        loading="lazy"
+                                    />
+                                </a>
+                            ))}
+                        </div>
+                    </section>
+                ) : null}
 
                 {pictures.length > 0 ? (
                     <section className="space-y-6">

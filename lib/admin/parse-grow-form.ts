@@ -1,16 +1,10 @@
 import type {ArchiveEditInput, CompleteGrowInput} from "@/lib/archives";
-import {parseClimateTick} from "@/lib/climate-tick";
-import {parseDevicesDesign} from "@/lib/devices-design";
 import type {GrowUpdateInput} from "@/lib/db";
 import {parseOverlayLayout} from "@/lib/overlay-layout";
 import {parseOverlayStream} from "@/lib/overlay-stream";
 import {parseOverlayScalePct} from "@/lib/overlay-scale";
-import {
-    DEFAULT_TIMELAPSE_SETTINGS,
-    normalizeTimelapseSettings,
-    type TimelapseSettings,
-} from "@/lib/timelapse-settings";
 import {normalizeOptionalHttpUrl} from "@/lib/url-policy";
+import {parseClimateTick, parseDevicesDesign} from "@/lib/overlay-tick";
 
 export type AdminSettingsFormResult = {
     grow: GrowUpdateInput;
@@ -84,6 +78,17 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
             growDiaries: safeUrl(formData.get("growDiaries")),
             customWebsite: safeUrl(formData.get("customWebsite")),
         },
+        showGrowName: formData.get("showGrowName") === "on",
+        ...(formData.has("streamUrl") || formData.has("overlayStream") || formData.has("overlayLayout")
+            ? {
+                streamUrl: safeUrl(formData.get("streamUrl")),
+                overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
+                overlayStream: parseOverlayStream(formData.get("overlayStream")),
+                overlayScalePct: parseOverlayScalePct(formData.get("overlayScalePct")),
+                climateTick: parseClimateTick(formData.get("climateTick")),
+                devicesDesign: parseDevicesDesign(formData.get("devicesDesign")),
+            }
+            : {}),
     };
 
     return {
@@ -93,45 +98,19 @@ export function parseAdminSettingsForm(formData: FormData): AdminSettingsFormRes
 }
 
 export function parseStreamSettingsForm(formData: FormData): AdminSettingsFormResult {
+    const grow: GrowUpdateInput = {
+        showGrowName: formData.get("showGrowName") === "on",
+        streamUrl: safeUrl(formData.get("streamUrl")),
+        overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
+        overlayStream: parseOverlayStream(formData.get("overlayStream")),
+        overlayScalePct: parseOverlayScalePct(formData.get("overlayScalePct")),
+        climateTick: parseClimateTick(formData.get("climateTick")),
+        devicesDesign: parseDevicesDesign(formData.get("devicesDesign")),
+    };
     return {
-        grow: {
-            showGrowName: formData.get("showGrowName") === "on",
-            streamUrl: safeUrl(formData.get("streamUrl")),
-            overlayLayout: parseOverlayLayout(formData.get("overlayLayout")),
-            overlayStream: parseOverlayStream(formData.get("overlayStream")),
-            overlayScalePct: parseOverlayScalePct(formData.get("overlayScalePct")),
-            climateTick: parseClimateTick(formData.get("climateTick")),
-            devicesDesign: parseDevicesDesign(formData.get("devicesDesign")),
-        },
+        grow,
         ...expectedGrowIdFrom(formData),
     };
-}
-
-export function parseTimelapseSettingsForm(formData: FormData): TimelapseSettings {
-    return normalizeTimelapseSettings(
-        {
-            paused: formData.get("timelapsePaused") === "on",
-            timezone: fieldString(
-                formData,
-                "timelapseTimezone",
-                DEFAULT_TIMELAPSE_SETTINGS.timezone,
-            ),
-            time1: fieldString(formData, "timelapseTime1"),
-            time2: fieldString(formData, "timelapseTime2"),
-            time3: fieldString(formData, "timelapseTime3"),
-            intervalMinutes: toOptionalNumber(formData.get("timelapseInterval")),
-            timelapseLengthSeconds: toNumber(
-                formData.get("timelapseLength"),
-                DEFAULT_TIMELAPSE_SETTINGS.timelapseLengthSeconds,
-            ),
-            timelapseQuality: fieldString(
-                formData,
-                "timelapseQuality",
-                DEFAULT_TIMELAPSE_SETTINGS.timelapseQuality,
-            ),
-        },
-        DEFAULT_TIMELAPSE_SETTINGS,
-    );
 }
 
 export function parseCompleteGrowForm(formData: FormData): CompleteGrowInput {

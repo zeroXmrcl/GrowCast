@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {mergeMissingEnv, timelapseMeshFromEnv, timelapseScheduleFromMesh} from "../lib/legacy-sidecar-env.ts";
+import {mergeMissingEnv, timelapseMeshFromEnv, timelapseScheduleFromMesh} from "../plugins/timelapse/host/legacy-sidecar-env.ts";
 
 describe("legacy sidecar env", () => {
     it("fills a missing camera url and keeps one that is already set", () => {

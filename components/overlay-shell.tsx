@@ -4,7 +4,6 @@ import OverlayWatermark from "@/components/overlay-watermark";
 import type {OverlayLayout} from "@/lib/overlay-layout";
 import {overlayHudScaleStyle} from "@/lib/overlay-scale";
 import {overlayStreamEmbeds, type OverlayStream} from "@/lib/overlay-stream";
-import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/lib/restream/camera-look";
 import {safeHttpUrlOrEmpty} from "@/lib/url-policy";
 
 export const OVERLAY_PANEL_CLASS =
@@ -15,14 +14,16 @@ export default function OverlayShell({
     overlayStream,
     overlayScalePct,
     streamUrl,
-    look = EMPTY_CAMERA_LOOK,
+    lookCss,
+    temperatureStyle,
     children,
 }: {
     layout: OverlayLayout;
     overlayStream: OverlayStream;
     overlayScalePct: number;
     streamUrl: string;
-    look?: CameraLook;
+    lookCss?: string;
+    temperatureStyle?: React.CSSProperties;
     children: ReactNode;
 }) {
     const bar = layout === "bottom-bar";
@@ -34,7 +35,7 @@ export default function OverlayShell({
         <div className="relative h-full w-full overflow-hidden bg-transparent">
             {embed && safeStream ? (
                 <div className="absolute inset-0 z-0">
-                    <OverlayCamera streamUrl={safeStream} look={look} />
+                    <OverlayCamera streamUrl={safeStream} lookCss={lookCss} temperatureStyle={temperatureStyle} />
                 </div>
             ) : null}
             <div

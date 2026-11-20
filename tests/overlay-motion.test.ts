@@ -55,13 +55,12 @@ describe("overlay motion tokens", () => {
 describe("overlay components import motion tokens", () => {
     it("does not hardcode the motion values in overlay JSX", () => {
         const files = [
-            "overlay-motion-item.tsx",
-            "overlay-gear.tsx",
-            "overlay-hud.tsx",
+            path.join("components", "overlay-motion-item.tsx"),
+            path.join("components", "overlay-hud.tsx"),
         ];
         for (const file of files) {
             const src = readFileSync(
-                path.join(process.cwd(), "components", file),
+                path.join(process.cwd(), file),
                 "utf8",
             );
             assert.match(src, /from ["']@\/lib\/overlay-motion["']/);

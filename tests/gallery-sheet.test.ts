@@ -4,9 +4,9 @@ import {describe, it} from "node:test";
 
 describe("gallery sheet", () => {
     it("puts the player and snapshots on one board and does not stamp a date", async () => {
-        const page = await readFile(new URL("../app/(site)/gallery/page.tsx", import.meta.url), "utf8");
-        const gallery = await readFile(new URL("../components/snapshot-gallery.tsx", import.meta.url), "utf8");
-        const player = await readFile(new URL("../components/timelapse-player.tsx", import.meta.url), "utf8");
+        const page = await readFile(new URL("../plugins/timelapse/pages/gallery.tsx", import.meta.url), "utf8");
+        const gallery = await readFile(new URL("../plugins/timelapse/ui/snapshot-gallery.tsx", import.meta.url), "utf8");
+        const player = await readFile(new URL("../plugins/timelapse/ui/timelapse-player.tsx", import.meta.url), "utf8");
 
         assert.match(page, /WORKSPACE_BOARD_CLASS/);
         assert.match(page, /<TimelapsePlayer sheet\/>/);

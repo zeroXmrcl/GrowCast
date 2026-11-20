@@ -7,7 +7,7 @@ import {
 } from "@/lib/ai-summary/mosaic";
 import type {AiSummaryPayload, MosaicCell} from "@/lib/ai-summary/types";
 import {AI_SUMMARY_MOSAIC_SLOTS} from "@/lib/ai-summary/types";
-import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/lib/climate/types";
+import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/lib/ai-summary/climate";
 
 export const AI_SUMMARY_WINDOW_MS = AI_SUMMARY_MOSAIC_SLOTS * CLIMATE_SLOT_MS;
 export const AI_SUMMARY_MOSAIC_POLL_MS = 60_000;

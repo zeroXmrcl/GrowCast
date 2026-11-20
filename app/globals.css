@@ -1,3 +1,6 @@
+/* Plugin stylesheets opt into this layer. It is declared first so their
+   utilities cannot override host utilities, including responsive variants. */
+@layer plugin;
 @import "tailwindcss";
 
 :root {
@@ -495,6 +498,7 @@ html[data-admin-save-bar] .admin-toast {
     "name details"
     "cam details"
     "live live"
+    "plugins plugins"
     "run run"
     "ai ai"
     "pics pics"
@@ -507,6 +511,7 @@ html[data-admin-save-bar] .admin-toast {
   grid-template-areas:
     "cam details"
     "live live"
+    "plugins plugins"
     "run run"
     "ai ai"
     "pics pics"
@@ -537,6 +542,7 @@ html[data-admin-save-bar] .admin-toast {
       "cam"
       "details"
       "live"
+      "plugins"
       "run"
       "ai"
       "pics"
@@ -549,6 +555,7 @@ html[data-admin-save-bar] .admin-toast {
       "cam"
       "details"
       "live"
+      "plugins"
       "run"
       "ai"
       "pics"
@@ -585,6 +592,37 @@ html[data-admin-save-bar] .admin-toast {
 .growcast-area-live {
   grid-area: live;
   border-bottom: 1px solid var(--growcast-hair);
+}
+
+.growcast-area-plugins {
+  grid-area: plugins;
+  border-bottom: 1px solid var(--growcast-hair);
+  min-width: 0;
+}
+
+.growcast-area-plugins > div:has(.gc-solar-absent) {
+  display: none;
+}
+
+.growcast-plugin-banner:not(:has(.gc-power-notice)) {
+  display: none;
+}
+
+.growcast-plugin-banner:has(.gc-power-notice) {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+}
+
+html:has([data-overlay-root]) .growcast-plugin-banner:has(.gc-power-notice) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.plugin-mount-root {
+  display: contents;
 }
 
 .growcast-area-run {

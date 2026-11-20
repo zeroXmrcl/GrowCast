@@ -1,18 +1,17 @@
 "use client";
 
 import {useId, useRef} from "react";
-import {useLiveClimate} from "@/hooks/use-live-climate";
+import {usePluginLiveReadings} from "@/hooks/use-plugin-live-readings";
 import {useRollingAiMosaic} from "@/hooks/use-rolling-ai-mosaic";
 import {
     formatMetricReading,
-    liveReadingsFromSnapshot,
     mergeLiveMetrics,
 } from "@/lib/ai-summary/live-metrics";
 import {foldMosaicRow, mosaicDetail, parseMosaicRow, verdictsFromMosaic} from "@/lib/ai-summary/mosaic";
 import {mosaicFoldSlotMs, mosaicWindowStartMs} from "@/lib/ai-summary/rolling-mosaic";
 import {AI_SUMMARY_SCORE_DAYS, type AiSummaryPublic, type MosaicCell} from "@/lib/ai-summary/types";
 import {APP_TIMEZONE} from "@/lib/app-timezone";
-import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/ai-summary/climate";
 import {WORKSPACE_AREA, WORKSPACE_HAIRLINE, WORKSPACE_PAD, WORKSPACE_VT} from "@/lib/workspace";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
 
@@ -127,7 +126,7 @@ export default function AiSummaryCard({
     summary: AiSummaryPublic | null;
     demo?: boolean;
 }) {
-    const live = useLiveClimate();
+    const live = usePluginLiveReadings();
     const confidenceTipId = useId();
     const tipRef = useRef<HTMLDivElement>(null);
     const whenRef = useRef<HTMLSpanElement>(null);
@@ -193,7 +192,7 @@ export default function AiSummaryCard({
     }
 
     const scores = summary ? scoreWindow(summary.scoreHistory) : [];
-    const liveBundle = liveReadingsFromSnapshot(live.snapshot);
+    const liveBundle = live.bundle;
     const rolling = useRollingAiMosaic({
         summary,
         demo,

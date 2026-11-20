@@ -1,6 +1,8 @@
 import {Geist, Geist_Mono} from "next/font/google";
 import {headers} from "next/headers";
 import {loadShareCardCopySafe, shareCardMetadataOrigin} from "@/lib/share-card";
+import {PluginImportMap} from "@/components/plugin-import-map";
+import PluginWidgets from "@/components/plugin-widgets";
 import type {Metadata} from "next";
 import React from "react";
 import "./globals.css";
@@ -52,7 +54,11 @@ export default function RootLayout({
             lang="en"
             className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
         >
+            <head>
+                <PluginImportMap />
+            </head>
             <body className="min-h-full bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+                <PluginWidgets slot="banner" />
                 {children}
             </body>
         </html>

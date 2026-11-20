@@ -17,7 +17,7 @@ import {
     redactRestreamError,
     saveRestreamKey,
     setRestreamEnabled,
-} from "../lib/restream/store.ts";
+} from "../plugins/restream/host/store.ts";
 import {
     captureStreamUrl,
     ensureRestreamCaptureToken,
@@ -25,8 +25,8 @@ import {
     isRestreamCaptureAuthorized,
     readCaptureTokenFile,
     resolveRestreamCaptureToken,
-} from "../lib/restream/capture.ts";
-import {restreamCaptureTokenFile} from "../lib/restream/paths.ts";
+} from "../plugins/restream/host/capture.ts";
+import {restreamCaptureTokenFile} from "../plugins/restream/host/paths.ts";
 import {mergeOverlayGrowPoll} from "../lib/overlay-grow.ts";
 import {navItemsFor, type NavFlags} from "../lib/site-nav.ts";
 
@@ -275,8 +275,6 @@ describe("restream capture gate", () => {
 describe("restream chrome", () => {
     it("does not add Capture or Twitch to public nav", () => {
         const flags: NavFlags = {
-            showEnergy: true,
-            showGallery: true,
             showPastGrows: true,
             showSettingsLink: true,
         };
@@ -291,19 +289,19 @@ describe("restream chrome", () => {
 
     it("capture page forces include-stream and is not in public overlay chrome tests", () => {
         const captureSrc = readFileSync(
-            path.join(process.cwd(), "app", "overlay", "capture", "page.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "pages", "capture.tsx"),
             "utf8",
         );
         const sceneSrc = readFileSync(
-            path.join(process.cwd(), "components", "program-scene.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "ui", "program-scene.tsx"),
             "utf8",
         );
         const lookHudSrc = readFileSync(
-            path.join(process.cwd(), "components", "program-camera-look.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "ui", "program-camera-look.tsx"),
             "utf8",
         );
         const fieldsSrc = readFileSync(
-            path.join(process.cwd(), "app", "admin", "restream-panel.tsx"),
+            path.join(process.cwd(), "plugins", "restream", "admin", "restream-panel.tsx"),
             "utf8",
         );
         const composeSrc = readFileSync(path.join(process.cwd(), "docker-compose.yml"), "utf8");
@@ -312,19 +310,26 @@ describe("restream chrome", () => {
             "utf8",
         );
         const sidecarSrc = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            path.join(process.cwd(), "plugins", "restream", "restream.py"),
             "utf8",
         );
         const dockerSrc = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "Dockerfile"),
+            path.join(process.cwd(), "plugins", "restream", "Dockerfile"),
             "utf8",
         );
         assert.match(lookHudSrc, /overlayStream=["']include["']/);
         assert.match(sceneSrc, /ProgramCameraLook/);
         assert.match(sceneSrc, /lockStream/);
         assert.match(hudSrc, /mergeOverlayGrowPoll/);
-        assert.match(captureSrc, /isRestreamCaptureAuthorized/);
-        assert.match(captureSrc, /ensureRestreamCaptureToken/);
+        const hostSrc = readFileSync(
+            path.join(process.cwd(), "plugins", "restream", "host", "index.ts"),
+            "utf8",
+        );
+        assert.match(captureSrc, /usePluginRuntime/);
+        assert.match(captureSrc, /pageData/);
+        assert.match(hostSrc, /authorizePage/);
+        assert.match(hostSrc, /ensureRestreamCaptureToken/);
+        assert.match(hostSrc, /isRestreamCaptureAuthorized/);
         const restreamBlock = composeServiceBlock(composeSrc, "restream");
         assert.doesNotMatch(restreamBlock, /path:\s*\.env\.local/);
         assert.doesNotMatch(restreamBlock, /env_file:/);
@@ -350,19 +355,19 @@ describe("restream chrome", () => {
         assert.doesNotMatch(sidecarSrc, /log\.(?:info|warning|error)\([^)]*FFMPEG_OUTPUT/);
         assert.doesNotMatch(sidecarSrc, /log\.info\([^)]*token=\{TOKEN\}/);
         assert.match(fieldsSrc, /id="twitch"/);
-        assert.match(composeSrc, /^\s*ggs:\s*$/m);
-        assert.match(composeSrc, /^\s*restream:\s*$/m);
+        assert.doesNotMatch(composeSrc, /^\s*ggs:\s*$/m);
+        assert.doesNotMatch(composeSrc, /^\s*restream:\s*$/m);
         assert.doesNotMatch(composeSrc, /profiles:/);
         assert.doesNotMatch(captureSrc, /SiteHeader/);
     });
 
     it("captures pulse audio and falls back to anullsrc", () => {
         const py = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            path.join(process.cwd(), "plugins", "restream", "restream.py"),
             "utf8",
         );
         const docker = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "Dockerfile"),
+            path.join(process.cwd(), "plugins", "restream", "Dockerfile"),
             "utf8",
         );
         assert.match(docker, /pulseaudio/);
@@ -385,7 +390,7 @@ describe("restream chrome", () => {
 
     it("starts Pulse without PULSE_SERVER so the daemon can autospawn", () => {
         const py = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            path.join(process.cwd(), "plugins", "restream", "restream.py"),
             "utf8",
         );
         const ensureStart = py.indexOf("def ensure_pulse()");
@@ -403,7 +408,7 @@ describe("restream chrome", () => {
 
     it("encodes 1080p10 with two x264 threads and a 2s GOP", () => {
         const py = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            path.join(process.cwd(), "plugins", "restream", "restream.py"),
             "utf8",
         );
         const start = py.indexOf("def ffmpeg_command");
@@ -422,11 +427,11 @@ describe("restream chrome", () => {
 
     it("pins capture Chromium to the Xvfb origin so x11grab has no black gutter", () => {
         const py = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            path.join(process.cwd(), "plugins", "restream", "restream.py"),
             "utf8",
         );
         const docker = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "Dockerfile"),
+            path.join(process.cwd(), "plugins", "restream", "Dockerfile"),
             "utf8",
         );
         assert.match(py, /--window-position=0,0/);
@@ -441,13 +446,16 @@ describe("restream chrome", () => {
     it("does not load GrowCast .env.local into restream", () => {
         const compose = readFileSync(path.join(process.cwd(), "docker-compose.yml"), "utf8");
         const sidecarSrc = readFileSync(
-            path.join(process.cwd(), "extensions", "GrowCast-Restream", "restream.py"),
+            path.join(process.cwd(), "plugins", "restream", "restream.py"),
             "utf8",
         );
         const restream = composeServiceBlock(compose, "restream");
         assert.doesNotMatch(restream, /path:\s*\.env\.local/);
         assert.doesNotMatch(restream, /env_file:/);
-        assert.equal(compose.includes("GROWCAST_URL: http://growcast:3000"), true);
+        assert.match(
+            readFileSync(path.join(process.cwd(), "lib", "plugins", "compose.ts"), "utf8"),
+            /GROWCAST_URL: "http:\/\/growcast:3000"/,
+        );
         assert.doesNotMatch(
             restream,
             /GROWCAST_RESTREAM_TOKEN:\s*\$\{GROWCAST_RESTREAM_TOKEN/,

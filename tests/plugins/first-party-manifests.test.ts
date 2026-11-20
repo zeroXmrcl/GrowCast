@@ -1,0 +1,69 @@
+import assert from "node:assert/strict";
+import {existsSync, readFileSync} from "node:fs";
+import path from "node:path";
+import {describe, it} from "node:test";
+import {parsePluginManifest} from "../../lib/plugins/manifest.ts";
+import {FIRST_PARTY_PLUGIN_IDS} from "../../lib/plugins/ids.ts";
+
+const FOLDERS: Record<string, string> = {
+    "growcast.ggs": "ggs",
+    "growcast.timelapse": "timelapse",
+    "growcast.restream": "restream",
+    "growcast.solar": "solar",
+};
+
+describe("first-party plugin.json files", () => {
+    for (const id of FIRST_PARTY_PLUGIN_IDS) {
+        it(`parses ${id}`, (t) => {
+            const folder = FOLDERS[id];
+            const manifestPath = path.join(process.cwd(), "plugins", folder, "plugin.json");
+            if (!existsSync(manifestPath)) {
+                t.skip(`${id} is not in this checkout`);
+                return;
+            }
+            const raw = JSON.parse(
+                readFileSync(manifestPath, "utf8"),
+            ) as unknown;
+            const parsed = parsePluginManifest(raw);
+            assert.equal(parsed.ok, true, parsed.ok ? "" : parsed.error);
+            if (parsed.ok) {
+                assert.equal(parsed.value.id, id);
+                assert.equal(parsed.value.apiVersion, 1);
+                assert.ok(parsed.value.ui?.sdk);
+                assert.equal(parsed.value.ui?.entry, "ui/dist/index.js");
+            }
+        });
+    }
+
+    it("defaults solar public tiles on and battery discharge to always-solar", (t) => {
+        const manifestPath = path.join(process.cwd(), "plugins", "solar", "plugin.json");
+        if (!existsSync(manifestPath)) {
+            t.skip("growcast.solar is not in this checkout");
+            return;
+        }
+        const raw = JSON.parse(
+            readFileSync(manifestPath, "utf8"),
+        ) as {config: Record<string, {default?: unknown}>};
+        assert.equal(raw.config.publicPv.default, true);
+        assert.equal(raw.config.publicBattery.default, true);
+        assert.equal(raw.config.publicGrid.default, true);
+        assert.equal(raw.config.publicTentShare.default, true);
+        assert.equal(raw.config.overlayWidgets.default, false);
+        assert.equal(raw.config.batteryDischargeOrigin.default, "always-solar");
+    });
+
+    it("loads plugin UI through the import map, not a first-party Next import()", () => {
+        const mount = readFileSync(path.join(process.cwd(), "components", "plugin-mount.tsx"), "utf8");
+        const map = readFileSync(path.join(process.cwd(), "components", "plugin-import-map.tsx"), "utf8");
+        assert.match(mount, /webpackIgnore: true/);
+        assert.match(mount, /turbopackIgnore: true/);
+        assert.match(mount, /pluginAssetUrl/);
+        assert.match(mount, /webComponent/);
+        assert.match(mount, /createRoot/);
+        assert.doesNotMatch(mount, /FIRST_PARTY/);
+        assert.doesNotMatch(mount, /from ['"]@\/plugins\//);
+        assert.match(map, /type="importmap"/);
+        const hostLoader = readFileSync(path.join(process.cwd(), "lib", "plugins", "first-party.ts"), "utf8");
+        assert.doesNotMatch(hostLoader, /@\/plugins\//);
+    });
+});
