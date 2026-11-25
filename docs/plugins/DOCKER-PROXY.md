@@ -1,6 +1,8 @@
 # Docker plugin proxy
 
-GrowCast never mounts `/var/run/docker.sock`. The website talks to `docker-plugin-proxy` at `tcp://docker-plugin-proxy:2375`. Only that proxy container mounts the engine socket (`ro`).
+GrowCast never mounts `/var/run/docker.sock`. The website talks to `docker-plugin-proxy` at `tcp://docker-plugin-proxy:2375`. Only that proxy container mounts the engine socket (`ro`). The proxy listens on the compose network (`GROWCAST_DOCKER_PROXY_INTERNAL=1`) and refuses to start unless `GROWCAST_DOCKER_PROXY_TOKEN` is set. GrowCast sends that token as `Authorization: Bearer`.
+
+Create JSON is an allowlist. Field names are matched without regard to case, duplicate keys are rejected, and unknown keys are rejected. The proxy forwards the canonical body it authorized, not the caller's original bytes.
 
 The proxy is a small Node HTTP allowlist (`services/docker-plugin-proxy`). It is not tecnativa/docker-socket-proxy. Broad Engine APIs (images, networks, volumes, exec, build) would let GrowCast create privileged containers or bind the host, which is root on the host.
 
@@ -21,7 +23,7 @@ Create is allowed only for:
 - Network mode `bridge`/`default` or `GROWCAST_PLUGIN_NETWORK` (never `host`, `container:`, or `ns:`)
 - Binds only `{GROWCAST_HOST_PROJECT}/plugins/<folder>:/plugin:ro` and `{GROWCAST_HOST_PROJECT}/data/plugins/<id>:/data`
 
-Set `GROWCAST_HOST_PROJECT` to the compose project directory on the host. The engine sees host paths, not `/host-project`.
+Set `GROWCAST_HOST_PROJECT` to the compose project directory on the host. The engine sees those host paths. GrowCast does not mount the project root; the operator snapshot is `data/compose.plugins.generated.yml`.
 
 ## Deny
 

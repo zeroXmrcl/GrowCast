@@ -109,7 +109,7 @@ npm run build:plugin-ui
 docker compose build growcast docker-plugin-proxy
 ```
 
-Set `GROWCAST_HOST_PROJECT` to this directory (the engine bind-mounts host paths). After first enable, generated plugin services appear in `compose.plugins.generated.yml` for operators; GrowCast does not run `docker compose` against it. Pre-build plugin images from the plugin Dockerfiles:
+Set `GROWCAST_HOST_PROJECT` to this directory (the engine bind-mounts those host paths into plugin containers) and set `GROWCAST_DOCKER_PROXY_TOKEN` (the proxy refuses to start without it). After first enable, generated plugin services appear in `data/compose.plugins.generated.yml` for operators; GrowCast does not run `docker compose` against it and does not mount the project root. Pre-build plugin images from the plugin Dockerfiles:
 
 ```bash
 export GROWCAST_HOST_PROJECT="$(pwd)"

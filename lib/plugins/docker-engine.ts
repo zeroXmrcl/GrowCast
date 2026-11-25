@@ -98,6 +98,14 @@ export async function pluginCreateConfig(plugin: DiscoveredPlugin, token: string
     return body;
 }
 
+function proxyAuthHeader(): Record<string, string> {
+    const token = (process.env.GROWCAST_DOCKER_PROXY_TOKEN ?? "").trim();
+    if (!token) {
+        throw new Error("GROWCAST_DOCKER_PROXY_TOKEN is not set");
+    }
+    return {Authorization: `Bearer ${token}`};
+}
+
 async function engine(path: string, init: RequestInit = {}): Promise<Response> {
     assertDockerHostIsProxy(process.env.DOCKER_HOST ?? "tcp://docker-plugin-proxy:2375");
     const base = dockerEngineBaseUrl();
@@ -105,6 +113,7 @@ async function engine(path: string, init: RequestInit = {}): Promise<Response> {
         ...init,
         headers: {
             "Content-Type": "application/json",
+            ...proxyAuthHeader(),
             ...(init.headers ?? {}),
         },
     });

@@ -1,6 +1,16 @@
 import http from "node:http";
+import fs from "node:fs";
 import {Buffer} from "node:buffer";
-import {authorizeDockerRequest, stripEngineVersion} from "./policy.mjs";
+import {pathToFileURL} from "node:url";
+import {
+    authorizeDockerRequest,
+    authorizeProxyRequest,
+    parseStrictJson,
+    planPrivilegeDrop,
+    proxyAuthConfig,
+    resolveProxyBind,
+    stripEngineVersion,
+} from "./policy.mjs";
 
 const SOCKET = process.env.DOCKER_SOCKET || "/var/run/docker.sock";
 const PORT = Number(process.env.GROWCAST_DOCKER_PROXY_PORT || 2375);
@@ -45,16 +55,14 @@ function engineRequest(method, pathWithQuery, {headers = {}, body} = {}) {
     });
 }
 
-function pipeEngine(clientReq, clientRes, method, pathWithQuery, body) {
+function pipeEngine(clientRes, method, pathWithQuery) {
     const req = http.request({
         socketPath: SOCKET,
         path: pathWithQuery,
         method,
         headers: {
-            ...clientReq.headers,
             host: "localhost",
             connection: "close",
-            "content-length": body ? Buffer.byteLength(body) : 0,
         },
     }, (res) => {
         clientRes.writeHead(res.statusCode ?? 502, res.headers);
@@ -67,9 +75,6 @@ function pipeEngine(clientReq, clientRes, method, pathWithQuery, body) {
             clientRes.end();
         }
     });
-    if (body) {
-        req.write(body);
-    }
     req.end();
 }
 
@@ -104,39 +109,66 @@ function readBody(req) {
     });
 }
 
+export async function evaluateProxyRequest({method, url, headers, body, env, inspect}) {
+    const auth = authorizeProxyRequest(headers ?? {}, env);
+    if (!auth.ok) {
+        return {allow: false, status: auth.status, message: auth.reason};
+    }
+    const raw = Buffer.isBuffer(body) ? body : Buffer.from(body ? String(body) : "");
+    let parsed;
+    if (raw.length > 0) {
+        const decoded = parseStrictJson(raw.toString("utf8"));
+        if (!decoded.ok) {
+            return {allow: false, status: 400, message: decoded.reason};
+        }
+        parsed = decoded.value;
+    }
+    const target = new URL(url || "/", "http://docker-plugin-proxy");
+    const decision = await authorizeDockerRequest(
+        {
+            method: method || "GET",
+            pathname: target.pathname,
+            search: target.search,
+            body: parsed,
+        },
+        {inspect, env},
+    );
+    if (!decision.allow) {
+        return {allow: false, status: 403, message: decision.reason ?? "forbidden"};
+    }
+    const upstreamBody = decision.upstreamBody !== undefined
+        ? Buffer.from(JSON.stringify(decision.upstreamBody))
+        : (raw.length > 0 ? raw : undefined);
+    return {allow: true, decision, upstreamBody, url: target};
+}
+
 const server = http.createServer(async (req, res) => {
     try {
+        const early = authorizeProxyRequest(req.headers, process.env);
+        if (!early.ok) {
+            json(res, early.status, {message: early.reason});
+            return;
+        }
         const url = new URL(req.url || "/", "http://docker-plugin-proxy");
         const method = req.method || "GET";
         let bodyBuf = Buffer.alloc(0);
         if (method !== "GET" && method !== "HEAD") {
             bodyBuf = await readBody(req);
         }
-        let parsedBody;
-        if (bodyBuf.length > 0) {
-            const text = bodyBuf.toString("utf8");
-            try {
-                parsedBody = JSON.parse(text);
-            } catch {
-                json(res, 400, {message: "invalid json"});
-                return;
-            }
-        }
-        const decision = await authorizeDockerRequest(
-            {
-                method,
-                pathname: url.pathname,
-                search: url.search,
-                body: parsedBody,
-            },
-            {inspect: inspectContainer, env: process.env},
-        );
-        if (!decision.allow) {
-            json(res, 403, {message: decision.reason ?? "forbidden"});
+        const evaluated = await evaluateProxyRequest({
+            method,
+            url: `${url.pathname}${url.search}`,
+            headers: req.headers,
+            body: bodyBuf,
+            env: process.env,
+            inspect: inspectContainer,
+        });
+        if (!evaluated.allow) {
+            json(res, evaluated.status, {message: evaluated.message ?? "forbidden"});
             return;
         }
         let pathWithQuery = url.pathname + url.search;
-        if (decision.forceLabelFilter) {
+        if (evaluated.decision.forceLabelFilter) {
             const params = new URLSearchParams(url.search.startsWith("?") ? url.search.slice(1) : url.search);
             let filters = {};
             try {
@@ -159,14 +191,14 @@ const server = http.createServer(async (req, res) => {
         const stripped = stripEngineVersion(url.pathname);
         const streaming = method === "GET" && /\/containers\/[^/]+\/logs$/.test(stripped);
         if (streaming) {
-            pipeEngine(req, res, method, pathWithQuery, bodyBuf);
+            pipeEngine(res, method, pathWithQuery);
             return;
         }
         const result = await engineRequest(method, pathWithQuery, {
             headers: {
-                "Content-Type": req.headers["content-type"] || "application/json",
+                "Content-Type": "application/json",
             },
-            body: bodyBuf.length > 0 ? bodyBuf : undefined,
+            body: evaluated.upstreamBody,
         });
         const headers = {...result.headers};
         delete headers.connection;
@@ -180,6 +212,55 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-    process.stdout.write(`growcast docker-plugin-proxy listening on ${PORT}\n`);
-});
+function dropPrivileges() {
+    let socketExists = false;
+    let socketGid = -1;
+    try {
+        const info = fs.statSync(SOCKET);
+        socketExists = info.isSocket();
+        socketGid = info.gid;
+    } catch {
+        socketExists = false;
+    }
+    const euid = typeof process.geteuid === "function" ? process.geteuid() : 0;
+    const plan = planPrivilegeDrop({euid, socketGid, socketExists});
+    if (!plan.ok) {
+        process.stderr.write(`${plan.reason}\n`);
+        process.exit(1);
+    }
+    if (plan.drop) {
+        process.setgroups(plan.drop.groups);
+        process.setgid(plan.drop.gid);
+        process.setuid(plan.drop.uid);
+    }
+    try {
+        fs.accessSync(SOCKET, fs.constants.R_OK | fs.constants.W_OK);
+    } catch {
+        process.stderr.write("cannot open docker socket; refusing to chmod it\n");
+        process.exit(1);
+    }
+}
+
+export function startProxy() {
+    const auth = proxyAuthConfig(process.env);
+    if (!auth.ok) {
+        process.stderr.write(`${auth.reason}\n`);
+        process.exit(1);
+    }
+    let bind;
+    try {
+        bind = resolveProxyBind(process.env);
+    } catch (error) {
+        process.stderr.write(`${error instanceof Error ? error.message : "refusing bind"}\n`);
+        process.exit(1);
+    }
+    dropPrivileges();
+    server.listen(PORT, bind, () => {
+        process.stdout.write(`growcast docker-plugin-proxy listening on ${bind}:${PORT}\n`);
+    });
+}
+
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) {
+    startProxy();
+}

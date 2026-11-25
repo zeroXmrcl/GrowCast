@@ -1,9 +1,11 @@
 # Plugin backends are started by GrowCast through docker-plugin-proxy.
 # GrowCast never mounts /var/run/docker.sock. The proxy allowlists
 # list/inspect/start/stop/restart/logs (and a checked create/delete)
-# for containers labeled growcast.plugin=<id> only.
-# compose.plugins.generated.yml is still written for operators; GrowCast
-# does not run docker compose against it.
+# for containers labeled growcast.plugin=<id> only. It listens on the
+# compose network only and requires GROWCAST_DOCKER_PROXY_TOKEN.
+# The operator snapshot is ./data/compose.plugins.generated.yml.
+# GrowCast does not run docker compose against it, and it does not mount
+# the project root.
 services:
   docker-plugin-proxy:
     build:
@@ -15,6 +17,9 @@ services:
       GROWCAST_HOST_PROJECT: ${GROWCAST_HOST_PROJECT:-}
       GROWCAST_PLUGIN_NETWORK: ${COMPOSE_PROJECT_NAME:-growcast}_default
       GROWCAST_PLUGIN_IMAGES: ${GROWCAST_PLUGIN_IMAGES:-growcast-plugin-ggs:local,growcast-plugin-timelapse:local,growcast-plugin-restream:local,growcast-plugin-solar:local}
+      GROWCAST_DOCKER_PROXY_TOKEN: ${GROWCAST_DOCKER_PROXY_TOKEN:?Set GROWCAST_DOCKER_PROXY_TOKEN}
+      GROWCAST_DOCKER_PROXY_BIND: 0.0.0.0
+      GROWCAST_DOCKER_PROXY_INTERNAL: "1"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     expose:
@@ -41,14 +46,14 @@ services:
       GROWCAST_TRUST_PROXY: "1"
       GROWCAST_BIND: ${GROWCAST_BIND:-127.0.0.1}
       GROWCAST_PORT: ${GROWCAST_PORT:-3000}
-      GROWCAST_COMPOSE_DIR: /host-project
+      GROWCAST_COMPOSE_DIR: /app/data
       GROWCAST_HOST_PROJECT: ${GROWCAST_HOST_PROJECT:-}
       GROWCAST_PLUGIN_NETWORK: ${COMPOSE_PROJECT_NAME:-growcast}_default
       GROWCAST_PLUGIN_RUNTIME: docker
+      GROWCAST_DOCKER_PROXY_TOKEN: ${GROWCAST_DOCKER_PROXY_TOKEN:?Set GROWCAST_DOCKER_PROXY_TOKEN}
       DOCKER_HOST: tcp://docker-plugin-proxy:2375
     volumes:
       - ./data:/app/data
       - ./plugins:/app/plugins:ro
       - ./public/setup:/app/public/setup
       - ./public/yourPictures:/app/public/yourPictures
-      - ./:/host-project

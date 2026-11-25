@@ -20,6 +20,12 @@ describe("docker plugin proxy compose", () => {
         assert.doesNotMatch(growcast, /DOCKER_GID/);
         assert.doesNotMatch(growcast, /group_add:/);
         assert.match(compose, /\/var\/run\/docker\.sock:\/var\/run\/docker\.sock:ro/);
+        assert.doesNotMatch(compose, /:\s*\/host-project\s*$/m);
+        assert.doesNotMatch(compose, /0666/);
+        const proxy = compose.split(/^  growcast:\s*$/m)[0] ?? "";
+        assert.match(proxy, /GROWCAST_DOCKER_PROXY_TOKEN/);
+        assert.match(proxy, /GROWCAST_DOCKER_PROXY_INTERNAL:\s*"1"/);
+        assert.doesNotMatch(proxy, /^\s*ports:/m);
     });
 
     it("does not ship a Docker CLI in the GrowCast image", () => {
