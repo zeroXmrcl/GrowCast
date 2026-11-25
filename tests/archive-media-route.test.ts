@@ -82,10 +82,7 @@ describe("archive media GET cache", () => {
             await writeFile(path.join(snapshotsDir, "wide.png"), wide);
             await writeFile(path.join(picturesDir, "still.jpeg"), "picture-bytes");
 
-            const thumb = await archiveMediaGetResponse(archiveId, "snapshots", "wide.png", {
-                thumb: true,
-                request: new Request("http://local/api/archives/media?v=1"),
-            });
+            const thumb = await archiveMediaGetResponse(archiveId, "snapshots", "wide.png", {thumb: true});
             assert.equal(thumb.status, 200);
             const thumbHeader = cacheControl(thumb);
             assert.match(thumbHeader, /private, no-cache/);
