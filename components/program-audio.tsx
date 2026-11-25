@@ -259,13 +259,18 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
         };
     }, [src, body?.paused, body?.volume, ducking]);
 
+    const paused = body?.paused ?? true;
+    const waveSmoothPct = body?.waveSmoothPct;
+    const musicLook = body?.musicLook ?? DEFAULT_MUSIC_LOOK;
+    const waveBars = body?.waveBars ?? DEFAULT_WAVE_BARS;
+    const files = body?.files;
     useEffect(() => {
         const el = audioRef.current;
-        const playing = programMusicWaveActive({kind, paused: body?.paused ?? true, src});
-        const look = body?.musicLook ?? DEFAULT_MUSIC_LOOK;
-        const bars = body?.waveBars ?? DEFAULT_WAVE_BARS;
-        const file = body && body.files.length > 0
-            ? body.files[playlistIndex % body.files.length] ?? ""
+        const playing = programMusicWaveActive({kind, paused, src});
+        const look = musicLook;
+        const bars = waveBars;
+        const file = files && files.length > 0
+            ? files[playlistIndex % files.length] ?? ""
             : "";
         if (!el || !playing) {
             setGraph({
@@ -310,7 +315,7 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             }
             const graph = graphRef.current;
             graph.analyser.smoothingTimeConstant = waveSmoothTimeConstant(
-                body?.waveSmoothPct ?? DEFAULT_WAVE_SMOOTH_PCT,
+                waveSmoothPct ?? DEFAULT_WAVE_SMOOTH_PCT,
             );
             publish(graph.analyser);
         };
@@ -336,7 +341,7 @@ export default function ProgramAudio({captureToken}: {captureToken?: string}) {
             window.removeEventListener("pointerdown", keepAlive);
             window.removeEventListener("keydown", keepAlive);
         };
-    }, [kind, src, body?.paused, body?.waveSmoothPct, body?.musicLook, body?.waveBars, body?.files, playlistIndex, setGraph]);
+    }, [kind, src, paused, waveSmoothPct, musicLook, waveBars, files, playlistIndex, setGraph]);
 
     return (
         <audio

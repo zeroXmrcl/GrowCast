@@ -80,7 +80,6 @@ describe("workspace morph", () => {
         const css = src(path.join("app", "globals.css"));
         const home = src(path.join("app", "(site)", "page.tsx"));
         const header = src(path.join("components", "site-header.tsx"));
-        const workspace = src(path.join("lib", "workspace.ts"));
         const scoreboard = src(path.join("components", "energy-scoreboard.tsx"));
         const row = src(path.join("components", "live-tent-row.tsx"));
         const pictures = src(path.join("components", "dash-pictures.tsx"));

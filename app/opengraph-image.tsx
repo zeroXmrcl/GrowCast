@@ -48,7 +48,6 @@ export default async function Image() {
                 }}
             >
                 {stillSrc ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={stillSrc}
                         alt=""
@@ -87,7 +86,6 @@ export default async function Image() {
                     }}
                 >
                     <div style={{display: "flex", alignItems: "center", gap: 12}}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={logoSrc} alt="" width={40} height={40} />
                         <div
                             style={{

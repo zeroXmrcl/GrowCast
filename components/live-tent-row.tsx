@@ -73,11 +73,9 @@ export default function LiveTentRow({
         };
     }, []);
 
-    useEffect(() => {
-        if (!shouldShowLiveRow(snapshot) && historyOpen) {
-            setHistoryOpen(false);
-        }
-    }, [snapshot, historyOpen]);
+    if (!shouldShowLiveRow(snapshot) && historyOpen) {
+        setHistoryOpen(false);
+    }
 
     function openHistory(metric: ClimateHistoryMetric, button: HTMLButtonElement) {
         triggerRef.current = button;

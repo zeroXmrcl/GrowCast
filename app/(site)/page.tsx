@@ -4,7 +4,7 @@ import DashPictures from "@/components/dash-pictures";
 import LiveTentRow from "@/components/live-tent-row";
 import {readPublicClimateHistory} from "@/lib/climate/history-adapter";
 import {emptyClimateHistory} from "@/lib/climate/history-public";
-import {climatePreviewHistory} from "@/lib/climate/local-preview";
+import {requestClimatePreviewHistory} from "@/lib/climate/local-preview";
 import {aiSummaryWidgetEnabled} from "@/lib/ai-summary/config";
 import {assertPublicSafe, readAiSummaryPublic} from "@/lib/ai-summary/public";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
@@ -95,7 +95,7 @@ export default async function Home() {
     const history = ggsLive
         ? await readPublicClimateHistory({seededAt: grow.details.seededAt})
         : previewClimate
-            ? climatePreviewHistory(Date.now(), grow.details.seededAt)
+            ? requestClimatePreviewHistory(grow.details.seededAt)
             : emptyClimateHistory();
     const details = grow.details;
     const ageDays = growAgeDays(details.seededAt);

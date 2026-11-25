@@ -22,7 +22,7 @@ import {isRtspUrl, readTimelapseRtsp, writeTimelapseSidecarEnv} from "@/lib/time
 import {completeCurrentGrow} from "@/lib/archives";
 import {parseOverlayScalePct} from "@/lib/overlay-scale";
 import {parseMusicLook, parseWaveBars, parseWaveSmoothPct} from "@/lib/program-music-wave";
-import {readAlertsSettings, writeAlertsSettings} from "@/lib/restream/alerts-settings";
+import {writeAlertsSettings} from "@/lib/restream/alerts-settings";
 import {readRestreamAudio, writeRestreamAudio} from "@/lib/restream/audio";
 import {ensureRestreamCaptureToken} from "@/lib/restream/capture";
 import {

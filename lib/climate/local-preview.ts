@@ -116,3 +116,8 @@ export function climatePreviewHistory(nowMs: number, seededAt: string): ClimateH
     days.set("preview", {date: berlinDateOnly(nowMs), points});
     return buildClimateHistory(days, nowMs, previewSeed(nowMs, seededAt));
 }
+
+/** Request-time preview. The clock stays out of the page render. */
+export function requestClimatePreviewHistory(seededAt: string): ClimateHistoryPublic {
+    return climatePreviewHistory(Date.now(), seededAt);
+}

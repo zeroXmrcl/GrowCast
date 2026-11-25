@@ -131,13 +131,7 @@ export default function ClimateHistoryChart({
         setGhost(nextGhost);
     }
 
-    const frameOwner = useRef<Ghost | null>(null);
-    const frameRef = useRef<StepMorphFrame | null>(null);
-    if (frameOwner.current !== ghost) {
-        frameOwner.current = ghost;
-        frameRef.current = ghost ? morphStepFrame(ghost.pieces, 0, PLOT_H) : null;
-    }
-    const frame = frameRef.current;
+    const frame = ghost ? morphStepFrame(ghost.pieces, 0, PLOT_H) : null;
 
     const morphRef = useRef<SVGGElement | null>(null);
     const strokesRef = useRef<SVGGElement | null>(null);
@@ -147,9 +141,7 @@ export default function ClimateHistoryChart({
     const ghostAxisRef = useRef<HTMLDivElement | null>(null);
     const hairRef = useRef<HTMLSpanElement | null>(null);
     const tipRef = useRef<HTMLSpanElement | null>(null);
-    const morphingRef = useRef(false);
     const settledMorph = useRef(false);
-    morphingRef.current = ghost !== null;
 
     useEffect(() => {
         if (!ghost || !morphRef.current) {
@@ -166,7 +158,6 @@ export default function ClimateHistoryChart({
         const start = performance.now();
         function apply(t: number) {
             const next = morphStepFrame(pieces, easeMorph(t), PLOT_H);
-            frameRef.current = next;
             paintMorph(root, next);
             const inn = t < 0.22 ? t / 0.22 : 1;
             const out = String(1 - inn);
@@ -265,7 +256,7 @@ export default function ClimateHistoryChart({
     }
 
     function onPointer(event: PointerEvent<HTMLDivElement>) {
-        if (morphingRef.current) {
+        if (ghost) {
             return;
         }
         const rect = event.currentTarget.getBoundingClientRect();
