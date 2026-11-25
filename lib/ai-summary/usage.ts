@@ -20,25 +20,60 @@ type UsageFile = {
     days: Record<string, number>;
 };
 
+class CorruptUsageFile extends Error {
+    constructor() {
+        super("ai_summary_usage_corrupt");
+    }
+}
+
 function parseUsageFile(raw: unknown): UsageFile {
-    const empty: UsageFile = {date: "", calls: 0, days: {}};
     if (!isRecord(raw)) {
-        return empty;
+        throw new CorruptUsageFile();
     }
     const days: Record<string, number> = {};
+    if (raw.days !== undefined && !isRecord(raw.days)) {
+        throw new CorruptUsageFile();
+    }
     if (isRecord(raw.days)) {
         for (const [key, value] of Object.entries(raw.days)) {
-            if (isDateOnly(key) && typeof value === "number" && Number.isFinite(value)) {
-                days[key] = Math.max(0, Math.round(value));
+            if (!isDateOnly(key) || typeof value !== "number" || !Number.isFinite(value)) {
+                throw new CorruptUsageFile();
             }
+            days[key] = Math.max(0, Math.round(value));
         }
     }
     const date = asString(raw.date, "");
+    if (raw.date !== undefined && date !== "" && !isDateOnly(date)) {
+        throw new CorruptUsageFile();
+    }
+    if (raw.calls !== undefined && (typeof raw.calls !== "number" || !Number.isFinite(raw.calls))) {
+        throw new CorruptUsageFile();
+    }
     const calls = Math.max(0, Math.round(asNumber(raw.calls, 0)));
     if (isDateOnly(date) && days[date] === undefined) {
         days[date] = calls;
     }
     return {date, calls, days};
+}
+
+async function loadUsageFile(): Promise<UsageFile | "missing"> {
+    let text: string;
+    try {
+        text = await readFile(aiSummaryUsageFile(), "utf8");
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            return "missing";
+        }
+        throw new CorruptUsageFile();
+    }
+    try {
+        return parseUsageFile(JSON.parse(text));
+    } catch (error) {
+        if (error instanceof CorruptUsageFile) {
+            throw error;
+        }
+        throw new CorruptUsageFile();
+    }
 }
 
 export function parseAiApiUsage(raw: unknown, date: string): AiApiUsage {
@@ -48,9 +83,16 @@ export function parseAiApiUsage(raw: unknown, date: string): AiApiUsage {
 
 export async function readAiApiUsage(date: string): Promise<AiApiUsage> {
     try {
-        return parseAiApiUsage(JSON.parse(await readFile(aiSummaryUsageFile(), "utf8")), date);
-    } catch {
-        return {date, calls: 0};
+        const loaded = await loadUsageFile();
+        if (loaded === "missing") {
+            return {date, calls: 0};
+        }
+        return {date, calls: loaded.days[date] ?? 0};
+    } catch (error) {
+        if (error instanceof CorruptUsageFile) {
+            return {date, calls: AI_SUMMARY_DAILY_API_CAP};
+        }
+        throw error;
     }
 }
 
@@ -117,11 +159,15 @@ export async function reserveAiApiCall(
         return {ok: false, usage: {date, calls: cap}};
     }
     return withUsageLock(async () => {
-        let previous: UsageFile = {date: "", calls: 0, days: {}};
+        let previous: UsageFile;
         try {
-            previous = parseUsageFile(JSON.parse(await readFile(aiSummaryUsageFile(), "utf8")));
-        } catch {
-            previous = {date: "", calls: 0, days: {}};
+            const loaded = await loadUsageFile();
+            previous = loaded === "missing" ? {date: "", calls: 0, days: {}} : loaded;
+        } catch (error) {
+            if (error instanceof CorruptUsageFile) {
+                return {ok: false, usage: {date, calls: cap}};
+            }
+            throw error;
         }
         const usage = {date, calls: previous.days[date] ?? 0};
         if (usage.calls >= cap) {
@@ -138,9 +184,13 @@ export async function releaseAiApiCall(date: string): Promise<void> {
         return;
     }
     await withUsageLock(async () => {
-        let previous: UsageFile = {date: "", calls: 0, days: {}};
+        let previous: UsageFile;
         try {
-            previous = parseUsageFile(JSON.parse(await readFile(aiSummaryUsageFile(), "utf8")));
+            const loaded = await loadUsageFile();
+            if (loaded === "missing") {
+                return;
+            }
+            previous = loaded;
         } catch {
             return;
         }
