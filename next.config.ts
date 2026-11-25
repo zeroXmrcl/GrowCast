@@ -51,6 +51,11 @@ const nextConfig: NextConfig = {
             "./node_modules/@img/**/*",
             "./node_modules/webp-wasm/**/*",
             "./node_modules/jpeg-js/**/*",
+            // Plugin host bundles import these Next entry shims at runtime.
+            // Tracing keeps next/dist but drops the top-level shim files.
+            "./node_modules/next/headers.js",
+            "./node_modules/next/navigation.js",
+            "./node_modules/next/cache.js",
         ],
     },
     experimental: {
