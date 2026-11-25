@@ -134,7 +134,7 @@ export async function evaluateProxyRequest({method, url, headers, body, env, ins
         {inspect, env},
     );
     if (!decision.allow) {
-        return {allow: false, status: 403, message: decision.reason ?? "forbidden"};
+        return {allow: false, status: decision.status === 404 ? 404 : 403, message: decision.reason ?? "forbidden"};
     }
     const upstreamBody = decision.upstreamBody !== undefined
         ? Buffer.from(JSON.stringify(decision.upstreamBody))

@@ -764,7 +764,8 @@ export async function authorizeDockerRequest(request, ctx = {}) {
         inspect = await inspectFn(id);
     } catch (error) {
         if (error && error.status === 404) {
-            return deny("unknown container");
+            // Report a missing container as 404 so callers can treat stop/remove as a no-op.
+            return {allow: false, reason: "unknown container", status: 404};
         }
         return deny("inspect failed");
     }

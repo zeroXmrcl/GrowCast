@@ -285,6 +285,38 @@ describe("docker plugin proxy auth and bind", () => {
         assert.equal(bypass.upstreamBody, undefined);
     });
 
+    it("returns 404 for a container that does not exist yet", async () => {
+        const tokenEnv = {...env, GROWCAST_DOCKER_PROXY_TOKEN: "proxy-token-value"};
+        const missingInspect = async () => {
+            throw Object.assign(new Error("no such container"), {status: 404});
+        };
+        for (const [method, url] of [
+            ["POST", "/containers/plugin-growcast-ggs/stop"],
+            ["DELETE", "/containers/plugin-growcast-ggs?force=1"],
+            ["POST", "/containers/plugin-growcast-ggs/start"],
+        ] as const) {
+            const result = await evaluateProxyRequest({
+                method,
+                url,
+                headers: {authorization: "Bearer proxy-token-value"},
+                body: "",
+                env: tokenEnv,
+                inspect: missingInspect,
+            });
+            assert.equal(result.allow, false);
+            assert.equal(result.status, 404);
+        }
+        const foreign = await evaluateProxyRequest({
+            method: "POST",
+            url: "/containers/growcast/stop",
+            headers: {authorization: "Bearer proxy-token-value"},
+            body: "",
+            env: tokenEnv,
+            inspect: async () => ({Name: "/growcast", Config: {Labels: {}}}),
+        });
+        assert.equal(foreign.status, 403);
+    });
+
     it("binds to localhost unless the compose network is explicit", () => {
         assert.equal(resolveProxyBind({}), "127.0.0.1");
         assert.equal(resolveProxyBind({GROWCAST_DOCKER_PROXY_BIND: "localhost"}), "127.0.0.1");
