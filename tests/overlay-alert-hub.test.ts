@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {enqueueOverlayAlert, type OverlayAlert} from "../plugins/restream/host/overlay-alert.ts";
+import {type OverlayAlert} from "../plugins/restream/host/overlay-alert.ts";
 import {OVERLAY_ALERT_DISPLAY_MS} from "../plugins/restream/host/overlay-alert.ts";
 import {
     _resetOverlayAlertHubForTests,

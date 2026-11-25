@@ -93,7 +93,7 @@ export default function OverlayMusicWave({layout}: {layout: OverlayLayout}) {
         lookRef.current = musicLook;
         barsRef.current = waveBars;
         timeRef.current = {currentTime, duration};
-    });
+    }, [musicLook, waveBars, currentTime, duration]);
 
     useEffect(() => {
         if (!active || !analyser) {
