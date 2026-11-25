@@ -4,15 +4,14 @@ import {airVpdKPa} from "../lib/air-vpd.ts";
 import {
     evaluateAgainstRange,
     formatMetricReading,
-    liveReadingsFromSnapshot,
+    liveReadingsFromPlugin,
     mergeLiveMetric,
     mergeLiveMetrics,
     readingsFromStats,
 } from "../lib/ai-summary/live-metrics.ts";
 import {encodeMosaicRow} from "../lib/ai-summary/mosaic.ts";
+import type {ClimateMetricKey} from "../lib/ai-summary/climate.ts";
 import type {AiMetricJudgment, ClimateWindowStats, MosaicCell} from "../lib/ai-summary/types.ts";
-import {GGS_PLUGIN_ID, type GgsLivePublic} from "../lib/ggs-live.ts";
-import type {ClimateMetricKey} from "../lib/climate/types.ts";
 
 function judgment(overrides: Partial<AiMetricJudgment> = {}): AiMetricJudgment {
     return {verdict: "in_range", pctInRange: 90, note: "on target", ...overrides};
@@ -24,43 +23,6 @@ function mosaicRow(cells: MosaicCell[]): string {
 
 function allInRangeRow(): string {
     return mosaicRow(Array<MosaicCell>(288).fill(1));
-}
-
-function snapshot(sensor: {
-    tempC?: number | null;
-    humidityPct?: number | null;
-    vpd?: number | null;
-    co2?: number | null;
-    ppfd?: number | null;
-    isDay?: boolean | null;
-}): GgsLivePublic {
-    return {
-        pluginId: GGS_PLUGIN_ID,
-        source: "ggs-cloud",
-        updatedAt: "2026-10-15T10:00:00.000Z",
-        online: true,
-        stale: false,
-        devices: [
-            {
-                name: "SF-GGS-CB-7088",
-                prefix: "CB",
-                productType: "SF-GGS-CB",
-                online: true,
-                sensor: {
-                    tempC: sensor.tempC ?? 25.3,
-                    humidityPct: sensor.humidityPct ?? 47.1,
-                    vpd: sensor.vpd ?? 9.99,
-                    co2: sensor.co2 ?? 810,
-                    ppfd: sensor.ppfd ?? 420,
-                    tempSoilC: null,
-                    humiditySoilPct: null,
-                    ecSoil: null,
-                    isDay: sensor.isDay ?? true,
-                },
-                actuators: [],
-            },
-        ],
-    };
 }
 
 function emptySplit() {
@@ -142,12 +104,17 @@ describe("readingsFromStats", () => {
     });
 });
 
-describe("liveReadingsFromSnapshot", () => {
-    it("computes VPD and keeps CO2 and PPFD", () => {
-        const bundle = liveReadingsFromSnapshot(snapshot({tempC: 25.3, humidityPct: 47.1, co2: 810, ppfd: 420}));
+describe("liveReadingsFromPlugin", () => {
+    it("keeps VPD, CO2 and PPFD from plugin live readings", () => {
+        const vpd = airVpdKPa(25.3, 47.1);
+        const bundle = liveReadingsFromPlugin({
+            values: {tempC: 25.3, humidityPct: 47.1, vpd, co2: 810, ppfd: 420},
+            isDay: true,
+            asOf: "2026-10-15T10:00:00.000Z",
+        });
         assert.equal(bundle.values.tempC, 25.3);
         assert.equal(bundle.values.humidityPct, 47.1);
-        assert.equal(bundle.values.vpd, airVpdKPa(25.3, 47.1));
+        assert.equal(bundle.values.vpd, vpd);
         assert.notEqual(bundle.values.vpd, 9.99);
         assert.equal(bundle.values.co2, 810);
         assert.equal(bundle.values.ppfd, 420);
@@ -155,7 +122,7 @@ describe("liveReadingsFromSnapshot", () => {
     });
 
     it("returns empty readings when there is no snapshot", () => {
-        const bundle = liveReadingsFromSnapshot(null);
+        const bundle = liveReadingsFromPlugin(null);
         assert.equal(bundle.values.tempC, null);
         assert.equal(bundle.isDay, null);
     });

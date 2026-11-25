@@ -19,9 +19,11 @@ export default async function AdminLayout({children}: {children: ReactNode}) {
                     {children}
                 </div>
             ) : children}
-            <Suspense fallback={null}>
-                <AdminToast/>
-            </Suspense>
+            {loggedIn ? (
+                <Suspense fallback={null}>
+                    <AdminToast enabled/>
+                </Suspense>
+            ) : null}
         </div>
     );
 }

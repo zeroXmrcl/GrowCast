@@ -4,12 +4,12 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {applyMusicPost} from "../lib/admin/apply-music-post.ts";
+import {applyMusicPost} from "../plugins/restream/admin/apply-music-post.ts";
 import {
     MUSIC_MAX_FILES,
     listMusicFiles,
     saveMusicFile,
-} from "../lib/restream/music-files.ts";
+} from "../plugins/restream/host/music-files.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-music-post-"));
@@ -153,7 +153,7 @@ describe("applyMusicPost", () => {
 describe("admin music route", () => {
     it("mirrors media CSRF, auth, and body-cap on POST /api/admin/music", () => {
         const src = readFileSync(
-            path.join(process.cwd(), "app", "api", "admin", "music", "route.ts"),
+            path.join(process.cwd(), "plugins", "restream", "host", "index.ts"),
             "utf8",
         );
         assert.match(src, /isSameOriginRequest/);
@@ -161,7 +161,7 @@ describe("admin music route", () => {
         assert.match(src, /contentLengthExceedsCap/);
         assert.match(src, /payloadTooLargeResponse/);
         assert.match(src, /applyMusicPost/);
-        assert.match(src, /\/admin\/stream/);
+        assert.match(src, /\/admin\/plugins\/growcast\.restream/);
         assert.match(src, /error=unauthorized/);
         assert.doesNotMatch(src, /isSameOriginRequest[\s\S]*\/\/ skip/);
     });

@@ -1,13 +1,17 @@
 import Image from "next/image";
-import {INSTALLER_COPY} from "./installer-copy";
-import {INSTALLER_STEPS, type InstallerStepId} from "@/lib/installer-steps";
 
-type InstallerRailProps = {
-    current: InstallerStepId | "done";
-    finished: ReadonlySet<InstallerStepId>;
+type RailStep = {
+    id: string;
+    label: string;
 };
 
-export function InstallerRail({current, finished}: InstallerRailProps) {
+type InstallerRailProps = {
+    current: string;
+    finished: ReadonlySet<string>;
+    steps: readonly RailStep[];
+};
+
+export function InstallerRail({current, finished, steps}: InstallerRailProps) {
     return (
         <nav
             className="installer-rail"
@@ -25,9 +29,9 @@ export function InstallerRail({current, finished}: InstallerRailProps) {
                 <span style={{fontSize: 14, fontWeight: 600}}>GrowCast</span>
             </div>
             <ol style={{listStyle: "none", margin: 0, padding: 0}}>
-                {INSTALLER_STEPS.map((id, index) => {
-                    const isCurrent = current !== "done" && id === current;
-                    const isDone = !isCurrent && finished.has(id);
+                {steps.map((step, index) => {
+                    const isCurrent = current !== "done" && step.id === current;
+                    const isDone = !isCurrent && finished.has(step.id);
                     const stepClass = isCurrent
                         ? "installer-step-current"
                         : isDone
@@ -42,7 +46,7 @@ export function InstallerRail({current, finished}: InstallerRailProps) {
 
                     return (
                         <li
-                            key={id}
+                            key={step.id}
                             className={stepClass}
                             {...(isCurrent ? {"aria-current": "step" as const} : {})}
                         >
@@ -64,7 +68,7 @@ export function InstallerRail({current, finished}: InstallerRailProps) {
                                     {index + 1}
                                 </span>
                                 <span style={{fontSize: 14, fontWeight: isCurrent ? 600 : 400, color: labelColor}}>
-                                    {INSTALLER_COPY[id].label}
+                                    {step.label}
                                 </span>
                             </div>
                         </li>

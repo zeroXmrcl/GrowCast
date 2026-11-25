@@ -1,0 +1,112 @@
+{
+  "id": "growcast.timelapse",
+  "name": "GrowCast Timelapse",
+  "author": "0xmrcl",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "description": "RTSP snapshots and timelapse video.",
+  "homepage": "https://github.com/zeroXmrcl/GrowCast",
+  "repository": "https://github.com/zeroXmrcl/GrowCast",
+  "runtime": {
+    "type": "docker",
+    "dockerfile": "Dockerfile",
+    "image": "growcast-plugin-timelapse:local",
+    "command": [
+      "/bin/sh",
+      "/app/run.sh"
+    ]
+  },
+  "ui": {
+    "entry": "ui/dist/index.js",
+    "sdk": "^1.0.0"
+  },
+  "pages": [
+    {
+      "id": "gallery",
+      "path": "gallery",
+      "title": "Gallery",
+      "nav": "site",
+      "navOrder": 30,
+      "public": true
+    },
+    {
+      "id": "admin",
+      "path": "",
+      "title": "Timelapse",
+      "nav": "admin",
+      "bands": [
+        {
+          "id": "capture",
+          "label": "Capture"
+        },
+        {
+          "id": "triggers",
+          "label": "Triggers"
+        },
+        {
+          "id": "output",
+          "label": "Output"
+        }
+      ]
+    }
+  ],
+  "widgets": [
+    {
+      "id": "archive-media",
+      "title": "Archived snapshots",
+      "slots": [
+        "archive"
+      ]
+    }
+  ],
+  "permissions": {
+    "network": "lan",
+    "media": true,
+    "publicPages": true
+  },
+  "installer": {
+    "stepId": "timelapse",
+    "sort": 40,
+    "label": "Timelapse",
+    "title": "Point it at the camera",
+    "line": "Use the camera’s local rtsp:// address.",
+    "fields": [
+      {
+        "name": "rtspStream",
+        "label": "Camera address",
+        "required": true,
+        "autoComplete": "off"
+      },
+      {
+        "name": "interval",
+        "label": "Interval (minutes)",
+        "required": true,
+        "defaultValue": "15",
+        "autoComplete": "off"
+      },
+      {
+        "name": "timezone",
+        "label": "Timezone",
+        "required": false,
+        "defaultValue": "UTC",
+        "autoComplete": "off"
+      }
+    ]
+  },
+  "hostModule": "host/index.ts",
+  "exports": {
+    "gallery": true
+  },
+  "compat": {
+    "meshSettings": true
+  },
+  "config": {
+    "intervalS": {
+      "type": "integer",
+      "min": 60,
+      "max": 86400,
+      "default": 900
+    }
+  },
+  "metrics": {}
+}

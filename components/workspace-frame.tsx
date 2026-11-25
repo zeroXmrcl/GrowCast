@@ -1,22 +1,16 @@
 "use client";
 
 import type {ReactNode} from "react";
-import {useRef} from "react";
-import {usePathname} from "next/navigation";
 import OverlayCamera from "@/components/overlay-camera";
 import SiteFooter from "@/components/site-footer";
-import {BroadcastToast} from "@/components/broadcast-toast";
-import EnergyScoreboard from "@/components/energy-scoreboard";
-import {useWorkspaceNav} from "@/components/workspace-nav";
-import {EMPTY_CAMERA_LOOK, type CameraLook} from "@/lib/restream/camera-look";
 import {isWorkspacePath, WORKSPACE_AREA, WORKSPACE_BOARD_CLASS, WORKSPACE_VT} from "@/lib/workspace";
+import {usePathname} from "next/navigation";
 
 type WorkspaceFrameProps = {
     children: ReactNode;
     streamUrl: string;
     growName: string;
     showGrowName: boolean;
-    look?: CameraLook;
 };
 
 export default function WorkspaceFrame({
@@ -24,28 +18,20 @@ export default function WorkspaceFrame({
     streamUrl,
     growName,
     showGrowName,
-    look = EMPTY_CAMERA_LOOK,
 }: WorkspaceFrameProps) {
     const pathname = usePathname();
-    const {view} = useWorkspaceNav();
-    const dashSlot = useRef<ReactNode>(null);
-    if (pathname === "/" && children) {
-        // Last home children stay mounted so /energy can morph over them.
-        // eslint-disable-next-line react-hooks/refs -- cache, not a render input
-        dashSlot.current = children;
-    }
 
     if (!isWorkspacePath(pathname)) {
         return children;
     }
 
-    const energy = view === "/energy";
+    const energy = pathname !== "/";
     const page = energy ? "energy" : showGrowName ? "dash" : "dash-noname";
 
     return (
         <main className="flex flex-1 flex-col py-4">
             <div className={`${WORKSPACE_BOARD_CLASS} ${WORKSPACE_VT.board}`} data-page={page}>
-                {showGrowName ? (
+                {showGrowName && !energy ? (
                     <div className={`${WORKSPACE_AREA.name} ${WORKSPACE_VT.name} px-4 py-3`}>
                         <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
                             {growName}
@@ -54,21 +40,17 @@ export default function WorkspaceFrame({
                 ) : null}
                 <div className={`${WORKSPACE_AREA.cam} ${WORKSPACE_VT.cam} aspect-video overflow-hidden bg-zinc-900`}>
                     {streamUrl ? (
-                        <OverlayCamera streamUrl={streamUrl} look={look} />
+                        <OverlayCamera streamUrl={streamUrl} />
                     ) : (
                         <div className="flex h-full w-full items-center justify-center bg-zinc-800 text-zinc-100">
                             <p>No Stream configured</p>
                         </div>
                     )}
                 </div>
-                {/* eslint-disable-next-line react-hooks/refs -- last home children */}
-                <div className="growcast-dash-slot">{dashSlot.current}</div>
-                <div className="growcast-energy-slot">
-                    <EnergyScoreboard />
-                </div>
+                <div className="growcast-dash-slot">{energy ? null : children}</div>
+                <div className="growcast-energy-slot">{energy ? children : null}</div>
             </div>
             <SiteFooter />
-            {energy ? null : <BroadcastToast />}
         </main>
     );
 }

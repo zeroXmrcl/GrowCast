@@ -4,9 +4,9 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {writeCameraLook} from "../lib/restream/camera-look-store.ts";
-import {ensureRestreamCaptureToken} from "../lib/restream/capture.ts";
-import {programCameraGetResponse} from "../lib/restream/program-http.ts";
+import {writeCameraLook} from "../plugins/restream/host/camera-look-store.ts";
+import {ensureRestreamCaptureToken} from "../plugins/restream/host/capture.ts";
+import {programCameraGetResponse} from "../plugins/restream/host/program-http.ts";
 
 async function withTempDataDir<T>(fn: () => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-cam-"));
@@ -70,12 +70,11 @@ describe("programCameraGetResponse", () => {
 describe("program-camera route", () => {
     it("uses the program GET helper and request log", () => {
         const route = readFileSync(
-            path.join(process.cwd(), "app", "api", "overlay", "program-camera", "route.ts"),
+            path.join(process.cwd(), "plugins", "restream", "host", "index.ts"),
             "utf8",
         );
         assert.match(route, /programCameraGetResponse/);
         assert.match(route, /isAdminAuthenticated/);
-        assert.match(route, /withRequestLog/);
-        assert.doesNotMatch(route, /401/);
+        assert.match(route, /pathName === "program-camera"/);
     });
 });

@@ -1,4 +1,4 @@
-import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/ai-summary/climate";
 import {isRecord} from "@/lib/coerce";
 import type {
     AiMetricJudgment,

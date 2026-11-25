@@ -16,12 +16,10 @@ describe("ai summary surface", () => {
         const prompt = src(path.join("lib", "ai-summary", "prompt.ts"));
         const publicApi = src(path.join("app", "api", "data", "ai-summary", "route.ts"));
         const action = src(path.join("app", "admin", "actions.ts"));
-        const http = src(path.join("lib", "ggs-live-http.ts"));
         const archives = src(path.join("lib", "archives.ts"));
 
         assert.match(instrumentation, /startAiSummaryScheduler/);
-        assert.match(http, /recordClimateOnIngestBestEffort/);
-        assert.match(archives, /stageClimateArchive/);
+        assert.match(archives, /runPluginGrowArchived/);
         assert.match(archives, /stageAiSummaryArchive/);
         assert.match(generate, /stageContextFromGrow/);
         assert.doesNotMatch(generate, /temperatureDay|humidityNight/);
@@ -67,7 +65,7 @@ describe("ai summary surface", () => {
         assert.match(card, /ABOVE|mosaicDetail/);
         assert.match(card, /Demo/);
         assert.match(card, /No assessment yet\. The daily job runs around 08:00 \(Europe\/Berlin\)\./);
-        assert.match(card, /useLiveClimate/);
+        assert.match(card, /usePluginLiveReadings/);
         assert.match(card, /useRollingAiMosaic/);
         assert.match(card, /mergeLiveMetrics/);
         assert.match(card, /mosaicFoldSlotMs/);

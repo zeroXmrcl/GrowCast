@@ -1,0 +1,406 @@
+"use client";
+
+import {useEffect, useRef, useState} from "react";
+import {useProgramAudioGraph} from "@/plugins/restream/ui/program-audio-graph";
+import {
+    DEFAULT_MUSIC_LOOK,
+    DEFAULT_WAVE_BARS,
+    DEFAULT_WAVE_SMOOTH_PCT,
+    nextPlaylistIndex,
+    parseMusicLook,
+    parseWaveBars,
+    parseWaveSmoothPct,
+    pickPlaylistStartIndex,
+    playlistTrackTitle,
+    type MusicLook,
+    programAudioMediaErrorAction,
+    programMusicWaveActive,
+    shouldAttachMediaElementSource,
+    waveSmoothTimeConstant,
+} from "@/plugins/restream/host/program-music-wave";
+
+const PROGRAM_AUDIO_POLL_MS = 2000;
+const PROGRAM_AUDIO_PATH = "/api/overlay/program-audio";
+const STING_EVENT = "growcast-alert-sting";
+const STING_DUCK_FACTOR = 0.25;
+const STING_DUCK_MS = 1500;
+
+type AudioKind = "url" | "playlist" | "silence";
+
+type ProgramAudioBody = {
+    kind: AudioKind;
+    url: string;
+    files: string[];
+    volume: number;
+    paused: boolean;
+    stingEnabled: boolean;
+    waveSmoothPct: number;
+    musicLook: MusicLook;
+    waveBars: number;
+};
+
+function isAudioKind(value: unknown): value is AudioKind {
+    return value === "url" || value === "playlist" || value === "silence";
+}
+
+function parseProgramAudioBody(raw: unknown): ProgramAudioBody | null {
+    if (raw === null || typeof raw !== "object") {
+        return null;
+    }
+    const body = raw as Record<string, unknown>;
+    if (!isAudioKind(body.kind) || typeof body.url !== "string") {
+        return null;
+    }
+    if (!Array.isArray(body.files) || body.files.some((name) => typeof name !== "string")) {
+        return null;
+    }
+    if (typeof body.volume !== "number" || !Number.isFinite(body.volume)) {
+        return null;
+    }
+    if (typeof body.paused !== "boolean") {
+        return null;
+    }
+    if (typeof body.stingEnabled !== "boolean") {
+        return null;
+    }
+    return {
+        kind: body.kind,
+        url: body.url,
+        files: body.files,
+        volume: Math.min(1, Math.max(0, body.volume)),
+        paused: body.paused,
+        stingEnabled: body.stingEnabled,
+        waveSmoothPct: parseWaveSmoothPct(body.waveSmoothPct),
+        musicLook: parseMusicLook(body.musicLook),
+        waveBars: parseWaveBars(body.waveBars),
+    };
+}
+
+function applyElementVolume(
+    el: HTMLAudioElement,
+    base: number,
+    ducking: boolean,
+): void {
+    el.volume = ducking ? base * STING_DUCK_FACTOR : base;
+}
+
+function playlistFileSrc(filename: string, captureToken: string | undefined): string {
+    const path = `/api/overlay/music/${encodeURIComponent(filename)}`;
+    if (captureToken) {
+        return `${path}?token=${encodeURIComponent(captureToken)}`;
+    }
+    return path;
+}
+
+function playbackKind(body: ProgramAudioBody | null, urlFailed: boolean): AudioKind {
+    if (!body) {
+        return "silence";
+    }
+    if (body.kind === "url" && urlFailed) {
+        return body.files.length > 0 ? "playlist" : "silence";
+    }
+    return body.kind;
+}
+
+function sourceKeyOf(body: ProgramAudioBody | null): string {
+    if (!body) {
+        return "";
+    }
+    return `${body.kind}\0${body.url}`;
+}
+
+function resolveElementSrc(
+    kind: AudioKind,
+    body: ProgramAudioBody | null,
+    captureToken: string | undefined,
+    playlistIndex: number,
+): string {
+    if (!body || kind === "silence") {
+        return "";
+    }
+    if (kind === "url") {
+        return body.url;
+    }
+    if (body.files.length === 0) {
+        return "";
+    }
+    const file = body.files[playlistIndex % body.files.length];
+    if (!file) {
+        return "";
+    }
+    return playlistFileSrc(file, captureToken);
+}
+
+export default function ProgramAudio({captureToken}: {captureToken?: string}) {
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const sourceKeyRef = useRef("");
+    const bodyRef = useRef<ProgramAudioBody | null>(null);
+    const duckTimerRef = useRef<number | null>(null);
+    const graphRef = useRef<{
+        context: AudioContext;
+        source: MediaElementAudioSourceNode;
+        analyser: AnalyserNode;
+    } | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const {setGraph} = useProgramAudioGraph();
+    const errorRetriesRef = useRef(0);
+    const [body, setBody] = useState<ProgramAudioBody | null>(null);
+    const [ducking, setDucking] = useState(false);
+    const [playlistIndex, setPlaylistIndex] = useState(0);
+    const [urlFailed, setUrlFailed] = useState(false);
+    const kind = playbackKind(body, urlFailed);
+    const src = resolveElementSrc(kind, body, captureToken, playlistIndex);
+    const singleFilePlaylist = kind === "playlist" && (body?.files.length ?? 0) === 1;
+
+    useEffect(() => {
+        const abort = new AbortController();
+        let cancelled = false;
+
+        async function poll() {
+            try {
+                const headers: HeadersInit = {};
+                if (captureToken) {
+                    headers["x-growcast-capture"] = captureToken;
+                }
+                const response = await fetch(PROGRAM_AUDIO_PATH, {
+                    credentials: "include",
+                    cache: "no-store",
+                    headers,
+                    signal: abort.signal,
+                });
+                if (!response.ok || cancelled) {
+                    return;
+                }
+                const parsed = parseProgramAudioBody(await response.json());
+                if (!parsed || cancelled) {
+                    return;
+                }
+                const nextKey = sourceKeyOf(parsed);
+                if (sourceKeyRef.current !== nextKey) {
+                    sourceKeyRef.current = nextKey;
+                    errorRetriesRef.current = 0;
+                    setUrlFailed(false);
+                    setPlaylistIndex(
+                        parsed.kind === "playlist"
+                            ? pickPlaylistStartIndex(parsed.files.length)
+                            : 0,
+                    );
+                }
+                bodyRef.current = parsed;
+                setBody(parsed);
+            } catch {
+                // next interval retries
+            }
+        }
+
+        void poll();
+        const timer = setInterval(() => {
+            void poll();
+        }, PROGRAM_AUDIO_POLL_MS);
+
+        return () => {
+            cancelled = true;
+            abort.abort();
+            clearInterval(timer);
+        };
+    }, [captureToken]);
+
+    useEffect(() => {
+        function onSting() {
+            const current = bodyRef.current;
+            if (!current?.stingEnabled) {
+                return;
+            }
+            const el = audioRef.current;
+            if (el) {
+                applyElementVolume(el, current.volume, true);
+            }
+            setDucking(true);
+            if (duckTimerRef.current !== null) {
+                window.clearTimeout(duckTimerRef.current);
+            }
+            duckTimerRef.current = window.setTimeout(() => {
+                duckTimerRef.current = null;
+                setDucking(false);
+            }, STING_DUCK_MS);
+        }
+
+        window.addEventListener(STING_EVENT, onSting);
+        return () => {
+            window.removeEventListener(STING_EVENT, onSting);
+            if (duckTimerRef.current !== null) {
+                window.clearTimeout(duckTimerRef.current);
+                duckTimerRef.current = null;
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        const el = audioRef.current;
+        if (!el) {
+            return;
+        }
+        applyElementVolume(el, body?.volume ?? 0, ducking);
+        if (!src || body?.paused) {
+            el.pause();
+            return;
+        }
+        const tryPlay = () => {
+            void el.play().catch(() => undefined);
+        };
+        tryPlay();
+        const timer = window.setInterval(tryPlay, PROGRAM_AUDIO_POLL_MS);
+        window.addEventListener("pointerdown", tryPlay);
+        window.addEventListener("keydown", tryPlay);
+        return () => {
+            window.clearInterval(timer);
+            window.removeEventListener("pointerdown", tryPlay);
+            window.removeEventListener("keydown", tryPlay);
+        };
+    }, [src, body?.paused, body?.volume, ducking]);
+
+    const paused = body?.paused ?? true;
+    const waveSmoothPct = body?.waveSmoothPct;
+    const musicLook = body?.musicLook ?? DEFAULT_MUSIC_LOOK;
+    const waveBars = body?.waveBars ?? DEFAULT_WAVE_BARS;
+    const files = body?.files;
+    useEffect(() => {
+        const el = audioRef.current;
+        const playing = programMusicWaveActive({kind, paused, src});
+        const look = musicLook;
+        const bars = waveBars;
+        const file = files && files.length > 0
+            ? files[playlistIndex % files.length] ?? ""
+            : "";
+        if (!el || !playing) {
+            setGraph({
+                active: false,
+                analyser: graphRef.current?.analyser ?? null,
+                title: "",
+                currentTime: 0,
+                duration: 0,
+                musicLook: look,
+                waveBars: bars,
+            });
+            return;
+        }
+        let context = audioContextRef.current;
+        if (!context || context.state === "closed") {
+            context = new AudioContext();
+            audioContextRef.current = context;
+        }
+        let cancelled = false;
+        const publish = (analyser: AnalyserNode) => {
+            setGraph({
+                active: true,
+                analyser,
+                title: playlistTrackTitle(file),
+                currentTime: el.currentTime,
+                duration: Number.isFinite(el.duration) ? el.duration : 0,
+                musicLook: look,
+                waveBars: bars,
+            });
+        };
+        const attachIfRunning = () => {
+            if (cancelled || !shouldAttachMediaElementSource(context.state)) {
+                return;
+            }
+            if (!graphRef.current) {
+                const source = context.createMediaElementSource(el);
+                const analyser = context.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                analyser.connect(context.destination);
+                graphRef.current = {context, source, analyser};
+            }
+            const graph = graphRef.current;
+            graph.analyser.smoothingTimeConstant = waveSmoothTimeConstant(
+                waveSmoothPct ?? DEFAULT_WAVE_SMOOTH_PCT,
+            );
+            publish(graph.analyser);
+        };
+        const keepAlive = () => {
+            void context.resume().then(attachIfRunning, attachIfRunning);
+        };
+        keepAlive();
+        context.onstatechange = keepAlive;
+        const timer = window.setInterval(keepAlive, PROGRAM_AUDIO_POLL_MS);
+        const clock = window.setInterval(() => {
+            const analyser = graphRef.current?.analyser;
+            if (analyser) {
+                publish(analyser);
+            }
+        }, 250);
+        window.addEventListener("pointerdown", keepAlive);
+        window.addEventListener("keydown", keepAlive);
+        return () => {
+            cancelled = true;
+            context.onstatechange = null;
+            window.clearInterval(timer);
+            window.clearInterval(clock);
+            window.removeEventListener("pointerdown", keepAlive);
+            window.removeEventListener("keydown", keepAlive);
+        };
+    }, [kind, src, paused, waveSmoothPct, musicLook, waveBars, files, playlistIndex, setGraph]);
+
+    return (
+        <audio
+            ref={audioRef}
+            hidden
+            autoPlay
+            playsInline
+            // @ts-expect-error React 19 AudioHTMLAttributes omit HTML referrerPolicy.
+            referrerPolicy="no-referrer"
+            src={src || undefined}
+            loop={singleFilePlaylist}
+            onPlaying={() => {
+                errorRetriesRef.current = 0;
+            }}
+            onError={() => {
+                if (!src || !body) {
+                    return;
+                }
+                const action = programAudioMediaErrorAction({
+                    kind,
+                    filesLength: body.files.length,
+                    retries: errorRetriesRef.current,
+                });
+                if (action === "retry") {
+                    errorRetriesRef.current += 1;
+                    const el = audioRef.current;
+                    if (el && !body.paused) {
+                        void el.play().catch(() => undefined);
+                    }
+                    return;
+                }
+                if (action === "next") {
+                    errorRetriesRef.current = 0;
+                    setPlaylistIndex((index) => nextPlaylistIndex(index, body.files.length));
+                    return;
+                }
+                if (action === "url_fallback") {
+                    setUrlFailed(true);
+                }
+            }}
+            onEnded={() => {
+                if (kind !== "playlist" || !body || body.files.length === 0) {
+                    return;
+                }
+                errorRetriesRef.current = 0;
+                setPlaylistIndex((index) => {
+                    const next = nextPlaylistIndex(index, body.files.length);
+                    if (next === index) {
+                        const el = audioRef.current;
+                        if (el) {
+                            el.currentTime = 0;
+                            if (!body.paused) {
+                                void el.play().catch(() => undefined);
+                            }
+                        }
+                    }
+                    return next;
+                });
+            }}
+        />
+    );
+}

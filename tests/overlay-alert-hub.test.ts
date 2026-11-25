@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {type OverlayAlert} from "../lib/overlay-alert.ts";
-import {OVERLAY_ALERT_DISPLAY_MS} from "../lib/overlay-alert.ts";
+import {type OverlayAlert} from "../plugins/restream/host/overlay-alert.ts";
+import {OVERLAY_ALERT_DISPLAY_MS} from "../plugins/restream/host/overlay-alert.ts";
 import {
     _resetOverlayAlertHubForTests,
     peekOverlayAlertQueue,
     peekReplayableOverlayAlerts,
     publishOverlayAlert,
     takeNextOverlayAlert,
-} from "../lib/overlay-alert-hub.ts";
-import {parseAlertsSettings} from "../lib/restream/alerts-settings.ts";
+} from "../plugins/restream/host/overlay-alert-hub.ts";
+import {parseAlertsSettings} from "../plugins/restream/host/alerts-settings.ts";
 
 describe("overlay alert hub", () => {
     it("publishes FIFO and takeNext pops the current head", () => {

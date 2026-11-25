@@ -7,6 +7,10 @@ public/setup
 public/yourPictures
 extensions/*
 !extensions/.placeExtensionFolderHere
+plugins/**/ui/node_modules
+plugins/**/__pycache__
+plugins/timelapse/snapshots
+plugins/timelapse/timelapse
 node_modules
 npm-debug.log*
 docker-compose*.yml

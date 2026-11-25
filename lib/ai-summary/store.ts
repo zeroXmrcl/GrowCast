@@ -2,7 +2,7 @@ import {mkdir, readdir, readFile, rm} from "node:fs/promises";
 import {asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {isDateOnly} from "@/lib/date-only";
-import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/climate/types";
+import {CLIMATE_METRIC_KEYS, type ClimateMetricKey} from "@/lib/ai-summary/climate";
 import {parseAiSummaryPayload} from "@/lib/ai-summary/schema";
 import {emptyMosaic, parseMosaicRow, encodeMosaicRow} from "@/lib/ai-summary/mosaic";
 import {logAiSummary} from "@/lib/ai-summary/log";

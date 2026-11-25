@@ -4,12 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/build-plugin-runtime.mjs && node scripts/build-plugin-host.mjs && node scripts/build-plugin-ui.mjs && next build",
     "start": "next start",
     "start:standalone": "node .next/standalone/server.js",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "build:plugin-runtime": "node scripts/build-plugin-runtime.mjs",
+    "build:plugin-ui": "node scripts/build-plugin-ui.mjs",
+    "build:plugin-host": "node scripts/build-plugin-host.mjs",
     "setup:admin": "node scripts/admin-creator.mjs",
     "setup:admin:insecure": "node scripts/admin-creator.mjs --allow-insecure",
+    "migrate:plugins": "tsx scripts/migrate-plugin-data.ts",
     "test": "NODE_ENV=test node --experimental-strip-types --import ./tests/register.mjs --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
@@ -23,6 +28,7 @@
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
     "sharp": "^0.35.5",
+    "tsx": "^4.20.6",
     "webp-wasm": "^1.0.6"
   },
   "devDependencies": {
@@ -32,6 +38,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "^16.4.6",
     "pino-pretty": "^13.1.3",

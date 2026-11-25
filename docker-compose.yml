@@ -1,10 +1,38 @@
+# Plugin backends are started by GrowCast through docker-plugin-proxy.
+# GrowCast never mounts /var/run/docker.sock. The proxy allowlists
+# list/inspect/start/stop/restart/logs (and a checked create/delete)
+# for containers labeled growcast.plugin=<id> only. It listens on the
+# compose network only and requires GROWCAST_DOCKER_PROXY_TOKEN.
+# The operator snapshot is ./data/compose.plugins.generated.yml.
+# GrowCast does not run docker compose against it, and it does not mount
+# the project root.
 services:
+  docker-plugin-proxy:
+    build:
+      context: ./services/docker-plugin-proxy
+      dockerfile: Dockerfile
+    image: growcast-docker-plugin-proxy:local
+    restart: unless-stopped
+    environment:
+      GROWCAST_HOST_PROJECT: ${GROWCAST_HOST_PROJECT:-}
+      GROWCAST_PLUGIN_NETWORK: ${COMPOSE_PROJECT_NAME:-growcast}_default
+      GROWCAST_PLUGIN_IMAGES: ${GROWCAST_PLUGIN_IMAGES:-growcast-plugin-ggs:local,growcast-plugin-timelapse:local,growcast-plugin-restream:local,growcast-plugin-solar:local}
+      GROWCAST_DOCKER_PROXY_TOKEN: ${GROWCAST_DOCKER_PROXY_TOKEN:?Set GROWCAST_DOCKER_PROXY_TOKEN}
+      GROWCAST_DOCKER_PROXY_BIND: 0.0.0.0
+      GROWCAST_DOCKER_PROXY_INTERNAL: "1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - "2375"
+
   growcast:
     image: 0xmrcl/growcast:latest
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
+    depends_on:
+      - docker-plugin-proxy
     ports:
       - "${GROWCAST_BIND:-127.0.0.1}:${GROWCAST_PORT:-3000}:3000"
     env_file:
@@ -18,67 +46,14 @@ services:
       GROWCAST_TRUST_PROXY: "1"
       GROWCAST_BIND: ${GROWCAST_BIND:-127.0.0.1}
       GROWCAST_PORT: ${GROWCAST_PORT:-3000}
-      GROWCAST_GGS_ENV_FILE: /app/data/ggs.env
+      GROWCAST_COMPOSE_DIR: /app/data
+      GROWCAST_HOST_PROJECT: ${GROWCAST_HOST_PROJECT:-}
+      GROWCAST_PLUGIN_NETWORK: ${COMPOSE_PROJECT_NAME:-growcast}_default
+      GROWCAST_PLUGIN_RUNTIME: docker
+      GROWCAST_DOCKER_PROXY_TOKEN: ${GROWCAST_DOCKER_PROXY_TOKEN:?Set GROWCAST_DOCKER_PROXY_TOKEN}
+      DOCKER_HOST: tcp://docker-plugin-proxy:2375
     volumes:
       - ./data:/app/data
-      # Timelapse media only. Do not bind the whole extensions/ tree.
-      - ./extensions/GrowCast-Timelapse:/app/extensions/GrowCast-Timelapse
+      - ./plugins:/app/plugins:ro
       - ./public/setup:/app/public/setup
       - ./public/yourPictures:/app/public/yourPictures
-
-  ggs:
-    build:
-      context: ./extensions/GrowCast-GGS
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    user: "1001:1001"
-    environment:
-      GROWCAST_URL: http://growcast:3000
-      PYTHONDONTWRITEBYTECODE: "1"
-    volumes:
-      - ./data:/data
-      # Do not overlay anonymous volumes on /data/* (climate, setup, …).
-      # Compose creates those host folders as root:root when this service is
-      # created, which can be after growcast already chowned /app/data.
-      - ./extensions/GrowCast-GGS:/opt/legacy-ggs:ro
-      - ./docker/ggs-run.sh:/opt/growcast/ggs-run.sh:ro
-    entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /opt/growcast/ggs-run.sh > /tmp/ggs-run.sh && exec /bin/sh /tmp/ggs-run.sh"]
-    depends_on:
-      - growcast
-
-  restream:
-    build:
-      context: ./extensions/GrowCast-Restream
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    shm_size: "2gb"
-    user: "1001:1001"
-    environment:
-      GROWCAST_URL: http://growcast:3000
-      TWITCH_INGEST: ${TWITCH_INGEST:-rtmps://live.twitch.tv:443/app}
-    volumes:
-      - ./data/restream:/data/restream
-    depends_on:
-      - growcast
-
-  timelapse:
-    build:
-      context: ./extensions/GrowCast-Timelapse
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    user: "1001:1001"
-    environment:
-      GROWCAST_URL: http://growcast:3000
-      PYTHONDONTWRITEBYTECODE: "1"
-      GROWCAST_TIMELAPSE_ENV: /data/timelapse.env
-    volumes:
-      - ./data:/data
-      # Same as ggs: no nested anonymous /data/* overlays. Those mounts create
-      # root-owned host folders and then uid 1001 cannot write climate/current.
-      - ./extensions/GrowCast-Timelapse/GrowCast-Timelapse:/opt/legacy-timelapse:ro
-      - ./extensions/GrowCast-Timelapse/snapshots:/app/GrowCast-Timelapse/snapshots
-      - ./extensions/GrowCast-Timelapse/timelapse:/app/GrowCast-Timelapse/timelapse
-      - ./docker/timelapse-run.sh:/opt/growcast/timelapse-run.sh:ro
-    entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /opt/growcast/timelapse-run.sh > /tmp/timelapse-run.sh && exec /bin/sh /tmp/timelapse-run.sh"]
-    depends_on:
-      - growcast

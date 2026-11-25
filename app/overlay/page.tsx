@@ -1,11 +1,13 @@
+import type {CSSProperties} from "react";
 import OverlayHud from "@/components/overlay-hud";
+import PluginWidgets from "@/components/plugin-widgets";
 import {getCurrentGrow} from "@/lib/db";
-import {readCameraLook} from "@/lib/restream/camera-look-store";
+import {loadPluginOverlayLook} from "@/lib/plugins/hooks";
 
 export const dynamic = "force-dynamic";
 
 export default async function OverlayPage() {
-    const [grow, look] = await Promise.all([getCurrentGrow(), readCameraLook()]);
+    const [grow, look] = await Promise.all([getCurrentGrow(), loadPluginOverlayLook()]);
     return (
         <OverlayHud
             plant={grow.plant}
@@ -20,7 +22,10 @@ export default async function OverlayPage() {
             stage={grow.details.stage}
             lightSchedule={grow.details.lightSchedule}
             strain={grow.details.strain}
-            look={look}
-        />
+            lookCss={look?.lookCss}
+            temperatureStyle={look?.temperatureStyle as CSSProperties | undefined}
+        >
+            <PluginWidgets slot="overlay" />
+        </OverlayHud>
     );
 }

@@ -10,7 +10,7 @@ import {
     deleteMusicFile,
     listMusicFiles,
     saveMusicFile,
-} from "../lib/restream/music-files.ts";
+} from "../plugins/restream/host/music-files.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-music-"));

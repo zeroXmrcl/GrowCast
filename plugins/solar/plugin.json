@@ -1,0 +1,78 @@
+{
+  "id": "growcast.solar",
+  "name": "GrowCast Solar",
+  "author": "0xmrcl",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "description": "Vendor-agnostic solar energy split: grid vs solar, house vs tent. First adapter: FENECON FEMS / OpenEMS.",
+  "homepage": "https://github.com/zeroXmrcl/GrowCast",
+  "repository": "https://github.com/zeroXmrcl/GrowCast",
+  "license": "MIT",
+  "runtime": {
+    "type": "docker",
+    "dockerfile": "Dockerfile",
+    "image": "growcast-plugin-solar:local",
+    "entry": "backend/main.py"
+  },
+  "ui": {
+    "entry": "ui/dist/index.js",
+    "styles": ["ui/dist/style.css"],
+    "sdk": "^1.0.0"
+  },
+  "pages": [
+    { "id": "energy", "path": "", "title": "Solar", "nav": "site", "navOrder": 20, "public": true },
+    { "id": "widgets", "path": "widgets", "title": "Solar widgets", "nav": "none", "public": true },
+    { "id": "settings", "path": "settings", "title": "Solar settings", "nav": "none", "public": true, "shell": "none" },
+    { "id": "admin", "path": "", "title": "Solar", "nav": "admin" }
+  ],
+  "widgets": [
+    { "id": "energy-flow", "title": "Energy now", "slots": ["dashboard", "overlay"], "size": "2x1" },
+    { "id": "battery", "title": "Battery", "slots": ["dashboard", "overlay"], "size": "1x1" },
+    { "id": "tent-solar-share", "title": "Solar share of tent", "slots": ["dashboard", "overlay"], "size": "1x1" }
+  ],
+  "permissions": { "network": "lan", "publicPages": true },
+  "hostModule": "host/index.ts",
+  "config": {
+    "host": { "type": "string", "label": "FEMS IP or hostname", "required": true },
+    "password": { "type": "secret", "label": "FEMS password", "default": "user" },
+    "transport": { "type": "enum", "values": ["rest", "modbus"], "default": "rest" },
+    "intervalS": { "type": "integer", "min": 5, "max": 300, "default": 10 },
+    "pvPeakW": { "type": "integer", "label": "PV peak (Wp)", "default": 11000 },
+    "batteryWh": { "type": "integer", "label": "Battery capacity (Wh)", "default": 14000 },
+    "allocationMode": { "type": "enum", "values": ["proportional", "tent-first", "tent-last"], "default": "proportional" },
+    "solarKwhValueMode": { "type": "enum", "values": ["zero", "feed-in"], "default": "zero" },
+    "feedInTariffEurPerKwh": { "type": "number", "label": "Feed-in tariff EUR/kWh", "default": 0.08 },
+    "gridTariffEurPerKwh": { "type": "number", "label": "Grid tariff EUR/kWh", "default": 0.32 },
+    "batteryDischargeOrigin": { "type": "enum", "values": ["always-solar", "always-grid", "mix"], "default": "always-solar" },
+    "aggregationWindowS": { "type": "integer", "label": "Rounding/aggregation window (s)", "min": 5, "max": 3600, "default": 60 },
+    "staleAfterS": { "type": "integer", "label": "Stale-data threshold (s)", "min": 15, "max": 600, "default": 120 },
+    "timezone": { "type": "string", "label": "Timezone for daily windows", "default": "Europe/Berlin" },
+    "batteryFromGridOnCharge": { "type": "boolean", "label": "Treat grid charging as grid-origin energy", "default": true },
+    "publicPv": { "type": "boolean", "label": "Public: PV power", "default": true },
+    "publicBattery": { "type": "boolean", "label": "Public: battery", "default": true },
+    "publicGrid": { "type": "boolean", "label": "Public: grid", "default": true },
+    "publicTentShare": { "type": "boolean", "label": "Public: tent solar share", "default": true },
+    "overlayWidgets": { "type": "boolean", "label": "Show solar widgets on the overlay", "default": false },
+    "modbusPort": { "type": "integer", "default": 502 },
+    "modbusUnitId": { "type": "integer", "default": 1 }
+  },
+  "metrics": {
+    "pv.power": { "unit": "W", "kind": "gauge", "min": 0, "max": "config.pvPeakW * 1.3" },
+    "battery.soc": { "unit": "%", "kind": "gauge", "min": 0, "max": 100 },
+    "battery.power": { "unit": "W", "kind": "gauge", "sign": "+discharge/-charge" },
+    "grid.power": { "unit": "W", "kind": "gauge", "sign": "+import/-export" },
+    "house.power": { "unit": "W", "kind": "gauge", "min": 0 },
+    "grid.mode": { "unit": "enum", "kind": "enum", "values": { "1": "on-grid", "2": "off-grid" } },
+    "pv.energy": { "unit": "Wh", "kind": "counter" },
+    "grid.import": { "unit": "Wh", "kind": "counter" },
+    "grid.export": { "unit": "Wh", "kind": "counter" },
+    "house.energy": { "unit": "Wh", "kind": "counter" },
+    "battery.charge": { "unit": "Wh", "kind": "counter" },
+    "battery.discharge": { "unit": "Wh", "kind": "counter" },
+    "tent.power": { "unit": "W", "kind": "gauge", "min": 0 },
+    "tent.from_solar": { "unit": "W", "kind": "gauge", "min": 0 },
+    "tent.from_pv": { "unit": "W", "kind": "gauge", "min": 0 },
+    "tent.from_battery": { "unit": "W", "kind": "gauge", "min": 0 },
+    "tent.from_grid": { "unit": "W", "kind": "gauge", "min": 0 }
+  }
+}

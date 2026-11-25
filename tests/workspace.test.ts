@@ -19,17 +19,17 @@ function src(rel: string): string {
 }
 
 describe("workspace morph", () => {
-    it("treats only / and /energy as workspace paths", () => {
+    it("treats only / and plugin energy pages as workspace paths", () => {
         assert.equal(isWorkspacePath("/"), true);
-        assert.equal(isWorkspacePath("/energy"), true);
-        assert.equal(isWorkspacePath("/gallery"), false);
+        assert.equal(isWorkspacePath("/p/ggs/energy"), true);
+        assert.equal(isWorkspacePath("/p/timelapse/gallery"), false);
         assert.equal(isWorkspacePath("/grows"), false);
         assert.equal(isWorkspacePath("/admin"), false);
-        assert.equal(isWorkspaceHandoff("/", "/energy"), true);
-        assert.equal(isWorkspaceHandoff("/energy", "/"), true);
+        assert.equal(isWorkspaceHandoff("/", "/p/ggs/energy"), true);
+        assert.equal(isWorkspaceHandoff("/p/ggs/energy", "/"), true);
         assert.equal(isWorkspaceHandoff("/", "/"), false);
-        assert.equal(isWorkspaceHandoff("/gallery", "/"), false);
-        assert.equal(isWorkspaceHandoff("/", "/gallery"), false);
+        assert.equal(isWorkspaceHandoff("/p/timelapse/gallery", "/"), false);
+        assert.equal(isWorkspaceHandoff("/", "/p/timelapse/gallery"), false);
         assert.equal(
             isPlainWorkspaceClick({
                 altKey: false,
@@ -53,35 +53,26 @@ describe("workspace morph", () => {
     });
 
     it("keeps OverlayCamera in the site shell and LiveTentRow on home", () => {
-        const layout = src(path.join("app", "(site)", "layout.tsx"));
+        const layout = src(path.join("components", "site-shell.tsx"));
         const frame = src(path.join("components", "workspace-frame.tsx"));
         const home = src(path.join("app", "(site)", "page.tsx"));
-        const energy = src(path.join("app", "(site)", "energy", "page.tsx"));
         assert.match(layout, /WorkspaceFrame/);
-        assert.match(layout, /readCameraLook/);
         assert.match(frame, /OverlayCamera/);
-        assert.match(frame, /look=\{look\}/);
         assert.match(frame, /isWorkspacePath\(pathname\)/);
-        assert.match(frame, /EnergyScoreboard/);
         assert.match(frame, /growcast-dash-slot/);
         assert.match(frame, /growcast-energy-slot/);
         assert.doesNotMatch(frame, /lg:w-\[320px\]/);
         assert.equal(WORKSPACE_CAM_ENERGY_PX, 320);
         assert.doesNotMatch(home, /OverlayCamera/);
-        assert.match(home, /LiveTentRow climateTick=\{grow\.climateTick\}/);
+        assert.match(home, /PluginWidgets slot="dashboard"/);
         assert.match(home, /AiSummaryCard/);
         assert.match(home, /readAiSummaryPublic/);
-        assert.doesNotMatch(energy, /<h1/);
-        assert.doesNotMatch(energy, /py-10/);
-        assert.doesNotMatch(energy, /buildEnergyDto/);
     });
 
     it("pairs dashboard and energy panels with shared view-transition names", () => {
         const css = src(path.join("app", "globals.css"));
         const home = src(path.join("app", "(site)", "page.tsx"));
         const header = src(path.join("components", "site-header.tsx"));
-        const scoreboard = src(path.join("components", "energy-scoreboard.tsx"));
-        const row = src(path.join("components", "live-tent-row.tsx"));
         const pictures = src(path.join("components", "dash-pictures.tsx"));
         const frame = src(path.join("components", "workspace-frame.tsx"));
         const aiCard = src(path.join("components", "ai-summary-card.tsx"));
@@ -114,18 +105,12 @@ describe("workspace morph", () => {
         assert.match(header, /useWorkspaceNav/);
         assert.match(header, /isWorkspacePath\(item\.href\)/);
         assert.match(header, /isPlainWorkspaceClick/);
-        assert.match(nav, /morphWorkspace/);
-        assert.match(nav, /applyWorkspacePage/);
-        assert.match(nav, /document\.startViewTransition\(apply\)/);
-        assert.match(nav, /history\.pushState/);
-        assert.match(nav, /flushSync/);
-        assert.match(nav, /prefers-reduced-motion/);
-        assert.match(nav, /busy\.current/);
-        assert.match(nav, /waitingForDash/);
-        assert.match(nav, /keepCameraInView/);
-        assert.match(nav, /popstate/);
-        assert.match(nav, /WORKSPACE_MORPH_MS \+ 80/);
-        assert.match(frame, /EnergyScoreboard/);
+        assert.match(nav, /router\.push/);
+        assert.match(nav, /usePathname/);
+        assert.doesNotMatch(nav, /startViewTransition/);
+        assert.doesNotMatch(nav, /history\.pushState/);
+        assert.doesNotMatch(nav, /morphWorkspace/);
+        assert.match(frame, /growcast-energy-slot/);
         assert.match(frame, /WORKSPACE_VT\.board/);
         assert.match(footer, /vt-footer/);
         assert.match(css, /growcast-vt-off/);
@@ -139,13 +124,6 @@ describe("workspace morph", () => {
         assert.match(aiCard, /WORKSPACE_VT\.ai/);
         assert.match(css, /growcast-area-ai/);
         assert.match(css, /grid-area: ai/);
-        assert.match(row, /WORKSPACE_VT\.mid/);
         assert.match(pictures, /WORKSPACE_VT\.water/);
-        assert.match(scoreboard, /WORKSPACE_VT\.side/);
-        assert.match(scoreboard, /WORKSPACE_VT\.mid/);
-        assert.match(scoreboard, /WORKSPACE_VT\.table/);
-        assert.doesNotMatch(scoreboard, /<h1/);
-        assert.match(scoreboard, /EnergyArchiveSection/);
-        assert.match(scoreboard, /rounded-2xl border border-zinc-200/);
     });
 });

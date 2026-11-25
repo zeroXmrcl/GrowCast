@@ -1,6 +1,5 @@
-import {berlinDateOnly, berlinDateWindow} from "@/lib/energy/berlin";
-import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/lib/climate/types";
-import {readClimateDay} from "@/lib/climate/store";
+import {CLIMATE_METRIC_KEYS, CLIMATE_SLOT_MS, type ClimateMetricKey, type ClimatePoint} from "@/lib/ai-summary/climate";
+import {loadPluginClimatePointsForWindow} from "@/lib/plugins/hooks";
 import type {ClimateWindowStats, MetricStats, SplitStats} from "@/lib/ai-summary/types";
 
 function emptyStats(): MetricStats {
@@ -159,21 +158,17 @@ export async function loadClimatePointsForWindow(
     windowStartMs: number,
     windowEndMs: number,
 ): Promise<ClimatePoint[]> {
-    const startDate = berlinDateOnly(windowStartMs);
-    const endDate = berlinDateOnly(windowEndMs - 1);
-    const dates = berlinDateWindow(endDate, 3).filter((date) => date >= startDate && date <= endDate);
-    if (!dates.includes(startDate)) {
-        dates.push(startDate);
-    }
-    dates.sort();
-    const points: ClimatePoint[] = [];
-    for (const date of dates) {
-        const day = await readClimateDay(date);
-        if (day) {
-            points.push(...day.points);
-        }
-    }
-    return points.sort((a, b) => a.t.localeCompare(b.t));
+    const points = await loadPluginClimatePointsForWindow(windowStartMs, windowEndMs);
+    return points.map((point) => ({
+        t: point.t,
+        tempC: point.tempC,
+        humidityPct: point.humidityPct,
+        vpd: point.vpd,
+        co2: point.co2,
+        ppfd: point.ppfd,
+        isDay: point.isDay,
+        alarm: point.alarm,
+    }));
 }
 
 export function roundStat(value: number | null, digits: number): number | null {

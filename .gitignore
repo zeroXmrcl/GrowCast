@@ -20,11 +20,13 @@ lighthouse*.json
 
 # production
 /build
+dist-release/
 
 # misc
 .DS_Store
 *.pem
 !extensions/GrowCast-GGS/mqtt-ca.pem
+!plugins/ggs/mqtt-ca.pem
 
 # debug
 npm-debug.log*
@@ -57,6 +59,13 @@ __pycache__/
 /extensions/GrowCast-Timelapse/timelapse/
 /extensions/GrowCast-Timelapse/**/snapshots/
 /extensions/GrowCast-Timelapse/**/timelapse/
+/plugins/ggs/.env
+/plugins/timelapse/**/.env
+/plugins/timelapse/snapshots/
+/plugins/timelapse/timelapse/
+/plugins/**/ui/node_modules/
+/plugins/**/host/dist/
+/plugins/**/__pycache__/
 .superpowers/
 .worktrees/
 .env.local.bak.*

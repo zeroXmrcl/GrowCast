@@ -27,7 +27,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Image() {
     const still = await resolveShareCardStill();
-    const mtime = await shareCardStillMtimeMs(still ? shareCardStillPath(still) : null);
+    const mtime = await shareCardStillMtimeMs(still ? await shareCardStillPath(still) : null);
     const cacheId = shareCardOgImageId(still, mtime);
     const cached = ogCache.get(cacheId);
     if (cached) {

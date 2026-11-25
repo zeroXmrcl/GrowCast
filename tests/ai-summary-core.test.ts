@@ -22,10 +22,10 @@ import {AI_SUMMARY_DAILY_API_CAP, AI_SUMMARY_MOSAIC_SLOTS} from "../lib/ai-summa
 import {completeCurrentGrow} from "../lib/archives.ts";
 import {updateCurrentGrow} from "../lib/db.ts";
 import {_resetGrowWriteLockForTests} from "../lib/grow-write-lock.ts";
-import {_resetEnergyAccrueLockForTests} from "../lib/energy/accrue.ts";
-import {writeClimateDay} from "../lib/climate/store.ts";
 import type {AiSummaryRecord, ClimateWindowStats, SchedulerState, StageContext} from "../lib/ai-summary/types.ts";
-import type {ClimatePoint} from "../lib/climate/types.ts";
+import type {ClimatePoint} from "../lib/ai-summary/climate.ts";
+import {writeClimateDay} from "./climate-fixture.ts";
+import {enableGgsForTests, restoreGgsPluginsDirForTests} from "./enable-ggs.ts";
 
 function emptyStats(): ClimateWindowStats {
     const metric = {
@@ -99,13 +99,13 @@ async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     await mkdir(process.env.GROWCAST_DATA_DIR, {recursive: true});
     _resetAiSummaryLockForTests();
     _resetGrowWriteLockForTests();
-    _resetEnergyAccrueLockForTests();
+    await enableGgsForTests();
     try {
         return await fn(root);
     } finally {
         _resetAiSummaryLockForTests();
         _resetGrowWriteLockForTests();
-        _resetEnergyAccrueLockForTests();
+        restoreGgsPluginsDirForTests();
         if (previous === undefined) {
             delete process.env.GROWCAST_DATA_DIR;
         } else {

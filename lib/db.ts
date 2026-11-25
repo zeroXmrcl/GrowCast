@@ -4,11 +4,10 @@ import {asBoolean, asNumber, asString, isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {growcastDataDir} from "@/lib/data-paths";
 import {isDateOnly} from "@/lib/date-only";
-import {DEFAULT_CLIMATE_TICK, parseClimateTick, type ClimateTick} from "@/lib/climate-tick";
-import {DEFAULT_DEVICES_DESIGN, parseDevicesDesign, type DevicesDesign} from "@/lib/devices-design";
 import {DEFAULT_OVERLAY_LAYOUT, parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
 import {DEFAULT_OVERLAY_STREAM, parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
 import {DEFAULT_OVERLAY_SCALE_PCT, parseOverlayScalePct} from "@/lib/overlay-scale";
+import {parseClimateTick, parseDevicesDesign, type ClimateTick, type DevicesDesign} from "@/lib/overlay-tick";
 
 export type GrowDetails = {
   strain: string;
@@ -83,7 +82,7 @@ export type GrowUpdateInput = {
   overlayStream?: OverlayStream;
   overlayScalePct?: number;
   climateTick?: ClimateTick;
-  devicesDesign?: DevicesDesign;
+  devicesDesign?: string;
 };
 
 function dataDir(): string {
@@ -199,8 +198,8 @@ export const EMPTY_GROW: GrowRecord = {
   overlayLayout: DEFAULT_OVERLAY_LAYOUT,
   overlayStream: DEFAULT_OVERLAY_STREAM,
   overlayScalePct: DEFAULT_OVERLAY_SCALE_PCT,
-  climateTick: DEFAULT_CLIMATE_TICK,
-  devicesDesign: DEFAULT_DEVICES_DESIGN,
+  climateTick: "plain",
+  devicesDesign: "icons",
 };
 
 export function normalizeGrowRecord(raw: unknown): GrowRecord {

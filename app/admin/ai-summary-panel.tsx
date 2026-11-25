@@ -18,7 +18,7 @@ export function AiSummaryPanel({configured, demoMode, summary, regenerateAction}
                 <div className="space-y-3 text-sm text-(--admin-text)">
                     <p className="text-(--admin-muted)">
                         Daily around 08:00 Europe/Berlin. The model gets stage and measured stats, not your
-                        climate targets. The timelapse still goes to xAI only and is not shown on the public
+                        climate targets. The newest camera still goes to xAI only and is not shown on the public
                         card. Hard cap: 5 xAI calls per Berlin day (job + regenerate).
                     </p>
                     <p>xAI key: {configured ? "set" : "missing (XAI_API_KEY)"}</p>
