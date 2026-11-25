@@ -30,6 +30,8 @@ export default function WorkspaceFrame({
     const {view} = useWorkspaceNav();
     const dashSlot = useRef<ReactNode>(null);
     if (pathname === "/" && children) {
+        // Last home children stay mounted so /energy can morph over them.
+        // eslint-disable-next-line react-hooks/refs -- cache, not a render input
         dashSlot.current = children;
     }
 
@@ -59,6 +61,7 @@ export default function WorkspaceFrame({
                         </div>
                     )}
                 </div>
+                {/* eslint-disable-next-line react-hooks/refs -- last home children */}
                 <div className="growcast-dash-slot">{dashSlot.current}</div>
                 <div className="growcast-energy-slot">
                     <EnergyScoreboard />

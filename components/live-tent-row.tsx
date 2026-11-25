@@ -34,14 +34,16 @@ export default function LiveTentRow({
     const [historyOpen, setHistoryOpen] = useState(false);
     const [historyMetric, setHistoryMetric] = useState<ClimateHistoryMetric>("tempC");
     const triggerRef = useRef<HTMLButtonElement | null>(null);
-
-    useEffect(() => {
+    const [prevTick, setPrevTick] = useState(initialTick);
+    const [prevDesign, setPrevDesign] = useState(initialDesign);
+    if (initialTick !== prevTick) {
+        setPrevTick(initialTick);
         setClimateTick(initialTick);
-    }, [initialTick]);
-
-    useEffect(() => {
+    }
+    if (initialDesign !== prevDesign) {
+        setPrevDesign(initialDesign);
         setDevicesDesign(initialDesign);
-    }, [initialDesign]);
+    }
 
     useEffect(() => {
         const abort = new AbortController();
