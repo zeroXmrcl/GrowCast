@@ -647,6 +647,21 @@ describe("ai summary generate and archive", () => {
         });
     });
 
+    it("refuses a new call when the usage file is corrupt", async () => {
+        await withTempDataDir(async () => {
+            const file = aiSummaryUsageFile();
+            await mkdir(path.dirname(file), {recursive: true});
+            await writeFile(file, "{not-json", "utf8");
+            const reserved = await reserveAiApiCall("2026-10-14");
+            assert.equal(reserved.ok, false);
+            if (!reserved.ok) {
+                assert.equal(reserved.usage.calls, AI_SUMMARY_DAILY_API_CAP);
+            }
+            assert.equal(await readFile(file, "utf8"), "{not-json");
+            assert.equal((await readAiApiUsage("2026-10-14")).calls, AI_SUMMARY_DAILY_API_CAP);
+        });
+    });
+
     it("keeps per-day usage across a clock rollback to a previous Berlin date", async () => {
         await withTempDataDir(async () => {
             for (let i = 0; i < AI_SUMMARY_DAILY_API_CAP; i += 1) {

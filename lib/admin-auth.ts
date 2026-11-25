@@ -649,6 +649,11 @@ export async function loginAdmin(
     }
     if (gate.state === "mismatch") {
       logAuthTotpUnavailable({ reason: "account_mismatch", ...client });
+      return {
+        ok: false,
+        code: "totp_unavailable",
+        reason: "Authenticator data could not be read.",
+      };
     }
     if (gate.state === "enrolled") {
       const totpKey = secondFactorAttemptKey(clientKey);

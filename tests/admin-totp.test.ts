@@ -301,9 +301,12 @@ describe("admin totp", {concurrency: 1}, () => {
             process.env.ADMIN_PASSWORD_HASH = hashAdminPassword("other-password");
             const otherCookies = new MemoryCookies();
             const mismatched = await loginAdmin("other-admin", "other-password", "admin-login:mismatch", {cookies: otherCookies});
-            assert.equal(mismatched.ok, true);
+            assert.equal(mismatched.ok, false);
+            if (!mismatched.ok) {
+                assert.equal(mismatched.code, "totp_unavailable");
+            }
             assert.equal(otherCookies.get(ADMIN_PENDING_COOKIE), undefined);
-            assert.equal(typeof otherCookies.get(ADMIN_SESSION_COOKIE), "string");
+            assert.equal(otherCookies.get(ADMIN_SESSION_COOKIE), undefined);
             assert.equal(totpSecurityStatus("mismatch", false), "stale");
         });
     });
