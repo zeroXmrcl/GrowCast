@@ -4,7 +4,7 @@ import {existsSync} from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {applyPluginDataMigration, planPluginDataMigration} from "../../scripts/migrate-plugin-data.ts";
+import {applyPluginDataMigration, migrationTreesMatch, planPluginDataMigration} from "../../scripts/migrate-plugin-data.ts";
 
 async function withFixture<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-migrate-"));
@@ -27,10 +27,13 @@ async function withFixture<T>(fn: (dir: string) => Promise<T>): Promise<T> {
 }
 
 describe("plugin data migration", () => {
-    it("plans copies from core storage into data/plugins/<id>", () => {
-        const steps = planPluginDataMigration("/tmp/data");
-        assert.equal(steps.some((step) => step.to.endsWith("plugins/growcast.ggs/energy")), true);
-        assert.equal(steps.some((step) => step.to.endsWith("plugins/growcast.restream")), true);
+    it("plans copies from core storage into data/plugins/<id>", async () => {
+        await withFixture(async (dir) => {
+            const steps = planPluginDataMigration(dir);
+            assert.equal(steps.some((step) => step.to.endsWith("plugins/growcast.ggs/energy")), true);
+            assert.equal(steps.some((step) => step.to.endsWith("plugins/growcast.restream")), true);
+            assert.equal(steps.every((step) => step.from.startsWith(dir)), true);
+        });
     });
 
     it("dry-run copies nothing", async () => {
@@ -58,6 +61,23 @@ describe("plugin data migration", () => {
             const second = await applyPluginDataMigration({dataDir: dir, dryRun: false});
             assert.equal(second.copied.length, 0);
             assert.ok(second.skipped.length >= 5);
+        });
+    });
+
+    it("does not keep a half-copied directory marked done", async () => {
+        await withFixture(async (dir) => {
+            const dest = path.join(dir, "plugins", "growcast.ggs", "energy");
+            await mkdir(path.join(dest, "current"), {recursive: true});
+            await writeFile(path.join(dest, "current", "partial.json"), "{}\n");
+            await writeFile(path.join(dest, ".migrated"), "done\n");
+            await applyPluginDataMigration({dataDir: dir, dryRun: false});
+            assert.equal(
+                await migrationTreesMatch(path.join(dir, "energy"), dest),
+                true,
+            );
+            const marker = await readFile(path.join(dest, ".migrated"), "utf8");
+            assert.notEqual(marker, "done\n");
+            assert.equal(existsSync(path.join(dest, "current", "2026-11-16.json")), true);
         });
     });
 });

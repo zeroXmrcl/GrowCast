@@ -7,7 +7,8 @@
  *   npx tsx scripts/migrate-plugin-data.ts --dry-run
  *   npx tsx scripts/migrate-plugin-data.ts --apply
  */
-import {copyFile, cp, mkdir, writeFile} from "node:fs/promises";
+import {createHash, randomBytes} from "node:crypto";
+import {copyFile, cp, mkdir, readdir, readFile, rename, rm, stat, writeFile} from "node:fs/promises";
 import {existsSync} from "node:fs";
 import path from "node:path";
 
@@ -55,6 +56,109 @@ export function planPluginDataMigration(dataDir: string): MigrateStep[] {
     return steps;
 }
 
+const MIGRATED_MARKER = ".migrated";
+
+async function fileDigest(filePath: string): Promise<string> {
+    const hash = createHash("sha256");
+    hash.update(await readFile(filePath));
+    return hash.digest("hex");
+}
+
+async function treeDigest(root: string): Promise<Map<string, string>> {
+    const out = new Map<string, string>();
+    async function walk(relative: string): Promise<void> {
+        const dir = relative ? path.join(root, relative) : root;
+        const entries = await readdir(dir, {withFileTypes: true});
+        for (const entry of entries) {
+            if (entry.name === MIGRATED_MARKER) {
+                continue;
+            }
+            const rel = relative ? `${relative}/${entry.name}` : entry.name;
+            const abs = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                await walk(rel);
+                continue;
+            }
+            if (!entry.isFile()) {
+                continue;
+            }
+            out.set(rel, await fileDigest(abs));
+        }
+    }
+    await walk("");
+    return out;
+}
+
+export async function migrationTreesMatch(source: string, destination: string): Promise<boolean> {
+    let sourceInfo;
+    let destinationInfo;
+    try {
+        sourceInfo = await stat(source);
+        destinationInfo = await stat(destination);
+    } catch {
+        return false;
+    }
+    if (!sourceInfo.isDirectory() || !destinationInfo.isDirectory()) {
+        if (sourceInfo.isFile() && destinationInfo.isFile()) {
+            return await fileDigest(source) === await fileDigest(destination);
+        }
+        return false;
+    }
+    const left = await treeDigest(source);
+    const right = await treeDigest(destination);
+    if (left.size !== right.size) {
+        return false;
+    }
+    for (const [rel, digest] of left) {
+        if (right.get(rel) !== digest) {
+            return false;
+        }
+    }
+    return true;
+}
+
+async function markMigrated(destination: string): Promise<void> {
+    await writeFile(path.join(destination, MIGRATED_MARKER), `${new Date().toISOString()}\n`);
+}
+
+async function copyVerified(step: MigrateStep): Promise<void> {
+    const token = randomBytes(8).toString("hex");
+    const temporary = `${step.to}.migrate-${token}`;
+    await rm(temporary, {recursive: true, force: true});
+    await mkdir(path.dirname(temporary), {recursive: true});
+    try {
+        if (step.kind === "dir") {
+            await cp(step.from, temporary, {recursive: true, force: false, errorOnExist: true});
+        } else {
+            await copyFile(step.from, temporary);
+        }
+        if (!await migrationTreesMatch(step.from, temporary)) {
+            throw new Error(`migration verify failed for ${step.from}`);
+        }
+        if (existsSync(step.to)) {
+            const backup = `${step.to}.incomplete-${token}`;
+            await rename(step.to, backup);
+            try {
+                await rename(temporary, step.to);
+            } catch (error) {
+                await rename(backup, step.to).catch(() => undefined);
+                throw error;
+            }
+            await rm(backup, {recursive: true, force: true});
+        } else {
+            await rename(temporary, step.to);
+        }
+        if (step.kind === "dir") {
+            if (!await migrationTreesMatch(step.from, step.to)) {
+                throw new Error(`migration verify failed after rename for ${step.from}`);
+            }
+            await markMigrated(step.to);
+        }
+    } finally {
+        await rm(temporary, {recursive: true, force: true});
+    }
+}
+
 export async function applyPluginDataMigration(
     options: MigrateOptions,
 ): Promise<{copied: string[]; skipped: string[]}> {
@@ -65,25 +169,24 @@ export async function applyPluginDataMigration(
             skipped.push(`${step.from} (missing)`);
             continue;
         }
-        const already = existsSync(step.to);
-        if (already) {
-            skipped.push(`${step.to} (already exists)`);
-            if (!options.dryRun && step.kind === "dir") {
-                await writeFile(path.join(step.to, ".migrated"), `${new Date().toISOString()}\n`).catch(() => undefined);
+        if (existsSync(step.to)) {
+            if (await migrationTreesMatch(step.from, step.to)) {
+                skipped.push(`${step.to} (already complete)`);
+                if (!options.dryRun && step.kind === "dir" && !existsSync(path.join(step.to, MIGRATED_MARKER))) {
+                    await markMigrated(step.to);
+                }
+                continue;
             }
-            continue;
+            if (step.kind === "file") {
+                skipped.push(`${step.to} (exists and differs)`);
+                continue;
+            }
         }
         copied.push(`${step.from} -> ${step.to}`);
         if (options.dryRun) {
             continue;
         }
-        await mkdir(path.dirname(step.to), {recursive: true});
-        if (step.kind === "dir") {
-            await cp(step.from, step.to, {recursive: true, force: false, errorOnExist: false});
-            await writeFile(path.join(step.to, ".migrated"), `${new Date().toISOString()}\n`);
-        } else {
-            await copyFile(step.from, step.to);
-        }
+        await copyVerified(step);
     }
     return {copied, skipped};
 }

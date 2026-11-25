@@ -14,6 +14,7 @@
     "build:plugin-host": "node scripts/build-plugin-host.mjs",
     "setup:admin": "node scripts/admin-creator.mjs",
     "setup:admin:insecure": "node scripts/admin-creator.mjs --allow-insecure",
+    "migrate:plugins": "tsx scripts/migrate-plugin-data.ts",
     "test": "NODE_ENV=test node --experimental-strip-types --import ./tests/register.mjs --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
     "sharp": "^0.35.5",
+    "tsx": "^4.20.6",
     "webp-wasm": "^1.0.6"
   },
   "devDependencies": {
