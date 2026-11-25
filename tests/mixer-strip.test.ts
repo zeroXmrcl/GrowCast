@@ -76,7 +76,7 @@ describe("mixer strip", () => {
         assert.match(applyAlert, /kind:\s*"manual"/);
         assert.match(actions, /writeRestreamAudio/);
         assert.match(actions, /audio_saved/);
-        assert.match(actions, /readAlertsSettings/);
+        assert.match(actions, /writeAlertsSettings/);
     });
 
     it("revalidates the program monitor after Broadcast grow save", () => {
