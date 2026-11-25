@@ -54,8 +54,13 @@ describe("plugin path containment", {concurrency: 1}, () => {
             const plugin = await findDiscoveredPlugin("community.example");
             assert.ok(plugin);
             assert.equal(containedPluginPath(dir, "host/index.ts")?.endsWith(`${path.sep}host${path.sep}index.ts`), true);
-            const loaded = await loadHostModule(plugin) as {marker?: number} | null;
+            const loaded = await loadHostModule(plugin, "stamp-a") as {marker?: number} | null;
             assert.equal(loaded?.marker, 7);
+            await writeFile(path.join(dir, "host", "index.ts"), "export const marker = 11;\n");
+            const cached = await loadHostModule(plugin, "stamp-a") as {marker?: number} | null;
+            assert.equal(cached?.marker, 7);
+            const fresh = await loadHostModule(plugin, "stamp-b") as {marker?: number} | null;
+            assert.equal(fresh?.marker, 11);
         });
     });
 });

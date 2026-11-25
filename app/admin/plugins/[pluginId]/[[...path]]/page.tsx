@@ -61,7 +61,7 @@ export default async function PluginAdminPage({
             ) : null}
             <PluginMount
                 pluginId={resolved.pluginId}
-                version={discovered.manifest.version}
+                version={resolved.assetVersion}
                 entry={discovered.manifest.ui?.entry}
                 webComponent={discovered.manifest.ui?.webComponent}
                 styles={discovered.manifest.ui?.styles}

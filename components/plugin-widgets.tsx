@@ -44,7 +44,7 @@ export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
                     >
                         <PluginMount
                             pluginId={entry.item.pluginId}
-                            version={entry.discovered.manifest.version}
+                            version={entry.item.assetVersion}
                             entry={entry.discovered.manifest.ui?.entry}
                             webComponent={entry.discovered.manifest.ui?.webComponent}
                             styles={entry.discovered.manifest.ui?.styles}
@@ -71,7 +71,7 @@ export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
                     <PluginMount
                         key={`${entry.item.pluginId}:${entry.item.widget.id}`}
                         pluginId={entry.item.pluginId}
-                        version={entry.discovered.manifest.version}
+                        version={entry.item.assetVersion}
                         entry={entry.discovered.manifest.ui?.entry}
                         webComponent={entry.discovered.manifest.ui?.webComponent}
                         styles={entry.discovered.manifest.ui?.styles}
@@ -89,7 +89,7 @@ export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
                             >
                                 <PluginMount
                                     pluginId={entry.item.pluginId}
-                                    version={entry.discovered.manifest.version}
+                                    version={entry.item.assetVersion}
                                     entry={entry.discovered.manifest.ui?.entry}
                                     webComponent={entry.discovered.manifest.ui?.webComponent}
                                     styles={entry.discovered.manifest.ui?.styles}
@@ -112,7 +112,7 @@ export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
                     <PluginMount
                         key={`${entry.item.pluginId}:${entry.item.widget.id}`}
                         pluginId={entry.item.pluginId}
-                        version={entry.discovered.manifest.version}
+                        version={entry.item.assetVersion}
                         entry={entry.discovered.manifest.ui?.entry}
                         webComponent={entry.discovered.manifest.ui?.webComponent}
                         styles={entry.discovered.manifest.ui?.styles}
@@ -134,7 +134,7 @@ export default async function PluginWidgets({slot}: {slot: PluginWidgetSlot}) {
                 <PluginMount
                     key={`${entry.item.pluginId}:${entry.item.widget.id}`}
                     pluginId={entry.item.pluginId}
-                    version={entry.discovered.manifest.version}
+                    version={entry.item.assetVersion}
                     entry={entry.discovered.manifest.ui?.entry}
                     webComponent={entry.discovered.manifest.ui?.webComponent}
                     styles={entry.discovered.manifest.ui?.styles}

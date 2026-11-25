@@ -1,6 +1,7 @@
 import {readPluginConfig} from "@/lib/plugins/config";
 import {discoverPlugins, findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {pluginIdMatchesParam} from "@/lib/plugins/ids";
+import {pluginAssetVersion} from "@/lib/plugins/import-map";
 import {getRegistryRecord, listRegistryRecords, pluginIsActive} from "@/lib/plugins/registry";
 import type {PluginPageSpec, PluginRegistryRecord, PluginWidgetSpec} from "@/lib/plugins/types";
 
@@ -13,11 +14,13 @@ export type ResolvedPluginPage = {
     folderName: string;
     page: PluginPageSpec;
     public: boolean;
+    assetVersion: string;
 };
 
 export type ResolvedPluginWidget = {
     pluginId: string;
     widget: PluginWidgetSpec;
+    assetVersion: string;
 };
 
 function normalizePath(value: string): string {
@@ -65,6 +68,7 @@ export async function resolvePluginPage(
         folderName: discovered.folderName,
         page,
         public: page.public === true && discovered.manifest.permissions.publicPages === true,
+        assetVersion: pluginAssetVersion(record?.currentHash, discovered.manifest.version),
     };
 }
 
@@ -84,6 +88,7 @@ export async function listEnabledSitePages(): Promise<ResolvedPluginPage[]> {
                     folderName: plugin.folderName,
                     page,
                     public: page.public === true && plugin.manifest.permissions.publicPages === true,
+                    assetVersion: pluginAssetVersion(record?.currentHash, plugin.manifest.version),
                 });
             }
         }
@@ -107,6 +112,7 @@ export async function listEnabledAdminPages(): Promise<ResolvedPluginPage[]> {
                     folderName: plugin.folderName,
                     page,
                     public: false,
+                    assetVersion: pluginAssetVersion(record?.currentHash, plugin.manifest.version),
                 });
             }
         }
@@ -135,7 +141,11 @@ export async function widgetsForSlot(slot: PluginWidgetSpec["slots"][number]): P
             if (slot === "overlay" && !overlayEnabled) {
                 continue;
             }
-            widgets.push({pluginId: plugin.manifest.id, widget});
+            widgets.push({
+                pluginId: plugin.manifest.id,
+                widget,
+                assetVersion: pluginAssetVersion(record?.currentHash, plugin.manifest.version),
+            });
         }
     }
     return widgets;

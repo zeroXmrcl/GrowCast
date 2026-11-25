@@ -32,7 +32,7 @@ export async function GET(request: Request) {
         items.push({
             pluginId: item.pluginId,
             widgetId: item.widget.id,
-            version: discovered.manifest.version,
+            version: item.assetVersion,
             entry: discovered.manifest.ui?.entry,
             webComponent: discovered.manifest.ui?.webComponent,
             styles: discovered.manifest.ui?.styles,

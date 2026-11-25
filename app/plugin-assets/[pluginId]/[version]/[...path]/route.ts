@@ -1,5 +1,6 @@
 import {readFile} from "node:fs/promises";
 import {resolvePluginAsset} from "@/lib/plugins/assets";
+import {pluginAssetCacheControl} from "@/lib/plugins/import-map";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export async function GET(
     _request: Request,
     context: {params: Promise<{pluginId: string; version: string; path: string[]}>},
 ): Promise<Response> {
-    const {pluginId, path} = await context.params;
+    const {pluginId, version, path} = await context.params;
     const relative = path.join("/");
     const abs = await resolvePluginAsset(pluginId, relative);
     if (!abs) {
@@ -31,7 +32,7 @@ export async function GET(
         return new Response(body, {
             headers: {
                 "Content-Type": contentType(abs),
-                "Cache-Control": "public, max-age=31536000, immutable",
+                "Cache-Control": pluginAssetCacheControl(version),
             },
         });
     } catch {

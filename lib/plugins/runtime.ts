@@ -1,4 +1,5 @@
 import {spawn} from "node:child_process";
+import {readFile} from "node:fs/promises";
 import {generatePluginsCompose} from "@/lib/plugins/compose";
 import {assertDockerHostIsProxy, assertPluginRuntimeTarget, dockerEngineBaseUrl} from "@/lib/plugins/docker-guard";
 import {
@@ -10,7 +11,77 @@ import {
 import {pluginServiceName} from "@/lib/plugins/ids";
 import {containedPluginPath} from "@/lib/plugins/containment";
 import {pluginLogger} from "@/lib/plugins/log";
+import {pluginRuntimeEnvFile} from "@/lib/plugins/paths";
 import {readPluginToken} from "@/lib/plugins/tokens";
+
+const PROCESS_ENV_KEYS = ["PATH", "HOME", "LANG", "LC_ALL", "LC_CTYPE", "TZ", "TERM"] as const;
+
+const DENIED_PROCESS_ENV = new Set([
+    "ADMIN_PASSWORD_HASH",
+    "ADMIN_SESSION_SECRET",
+    "GROWCAST_DOCKER_PROXY_TOKEN",
+    "GROWCAST_MESH_TOKEN",
+    "TWITCH_CLIENT_ID",
+    "TWITCH_CLIENT_SECRET",
+    "XAI_API_KEY",
+]);
+
+function isProcessEnvKey(key: string): boolean {
+    return /^[A-Z_][A-Z0-9_]*$/.test(key) && !DENIED_PROCESS_ENV.has(key);
+}
+
+export function pluginProcessEnv(input: {
+    inherited: NodeJS.ProcessEnv;
+    pluginId: string;
+    token: string;
+    extra?: Record<string, string>;
+    runtimeEnv?: Record<string, string>;
+}): NodeJS.ProcessEnv {
+    const nodeEnv = input.inherited.NODE_ENV;
+    const env: NodeJS.ProcessEnv = {
+        NODE_ENV: nodeEnv === "development" || nodeEnv === "test" || nodeEnv === "production" ? nodeEnv : "production",
+    };
+    for (const key of PROCESS_ENV_KEYS) {
+        const value = input.inherited[key];
+        if (typeof value === "string") {
+            env[key] = value;
+        }
+    }
+    env.GROWCAST_PLUGIN_ID = input.pluginId;
+    env.GROWCAST_PLUGIN_TOKEN = input.token;
+    env.GROWCAST_URL = "http://growcast:3000";
+    env.PYTHONDONTWRITEBYTECODE = "1";
+    env.PYTHONUNBUFFERED = "1";
+    for (const source of [input.extra, input.runtimeEnv]) {
+        if (!source) {
+            continue;
+        }
+        for (const [key, value] of Object.entries(source)) {
+            if (!isProcessEnvKey(key) || typeof value !== "string") {
+                continue;
+            }
+            env[key] = value;
+        }
+    }
+    return env;
+}
+
+async function readRuntimeEnvMap(pluginId: string): Promise<Record<string, string>> {
+    try {
+        const file = await readFile(pluginRuntimeEnvFile(pluginId), "utf8");
+        const out: Record<string, string> = {};
+        for (const line of file.split(/\r?\n/)) {
+            if (!line || line.startsWith("#") || !line.includes("=")) {
+                continue;
+            }
+            const eq = line.indexOf("=");
+            out[line.slice(0, eq)] = line.slice(eq + 1);
+        }
+        return out;
+    } catch {
+        return {};
+    }
+}
 
 export type PluginRuntimeAdapter = {
     start(serviceName: string): Promise<void>;
@@ -67,10 +138,24 @@ const processAdapter: PluginRuntimeAdapter = {
             });
             return;
         }
+        const token = await readPluginToken(discovered.manifest.id);
+        if (!token) {
+            pluginLogger().warn({
+                event: "plugin.runtime.missing_token",
+                plugin_id: discovered.manifest.id,
+            });
+            return;
+        }
         const cmd = discovered.manifest.runtime.type === "node" ? "node" : "python";
         const child = spawn(cmd, ["-u", entry], {
             cwd: discovered.folderPath,
-            env: {...process.env},
+            env: pluginProcessEnv({
+                inherited: process.env,
+                pluginId: discovered.manifest.id,
+                token,
+                extra: discovered.manifest.runtime.extraEnv,
+                runtimeEnv: await readRuntimeEnvMap(discovered.manifest.id),
+            }),
             stdio: "pipe",
         });
         children.set(serviceName, child);

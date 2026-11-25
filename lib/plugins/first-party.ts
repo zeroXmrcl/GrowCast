@@ -1,9 +1,14 @@
+import {stat} from "node:fs/promises";
 import {pathToFileURL} from "node:url";
 import {containedPluginPath} from "@/lib/plugins/containment";
 import {pluginLogger} from "@/lib/plugins/log";
 import type {DiscoveredPlugin, PluginHostModule} from "@/lib/plugins/types";
 
-const cache = new Map<string, PluginHostModule | null>();
+const cache = new Map<string, {stamp: string; loaded: PluginHostModule}>();
+
+export function invalidateHostModule(pluginId: string): void {
+    cache.delete(pluginId);
+}
 
 export function _resetHostModuleCacheForTests(): void {
     cache.clear();
@@ -40,20 +45,40 @@ function hostCandidates(plugin: DiscoveredPlugin): string[] {
     return [...new Set([dist, ...fromSpec].filter((candidate): candidate is string => Boolean(candidate)))];
 }
 
-export async function loadHostModule(plugin: DiscoveredPlugin): Promise<PluginHostModule | null> {
-    const cached = cache.get(plugin.manifest.id);
-    if (cached !== undefined) {
-        return cached;
+async function moduleStamp(candidates: string[], stamp?: string): Promise<string> {
+    if (stamp) {
+        return stamp;
     }
-    for (const candidate of hostCandidates(plugin)) {
+    const parts: string[] = [];
+    for (const candidate of candidates) {
         try {
-            const href = pathToFileURL(candidate).href;
+            const info = await stat(candidate);
+            const mtimeNs = (info as {mtimeNs?: bigint}).mtimeNs;
+            const mtime = typeof mtimeNs === "bigint" ? mtimeNs.toString() : String(Math.trunc(info.mtimeMs));
+            parts.push(`${candidate}\0${info.size}:${mtime}`);
+        } catch {
+            parts.push(`${candidate}\0missing`);
+        }
+    }
+    return parts.join("\n");
+}
+
+export async function loadHostModule(plugin: DiscoveredPlugin, stamp?: string): Promise<PluginHostModule | null> {
+    const candidates = hostCandidates(plugin);
+    const freshness = await moduleStamp(candidates, stamp);
+    const cached = cache.get(plugin.manifest.id);
+    if (cached && cached.stamp === freshness) {
+        return cached.loaded;
+    }
+    for (const candidate of candidates) {
+        try {
+            const href = `${pathToFileURL(candidate).href}?growcast=${encodeURIComponent(freshness)}`;
             const loaded = await import(
                 /* webpackIgnore: true */
                 /* turbopackIgnore: true */
                 href
             ) as PluginHostModule;
-            cache.set(plugin.manifest.id, loaded);
+            cache.set(plugin.manifest.id, {stamp: freshness, loaded});
             return loaded;
         } catch (error) {
             pluginLogger().warn({

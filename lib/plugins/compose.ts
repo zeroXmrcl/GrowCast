@@ -80,10 +80,7 @@ export async function generatePluginsCompose(): Promise<string> {
     const records = await listRegistryRecords();
     const services: string[] = [];
     for (const record of records) {
-        if (!pluginIsActive(record) && record.status !== "enabled") {
-            continue;
-        }
-        if (!record.hashMatches) {
+        if (!pluginIsActive(record) || !record.hashMatches) {
             continue;
         }
         const discovered = await findDiscoveredPlugin(record.id);

@@ -7,7 +7,7 @@
   "description": "Vendor-agnostic solar energy split: grid vs solar, house vs tent. First adapter: FENECON FEMS / OpenEMS.",
   "homepage": "https://github.com/zeroXmrcl/GrowCast",
   "repository": "https://github.com/zeroXmrcl/GrowCast",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "runtime": {
     "type": "docker",
     "dockerfile": "Dockerfile",

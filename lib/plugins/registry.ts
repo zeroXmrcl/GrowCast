@@ -2,8 +2,10 @@ import {mkdir, readFile, stat} from "node:fs/promises";
 import {isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {discoverPlugins, findDiscoveredPlugin} from "@/lib/plugins/discovery";
+import {invalidateHostModule} from "@/lib/plugins/first-party";
 import {hashPluginFolder, hashesEqual, pluginFolderSignature} from "@/lib/plugins/hash";
 import {pluginLogger} from "@/lib/plugins/log";
+import {PLUGIN_FILES_CHANGED_ERROR} from "@/lib/plugins/messages";
 import {pluginDataDir, pluginRegistryFile, pluginTokensFile, pluginsRoot} from "@/lib/plugins/paths";
 import {pluginHasToken, mintPluginToken, revokePluginToken} from "@/lib/plugins/tokens";
 import type {
@@ -175,6 +177,7 @@ export async function installPlugin(pluginId: string, now = new Date()): Promise
     };
     await mkdir(pluginDataDir(pluginId), {recursive: true});
     await writeRegistryFile(file);
+    invalidateHostModule(pluginId);
     pluginLogger().info({event: "plugin.installed", plugin_id: pluginId, hash});
     const record = await getRegistryRecord(pluginId);
     if (!record) {
@@ -209,6 +212,7 @@ export async function enablePlugin(pluginId: string, now = new Date()): Promise<
     };
     await mkdir(pluginDataDir(pluginId), {recursive: true});
     await writeRegistryFile(file);
+    invalidateHostModule(pluginId);
     pluginLogger().info({event: "plugin.enabled", plugin_id: pluginId, hash});
     const record = await getRegistryRecord(pluginId);
     if (!record) {
@@ -234,6 +238,7 @@ export async function pausePlugin(
         pausedAt: now.toISOString(),
     };
     await writeRegistryFile(file);
+    invalidateHostModule(pluginId);
     pluginLogger().warn({event: "plugin.paused", plugin_id: pluginId, reason});
 }
 
@@ -252,6 +257,7 @@ export async function disablePlugin(pluginId: string): Promise<void> {
     };
     await revokePluginToken(pluginId);
     await writeRegistryFile(file);
+    invalidateHostModule(pluginId);
     pluginLogger().info({event: "plugin.disabled", plugin_id: pluginId});
 }
 
@@ -259,11 +265,28 @@ export async function confirmPluginHash(pluginId: string): Promise<PluginRegistr
     return enablePlugin(pluginId);
 }
 
-export function pluginIsActive(record: PluginRegistryRecord | null | undefined): boolean {
-    if (!record || !record.hashMatches || !record.pinnedHash) {
+export function pluginMayExecute(record: PluginRegistryRecord | null | undefined): boolean {
+    if (!record?.installedAt) {
         return false;
     }
-    return record.status === "enabled" || record.status === "healthy";
+    if (record.status !== "enabled" && record.status !== "healthy") {
+        return false;
+    }
+    return Boolean(record.pinnedHash) && record.hashMatches === true;
+}
+
+export function pluginIsActive(record: PluginRegistryRecord | null | undefined): boolean {
+    return pluginMayExecute(record);
+}
+
+export function pluginExecutionError(record: PluginRegistryRecord | null | undefined): string | null {
+    if (record?.pinnedHash && record.hashMatches === false) {
+        return PLUGIN_FILES_CHANGED_ERROR;
+    }
+    if (!pluginMayExecute(record)) {
+        return "Plugin is not enabled";
+    }
+    return null;
 }
 
 export function describePermissions(permissions: PluginPermissions): string[] {

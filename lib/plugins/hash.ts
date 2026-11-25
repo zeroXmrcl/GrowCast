@@ -1,5 +1,5 @@
 import {createHash} from "node:crypto";
-import {readdir, readFile, stat} from "node:fs/promises";
+import {readdir, readFile, readlink, realpath, stat} from "node:fs/promises";
 import path from "node:path";
 
 const SKIP_DIR_NAMES = new Set([
@@ -15,7 +15,21 @@ const SKIP_DIR_NAMES = new Set([
     "dist-release",
 ]);
 
+const NEVER_WALK = new Set([".git"]);
+
 const SKIP_FILE_NAMES = new Set([".ds_store", "thumbs.db"]);
+
+const LOADABLE_EXTENSIONS = new Set([
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".ts",
+    ".tsx",
+    ".mts",
+    ".cts",
+    ".py",
+    ".pyw",
+]);
 
 // host/dist is the bundle production imports. A change there must change this pin.
 function shouldSkipDir(name: string): boolean {
@@ -28,25 +42,93 @@ function shouldSkipFile(name: string): boolean {
     return SKIP_FILE_NAMES.has(lower) || lower === "growcast-hash" || lower.endsWith(".pyc") || lower.endsWith(".pyo");
 }
 
-async function listFiles(root: string, relative = ""): Promise<string[]> {
-    const dir = relative ? path.join(root, relative) : root;
-    const entries = await readdir(dir, {withFileTypes: true});
-    const files: string[] = [];
+function isLoadableFile(name: string): boolean {
+    const lower = name.toLowerCase();
+    const dot = lower.lastIndexOf(".");
+    return dot >= 0 && LOADABLE_EXTENSIONS.has(lower.slice(dot));
+}
+
+type ListedFile = {
+    rel: string;
+    kind: "file" | "link";
+    link?: string;
+};
+
+async function walk(
+    rootReal: string,
+    relative: string,
+    seenDirs: Set<string>,
+    out: ListedFile[],
+    loadableOnly: boolean,
+): Promise<void> {
+    const dir = relative ? path.join(rootReal, relative) : rootReal;
+    let entries;
+    try {
+        entries = await readdir(dir, {withFileTypes: true});
+    } catch {
+        return;
+    }
     for (const entry of entries) {
         const rel = relative ? `${relative}/${entry.name}` : entry.name;
-        if (entry.isDirectory()) {
-            if (shouldSkipDir(entry.name)) {
+        const abs = path.join(dir, entry.name);
+        if (entry.isSymbolicLink()) {
+            let link = "";
+            try {
+                link = await readlink(abs);
+            } catch {
+                link = "";
+            }
+            out.push({rel, kind: "link", link});
+            let real = "";
+            try {
+                real = await realpath(abs);
+            } catch {
                 continue;
             }
-            files.push(...await listFiles(root, rel));
+            const relToRoot = path.relative(rootReal, real);
+            if (relToRoot.startsWith("..") || path.isAbsolute(relToRoot)) {
+                continue;
+            }
+            const info = await stat(real);
+            if (!info.isDirectory() || seenDirs.has(real)) {
+                continue;
+            }
+            seenDirs.add(real);
+            await walk(rootReal, rel, seenDirs, out, shouldSkipDir(entry.name) || loadableOnly);
+            continue;
+        }
+        if (entry.isDirectory()) {
+            if (NEVER_WALK.has(entry.name)) {
+                continue;
+            }
+            if (shouldSkipDir(entry.name)) {
+                await walk(rootReal, rel, seenDirs, out, true);
+                continue;
+            }
+            await walk(rootReal, rel, seenDirs, out, loadableOnly);
             continue;
         }
         if (!entry.isFile() || shouldSkipFile(entry.name)) {
             continue;
         }
-        files.push(rel);
+        if (loadableOnly && !isLoadableFile(entry.name)) {
+            continue;
+        }
+        out.push({rel, kind: "file"});
     }
-    return files;
+}
+
+async function listEntries(root: string): Promise<ListedFile[]> {
+    let rootReal = root;
+    try {
+        rootReal = await realpath(root);
+    } catch {
+        return [];
+    }
+    const out: ListedFile[] = [];
+    await walk(rootReal, "", new Set([rootReal]), out, false);
+    out.sort((a, b) => a.rel.localeCompare(b.rel) || a.kind.localeCompare(b.kind));
+    return out;
 }
 
 type HashCacheEntry = {signature: string; hash: string};
@@ -64,20 +146,43 @@ function stampOf(info: {size: number; mtimeNs?: bigint; mtimeMs: number}): strin
 
 /** Cheap identity of the hashed files. Content is read again only when this changes. */
 export async function pluginFolderSignature(folderPath: string): Promise<string> {
-    const files = (await listFiles(folderPath)).sort((a, b) => a.localeCompare(b));
+    const entries = await listEntries(folderPath);
     const parts: string[] = [];
-    for (const rel of files) {
-        const info = await stat(path.join(folderPath, rel));
-        parts.push(`${rel}\0${stampOf(info)}`);
+    for (const entry of entries) {
+        const abs = path.join(folderPath, entry.rel);
+        if (entry.kind === "link") {
+            let stamp = "missing";
+            try {
+                stamp = stampOf(await stat(abs));
+            } catch {
+                stamp = "missing";
+            }
+            parts.push(`link\0${entry.rel}\0${entry.link ?? ""}\0${stamp}`);
+            continue;
+        }
+        const info = await stat(abs);
+        parts.push(`file\0${entry.rel}\0${stampOf(info)}`);
     }
     return parts.join("\n");
 }
 
 async function hashListed(folderPath: string, signature: string): Promise<string> {
-    const files = signature.length === 0 ? [] : signature.split("\n").map((line) => line.split("\0")[0] ?? "");
+    const lines = signature.length === 0 ? [] : signature.split("\n");
     const outer = createHash("sha256");
-    for (const rel of files) {
+    for (const line of lines) {
+        const [kind, rel = "", third = "", fourth = ""] = line.split("\0");
         const abs = path.join(folderPath, rel);
+        if (kind === "link") {
+            outer.update("link");
+            outer.update("\0");
+            outer.update(rel);
+            outer.update("\0");
+            outer.update(third);
+            outer.update("\0");
+            outer.update(fourth);
+            outer.update("\n");
+            continue;
+        }
         const info = await stat(abs);
         const inner = createHash("sha256");
         inner.update(await readFile(abs));

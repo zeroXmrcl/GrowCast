@@ -5,7 +5,7 @@ import type {PluginExports} from "@/lib/plugins/types";
 export async function pluginIdForExport(key: keyof PluginExports): Promise<string | null> {
     const records = await listRegistryRecords();
     for (const record of records) {
-        if (!pluginIsActive(record) && !(record.status === "enabled" && record.hashMatches)) {
+        if (!pluginIsActive(record)) {
             continue;
         }
         const discovered = await findDiscoveredPlugin(record.id);

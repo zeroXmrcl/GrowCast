@@ -2,7 +2,7 @@ import {isRecord} from "@/lib/coerce";
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
 import {loadHostModule} from "@/lib/plugins/first-party";
 import {ingestPluginPayload} from "@/lib/plugins/ingest";
-import {getRegistryRecord, pluginIsActive} from "@/lib/plugins/registry";
+import {getRegistryRecord, pluginExecutionError, pluginMayExecute} from "@/lib/plugins/registry";
 import {requireMeshAuthThrottled} from "@/lib/mesh-throttle";
 import {logMeshPluginUnknown} from "@/lib/logging/security-events";
 
@@ -25,13 +25,18 @@ export async function meshPluginGetResponse(
     }
 
     const discovered = await findDiscoveredPlugin(pluginId);
+    const record = await getRegistryRecord(pluginId);
     const compat = discovered?.manifest.compat;
     if (!discovered || !(compat?.meshSettings || compat?.meshState)) {
         logMeshPluginUnknown({plugin_id: pluginId});
         return noStoreJson({error: "Unknown plugin"}, 404);
     }
+    const blocked = pluginExecutionError(record);
+    if (!record || blocked || !pluginMayExecute(record)) {
+        return noStoreJson({error: blocked ?? "Plugin is not enabled"}, 409);
+    }
 
-    const host = await loadHostModule(discovered);
+    const host = await loadHostModule(discovered, record.currentHash);
     if (host?.meshSettings) {
         try {
             const data = await host.meshSettings();
@@ -71,11 +76,12 @@ export async function meshPluginStatePostResponse(
     }
 
     const record = await getRegistryRecord(pluginId);
-    if (!pluginIsActive(record) && record?.status !== "enabled") {
-        return noStoreJson({error: "Plugin is not enabled"}, 409);
+    const blocked = pluginExecutionError(record);
+    if (!record || blocked || !pluginMayExecute(record)) {
+        return noStoreJson({error: blocked ?? "Plugin is not enabled"}, 409);
     }
 
-    const host = await loadHostModule(discovered);
+    const host = await loadHostModule(discovered, record.currentHash);
     if (host?.fromMeshState) {
         const mapped = host.fromMeshState(raw);
         if ("error" in mapped) {

@@ -36,7 +36,7 @@ export async function reconcilePluginRuntimes(): Promise<void> {
     await scanAndPauseChangedPlugins();
     const records = await listRegistryRecords();
     for (const record of records) {
-        if (pluginIsActive(record) || (record.status === "enabled" && record.hashMatches)) {
+        if (pluginIsActive(record)) {
             await writeRuntimeEnv(record.id);
             await startPluginRuntime(record.id);
         } else if (record.status === "paused" || record.status === "disabled") {
@@ -72,5 +72,5 @@ export async function bootPluginHost(): Promise<void> {
 
 export async function pluginEnabledAndPinned(pluginId: string): Promise<boolean> {
     const record = await getRegistryRecord(pluginId);
-    return pluginIsActive(record) || (record?.status === "enabled" && record.hashMatches);
+    return pluginIsActive(record);
 }

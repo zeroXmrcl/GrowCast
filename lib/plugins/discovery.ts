@@ -1,6 +1,6 @@
 import {readdir, readFile, stat} from "node:fs/promises";
 import path from "node:path";
-import {pluginIdMatchesParam} from "@/lib/plugins/ids";
+import {pluginIdMatchesParam, pluginUrlSlug} from "@/lib/plugins/ids";
 import {parsePluginManifest} from "@/lib/plugins/manifest";
 import {pluginsRoot} from "@/lib/plugins/paths";
 import type {DiscoveredPlugin, PluginManifest} from "@/lib/plugins/types";
@@ -103,7 +103,30 @@ async function discoverPluginsUncached(root: string): Promise<DiscoveryResult> {
         seen.set(manifest.id, entry.name);
         plugins.push({folderName: entry.name, folderPath, manifest});
     }
-    return {plugins, issues};
+    const bySlug = new Map<string, string[]>();
+    for (const plugin of plugins) {
+        const slug = pluginUrlSlug(plugin.manifest.id);
+        const owners = bySlug.get(slug) ?? [];
+        owners.push(plugin.folderName);
+        bySlug.set(slug, owners);
+    }
+    const blocked = new Set<string>();
+    for (const [slug, owners] of bySlug) {
+        if (owners.length < 2) {
+            continue;
+        }
+        for (const folderName of owners) {
+            blocked.add(folderName);
+            issues.push({
+                folderName,
+                error: `duplicate url slug "${slug}" (${owners.join(", ")})`,
+            });
+        }
+    }
+    return {
+        plugins: plugins.filter((plugin) => !blocked.has(plugin.folderName)),
+        issues,
+    };
 }
 
 export async function findDiscoveredPlugin(pluginId: string): Promise<DiscoveredPlugin | null> {

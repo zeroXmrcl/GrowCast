@@ -1,6 +1,6 @@
 import {discoverPlugins} from "@/lib/plugins/discovery";
 import {loadHostModule} from "@/lib/plugins/first-party";
-import {listRegistryRecords, pluginIsActive} from "@/lib/plugins/registry";
+import {getRegistryRecord, listRegistryRecords, pluginMayExecute} from "@/lib/plugins/registry";
 import type {
     PluginArchiveContext,
     PluginClimatePoint,
@@ -22,10 +22,10 @@ export async function listActiveHosts(): Promise<ActiveHost[]> {
     const hosts: ActiveHost[] = [];
     for (const plugin of plugins) {
         const record = records.find((item) => item.id === plugin.manifest.id);
-        if (!pluginIsActive(record) && !(record?.status === "enabled" && record.hashMatches)) {
+        if (!pluginMayExecute(record)) {
             continue;
         }
-        const host = await loadHostModule(plugin);
+        const host = await loadHostModule(plugin, record?.currentHash);
         if (host) {
             hosts.push({pluginId: plugin.manifest.id, host});
         }
@@ -131,8 +131,12 @@ async function loadInstallerHost(stepId: string): Promise<PluginHostModule | nul
     if (!plugin) {
         return null;
     }
+    const record = await getRegistryRecord(plugin.manifest.id);
+    if (!pluginMayExecute(record)) {
+        return null;
+    }
     const {loadHostModule} = await import("@/lib/plugins/first-party");
-    return loadHostModule(plugin);
+    return loadHostModule(plugin, record?.currentHash);
 }
 
 export async function runPluginSetup(stepId: string, formData: FormData): Promise<PluginSetupResult | null> {

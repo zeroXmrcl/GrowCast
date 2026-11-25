@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {mkdir, writeFile} from "node:fs/promises";
+import {mkdir, symlink, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {describe, it} from "node:test";
 import {enablePlugin, getRegistryRecord, listRegistryRecords} from "../../lib/plugins/registry.ts";
@@ -96,6 +96,28 @@ describe("plugin hash pin", {concurrency: 1}, () => {
             await writeFile(path.join(dir, "timelapse", "out.mp4"), "mp4");
             const after = await hashPluginFolder(dir);
             assert.equal(after, before);
+            await writeFile(path.join(dir, "snapshots", "payload.js"), "export const loaded = true\n");
+            assert.notEqual(await hashPluginFolder(dir), after);
+            await mkdir(path.join(dir, "node_modules", "evil"), {recursive: true});
+            await writeFile(path.join(dir, "node_modules", "evil", "index.js"), "export const loaded = true\n");
+            assert.notEqual(await hashPluginFolder(dir), after);
+        });
+    });
+
+    it("includes symlink targets so a retarget changes the pin", async () => {
+        await withPluginHarness(async ({writePlugin}) => {
+            const dir = await writePlugin("example", SAMPLE_MANIFEST);
+            const host = path.join(dir, "host");
+            await mkdir(host, {recursive: true});
+            await writeFile(path.join(host, "safe.js"), "export const kind = \"safe\"\n");
+            await writeFile(path.join(host, "other.js"), "export const kind = \"other\"\n");
+            await symlink("safe.js", path.join(host, "entry.js"));
+            const before = await hashPluginFolder(dir);
+            assert.match(await pluginFolderSignature(dir), /host\/entry\.js/);
+            const {rm} = await import("node:fs/promises");
+            await rm(path.join(host, "entry.js"));
+            await symlink("other.js", path.join(host, "entry.js"));
+            assert.notEqual(await hashPluginFolder(dir), before);
         });
     });
 

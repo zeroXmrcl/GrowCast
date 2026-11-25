@@ -1,6 +1,6 @@
 import {containedPluginPath} from "@/lib/plugins/containment";
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
-import {getRegistryRecord, pluginIsActive} from "@/lib/plugins/registry";
+import {getRegistryRecord, pluginMayExecute} from "@/lib/plugins/registry";
 
 export function isSafePluginAssetPath(relative: string): boolean {
     if (!relative || relative.includes("\0")) {
@@ -22,7 +22,7 @@ export async function resolvePluginAsset(pluginId: string, relative: string): Pr
     if (!discovered || !record) {
         return null;
     }
-    if (!pluginIsActive(record) && !(record.status === "enabled" && record.hashMatches)) {
+    if (!pluginMayExecute(record)) {
         return null;
     }
     return containedPluginPath(discovered.folderPath, relative);
