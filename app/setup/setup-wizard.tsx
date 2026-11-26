@@ -7,59 +7,81 @@ import {
     confirmSetupCodeAction,
     finishSetupAction,
     setupCameraAction,
-    setupClimateAction,
-    setupTimelapseAction,
-    setupTwitchAction,
+    setupPluginAction,
     skipInstallerStepAction,
 } from "@/app/setup/actions";
-import {ControllerList} from "@/app/setup/controller-list";
-import {INSTALLER_COPY, installerDoneRows} from "@/app/setup/installer-copy";
+import {INSTALLER_COPY} from "@/app/setup/installer-copy";
 import {InstallerRail} from "@/app/setup/installer-rail";
 import {PasswordLine} from "@/app/setup/password-line";
 import {SetupCodeInput} from "@/app/setup/setup-code-input";
 import {passwordLineMet} from "./password-meter";
 import {normalizeUsernameInput, validateUsernameInput} from "@/lib/admin-username";
+import {PluginChoicePicker, PluginSetupFields} from "@/lib/plugins/setup-ui";
+import {installerDoneRows, type InstallerPlanStep} from "@/lib/plugins/installer-plan";
+import type {InstallerProgress} from "@/lib/plugins/installer-plan";
 import {SETUP_CODE_LENGTH} from "@/lib/setup-code";
-import type {InstallerInitial, InstallerOptionalStep, InstallerStepId} from "@/lib/installer-steps";
-import type {SpiderFarmerController} from "@/lib/spider-farmer-login";
+import type {PluginSetupResult} from "@/lib/plugins/types";
 
-type WizardStep = InstallerStepId | "climate-list" | "done";
+type WizardStep = string;
+type ControllerChoice = NonNullable<Extract<PluginSetupResult, {ok: false}>["choose"]>[number];
 
 function prefersReducedMotion(): boolean {
     return typeof window !== "undefined"
         && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function railCurrent(step: WizardStep): InstallerStepId | "done" {
-    if (step === "climate-list") return "climate";
-    if (step === "done") return "done";
-    return step;
+function nextAfter(plan: InstallerPlanStep[], currentId: string): string {
+    const idx = plan.findIndex((step) => step.id === currentId);
+    if (idx < 0 || idx >= plan.length - 1) {
+        return "done";
+    }
+    return plan[idx + 1]?.id ?? "done";
 }
 
-function stepCopy(step: WizardStep): {eyebrow: string; title: string; line: string} {
-    if (step === "climate-list") {
-        return {
-            eyebrow: INSTALLER_COPY.climate.eyebrow,
-            title: INSTALLER_COPY.climate.listTitle,
-            line: "",
-        };
-    }
+function keepLine(keepValues: Record<string, string>): string {
+    const email = Object.entries(keepValues).find(([name, value]) => /email/i.test(name) && value)?.[1];
+    return email ? `Signed in as ${email}.` : "";
+}
+
+function stepCopy(
+    step: WizardStep,
+    plan: InstallerPlanStep[],
+): {eyebrow: string; title: string; line: string} {
     if (step === "done") {
         return INSTALLER_COPY.done;
     }
-    return INSTALLER_COPY[step];
+    if (step === "authenticate") {
+        return INSTALLER_COPY.authenticate;
+    }
+    if (step === "admin") {
+        return INSTALLER_COPY.admin;
+    }
+    if (step === "camera") {
+        return INSTALLER_COPY.camera;
+    }
+    const found = plan.find((item) => item.id === step);
+    if (found) {
+        return {eyebrow: found.label, title: found.title, line: found.line};
+    }
+    return INSTALLER_COPY.done;
 }
 
-export function SetupWizard({initial}: {initial: InstallerInitial}) {
+export function SetupWizard({initial}: {initial: InstallerProgress}) {
     const router = useRouter();
+    const plan = initial.steps;
+    const railSteps = plan.filter((step) => step.id !== "authenticate").map((step) => ({
+        id: step.id,
+        label: step.label,
+    }));
     const runGate = useRef(false);
     const goGeneration = useRef(0);
     const goTimeouts = useRef<number[]>([]);
     const goRafs = useRef<number[]>([]);
 
     const [step, setStep] = useState<WizardStep>(initial.step);
-    const [finished, setFinished] = useState<ReadonlySet<InstallerStepId>>(() => new Set(initial.finished));
+    const [finished, setFinished] = useState<ReadonlySet<string>>(() => new Set(initial.finished));
     const [skipped, setSkipped] = useState<string[]>(initial.skipped);
+    const [details, setDetails] = useState<Record<string, string | null>>(initial.details);
     const [message, setMessage] = useState("");
     const [saving, setSaving] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -69,25 +91,21 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
     const [codeInvalid, setCodeInvalid] = useState(false);
     const [username, setUsername] = useState(initial.username);
     const [password, setPassword] = useState("");
-    const [sfEmail, setSfEmail] = useState("");
-    const [sfPassword, setSfPassword] = useState("");
-    const [controllers, setControllers] = useState<SpiderFarmerController[]>([]);
+    const [controllers, setControllers] = useState<ControllerChoice[]>([]);
     const [selectedSerial, setSelectedSerial] = useState("");
+    const [chooseFor, setChooseFor] = useState<string | null>(null);
+    const [keepValues, setKeepValues] = useState<Record<string, string>>({});
     const [streamUrl, setStreamUrl] = useState("");
-    const [twitchKey, setTwitchKey] = useState("");
-    const [twitchLogin, setTwitchLogin] = useState("");
-    const [rtspStream, setRtspStream] = useState("");
-    const [interval, setIntervalMinutes] = useState("15");
-    const [timezone, setTimezone] = useState("UTC");
 
-    const [savedUsername, setSavedUsername] = useState(initial.username);
-    const [climateLabel, setClimateLabel] = useState<string | null>(initial.climate);
-    const [savedStreamUrl, setSavedStreamUrl] = useState<string | null>(initial.streamUrl);
-    const [twitchSaved, setTwitchSaved] = useState(initial.twitchSaved);
-    const [timelapseLabel, setTimelapseLabel] = useState<string | null>(initial.timelapse);
-
-    const copy = stepCopy(step);
-    const climateLine = step === "climate-list" ? `Signed in as ${sfEmail}.` : copy.line;
+    const chooseStep = plan.find((item) => item.id === chooseFor);
+    const copy = chooseFor
+        ? {
+            eyebrow: chooseStep?.label ?? "Setup",
+            title: chooseStep?.choose?.title ?? "Choose one",
+            line: chooseStep?.choose?.line || keepLine(keepValues),
+        }
+        : stepCopy(step, plan);
+    const line = copy.line;
     const adminReady = validateUsernameInput(normalizeUsernameInput(username))
         && passwordLineMet(password);
     const codeReady = setupCode.replace(/[^a-z0-9]/gi, "").length === SETUP_CODE_LENGTH;
@@ -117,7 +135,7 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
         });
     }
 
-    function markFinished(id: InstallerStepId) {
+    function markFinished(id: string) {
         setFinished((prev) => new Set(prev).add(id));
     }
 
@@ -169,7 +187,7 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
         }
     }
 
-    async function skip(id: InstallerOptionalStep, next: WizardStep) {
+    async function skip(id: string) {
         await runLocked(async () => {
             const result = await skipInstallerStepAction(id);
             if (!result.ok) {
@@ -177,7 +195,8 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                 return;
             }
             setSkipped((prev) => (prev.includes(id) ? prev : [...prev, id]));
-            await go(next, false);
+            setChooseFor(null);
+            await go(nextAfter(plan, id), false);
         });
     }
 
@@ -209,52 +228,9 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                 setMessage(result.message);
                 return;
             }
-            setSavedUsername(username);
+            setUsername(username);
             markFinished("admin");
-            await go("climate", true);
-        });
-    }
-
-    async function onClimate(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        await runLocked(async () => {
-            const formData = new FormData();
-            formData.set("sfEmail", sfEmail);
-            formData.set("sfPassword", sfPassword);
-            const result = await setupClimateAction(formData);
-            if (result.ok) {
-                setClimateLabel(result.detail ?? null);
-                markFinished("climate");
-                await go("camera", true);
-                return;
-            }
-            if (result.choose?.length) {
-                setControllers(result.choose);
-                setSelectedSerial(result.choose[0]?.serial ?? "");
-                await go("climate-list", true);
-                return;
-            }
-            setMessage(result.message);
-        });
-    }
-
-    async function onClimatePick(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        if (!selectedSerial) return;
-        await runLocked(async () => {
-            const formData = new FormData();
-            formData.set("sfEmail", sfEmail);
-            formData.set("sfPassword", sfPassword);
-            formData.set("sfSerial", selectedSerial);
-            const result = await setupClimateAction(formData);
-            if (!result.ok) {
-                setMessage(result.message);
-                return;
-            }
-            const chosen = controllers.find((controller) => controller.serial === selectedSerial);
-            setClimateLabel(result.detail ?? chosen?.name ?? null);
-            markFinished("climate");
-            await go("camera", true);
+            await go(nextAfter(plan, "admin"), true);
         });
     }
 
@@ -268,44 +244,42 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                 setMessage(result.message);
                 return;
             }
-            setSavedStreamUrl(streamUrl.trim());
+            setDetails((prev) => ({...prev, camera: streamUrl.trim()}));
             markFinished("camera");
-            await go("twitch", true);
+            await go(nextAfter(plan, "camera"), true);
         });
     }
 
-    async function onTwitch(event: FormEvent<HTMLFormElement>) {
+    async function onPlugin(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        const form = event.currentTarget;
+        const stepId = String(new FormData(form).get("stepId") ?? step);
         await runLocked(async () => {
-            const formData = new FormData();
-            formData.set("twitchKey", twitchKey);
-            formData.set("twitchLogin", twitchLogin);
-            const result = await setupTwitchAction(formData);
-            if (!result.ok) {
-                setMessage(result.message);
+            const formData = new FormData(form);
+            const planStep = plan.find((item) => item.id === stepId);
+            const keepNames = planStep?.choose?.keepNames ?? [];
+            if (keepNames.length > 0) {
+                const nextKeep: Record<string, string> = {};
+                for (const name of keepNames) {
+                    nextKeep[name] = String(formData.get(name) ?? "");
+                }
+                setKeepValues(nextKeep);
+            }
+            const result = await setupPluginAction(formData);
+            if (result.ok) {
+                setChooseFor(null);
+                setDetails((prev) => ({...prev, [stepId]: result.detail ?? prev[stepId] ?? "Saved"}));
+                markFinished(stepId);
+                await go(nextAfter(plan, stepId), true);
                 return;
             }
-            setTwitchSaved(true);
-            markFinished("twitch");
-            await go("timelapse", true);
-        });
-    }
-
-    async function onTimelapse(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        await runLocked(async () => {
-            const formData = new FormData();
-            formData.set("rtspStream", rtspStream);
-            formData.set("interval", interval);
-            formData.set("timezone", timezone);
-            const result = await setupTimelapseAction(formData);
-            if (!result.ok) {
-                setMessage(result.message);
+            if (result.choose?.length) {
+                setControllers(result.choose);
+                setSelectedSerial(result.choose[0]?.serial ?? "");
+                setChooseFor(stepId);
                 return;
             }
-            setTimelapseLabel(`Camera address, ${interval} min, ${timezone}`);
-            markFinished("timelapse");
-            await go("done", true);
+            setMessage(result.message);
         });
     }
 
@@ -322,6 +296,7 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
 
     const saveClass = saving ? "installer-save saving" : "installer-save";
     const saveLabel = saving ? "Saving" : undefined;
+    const pluginStep = plan.find((item) => item.id === step && item.kind === "plugin");
 
     return (
         <main
@@ -333,7 +308,11 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                 color: "#f3f4f6",
             }}
         >
-            <InstallerRail current={railCurrent(step)} finished={finished}/>
+            <InstallerRail
+                current={chooseFor ?? step}
+                finished={finished}
+                steps={railSteps}
+            />
             <div style={{display: "flex", alignItems: "center", minWidth: 0}}>
                 <div
                     className={copyClass}
@@ -348,39 +327,28 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                         style={{
                             margin: 0,
                             fontSize: 12,
-                            letterSpacing: "0.06em",
+                            letterSpacing: "0.04em",
                             textTransform: "uppercase",
                             color: "#8a8a91",
                         }}
                     >
                         {copy.eyebrow}
                     </p>
-                    <h1 style={{margin: "12px 0 0", fontSize: 32, fontWeight: 600, color: "#f3f4f6", lineHeight: 1.2}}>
-                        {copy.title}
-                    </h1>
-                    <p style={{margin: "12px 0 0", fontSize: 14, color: "#b4b4b8", lineHeight: 1.45}}>
-                        {climateLine}
-                    </p>
-
+                    <h1 style={{margin: "8px 0 12px", fontSize: 28, fontWeight: 600}}>{copy.title}</h1>
+                    {line ? <p style={{margin: 0, fontSize: 14, color: "#c4c4c8"}}>{line}</p> : null}
                     {message ? (
-                        <p
-                            className="installer-error mt-6 rounded-md border border-amber-900/70 bg-amber-950/30 px-3 py-2 text-sm text-amber-200"
-                            role="alert"
-                        >
-                            {message}
-                        </p>
+                        <p style={{margin: "16px 0 0", fontSize: 14, color: "#fca5a5"}}>{message}</p>
                     ) : null}
 
                     {step === "authenticate" ? (
                         <form className="mt-8 space-y-5" onSubmit={onAuthenticate}>
                             <SetupCodeInput
                                 value={setupCode}
-                                onChange={(next) => {
-                                    setSetupCode(next);
+                                invalid={codeInvalid}
+                                onChange={(value) => {
+                                    setSetupCode(value);
                                     setCodeInvalid(false);
                                 }}
-                                disabled={locked}
-                                invalid={codeInvalid}
                             />
                             <PrimaryButton className={saveClass} disabled={locked || !codeReady}>
                                 {saveLabel ?? "Continue"}
@@ -399,78 +367,29 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                                     onChange={setUsername}
                                 />
                             </InstallerField>
-                            <div>
-                                <InstallerField label="Password" value={password} htmlFor="installer-password">
-                                    <InstallerInput
-                                        id="installer-password"
-                                        name="password"
-                                        type="password"
-                                        autoComplete="new-password"
-                                        value={password}
-                                        onChange={setPassword}
-                                        underlined={false}
-                                    />
-                                </InstallerField>
-                                <PasswordLine value={password}/>
-                            </div>
+                            <InstallerField label="Password" value={password} htmlFor="installer-password">
+                                <InstallerInput
+                                    id="installer-password"
+                                    name="password"
+                                    type="password"
+                                    autoComplete="new-password"
+                                    value={password}
+                                    onChange={setPassword}
+                                    underlined={false}
+                                />
+                            </InstallerField>
+                            <PasswordLine value={password} />
                             <PrimaryButton className={saveClass} disabled={locked || !adminReady}>
                                 {saveLabel ?? "Continue"}
                             </PrimaryButton>
                         </form>
                     ) : null}
 
-                    {step === "climate" ? (
-                        <form className="mt-8 space-y-5" onSubmit={onClimate}>
-                            <InstallerField label="Email" value={sfEmail} htmlFor="installer-sf-email">
-                                <InstallerInput
-                                    id="installer-sf-email"
-                                    name="sfEmail"
-                                    type="email"
-                                    autoComplete="username"
-                                    value={sfEmail}
-                                    onChange={setSfEmail}
-                                />
-                            </InstallerField>
-                            <InstallerField label="Password" value={sfPassword} htmlFor="installer-sf-password">
-                                <InstallerInput
-                                    id="installer-sf-password"
-                                    name="sfPassword"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    value={sfPassword}
-                                    onChange={setSfPassword}
-                                />
-                            </InstallerField>
-                            <PrimaryButton className={saveClass} disabled={locked}>
-                                {saveLabel ?? "Continue"}
-                            </PrimaryButton>
-                            <SkipButton disabled={locked} onClick={() => void skip("climate", "camera")}>
-                                Skip climate
-                            </SkipButton>
-                        </form>
-                    ) : null}
-
-                    {step === "climate-list" ? (
-                        <form className="mt-8 space-y-5" onSubmit={onClimatePick}>
-                            <ControllerList
-                                controllers={controllers}
-                                selected={selectedSerial}
-                                onSelect={setSelectedSerial}
-                            />
-                            <PrimaryButton className={saveClass} disabled={locked || !selectedSerial}>
-                                {saveLabel ?? "Use this controller"}
-                            </PrimaryButton>
-                            <SkipButton disabled={locked} onClick={() => void skip("climate", "camera")}>
-                                Skip climate
-                            </SkipButton>
-                        </form>
-                    ) : null}
-
                     {step === "camera" ? (
                         <form className="mt-8 space-y-5" onSubmit={onCamera}>
-                            <InstallerField label="HLS source" value={streamUrl} htmlFor="installer-stream-url">
+                            <InstallerField label="Camera URL" value={streamUrl} htmlFor="installer-stream">
                                 <InstallerInput
-                                    id="installer-stream-url"
+                                    id="installer-stream"
                                     name="streamUrl"
                                     autoComplete="off"
                                     value={streamUrl}
@@ -480,91 +399,50 @@ export function SetupWizard({initial}: {initial: InstallerInitial}) {
                             <PrimaryButton className={saveClass} disabled={locked}>
                                 {saveLabel ?? "Continue"}
                             </PrimaryButton>
-                            <SkipButton disabled={locked} onClick={() => void skip("camera", "twitch")}>
+                            <SkipButton disabled={locked} onClick={() => void skip("camera")}>
                                 Skip camera
                             </SkipButton>
                         </form>
                     ) : null}
 
-                    {step === "twitch" ? (
-                        <form className="mt-8 space-y-5" onSubmit={onTwitch}>
-                            <InstallerField label="Stream key" value={twitchKey} htmlFor="installer-twitch-key">
-                                <InstallerInput
-                                    id="installer-twitch-key"
-                                    name="twitchKey"
-                                    type="password"
-                                    autoComplete="off"
-                                    value={twitchKey}
-                                    onChange={setTwitchKey}
-                                />
-                            </InstallerField>
-                            <InstallerField label="Twitch channel" value={twitchLogin} htmlFor="installer-twitch-login">
-                                <InstallerInput
-                                    id="installer-twitch-login"
-                                    name="twitchLogin"
-                                    autoComplete="off"
-                                    value={twitchLogin}
-                                    onChange={setTwitchLogin}
-                                />
-                            </InstallerField>
-                            <PrimaryButton className={saveClass} disabled={locked}>
-                                {saveLabel ?? "Continue"}
-                            </PrimaryButton>
-                            <SkipButton disabled={locked} onClick={() => void skip("twitch", "timelapse")}>
-                                Skip Twitch
-                            </SkipButton>
-                        </form>
+                    {pluginStep && !chooseFor ? (
+                        <PluginSetupFields
+                            stepId={pluginStep.id}
+                            fields={pluginStep.fields}
+                            locked={locked}
+                            saveClass={saveClass}
+                            saveLabel={saveLabel}
+                            onSubmit={onPlugin}
+                            onSkip={() => void skip(pluginStep.id)}
+                        />
                     ) : null}
 
-                    {step === "timelapse" ? (
-                        <form className="mt-8 space-y-5" onSubmit={onTimelapse}>
-                            <InstallerField label="Camera RTSP URL" value={rtspStream} htmlFor="installer-rtsp">
-                                <InstallerInput
-                                    id="installer-rtsp"
-                                    name="rtspStream"
-                                    autoComplete="off"
-                                    value={rtspStream}
-                                    onChange={setRtspStream}
-                                />
-                            </InstallerField>
-                            <InstallerField label="Interval (minutes)" value={interval} htmlFor="installer-interval">
-                                <InstallerInput
-                                    id="installer-interval"
-                                    name="interval"
-                                    type="number"
-                                    autoComplete="off"
-                                    value={interval}
-                                    onChange={setIntervalMinutes}
-                                />
-                            </InstallerField>
-                            <InstallerField label="Timezone" value={timezone} htmlFor="installer-timezone">
-                                <InstallerInput
-                                    id="installer-timezone"
-                                    name="timezone"
-                                    autoComplete="off"
-                                    value={timezone}
-                                    onChange={setTimezone}
-                                />
-                            </InstallerField>
-                            <PrimaryButton className={saveClass} disabled={locked}>
-                                {saveLabel ?? "Continue"}
-                            </PrimaryButton>
-                            <SkipButton disabled={locked} onClick={() => void skip("timelapse", "done")}>
-                                Skip timelapse
-                            </SkipButton>
-                        </form>
+                    {chooseFor ? (
+                        <PluginChoicePicker
+                            stepId={chooseFor}
+                            keepValues={keepValues}
+                            valueName={chooseStep?.choose?.valueName ?? "serial"}
+                            choices={controllers}
+                            selected={selectedSerial}
+                            onSelect={setSelectedSerial}
+                            locked={locked}
+                            saveClass={saveClass}
+                            saveLabel={saveLabel}
+                            onSubmit={onPlugin}
+                        />
                     ) : null}
 
                     {step === "done" ? (
                         <div className="mt-8 space-y-5">
                             <ul style={{listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 12}}>
                                 {installerDoneRows({
-                                    username: savedUsername,
-                                    climate: climateLabel,
-                                    streamUrl: savedStreamUrl,
-                                    twitchSaved,
-                                    timelapse: timelapseLabel,
+                                    username: initial.username || username,
                                     skipped,
+                                    steps: plan,
+                                    details: {
+                                        ...details,
+                                        camera: details.camera ?? (streamUrl || initial.streamUrl),
+                                    },
                                 }).map((row) => (
                                     <li key={row.label} style={{display: "flex", flexDirection: "column", gap: 2}}>
                                         <span style={{fontSize: 12, color: "#8a8a91", textTransform: "uppercase", letterSpacing: "0.04em"}}>
@@ -646,7 +524,6 @@ function InstallerInput({
             autoComplete={autoComplete}
             value={value}
             onChange={(event) => onChange(event.target.value)}
-            required={name !== "twitchLogin"}
             style={{
                 display: "block",
                 width: "100%",

@@ -7,7 +7,7 @@ import {
     enqueueOverlayAlert,
     replayableOverlayAlerts,
     type OverlayAlert,
-} from "../lib/overlay-alert.ts";
+} from "../plugins/restream/host/overlay-alert.ts";
 
 function alert(id: string): OverlayAlert {
     return {id, kind: "manual", title: "Alert", body: id, createdAt: 0};

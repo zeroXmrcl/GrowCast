@@ -18,6 +18,7 @@ import {
   getAdminSessionStore,
 } from "@/lib/admin-session-store";
 import {shouldUseSecureCookie} from "@/lib/request-trust";
+import {bindPackedPluginAdminAuth} from "@/lib/plugins/packed-host-auth";
 import {
   extractClientIp,
   extractUserAgent,
@@ -649,6 +650,11 @@ export async function loginAdmin(
     }
     if (gate.state === "mismatch") {
       logAuthTotpUnavailable({ reason: "account_mismatch", ...client });
+      return {
+        ok: false,
+        code: "totp_unavailable",
+        reason: "Authenticator data could not be read.",
+      };
     }
     if (gate.state === "enrolled") {
       const totpKey = secondFactorAttemptKey(clientKey);
@@ -809,3 +815,5 @@ export async function requireAdmin(): Promise<void> {
     }
   });
 }
+
+bindPackedPluginAdminAuth(() => isAdminAuthenticated());

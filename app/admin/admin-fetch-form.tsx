@@ -37,9 +37,9 @@ export function AdminFetchForm({
                     && typeof payload.notice === "string"
                     ? payload.notice
                     : "";
-                if (isAdminNoticeId(notice)) {
+                if (notice) {
                     publishAdminNotice(notice);
-                    if (response.ok && adminNoticeRefreshes(notice)) {
+                    if (response.ok && (isAdminNoticeId(notice) ? adminNoticeRefreshes(notice) : true)) {
                         form.reset();
                         router.refresh();
                     }

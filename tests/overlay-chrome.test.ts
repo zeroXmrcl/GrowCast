@@ -5,8 +5,6 @@ import {describe, it} from "node:test";
 import {navItemsFor, type NavFlags} from "../lib/site-nav.ts";
 
 const allOn: NavFlags = {
-    showEnergy: true,
-    showGallery: true,
     showPastGrows: true,
     showSettingsLink: true,
 };
@@ -26,7 +24,7 @@ describe("overlay chrome", () => {
     });
 
     it("does not add Overlay to public nav", () => {
-        for (const pathname of ["/", "/gallery", "/energy", "/overlay", "/admin"]) {
+        for (const pathname of ["/", "/p/timelapse/gallery", "/p/ggs/energy", "/overlay", "/admin"]) {
             const items = navItemsFor(pathname, allOn);
             assert.equal(
                 items.some((item) => item.href === "/overlay" || item.label === "Overlay"),
@@ -50,7 +48,7 @@ describe("overlay chrome", () => {
     });
 
     it("does not add Program to public nav", () => {
-        for (const pathname of ["/", "/gallery", "/energy", "/overlay", "/admin", "/program"]) {
+        for (const pathname of ["/", "/p/timelapse/gallery", "/p/ggs/energy", "/overlay", "/admin", "/p/restream/program"]) {
             const items = navItemsFor(pathname, allOn);
             assert.equal(
                 items.some((item) => item.href === "/program" || item.label === "Program"),
@@ -63,11 +61,11 @@ describe("overlay chrome", () => {
 
     it("builds the OBS URL from the public origin helper on the Stream page", () => {
         const pageSrc = readFileSync(
-            path.join(process.cwd(), "app", "admin", "stream", "page.tsx"),
+            path.join(process.cwd(), "app", "admin", "plugins", "[pluginId]", "[[...path]]", "page.tsx"),
             "utf8",
         );
         const fieldsSrc = readFileSync(
-            path.join(process.cwd(), "app", "admin", "stream-fields.tsx"),
+            path.join(process.cwd(), "app", "admin", "overlay-fields.tsx"),
             "utf8",
         );
         assert.match(pageSrc, /shareCardMetadataOrigin/);
@@ -96,7 +94,7 @@ describe("overlay chrome", () => {
             "utf8",
         );
         assert.equal(hudSrc.includes("shouldPollEnergy"), false);
-        assert.match(hudSrc, /ENERGY_POLL_MS/);
+        assert.doesNotMatch(hudSrc, /ENERGY_POLL_MS/);
         assert.match(hudSrc, /OVERLAY_GROW_POLL_MS/);
     });
 
@@ -109,10 +107,6 @@ describe("overlay chrome", () => {
             path.join(process.cwd(), "components", "overlay-hud.tsx"),
             "utf8",
         );
-        const energySrc = readFileSync(
-            path.join(process.cwd(), "components", "overlay-energy.tsx"),
-            "utf8",
-        );
         const identitySrc = readFileSync(
             path.join(process.cwd(), "components", "overlay-identity.tsx"),
             "utf8",
@@ -121,19 +115,15 @@ describe("overlay chrome", () => {
         assert.match(shellSrc, /overlayHudScaleStyle/);
         assert.match(shellSrc, /OverlayCamera/);
         assert.doesNotMatch(shellSrc, /<iframe/);
-        assert.match(shellSrc, /look\??:/);
+        assert.match(shellSrc, /lookCss\?:/);
         assert.match(shellSrc, /absolute inset-0 z-0/);
         assert.match(hudSrc, /overlayStream/);
         assert.match(hudSrc, /overlayScalePct/);
-        assert.match(hudSrc, /climateTick=\{grow\.climateTick\}/);
         assert.match(hudSrc, /extra\?:/);
         assert.match(hudSrc, /\{extra\}/);
-        assert.match(hudSrc, /look\??:/);
-        assert.match(hudSrc, /look=\{look/);
+        assert.match(hudSrc, /lookCss/);
+        assert.match(hudSrc, /lookCss=\{lookCss/);
         assert.doesNotMatch(hudSrc, /OVERLAY_ORDER_MUSIC/);
-        assert.match(energySrc, /overlayEnergyGrowWindow/);
-        assert.match(energySrc, /label="24h"/);
-        assert.doesNotMatch(energySrc, /Today/);
         assert.match(identitySrc, /overlayIdentityView/);
         assert.doesNotMatch(identitySrc, /health/i);
     });
@@ -171,34 +161,16 @@ describe("overlay chrome", () => {
         assert.ok(wrap >= 0 && cam > wrap);
         assert.ok(hud > cam);
         assert.ok(mark > hud);
-        assert.match(shellSrc, /EMPTY_CAMERA_LOOK/);
-        assert.match(shellSrc, /look=\{look\}/);
+        assert.match(shellSrc, /lookCss/);
+        assert.match(shellSrc, /lookCss=\{lookCss\}/);
     });
 
     it("public overlay SSR-feeds saved look, not a draft listener", () => {
         const page = readFileSync(path.join(process.cwd(), "app", "overlay", "page.tsx"), "utf8");
-        assert.match(page, /readCameraLook/);
-        assert.match(page, /look=\{/);
+        assert.match(page, /loadPluginOverlayLook/);
+        assert.match(page, /lookCss=/);
         assert.doesNotMatch(page, /growcast-camera-look/);
         assert.doesNotMatch(page, /addEventListener\("message"/);
-    });
-
-    it("omits the LIVE badge and shows humidity to one decimal", () => {
-        const climateSrc = readFileSync(
-            path.join(process.cwd(), "components", "overlay-climate.tsx"),
-            "utf8",
-        );
-        assert.doesNotMatch(climateSrc, /overlay-live-dot/);
-        assert.doesNotMatch(climateSrc, /["']LIVE["']/);
-        assert.doesNotMatch(climateSrc, /climateBadge/);
-        assert.match(climateSrc, /growcast-stale-pulse/);
-        assert.match(climateSrc, /formatHumidityPctTenths/);
-        assert.doesNotMatch(climateSrc, /formatHumidityPct\(/);
-        assert.match(climateSrc, /growcast-alert-pulse/);
-        assert.match(climateSrc, /climateMetricAlerts/);
-        assert.match(climateSrc, /ClimatePickerValue/);
-        assert.match(climateSrc, /climateTick === "picker"/);
-        assert.doesNotMatch(climateSrc, /grow\.climate/);
     });
 
     it("plays HLS in OverlayCamera with the GrowCast reconnect cover", () => {
@@ -220,8 +192,8 @@ describe("overlay chrome", () => {
         assert.match(cam, /<video/);
         assert.match(cam, /muted/);
         assert.match(cam, /playsInline/);
-        assert.match(cam, /cameraLookFilterCss/);
-        assert.match(cam, /cameraLookTemperatureStyle/);
+        assert.match(cam, /lookCss/);
+        assert.match(cam, /temperatureStyle/);
         assert.match(cam, /filter:/);
         assert.match(cam, /Hls\.isSupported/);
         assert.match(cam, /loadSource/);

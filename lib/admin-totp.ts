@@ -391,6 +391,25 @@ function ignoreMissing(error: unknown): void {
   }
 }
 
+export function totpSecurityStatus(
+  state: TotpInspection["state"],
+  hasPending: boolean,
+): "off" | "pending" | "enrolled" | "corrupt" | "stale" {
+  if (state === "corrupt") {
+    return "corrupt";
+  }
+  if (state === "mismatch") {
+    return "stale";
+  }
+  if (state === "enrolled") {
+    return "enrolled";
+  }
+  if (hasPending) {
+    return "pending";
+  }
+  return "off";
+}
+
 export function inspectAdminTotp(account: TotpAccount, sessionSecret: string): TotpInspection {
   const loaded = loadActive(account, sessionSecret);
   if (loaded.state === "enrolled") {

@@ -1,0 +1,94 @@
+"use client";
+
+import {useEffect, useState} from "react";
+import {WORKSPACE_HAIRLINE} from "@/lib/workspace";
+
+type TimelapsePlayerProps = {
+    /**
+     * Explicit video URL (archived grows). `null` renders the empty state,
+     * `undefined` falls back to the live timelapse.
+     */
+    videoUrl?: string | null;
+    /** Flush 16:9 inside the gallery sheet. Archived grows keep the card. */
+    sheet?: boolean;
+};
+
+export default function TimelapsePlayer({videoUrl, sheet = false}: TimelapsePlayerProps = {}) {
+    const [liveUrl, setLiveUrl] = useState<string | null | undefined>(videoUrl);
+
+    useEffect(() => {
+        if (videoUrl !== undefined) {
+            return;
+        }
+        let cancelled = false;
+        void fetch("/api/data/plugins/timelapse/gallery-index", {cache: "no-store"})
+            .then((response) => (response.ok ? response.json() : null))
+            .then((raw) => {
+                if (cancelled) {
+                    return;
+                }
+                if (raw && typeof raw.videoUrl === "string") {
+                    setLiveUrl(raw.videoUrl);
+                } else if (raw) {
+                    setLiveUrl(null);
+                }
+            })
+            .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
+    }, [videoUrl]);
+
+    const resolvedUrl = videoUrl !== undefined ? videoUrl : (liveUrl ?? null);
+
+    if (!resolvedUrl) {
+        return (
+            <section className={sheet ? `border-b p-4 ${WORKSPACE_HAIRLINE}` : "p-4"}>
+                <h2 className="font-medium text-zinc-900 dark:text-zinc-100">
+                    Timelapse
+                </h2>
+                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    No timelapse created yet.
+                </p>
+            </section>
+        );
+    }
+
+    if (sheet) {
+        return (
+            <div className={`border-b bg-black ${WORKSPACE_HAIRLINE}`}>
+                <video
+                    controls
+                    preload="metadata"
+                    className="block h-auto w-full"
+                    aria-label="Grow timelapse"
+                >
+                    <source src={resolvedUrl} type="video/mp4"/>
+                    Your browser does not support video.
+                </video>
+            </div>
+        );
+    }
+
+    return (
+        <section className="space-y-5">
+            <div className="flex items-end justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Timelapse</h2>
+                </div>
+            </div>
+
+            <div className="overflow-hidden rounded-3xl border border-zinc-800 bg-black shadow-2xl">
+                <video
+                    controls
+                    preload="metadata"
+                    className="block h-auto w-full"
+                    aria-label="Grow timelapse"
+                >
+                    <source src={resolvedUrl} type="video/mp4"/>
+                    Your browser does not support video.
+                </video>
+            </div>
+        </section>
+    );
+}

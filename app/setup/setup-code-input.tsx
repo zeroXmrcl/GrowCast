@@ -57,7 +57,6 @@ export function SetupCodeInput({value, onChange, disabled, invalid}: SetupCodeIn
         <div
             role="group"
             aria-label="Setup code"
-            aria-invalid={invalid || undefined}
             style={{display: "flex", alignItems: "center", gap: 10}}
         >
             {[0, 1].map((group) => (
@@ -83,6 +82,7 @@ export function SetupCodeInput({value, onChange, disabled, invalid}: SetupCodeIn
                                     spellCheck={false}
                                     autoComplete={index === 0 ? "one-time-code" : "off"}
                                     aria-label={`Setup code character ${index + 1} of ${SETUP_CODE_LENGTH}`}
+                                    aria-invalid={invalid || undefined}
                                     maxLength={SETUP_CODE_LENGTH}
                                     disabled={disabled}
                                     value={slots[index] ?? ""}

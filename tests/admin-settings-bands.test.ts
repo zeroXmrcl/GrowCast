@@ -19,41 +19,32 @@ describe("admin settings bands", () => {
     const actions = src(path.join("app", "admin", "actions.ts"));
 
     it("returns a notice from page saves instead of redirecting", () => {
-        for (const [name, nextName] of [
-            ["saveGrowAction", "saveStreamAction"],
-            ["saveStreamAction", "saveTimelapseAction"],
-            ["saveTimelapseAction", "saveEnergyAction"],
-            ["saveEnergyAction", "connectSpiderFarmerAction"],
-        ]) {
-            const body = actionBody(actions, name, nextName);
-            assert.match(body, /notice: "saved"/);
-            assert.match(body, /save_failed/);
-            assert.doesNotMatch(body, /redirect\(/);
-        }
-        assert.match(actionBody(actions, "saveGrowAction", "saveStreamAction"), /stale_grow/);
-        assert.match(actionBody(actions, "saveStreamAction", "saveTimelapseAction"), /stale_grow/);
-        assert.match(actionBody(actions, "saveGrowAction", "saveStreamAction"), /saveAdminSettings/);
-        assert.doesNotMatch(actionBody(actions, "saveGrowAction", "saveStreamAction"), /saveEnergyAdminSettings/);
-        assert.match(actionBody(actions, "saveTimelapseAction", "saveEnergyAction"), /saveTimelapseAdminSettings/);
-        assert.match(actionBody(actions, "saveEnergyAction", "connectSpiderFarmerAction"), /saveEnergyAdminSettings/);
+        const grow = actionBody(actions, "saveGrowAction", "completeGrowAction");
+        assert.match(grow, /notice: "saved"/);
+        assert.match(grow, /save_failed/);
+        assert.match(grow, /stale_grow/);
+        assert.match(grow, /saveAdminSettings/);
+        assert.doesNotMatch(grow, /redirect\(/);
+        const timelapse = src(path.join("plugins", "timelapse", "admin", "actions.ts"));
+        assert.match(timelapse, /notice: "saved"/);
     });
 
     it("returns a notice from immediate actions", () => {
-        assert.match(actions, /notice: "twitch_started"/);
-        assert.match(actions, /notice: "twitch_stopped"/);
-        assert.match(actions, /twitch_key_saved/);
-        assert.match(actions, /notice: "audio_saved"/);
-        assert.match(actions, /notice: "alerts_saved"/);
-        assert.match(actions, /notice: "spider_farmer_connected"/);
+        const restream = src(path.join("plugins", "restream", "admin", "actions.ts"));
+        assert.match(restream, /notice: "twitch_started"/);
+        assert.match(restream, /notice: "twitch_stopped"/);
+        assert.match(restream, /twitch_key_saved/);
+        assert.match(restream, /notice: "audio_saved"/);
+        assert.match(restream, /notice: "alerts_saved"/);
         assert.match(actions, /"archived"/);
         const complete = actions.slice(actions.indexOf("export async function completeGrowAction"));
         assert.doesNotMatch(complete, /redirect\(/);
     });
 
     it("keeps OAuth and a missing archive on a notice redirect", () => {
-        const callback = src(path.join("app", "admin", "stream", "twitch-callback", "route.ts"));
-        assert.match(callback, /withNotice\("\/admin\/stream", "twitch_connected"\)/);
-        assert.match(callback, /withNotice\("\/admin\/stream", "twitch_oauth_failed"\)/);
+        const callback = src(path.join("plugins", "restream", "host", "oauth-http.ts"));
+        assert.match(callback, /twitch_connected/);
+        assert.match(callback, /twitch_oauth_failed/);
         const editor = src(path.join("app", "admin", "archives", "[archiveId]", "page.tsx"));
         assert.match(editor, /withNotice\("\/admin\/archives", "archive_not_found"\)/);
     });
@@ -73,9 +64,8 @@ describe("admin settings bands", () => {
     it("does not render the top flash notice on settings pages", () => {
         for (const rel of [
             path.join("app", "admin", "page.tsx"),
-            path.join("app", "admin", "stream", "page.tsx"),
-            path.join("app", "admin", "timelapse", "page.tsx"),
-            path.join("app", "admin", "ggs", "page.tsx"),
+            path.join("plugins", "restream", "admin", "page.tsx"),
+            path.join("plugins", "timelapse", "admin", "page.tsx"),
             path.join("app", "admin", "archives", "page.tsx"),
             path.join("app", "admin", "archives", "[archiveId]", "page.tsx"),
         ]) {
@@ -90,25 +80,19 @@ describe("admin settings bands", () => {
         }
         assert.match(src(path.join("app", "admin", "media-manager.tsx")), /title="Pictures"/);
         const stream = [
-            src(path.join("app", "admin", "stream", "page.tsx")),
-            src(path.join("app", "admin", "stream-fields.tsx")),
-            src(path.join("app", "admin", "restream-panel.tsx")),
-            src(path.join("app", "admin", "camera-look-panel.tsx")),
-            src(path.join("app", "admin", "music-panel.tsx")),
-            src(path.join("app", "admin", "alerts-panel.tsx")),
+            src(path.join("plugins", "restream", "admin", "page.tsx")),
+            src(path.join("app", "admin", "overlay-fields.tsx")),
+            src(path.join("plugins", "restream", "admin", "restream-panel.tsx")),
+            src(path.join("plugins", "restream", "admin", "camera-look-panel.tsx")),
+            src(path.join("plugins", "restream", "admin", "music-panel.tsx")),
+            src(path.join("plugins", "restream", "admin", "alerts-panel.tsx")),
         ].join("\n");
         for (const title of ["Program", "Mixer", "Twitch", "Camera look", "Music", "Alerts", "OBS", "Design", "Camera"]) {
             assert.match(stream, new RegExp(`title="${title}"`));
         }
-        const timelapse = src(path.join("app", "admin", "timelapse-fields.tsx"));
+        const timelapse = src(path.join("plugins", "timelapse", "admin", "timelapse-fields.tsx"));
         for (const title of ["Capture", "Triggers", "Output"]) {
             assert.match(timelapse, new RegExp(`title="${title}"`));
-        }
-        const ggs = src(path.join("app", "admin", "ggs", "page.tsx"))
-            + src(path.join("app", "admin", "spider-farmer-panel.tsx"))
-            + src(path.join("app", "admin", "energy-fields.tsx"));
-        for (const title of ["Spider Farmer", "Sidecar", "Devices", "Energy"]) {
-            assert.match(ggs, new RegExp(`title="${title}"`));
         }
         const archives = src(path.join("app", "admin", "archives", "page.tsx"))
             + src(path.join("app", "admin", "complete-grow-panel.tsx"));
@@ -122,9 +106,13 @@ describe("admin settings bands", () => {
 
     it("lists those bands in the open sidebar section", () => {
         const nav = src(path.join("app", "admin", "admin-section-nav.tsx"));
-        for (const label of ["General", "Program", "Capture", "Spider Farmer", "Complete Grow", "Danger Zone"]) {
+        for (const label of ["General", "OBS", "Complete Grow", "Danger Zone"]) {
             assert.match(nav, new RegExp(`label: "${label}"`));
         }
+        const restream = src(path.join("plugins", "restream", "plugin.json"));
+        const timelapse = src(path.join("plugins", "timelapse", "plugin.json"));
+        assert.match(restream, /"label": "Program"/);
+        assert.match(timelapse, /"label": "Capture"/);
         assert.match(nav, /admin-nav-roll-open/);
     });
 

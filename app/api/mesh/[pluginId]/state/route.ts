@@ -1,4 +1,4 @@
-import {liveClimateIngestResponse} from "@/lib/ggs-live-http";
+import {meshPluginStatePostResponse} from "@/lib/mesh-http";
 import {withRequestLog} from "@/lib/logging";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,6 @@ type MeshStateRouteContext = {
 export async function POST(request: Request, {params}: MeshStateRouteContext) {
     return withRequestLog(request, "/api/mesh/:pluginId/state", async () => {
         const {pluginId} = await params;
-        return liveClimateIngestResponse(request, pluginId);
+        return meshPluginStatePostResponse(request, pluginId);
     });
 }

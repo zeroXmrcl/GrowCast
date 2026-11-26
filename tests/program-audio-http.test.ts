@@ -4,14 +4,14 @@ import {mkdtemp, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {writeAlertsSettings} from "../lib/restream/alerts-settings.ts";
-import {writeRestreamAudio} from "../lib/restream/audio.ts";
-import {ensureRestreamCaptureToken} from "../lib/restream/capture.ts";
-import {saveMusicFile} from "../lib/restream/music-files.ts";
+import {writeAlertsSettings} from "../plugins/restream/host/alerts-settings.ts";
+import {writeRestreamAudio} from "../plugins/restream/host/audio.ts";
+import {ensureRestreamCaptureToken} from "../plugins/restream/host/capture.ts";
+import {saveMusicFile} from "../plugins/restream/host/music-files.ts";
 import {
     programAudioGetResponse,
     programMusicGetResponse,
-} from "../lib/restream/program-http.ts";
+} from "../plugins/restream/host/program-http.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
     const dir = await mkdtemp(path.join(os.tmpdir(), "growcast-pa-"));
@@ -347,13 +347,11 @@ describe("programMusicGetResponse", () => {
 
 describe("program audio wiring", () => {
     it("polls from a hidden audio client and keeps admin auth in the route", () => {
-        const client = src(path.join("components", "program-audio.tsx"));
-        const scene = src(path.join("components", "program-scene.tsx"));
-        const audioRoute = src(path.join("app", "api", "overlay", "program-audio", "route.ts"));
-        const musicRoute = src(
-            path.join("app", "api", "overlay", "music", "[filename]", "route.ts"),
-        );
-        const http = src(path.join("lib", "restream", "program-http.ts"));
+        const client = src(path.join("plugins", "restream", "ui", "program-audio.tsx"));
+        const scene = src(path.join("plugins", "restream", "ui", "program-scene.tsx"));
+        const host = src(path.join("plugins", "restream", "host", "index.ts"));
+        const redirects = src(path.join("lib", "plugins", "legacy-redirects.ts"));
+        const http = src(path.join("plugins", "restream", "host", "program-http.ts"));
 
         assert.match(client, /"use client"/);
         assert.match(client, /\/api\/overlay\/program-audio/);
@@ -379,14 +377,13 @@ describe("program audio wiring", () => {
         assert.doesNotMatch(client, /Date\.now\(\)/);
         assert.match(scene, /ProgramAudio/);
 
-        assert.match(audioRoute, /withRequestLog/);
-        assert.match(audioRoute, /isAdminAuthenticated/);
-        assert.match(audioRoute, /programAudioGetResponse/);
+        assert.match(host, /isAdminAuthenticated/);
+        assert.match(host, /programAudioGetResponse/);
         assert.match(http, /readAlertsSettings/);
         assert.match(http, /stingEnabled/);
-        assert.match(musicRoute, /withRequestLog/);
-        assert.match(musicRoute, /isAdminAuthenticated/);
-        assert.match(musicRoute, /programMusicGetResponse/);
+        assert.match(redirects, /\/api\/overlay\/program-audio/);
+        assert.match(redirects, /\/api\/overlay\/music\/:filename/);
+        assert.match(host, /programMusicGetResponse/);
         assert.doesNotMatch(http, /isAdminAuthenticated/);
         assert.doesNotMatch(http, /next\/headers/);
     });

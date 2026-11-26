@@ -8,23 +8,20 @@ import {
     coverShouldHide,
     hlsPlaylistUrl,
 } from "@/lib/overlay-hls";
-import {
-    EMPTY_CAMERA_LOOK,
-    cameraLookFilterCss,
-    cameraLookTemperatureStyle,
-    type CameraLook,
-} from "@/lib/restream/camera-look";
+import type {CSSProperties} from "react";
 
 const RETRY_MS = 2000;
 const CLOCK_MS = 250;
 
 export default function OverlayCamera({
     streamUrl,
-    look = EMPTY_CAMERA_LOOK,
+    lookCss,
+    temperatureStyle,
     title = "Grow stream",
 }: {
     streamUrl: string;
-    look?: CameraLook;
+    lookCss?: string;
+    temperatureStyle?: CSSProperties;
     title?: string;
 }) {
     const playlist = hlsPlaylistUrl(streamUrl);
@@ -198,7 +195,7 @@ export default function OverlayCamera({
         return null;
     }
 
-    const filter = cameraLookFilterCss(look);
+    const filter = lookCss?.trim() ?? "";
 
     return (
         <div className="relative h-full w-full overflow-hidden bg-zinc-950">
@@ -235,7 +232,7 @@ export default function OverlayCamera({
                 <div
                     aria-hidden
                     className="pointer-events-none absolute inset-0"
-                    style={cameraLookTemperatureStyle(look.temperature)}
+                    style={temperatureStyle ?? {display: "none"}}
                 />
             </div>
             <div

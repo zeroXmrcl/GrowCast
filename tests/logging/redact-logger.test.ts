@@ -98,6 +98,15 @@ describe("redact / logger", () => {
     );
   });
 
+  it("sanitizeError includes the filesystem error code", () => {
+    const err = new Error("EACCES: permission denied, mkdir '/app/data/climate/current'");
+    (err as NodeJS.ErrnoException).code = "EACCES";
+    const sanitized = sanitizeError(err);
+    assert.equal(sanitized.code, "EACCES");
+    assert.equal(sanitized.message, "EACCES: permission denied, mkdir '/app/data/climate/current'");
+    assert.equal(sanitized.type, "Error");
+  });
+
   it("sanitizeError handles non-Error values", () => {
     assert.deepEqual(sanitizeError("plain"), {
       type: "Error",

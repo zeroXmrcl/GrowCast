@@ -138,125 +138,30 @@ const NOTICES: Record<AdminNoticeId, NoticeContent> = {
         title: "Delete failed",
         body: "Could not delete the archive. Review logs and try again.",
     },
-    twitch_key_saved: {
+    ai_summary_ready: {
         tone: "success",
-        title: "Twitch key saved",
-        body: "The stream key is stored on the server and is not shown again.",
+        title: "AI Assessment updated",
+        body: "The public card now shows the new score. The plant photo is not published.",
     },
-    twitch_started: {
-        tone: "success",
-        title: "Twitch restream requested",
-        body: "The sidecar will go live when the restream service is running.",
-    },
-    twitch_stopped: {
-        tone: "success",
-        title: "Twitch restream stop requested",
-        body: "The sidecar will end the Twitch push.",
-    },
-    twitch_need_key: {
-        tone: "warning",
-        title: "No Twitch stream key",
-        body: "Save a stream key before starting the 24/7 restream.",
-    },
-    twitch_login_invalid: {
-        tone: "warning",
-        title: "Invalid Twitch channel",
-        body: "Use letters, digits, and underscore only.",
-    },
-    audio_saved: {
-        tone: "success",
-        title: "Mix updated",
-        body: "Volume and pause were saved for the program.",
-    },
-    alert_sent: {
-        tone: "success",
-        title: "Alert sent",
-        body: "Done.",
-    },
-    alerts_saved: {
-        tone: "success",
-        title: "Alerts updated",
-        body: "Event toggles and alert sound were saved.",
-    },
-    twitch_connected: {
-        tone: "success",
-        title: "Twitch connected",
-        body: "Follow, sub, raid, and bits alerts can use this account.",
-    },
-    twitch_oauth_failed: {
+    ai_summary_failed: {
         tone: "danger",
-        title: "Twitch connect failed",
-        body: "Could not connect Twitch. Check the client id and secret, then try again.",
+        title: "AI Assessment failed",
+        body: "xAI did not answer or the JSON was invalid. Check the logs and try again later.",
     },
-    twitch_need_connect: {
+    ai_summary_rate_limited: {
         tone: "warning",
-        title: "Connect Twitch",
-        body: "Connect Twitch to enable follow, sub, raid, and bits alerts.",
+        title: "Please wait",
+        body: "Regenerate is limited to once every 10 minutes so unused API spend stays low.",
     },
-    music_uploaded: {
-        tone: "success",
-        title: "Tracks uploaded",
-        body: "Done.",
-    },
-    music_uploaded_partial: {
+    ai_summary_no_key: {
         tone: "warning",
-        title: "Some tracks were skipped",
-        body: "Valid files were saved. Others were rejected (type, size, or the 30-file cap).",
+        title: "XAI_API_KEY is missing",
+        body: "Set XAI_API_KEY in .env.local (server only) and restart GrowCast.",
     },
-    music_deleted: {
-        tone: "success",
-        title: "Track deleted",
-        body: "Done.",
-    },
-    music_invalid_file: {
-        tone: "danger",
-        title: "Could not save the track",
-        body: "Use mp3, ogg, wav, or m4a (max 20 MB). Filenames cannot include path characters.",
-    },
-    music_too_many_files: {
+    ai_summary_daily_cap: {
         tone: "warning",
-        title: "Too many tracks",
-        body: "Upload at most 30 files.",
-    },
-    music_payload_too_large: {
-        tone: "warning",
-        title: "Upload too large",
-        body: "The request exceeded the 100 MB upload limit. Choose fewer or smaller tracks and try again.",
-    },
-    spider_farmer_connected: {
-        tone: "success",
-        title: "Spider Farmer connected",
-        body: "The controller was saved. The climate sidecar reloads on its own.",
-    },
-    spider_farmer_missing: {
-        tone: "warning",
-        title: "Email and password required",
-        body: "Enter the Spider Farmer email and password.",
-    },
-    spider_farmer_bad_password: {
-        tone: "danger",
-        title: "Password rejected",
-        body: "Spider Farmer did not accept that password.",
-    },
-    spider_farmer_unknown_account: {
-        tone: "danger",
-        title: "Account not registered",
-        body: "That email is not a Spider Farmer account. Sign in with Apple cannot be used here.",
-    },
-    spider_farmer_failed: {
-        tone: "danger",
-        title: "Spider Farmer login failed",
-        body: "Could not log in or save the sidecar env. Review logs and try again.",
-    },
-    spider_farmer_choose: {
-        tone: "warning",
-        title: "Choose a controller",
-        body: "This account has more than one controller. Pick the climate controller and log in again.",
-    },
-    spider_farmer_no_controller: {
-        tone: "warning",
-        title: "No controller found",
-        body: "Spider Farmer accepted the login and returned no controllers.",
+        title: "Daily cap reached",
+        body: "At most 5 xAI calls per Berlin day (scheduler and regenerate combined). Try again tomorrow or check the logs.",
     },
 };
 

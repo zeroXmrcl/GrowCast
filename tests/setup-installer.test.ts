@@ -4,10 +4,16 @@ import {mkdtemp, readFile, rm} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {describe, it} from "node:test";
-import {INSTALLER_COPY, installerDoneRows} from "../app/setup/installer-copy.ts";
+import {INSTALLER_COPY} from "../app/setup/installer-copy.ts";
 import {isSafeHttpUrl} from "../lib/url-policy.ts";
-import {adminSetupDecision, installerCanFinish} from "../lib/installer-ready.ts";
-import {isRtspUrl} from "../lib/timelapse-sidecar-env.ts";
+import {adminSetupDecision} from "../lib/installer-ready.ts";
+import {
+    CORE_INSTALLER_STEPS,
+    installerCanFinish,
+    installerDoneRows,
+    type InstallerPlanStep,
+} from "../lib/plugins/installer.ts";
+import {isRtspUrl} from "../plugins/timelapse/host/timelapse-sidecar-env.ts";
 import {passwordLineMet, passwordLineScale} from "../app/setup/password-meter.ts";
 import {parseSetupCodePaste, setupCodeSlots} from "../lib/setup-code.ts";
 import {readSkippedSteps, writeSkippedStep} from "../lib/setup-account.ts";
@@ -21,26 +27,34 @@ describe("installer copy", () => {
         );
         assert.equal(INSTALLER_COPY.admin.line, "The password needs 12 characters.");
         assert.equal(
-            INSTALLER_COPY.climate.line,
-            "Email and password only. Google or Apple sign-in will not work.",
-        );
-        assert.equal(
             INSTALLER_COPY.camera.line,
             "Paste the MediaMTX HLS source, like http://stream.example.com/growcam/.",
         );
-        assert.equal(INSTALLER_COPY.twitch.line, "Creator Dashboard -> Settings -> Stream.");
-        assert.equal(INSTALLER_COPY.timelapse.line, "Use the camera’s local rtsp:// address.");
         assert.equal(INSTALLER_COPY.done.line, "You can change any of this later in admin settings.");
+        const restream = readFileSync(path.join(process.cwd(), "plugins", "restream", "plugin.json"), "utf8");
+        const timelapse = readFileSync(path.join(process.cwd(), "plugins", "timelapse", "plugin.json"), "utf8");
+        assert.match(restream, /Creator Dashboard -> Settings -> Stream\./);
+        assert.match(timelapse, /Use the camera’s local rtsp:\/\/ address\./);
     });
 
     it("marks skipped climate and keeps a saved camera url", () => {
+        const steps: InstallerPlanStep[] = [
+            ...CORE_INSTALLER_STEPS,
+            {
+                id: "climate",
+                sort: 15,
+                label: "Climate",
+                title: "Connect Spider Farmer",
+                line: "Email and password only.",
+                optional: true,
+                kind: "plugin",
+            },
+        ];
         const rows = installerDoneRows({
             username: "admin",
-            climate: null,
-            streamUrl: "https://stream.example.com/growcam/",
-            twitchSaved: false,
-            timelapse: null,
             skipped: ["climate"],
+            steps,
+            details: {camera: "https://stream.example.com/growcam/"},
         });
         assert.equal(rows.find((row) => row.label === "Climate")?.value, "Skipped");
         assert.equal(rows.find((row) => row.label === "Camera")?.value, "https://stream.example.com/growcam/");
@@ -103,36 +117,56 @@ it("signs back into an existing admin and will not replace it", () => {
     assert.equal(adminSetupDecision("ada", "mallory"), "reject");
 });
 
-it("finishes only after every step is saved or skipped", () => {
+it("finishes only after every optional step is saved or skipped", () => {
+    const steps: InstallerPlanStep[] = [
+        ...CORE_INSTALLER_STEPS,
+        {
+            id: "climate",
+            sort: 15,
+            label: "Climate",
+            title: "Connect Spider Farmer",
+            line: "Email and password only.",
+            optional: true,
+            kind: "plugin",
+        },
+        {
+            id: "twitch",
+            sort: 30,
+            label: "Twitch",
+            title: "Save the stream key",
+            line: "Creator Dashboard",
+            optional: true,
+            kind: "plugin",
+        },
+        {
+            id: "timelapse",
+            sort: 40,
+            label: "Timelapse",
+            title: "Point it at the camera",
+            line: "rtsp",
+            optional: true,
+            kind: "plugin",
+        },
+    ];
     const empty = {
-        hasAdmin: true,
+        username: "admin",
+        finished: [] as string[],
         skipped: [] as string[],
-        climateConfigured: false,
-        streamUrl: "",
-        hasTwitchKey: false,
-        rtsp: "",
+        steps,
     };
-    assert.equal(installerCanFinish({...empty, hasAdmin: false}).ok, false);
-    assert.match(installerCanFinish(empty).message ?? "", /Climate/);
+    assert.equal(installerCanFinish({...empty, username: ""}).ok, false);
+    assert.match(installerCanFinish(empty).message ?? "", /Camera/);
     assert.equal(installerCanFinish({
         ...empty,
         skipped: ["climate", "camera", "twitch", "timelapse"],
     }).ok, true);
     assert.equal(installerCanFinish({
-        hasAdmin: true,
-        skipped: [],
-        climateConfigured: true,
-        streamUrl: "https://stream.example.com/growcam/",
-        hasTwitchKey: true,
-        rtsp: "rtsp://10.0.0.8:554/stream",
+        ...empty,
+        finished: ["climate", "camera", "twitch", "timelapse"],
     }).ok, true);
     assert.match(installerCanFinish({
-        hasAdmin: true,
+        ...empty,
         skipped: ["climate", "camera", "twitch"],
-        climateConfigured: false,
-        streamUrl: "",
-        hasTwitchKey: false,
-        rtsp: "rtsp://growcast:3000/x",
     }).message ?? "", /Timelapse/);
 });
 

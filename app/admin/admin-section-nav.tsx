@@ -19,31 +19,9 @@ const GROW_BANDS = [
     {id: "hardware", label: "Hardware"},
     {id: "socials", label: "Socials"},
     {id: "pictures", label: "Pictures"},
-];
-
-const BROADCAST_BANDS = [
-    {id: "program", label: "Program"},
-    {id: "mixer", label: "Mixer"},
-    {id: "twitch", label: "Twitch"},
-    {id: "camera-look", label: "Camera look"},
-    {id: "music", label: "Music"},
-    {id: "alerts", label: "Alerts"},
     {id: "obs", label: "OBS"},
     {id: "design", label: "Design"},
     {id: "camera", label: "Camera"},
-];
-
-const TIMELAPSE_BANDS = [
-    {id: "capture", label: "Capture"},
-    {id: "triggers", label: "Triggers"},
-    {id: "output", label: "Output"},
-];
-
-const GGS_BANDS = [
-    {id: "spider-farmer", label: "Spider Farmer"},
-    {id: "sidecar", label: "Sidecar"},
-    {id: "devices", label: "Devices"},
-    {id: "energy", label: "Energy"},
 ];
 
 const ARCHIVE_LIST_BANDS = [
@@ -65,18 +43,16 @@ const SECURITY_BANDS = [
     {id: "turn-off", label: "Turn off"},
 ];
 
-function bandsFor(pathname: string, href: string): Array<{id: string; label: string}> {
+function bandsFor(
+    pathname: string,
+    href: string,
+    extra?: Array<{id: string; label: string}>,
+): Array<{id: string; label: string}> {
+    if (extra && extra.length > 0) {
+        return extra;
+    }
     if (href === "/admin") {
         return GROW_BANDS;
-    }
-    if (href === "/admin/stream") {
-        return BROADCAST_BANDS;
-    }
-    if (href === "/admin/timelapse") {
-        return TIMELAPSE_BANDS;
-    }
-    if (href === "/admin/ggs") {
-        return GGS_BANDS;
     }
     if (href === "/admin/archives") {
         return pathname === "/admin/archives" ? ARCHIVE_LIST_BANDS : ARCHIVE_EDITOR_BANDS;
@@ -90,7 +66,7 @@ function bandsFor(pathname: string, href: string): Array<{id: string; label: str
 export function AdminSectionNav({
     sections,
 }: {
-    sections: Array<{href: string; label: string}>;
+    sections: Array<{href: string; label: string; bands?: Array<{id: string; label: string}>}>;
 }) {
     const pathname = usePathname();
 
@@ -98,7 +74,7 @@ export function AdminSectionNav({
         <nav className="mt-2 flex flex-col gap-1">
             {sections.map((item) => {
                 const active = isAdminNavActive(pathname, item.href);
-                const bands = bandsFor(pathname, item.href);
+                const bands = bandsFor(pathname, item.href, item.bands);
                 return (
                     <div key={item.href}>
                         <NavLink href={item.href} label={item.label} active={active}/>

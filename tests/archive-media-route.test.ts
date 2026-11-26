@@ -85,8 +85,16 @@ describe("archive media GET cache", () => {
             const thumb = await archiveMediaGetResponse(archiveId, "snapshots", "wide.png", {thumb: true});
             assert.equal(thumb.status, 200);
             const thumbHeader = cacheControl(thumb);
-            assert.match(thumbHeader, /immutable/);
-            assert.match(thumbHeader, /31536000/);
+            assert.match(thumbHeader, /private, no-cache/);
+            assert.equal(thumbHeader.includes("immutable"), false);
+            const versioned = await archiveMediaGetResponse(archiveId, "snapshots", "wide.png", {
+                thumb: true,
+                request: new Request(`http://localhost/api/archives/${archiveId}/snapshots/wide.png?v=1`),
+            });
+            assert.equal(versioned.status, 200);
+            const versionedHeader = cacheControl(versioned);
+            assert.match(versionedHeader, /immutable/);
+            assert.match(versionedHeader, /31536000/);
             const meta = await sharp(Buffer.from(await thumb.arrayBuffer())).metadata();
             assert.equal(meta.format, "webp");
             assert.equal(meta.width, 640);

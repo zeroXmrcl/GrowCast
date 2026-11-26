@@ -1,6 +1,5 @@
-import {parseClimateTick, type ClimateTick} from "@/lib/climate-tick";
-import {parseDevicesDesign, type DevicesDesign} from "@/lib/devices-design";
 import {asString, isRecord} from "@/lib/coerce";
+import {parseClimateTick, parseDevicesDesign, type ClimateTick, type DevicesDesign} from "@/lib/overlay-tick";
 import {parseOverlayLayout, type OverlayLayout} from "@/lib/overlay-layout";
 import {parseOverlayStream, type OverlayStream} from "@/lib/overlay-stream";
 import {parseOverlayScalePct} from "@/lib/overlay-scale";

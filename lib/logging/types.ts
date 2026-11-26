@@ -23,8 +23,8 @@ export type SecurityEventName =
   | "authz.denied"
   | "mesh.auth.failed"
   | "mesh.plugin.unknown"
-  | "mesh.ggs.state_ingested"
-  | "mesh.ggs.state_rejected"
+  | "mesh.plugin.state_ingested"
+  | "mesh.plugin.state_rejected"
   | "validation.failed"
   | "http.path_traversal_blocked"
   | "admin.grow.updated"
@@ -70,5 +70,6 @@ export type LogBindings = {
 export type SanitizedError = {
   type: string;
   message: string;
+  code?: string;
   stack?: string;
 };

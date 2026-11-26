@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {captureTokenFromRequest, isProgramAuthorized} from "../lib/restream/program-auth.ts";
-import {isRestreamCaptureAuthorized} from "../lib/restream/capture.ts";
+import {captureTokenFromRequest, isProgramAuthorized} from "../plugins/restream/host/program-auth.ts";
+import {isRestreamCaptureAuthorized} from "../plugins/restream/host/capture.ts";
 
 describe("isProgramAuthorized", () => {
     it("allows capture token or admin session, denies neither", () => {

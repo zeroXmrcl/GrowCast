@@ -27,7 +27,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Image() {
     const still = await resolveShareCardStill();
-    const mtime = await shareCardStillMtimeMs(still ? shareCardStillPath(still) : null);
+    const mtime = await shareCardStillMtimeMs(still ? await shareCardStillPath(still) : null);
     const cacheId = shareCardOgImageId(still, mtime);
     const cached = ogCache.get(cacheId);
     if (cached) {
@@ -48,7 +48,6 @@ export default async function Image() {
                 }}
             >
                 {stillSrc ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={stillSrc}
                         alt=""
@@ -87,7 +86,6 @@ export default async function Image() {
                     }}
                 >
                     <div style={{display: "flex", alignItems: "center", gap: 12}}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={logoSrc} alt="" width={40} height={40} />
                         <div
                             style={{

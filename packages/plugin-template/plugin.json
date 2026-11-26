@@ -1,0 +1,33 @@
+{
+  "id": "community.example",
+  "name": "Example plugin",
+  "author": "Your name",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "description": "Minimal GrowCast plugin template (MIT).",
+  "homepage": "https://github.com/example/growcast-plugin",
+  "repository": "https://github.com/example/growcast-plugin",
+  "license": "MIT",
+  "runtime": {
+    "type": "python",
+    "entry": "backend/main.py"
+  },
+  "ui": {
+    "entry": "ui/dist/index.js",
+    "sdk": "^1.0.0"
+  },
+  "pages": [
+    { "id": "home", "path": "", "title": "Example", "nav": "site", "public": true },
+    { "id": "admin", "path": "", "title": "Example", "nav": "admin" }
+  ],
+  "widgets": [
+    { "id": "stat", "title": "Example stat", "slots": ["dashboard"], "size": "1x1" }
+  ],
+  "permissions": { "network": "none", "publicPages": true },
+  "config": {
+    "intervalS": { "type": "integer", "min": 5, "max": 300, "default": 10 }
+  },
+  "metrics": {
+    "example.value": { "unit": "1", "kind": "gauge", "min": 0 }
+  }
+}

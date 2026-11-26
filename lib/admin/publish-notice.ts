@@ -5,6 +5,7 @@ export const ADMIN_NOTICE_EVENT = "growcast-admin-notice";
 
 export type AdminToastDetail =
     | AdminNoticeId
+    | string
     | {
         title: string;
         body: string;

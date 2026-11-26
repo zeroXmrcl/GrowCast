@@ -34,6 +34,8 @@ export const REDACT_PATHS: string[] = [
   "mqtt_password",
   "client_secret",
   "TWITCH_CLIENT_SECRET",
+  "XAI_API_KEY",
+  "xai_api_key",
   "*.mqttPwd",
   "*.mqttName",
   "*.client_secret",
@@ -71,6 +73,10 @@ export function sanitizeError(error: unknown): SanitizedError {
       type: error.name || "Error",
       message: error.message || "Unknown error",
     };
+    const code = (error as NodeJS.ErrnoException).code;
+    if (typeof code === "string" && code.trim() !== "") {
+      result.code = code.trim();
+    }
     if (typeof error.stack === "string" && error.stack.length > 0) {
       result.stack = error.stack;
     }

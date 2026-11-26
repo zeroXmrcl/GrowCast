@@ -28,6 +28,9 @@ RUN apk add --no-cache su-exec \
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+# plugins/ggs is not in this image. GrowCast-GGS is bind-mounted at runtime
+# and ships ui/dist/style.css for the classes its UI uses.
+COPY --from=builder /app/plugins ./plugins
 # File tracing often omits @img/sharp-libvips-* (libvips-cpp.so). Copy the
 # full Alpine musl prebuilds from the deps/build install.
 COPY --from=builder /app/node_modules/@img ./node_modules/@img
@@ -38,7 +41,7 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
     && chmod +x /usr/local/bin/docker-entrypoint.sh \
-    && mkdir -p /app/public/setup /app/public/yourPictures /app/extensions /app/data \
+    && mkdir -p /app/public/setup /app/public/yourPictures /app/plugins /app/data \
     && chown -R growcast:growcast /app
 
 # Entrypoint starts as root so bind mounts can be chowned, then su-exec to growcast.

@@ -1,9 +1,11 @@
 import {getCurrentGrow} from "@/lib/db";
+import AiSummaryCard from "@/components/ai-summary-card";
 import DashPictures from "@/components/dash-pictures";
-import LiveTentRow from "@/components/live-tent-row";
+import PluginWidgets from "@/components/plugin-widgets";
+import {aiSummaryWidgetEnabled} from "@/lib/ai-summary/config";
+import {assertPublicSafe, readAiSummaryPublic} from "@/lib/ai-summary/public";
 import {formatDateDisplay} from "@/app/(site)/grows/format";
-import {hasGgsLiveUi} from "@/lib/ggs-live-store";
-import {getDaysSince} from "@/utils/daysSinceSeeding";
+import {growAgeDays, isUsableSeededAt} from "@/lib/ai-summary/stage";
 import {listMediaUrls} from "@/lib/media-library";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
@@ -66,12 +68,24 @@ function DayOrNight({label, day, night, unit}: DayOrNightProps) {
 }
 
 export default async function Home() {
-    const [grow, setupImages, showLiveClimate] = await Promise.all([
+    const showAiSummary = aiSummaryWidgetEnabled();
+    const [grow, setupImages, aiSummaryRead] = await Promise.all([
         getCurrentGrow(),
         listMediaUrls("setup"),
-        hasGgsLiveUi(),
+        showAiSummary ? readAiSummaryPublic() : Promise.resolve({summary: null, demo: false}),
     ]);
+    let aiSummary = aiSummaryRead.summary;
+    let aiDemo = aiSummaryRead.demo;
+    if (aiSummary) {
+        try {
+            assertPublicSafe(aiSummary);
+        } catch {
+            aiSummary = null;
+            aiDemo = false;
+        }
+    }
     const details = grow.details;
+    const ageDays = growAgeDays(details.seededAt);
     const socialLinks = [
         {
             label: "YouTube",
@@ -142,7 +156,7 @@ export default async function Home() {
                         night={grow.climate.humidityNight}
                         unit="%"
                     />
-                    {(formatDateDisplay(details.seededAt) != '01.01.2001') && (
+                    {(isUsableSeededAt(details.seededAt)) && (
                         <div className="flex justify-between gap-3">
                             <dt className="text-zinc-500 dark:text-zinc-400">Start Date</dt>
                             <dd className="text-right text-zinc-900 dark:text-zinc-100">{formatDateDisplay(details.seededAt)}</dd>
@@ -157,9 +171,7 @@ export default async function Home() {
                     </div>)}
             </aside>
 
-            {showLiveClimate ? (
-                <LiveTentRow climateTick={grow.climateTick} devicesDesign={grow.devicesDesign}/>
-            ) : null}
+            <PluginWidgets slot="dashboard" />
 
             <section className={`${WORKSPACE_AREA.run} ${WORKSPACE_VT.flow} grid lg:grid-cols-2`}>
                 <article className={`${WORKSPACE_PAD} ${WORKSPACE_SPLIT_MID}`}>
@@ -169,10 +181,12 @@ export default async function Home() {
                             <dt className="text-zinc-500 dark:text-zinc-400">Stage</dt>
                             <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.stage}</dd>
                         </div>
-                        <div className="flex justify-between gap-3">
-                            <dt className="text-zinc-500 dark:text-zinc-400">Age</dt>
-                            <dd className="text-right text-zinc-900 dark:text-zinc-100">{getDaysSince(details.seededAt)} days</dd>
-                        </div>
+                        {ageDays !== null ? (
+                            <div className="flex justify-between gap-3">
+                                <dt className="text-zinc-500 dark:text-zinc-400">Age</dt>
+                                <dd className="text-right text-zinc-900 dark:text-zinc-100">{ageDays} days</dd>
+                            </div>
+                        ) : null}
                         {details.lightSchedule && (<div className="flex justify-between gap-3">
                             <dt className="text-zinc-500 dark:text-zinc-400">Light Schedule</dt>
                             <dd className="text-right text-zinc-900 dark:text-zinc-100">{details.lightSchedule}</dd>
@@ -194,6 +208,10 @@ export default async function Home() {
                     </div>
                 </article>
             </section>
+
+            {showAiSummary ? (
+                <AiSummaryCard summary={aiSummary} demo={aiDemo} />
+            ) : null}
 
             <DashPictures />
 

@@ -7,8 +7,9 @@ import {
     DEFAULT_TIMELAPSE_SETTINGS,
     getTimelapseSettingsRecord,
     TIMELAPSE_PLUGIN_ID,
-} from "../lib/timelapse-settings.ts";
+} from "../plugins/timelapse/host/timelapse-settings.ts";
 import {meshPluginGetResponse} from "../lib/mesh-http.ts";
+import {enablePlugin} from "../lib/plugins/registry.ts";
 import {_resetMeshAuthThrottleForTests} from "../lib/mesh-throttle.ts";
 
 async function withTempDataDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
@@ -48,6 +49,7 @@ describe("getTimelapseSettingsRecord", () => {
 
             await assert.rejects(() => getTimelapseSettingsRecord(), SyntaxError);
             assert.equal(await readFile(pluginPath(dir), "utf8"), "{not-json");
+            await enablePlugin(TIMELAPSE_PLUGIN_ID);
 
             const previousToken = process.env.GROWCAST_MESH_TOKEN;
             process.env.GROWCAST_MESH_TOKEN = "mesh-test-token-not-a-secret";

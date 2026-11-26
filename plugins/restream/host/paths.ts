@@ -1,0 +1,55 @@
+import path from "node:path";
+import {pluginDataDir} from "@/lib/plugins/paths";
+
+/**
+ * The plugin container mounts data/plugins/growcast.restream at /data.
+ * Writes stay in that directory so the container sees them. Legacy
+ * data/restream is only a migration source (scripts/migrate-plugin-data.ts).
+ */
+export function restreamDir(): string {
+    return pluginDataDir("growcast.restream");
+}
+
+export function restreamControlFile(): string {
+    return path.join(restreamDir(), "control.json");
+}
+
+export function restreamKeyFile(): string {
+    return path.join(restreamDir(), "twitch.key");
+}
+
+export function restreamCaptureTokenFile(): string {
+    return path.join(restreamDir(), "capture.token");
+}
+
+export function restreamStatusFile(): string {
+    return path.join(restreamDir(), "status.json");
+}
+
+export function restreamChannelFile(): string {
+    return path.join(restreamDir(), "channel.json");
+}
+
+export function restreamAudioFile(): string {
+    return path.join(restreamDir(), "audio.json");
+}
+
+export function restreamMusicDir(): string {
+    return path.join(restreamDir(), "music");
+}
+
+export function restreamAlertsFile(): string {
+    return path.join(restreamDir(), "alerts.json");
+}
+
+export function restreamCameraLookFile(): string {
+    return path.join(restreamDir(), "camera-look.json");
+}
+
+export function restreamOAuthFile(): string {
+    return path.join(restreamDir(), "twitch-oauth.json");
+}
+
+export function restreamEventsubSecretFile(): string {
+    return path.join(restreamDir(), "eventsub.secret");
+}

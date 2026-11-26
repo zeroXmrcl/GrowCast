@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import {LEGACY_PERMANENT_REDIRECTS} from "./lib/plugins/legacy-redirects";
 
 const isStandaloneBuild = process.env.BUILD_STANDALONE === "1";
 
@@ -50,6 +51,11 @@ const nextConfig: NextConfig = {
             "./node_modules/@img/**/*",
             "./node_modules/webp-wasm/**/*",
             "./node_modules/jpeg-js/**/*",
+            // Plugin host bundles import these Next entry shims at runtime.
+            // Tracing keeps next/dist but drops the top-level shim files.
+            "./node_modules/next/headers.js",
+            "./node_modules/next/navigation.js",
+            "./node_modules/next/cache.js",
         ],
     },
     experimental: {
@@ -97,7 +103,26 @@ const nextConfig: NextConfig = {
                 source: "/program/:path*",
                 headers: PROGRAM_FRAME_HEADERS,
             },
+            {
+                source: "/p/restream/program",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
+            {
+                source: "/p/restream/program/:path*",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
+            {
+                source: "/p/restream/capture",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
+            {
+                source: "/p/restream/capture/:path*",
+                headers: PROGRAM_FRAME_HEADERS,
+            },
         ];
+    },
+    async redirects() {
+        return LEGACY_PERMANENT_REDIRECTS;
     },
 };
 
