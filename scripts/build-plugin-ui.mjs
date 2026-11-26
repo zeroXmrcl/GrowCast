@@ -1,4 +1,4 @@
-import {copyFileSync, existsSync, mkdirSync, readdirSync} from "node:fs";
+import {chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync} from "node:fs";
 import path from "node:path";
 
 const pluginsDir = process.env.GROWCAST_PLUGINS_DIR?.trim()
@@ -62,7 +62,20 @@ for (const folder of folders) {
     if (existsSync(styleSrc)) {
         copyFileSync(styleSrc, path.join(outdir, "style.css"));
     }
+    makeWorldReadable(outdir);
     built += 1;
+}
+
+function makeWorldReadable(target) {
+    const info = statSync(target);
+    if (info.isDirectory()) {
+        chmodSync(target, 0o755);
+        for (const name of readdirSync(target)) {
+            makeWorldReadable(path.join(target, name));
+        }
+        return;
+    }
+    chmodSync(target, 0o644);
 }
 
 console.log(`plugin UI written for ${built} plugin(s) under plugins/*/ui/dist`);

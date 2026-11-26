@@ -1,4 +1,4 @@
-"""GrowCast Solar backend: poll FENECON FEMS and ingest metrics. Missing stays missing."""
+"""GrowCast Solar backend: poll a home energy REST or Modbus API and ingest metrics. Missing stays missing."""
 
 from __future__ import annotations
 
@@ -88,7 +88,13 @@ def main() -> None:
             metrics = read_rest(host, password)
         if metrics:
             plugin.ingest(metrics)
-        plugin.heartbeat(ok=bool(metrics), status="ok" if metrics else "no readings")
+        if not host.strip():
+            status, ok = "unconfigured", False
+        elif metrics:
+            status, ok = "ok", True
+        else:
+            status, ok = "offline", False
+        plugin.heartbeat(ok=ok, status=status)
         time.sleep(max(5, interval))
 
 

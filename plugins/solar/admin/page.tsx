@@ -39,7 +39,7 @@ const PREVIEW_STATE: SolarAdminState = {
         publicBattery: true,
         publicGrid: true,
         publicTentShare: true,
-        host: "192.0.2.10",
+        host: "example.local",
         transport: "rest",
         intervalS: 10,
         pvPeakW: 11000,
@@ -129,12 +129,12 @@ export default function AdminSolarPage({preview = false}: {preview?: boolean} = 
                 </div>
             </AdminBand>
             <AdminBand id="adapter" title="Adapter and system">
-                <p className="mb-3 text-sm text-(--admin-muted)">FENECON FEMS / OpenEMS over LAN REST. Modbus TCP is the fallback.</p>
+                <p className="mb-3 text-sm text-(--admin-muted)">{String(cfg.host ?? "").trim() ? "Home energy system over a local REST JSON API. Modbus/TCP is the fallback." : "Not configured: set the host"}</p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <AdminField label="FEMS IP or hostname">
+                    <AdminField label="Adapter host">
                         <AdminInput value={String(cfg.host ?? "")} onChange={(event) => setField("host", event.currentTarget.value)} />
                     </AdminField>
-                    <AdminField label="FEMS password" hint={loaded.passwordSet ? "Leave blank to keep the stored password." : undefined}>
+                    <AdminField label="API password" hint={loaded.passwordSet ? "Leave blank to keep the stored password." : undefined}>
                         <AdminInput type="password" value={password} placeholder={loaded.passwordSet ? "••••" : ""} onChange={(event) => setPassword(event.currentTarget.value)} />
                     </AdminField>
                     <AdminField label="Transport">

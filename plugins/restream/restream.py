@@ -17,10 +17,8 @@ def _data_dir() -> Path:
     override = os.environ.get("RESTREAM_DATA_DIR")
     if override:
         return Path(override)
-    plugin = Path("/data")
-    if (plugin / "control.json").exists() or (plugin / "twitch.key").exists() or (plugin / ".migrated").exists():
-        return plugin
-    return Path("/data/restream")
+    # /data is the plugin data mount. Do not fall through to a nested restream folder.
+    return Path("/data")
 
 
 DATA = _data_dir()

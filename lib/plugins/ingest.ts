@@ -103,7 +103,9 @@ export async function ingestPluginPayload(
         state: Object.keys(pluginState).length > 0 ? pluginState : parsed.state,
     });
     await writePluginCounters(pluginId, counters);
-    await appendPluginSeries(pluginId, parsed.observedAt, liveNumbers);
+    await appendPluginSeries(pluginId, parsed.observedAt, liveNumbers, {
+        declaredMetrics: Object.keys(discovered.manifest.metrics).length > 0,
+    });
     await publishPluginLive(pluginId);
     pluginLogger().info({event: "plugin.ingest.accepted", plugin_id: pluginId});
     return {ok: true};

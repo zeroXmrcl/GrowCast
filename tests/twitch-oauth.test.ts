@@ -181,14 +181,14 @@ describe("Twitch OAuth file", () => {
                 userId: "1",
                 login: "0xmarcel",
             });
-            assert.equal(restreamOAuthFile(), path.join(dir, "restream", "twitch-oauth.json"));
+            assert.equal(restreamOAuthFile(), path.join(dir, "plugins", "growcast.restream", "twitch-oauth.json"));
             const onDisk = JSON.parse(
-                await readFile(path.join(dir, "restream", "twitch-oauth.json"), "utf8"),
+                await readFile(path.join(dir, "plugins", "growcast.restream", "twitch-oauth.json"), "utf8"),
             ) as Record<string, unknown>;
             assert.equal(onDisk.accessToken, "user-access-token");
             assert.equal(onDisk.refreshToken, "user-refresh-token");
             assert.equal((await readTwitchOAuthFile())?.login, "0xmarcel");
-            const mode = (await stat(path.join(dir, "restream", "twitch-oauth.json"))).mode & 0o777;
+            const mode = (await stat(path.join(dir, "plugins", "growcast.restream", "twitch-oauth.json"))).mode & 0o777;
             if (process.platform !== "win32") {
                 assert.equal(mode, 0o600);
             }

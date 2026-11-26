@@ -398,7 +398,7 @@ export function buildSolarView(input: SolarViewInput): SolarViewDto {
                 allocation,
                 tentDevices: live.tentDevices,
                 system: {
-                    name: "FENECON Home 10",
+                    name: "Home energy system",
                     pvPeakW: 11000,
                     batteryWh: 14000,
                     allocationMode: mode,
@@ -466,7 +466,7 @@ export function buildSolarView(input: SolarViewInput): SolarViewDto {
             allocation: fromState,
             tentDevices: tentDevicesFromState(input.liveState),
             system: {
-                name: "FENECON / OpenEMS",
+                name: "Home energy system",
                 pvPeakW: asNumber(input.config.pvPeakW),
                 batteryWh: asNumber(input.config.batteryWh),
                 allocationMode: mode,

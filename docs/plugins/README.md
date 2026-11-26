@@ -22,7 +22,7 @@ GrowCast GGS is not in this repository. Its source is [GrowCast-GGS](https://git
 - `growcast.ggs` — Spider Farmer climate and tent energy
 - `growcast.timelapse` — snapshots and video
 - `growcast.restream` — Twitch program capture
-- `growcast.solar` — FENECON / vendor-agnostic solar split (Live / 24H / 7D / 30D / This Grow, tent-first view, dashboard and overlay widgets)
+- `growcast.solar` — home energy system solar split (Live / 24H / 7D / 30D / This Grow, tent-first view, dashboard and overlay widgets)
 
 Open **Admin → Plugins**, read the warning, confirm the hash, enable. First-party plugins are **not** auto-enabled. GrowCast starts the backend through `docker-plugin-proxy` (never a raw `docker.sock` mount). If files change, the plugin is paused until the new hash is confirmed. See [DOCKER-PROXY.md](./DOCKER-PROXY.md).
 

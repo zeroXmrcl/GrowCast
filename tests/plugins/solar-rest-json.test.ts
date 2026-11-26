@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import {describe, it} from "node:test";
-import {readFeneconModbus, readFeneconRest, FEMS_CHANNELS} from "../../plugins/solar/host/fenecon.ts";
+import {readModbusTcp, readRestJson, REST_CHANNELS} from "../../plugins/solar/host/rest-json.ts";
 
-describe("FENECON adapter", () => {
+describe("REST JSON adapter", () => {
     it("maps REST channel JSON and skips missing channels", async () => {
         const calls: string[] = [];
         const client = {
@@ -20,16 +20,16 @@ describe("FENECON adapter", () => {
                 return {value: null};
             },
         };
-        const metrics = await readFeneconRest({host: "192.0.2.10", password: "user"}, client);
+        const metrics = await readRestJson({host: "example.local", password: "user"}, client);
         assert.equal(metrics["battery.soc"], 71);
         assert.equal(metrics["pv.power"], 6240);
         assert.equal("battery.power" in metrics, false);
         assert.ok(calls.some((url) => url.includes("/rest/channel/_sum/EssSoc")));
-        assert.equal(Object.keys(FEMS_CHANNELS).length > 5, true);
+        assert.equal(Object.keys(REST_CHANNELS).length > 5, true);
     });
 
     it("never substitutes 0 for a missing Modbus register", async () => {
-        const metrics = await readFeneconModbus({
+        const metrics = await readModbusTcp({
             "pv.power": 1200,
             "battery.soc": null,
         });

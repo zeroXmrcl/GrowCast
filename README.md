@@ -273,7 +273,7 @@ plugins/
   ggs/                         # Spider Farmer climate and tent energy
   timelapse/                   # Snapshots and video
   restream/                    # Twitch program capture
-  solar/                       # FENECON / vendor-agnostic solar split
+  solar/                       # home energy system solar split
 packages/
   plugin-sdk/                  # MIT frontend SDK
   plugin-sdk-python/           # MIT Python host client

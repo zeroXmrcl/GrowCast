@@ -1,4 +1,4 @@
-export const FEMS_CHANNELS = {
+export const REST_CHANNELS = {
     "pv.power": "_sum/ProductionActivePower",
     "battery.soc": "_sum/EssSoc",
     "battery.power": "_sum/EssDischargePower",
@@ -22,7 +22,7 @@ export type RestClient = {
     getJson(url: string, init: {username: string; password: string; timeoutMs: number}): Promise<unknown>;
 };
 
-export type FeneconRestConfig = {
+export type RestJsonConfig = {
     host: string;
     password: string;
     timeoutMs?: number;
@@ -35,13 +35,13 @@ function asFinite(value: unknown): number | null {
     return null;
 }
 
-export async function readFeneconRest(
-    config: FeneconRestConfig,
+export async function readRestJson(
+    config: RestJsonConfig,
     client: RestClient,
 ): Promise<Record<string, number>> {
     const metrics: Record<string, number> = {};
     const timeoutMs = config.timeoutMs ?? 5000;
-    for (const [key, channel] of Object.entries(FEMS_CHANNELS)) {
+    for (const [key, channel] of Object.entries(REST_CHANNELS)) {
         try {
             const url = `http://${config.host}/rest/channel/${channel}`;
             const raw = await client.getJson(url, {username: "x", password: config.password, timeoutMs});
@@ -58,7 +58,7 @@ export async function readFeneconRest(
     return metrics;
 }
 
-export const MODBUS_REGISTERS: Record<keyof typeof FEMS_CHANNELS, {address: number; type: "float32" | "float64" | "uint16" | "enum16"}> = {
+export const MODBUS_REGISTERS: Record<keyof typeof REST_CHANNELS, {address: number; type: "float32" | "float64" | "uint16" | "enum16"}> = {
     "pv.power": {address: 327, type: "float32"},
     "battery.soc": {address: 302, type: "uint16"},
     "battery.power": {address: 415, type: "float32"},
@@ -73,11 +73,11 @@ export const MODBUS_REGISTERS: Record<keyof typeof FEMS_CHANNELS, {address: numb
     "battery.discharge": {address: 387, type: "float64"},
 };
 
-export async function readFeneconModbus(
-    registers: Partial<Record<keyof typeof FEMS_CHANNELS, number | null>>,
+export async function readModbusTcp(
+    registers: Partial<Record<keyof typeof REST_CHANNELS, number | null>>,
 ): Promise<Record<string, number>> {
     const metrics: Record<string, number> = {};
-    for (const key of Object.keys(FEMS_CHANNELS) as Array<keyof typeof FEMS_CHANNELS>) {
+    for (const key of Object.keys(REST_CHANNELS) as Array<keyof typeof REST_CHANNELS>) {
         const value = registers[key];
         if (typeof value === "number" && Number.isFinite(value)) {
             metrics[key] = value;

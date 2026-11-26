@@ -171,6 +171,10 @@ A second `--apply` must only print skips.
 
 Leave the legacy folders in place until the owner explicitly says to delete them.
 
+`data/mesh/growcast.ggs.json` stopped updating when live state moved to `live.json`. Nothing in GrowCast, Restream, or the overlay reads that file for current climate. Timelapse settings stay in `data/mesh/growcast.timelapse.json` and are served by `GET /api/mesh/growcast.timelapse`. GGS still mirrors each live snapshot onto the legacy mesh file at most once a minute so an external reader of that path is not stuck on the pre-migration copy. The mirror does not delete the file.
+
+Empty plugin series files (`{t, metrics: {}}`) are not removed by ingest or by this migration. List them with `./scripts/prune-empty-plugin-series` and delete only with `--apply`.
+
 ## 4. Enable plugins in Admin immediately
 
 Open `https://<public-origin>/admin/plugins` (or the LAN origin). You should see a banner listing installed-but-disabled plugins.

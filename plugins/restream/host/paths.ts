@@ -1,18 +1,13 @@
-import {existsSync} from "node:fs";
 import path from "node:path";
-import {growcastDataDir} from "@/lib/data-paths";
 import {pluginDataDir} from "@/lib/plugins/paths";
 
+/**
+ * The plugin container mounts data/plugins/growcast.restream at /data.
+ * Writes stay in that directory so the container sees them. Legacy
+ * data/restream is only a migration source (scripts/migrate-plugin-data.ts).
+ */
 export function restreamDir(): string {
-    const next = pluginDataDir("growcast.restream");
-    if (
-        existsSync(path.join(next, ".migrated"))
-        || existsSync(path.join(next, "control.json"))
-        || existsSync(path.join(next, "twitch.key"))
-    ) {
-        return next;
-    }
-    return path.join(growcastDataDir(), "restream");
+    return pluginDataDir("growcast.restream");
 }
 
 export function restreamControlFile(): string {

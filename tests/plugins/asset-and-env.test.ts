@@ -30,13 +30,13 @@ describe("plugin process environment", () => {
             },
             pluginId: "community.example",
             token: "plugin-token",
-            extra: {XAI_API_KEY: "still-secret", SOLAR_HOST: "fems.local"},
+            extra: {XAI_API_KEY: "still-secret", SOLAR_HOST: "example.local"},
             runtimeEnv: {GROWCAST_MESH_TOKEN: "mesh", CUSTOM_FLAG: "1"},
         });
         assert.equal(env.PATH, "/usr/bin");
         assert.equal(env.GROWCAST_PLUGIN_ID, "community.example");
         assert.equal(env.GROWCAST_PLUGIN_TOKEN, "plugin-token");
-        assert.equal(env.SOLAR_HOST, "fems.local");
+        assert.equal(env.SOLAR_HOST, "example.local");
         assert.equal(env.CUSTOM_FLAG, "1");
         assert.equal("ADMIN_SESSION_SECRET" in env, false);
         assert.equal("XAI_API_KEY" in env, false);

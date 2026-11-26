@@ -16,4 +16,5 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-      - run: npm run build
+      - run: BUILD_STANDALONE=1 npm run build
+      - run: node scripts/verify-next-entry-shims.mjs

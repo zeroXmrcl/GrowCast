@@ -1,5 +1,4 @@
-import {mkdir, readFile, readdir} from "node:fs/promises";
-import path from "node:path";
+import {mkdir, readFile} from "node:fs/promises";
 import {isRecord} from "@/lib/coerce";
 import {atomicWriteFile} from "@/lib/atomic-file";
 import {findDiscoveredPlugin} from "@/lib/plugins/discovery";
@@ -7,9 +6,9 @@ import {
     pluginCountersFile,
     pluginDataDir,
     pluginHeartbeatFile,
-    pluginSeriesDir,
     pluginStateFile,
 } from "@/lib/plugins/paths";
+import {readSeriesDay} from "@/lib/plugins/series";
 import {
     PLUGIN_STALE_AFTER_MS,
     type PluginHeartbeat,
@@ -118,72 +117,27 @@ export async function readPluginLive(pluginId: string, nowMs = Date.now()): Prom
     };
 }
 
-export async function appendPluginSeries(
-    pluginId: string,
-    observedAt: string,
-    metrics: Record<string, number | null>,
-): Promise<void> {
-    const day = observedAt.slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
-        return;
-    }
-    const dir = pluginSeriesDir(pluginId);
-    await mkdir(dir, {recursive: true});
-    const filePath = path.join(dir, `${day}.json`);
-    let points: Array<{t: string; metrics: Record<string, number | null>}> = [];
-    try {
-        const raw = JSON.parse(await readFile(filePath, "utf8")) as unknown;
-        if (isRecord(raw) && Array.isArray(raw.points)) {
-            points = raw.points as typeof points;
-        }
-    } catch {
-        points = [];
-    }
-    points.push({t: observedAt, metrics});
-    await atomicWriteFile(filePath, `${JSON.stringify({date: day, points})}\n`);
-}
+export {appendPluginSeries} from "@/lib/plugins/series";
 
 export async function readPluginSeries(
     pluginId: string,
     keys: string[],
     days: string[],
 ): Promise<Record<string, PluginSeriesPoint[]>> {
-    const dir = pluginSeriesDir(pluginId);
     const out: Record<string, PluginSeriesPoint[]> = {};
     for (const key of keys) {
         out[key] = [];
     }
-    let files: string[] = [];
-    try {
-        files = await readdir(dir);
-    } catch {
-        return out;
-    }
-    const wanted = new Set(days);
-    for (const name of files.sort()) {
-        const day = name.replace(/\.json$/, "");
-        if (!wanted.has(day)) {
-            continue;
-        }
-        try {
-            const raw = JSON.parse(await readFile(path.join(dir, name), "utf8")) as unknown;
-            if (!isRecord(raw) || !Array.isArray(raw.points)) {
-                continue;
+    for (const day of [...new Set(days)].sort()) {
+        const points = await readSeriesDay(pluginId, day);
+        for (const point of points) {
+            for (const key of keys) {
+                const value = point.metrics[key];
+                out[key].push({
+                    t: point.t,
+                    value: typeof value === "number" && Number.isFinite(value) ? value : null,
+                });
             }
-            for (const point of raw.points) {
-                if (!isRecord(point) || typeof point.t !== "string" || !isRecord(point.metrics)) {
-                    continue;
-                }
-                for (const key of keys) {
-                    const value = point.metrics[key];
-                    out[key].push({
-                        t: point.t,
-                        value: typeof value === "number" && Number.isFinite(value) ? value : null,
-                    });
-                }
-            }
-        } catch {
-            /* skip corrupt day file */
         }
     }
     return out;

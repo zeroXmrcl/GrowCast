@@ -83,15 +83,15 @@ describe("restream secret files", () => {
             assert.equal(view.toastEnabled, false);
             assert.equal(view.login, "");
             assert.equal("key" in view, false);
-            const onDisk = await readFile(path.join(dir, "restream", "twitch.key"), "utf8");
+            const onDisk = await readFile(path.join(dir, "plugins", "growcast.restream", "twitch.key"), "utf8");
             assert.equal(onDisk.trim(), "live_xxxxxxxx");
             await saveRestreamKey("   ");
             assert.equal(await hasRestreamKey(), true);
             assert.equal(
-                (await readFile(path.join(dir, "restream", "twitch.key"), "utf8")).trim(),
+                (await readFile(path.join(dir, "plugins", "growcast.restream", "twitch.key"), "utf8")).trim(),
                 "live_xxxxxxxx",
             );
-            const mode = (await stat(path.join(dir, "restream", "twitch.key"))).mode & 0o777;
+            const mode = (await stat(path.join(dir, "plugins", "growcast.restream", "twitch.key"))).mode & 0o777;
             if (process.platform !== "win32") {
                 assert.equal(mode, 0o600);
             }
