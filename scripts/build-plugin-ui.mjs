@@ -1,5 +1,6 @@
 import {chmodSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync} from "node:fs";
 import path from "node:path";
+import {pluginBuildAliases, pluginModuleResolvePlugin} from "./plugin-build-aliases.mjs";
 
 const pluginsDir = process.env.GROWCAST_PLUGINS_DIR?.trim()
     ? path.resolve(process.env.GROWCAST_PLUGINS_DIR)
@@ -54,9 +55,8 @@ for (const folder of folders) {
             "react-dom/client",
             "@growcast/plugin-sdk/ui",
         ],
-        alias: {
-            "@": process.cwd(),
-        },
+        alias: pluginBuildAliases(),
+        plugins: [pluginModuleResolvePlugin(folder, pluginsDir)],
     });
     const styleSrc = path.join(pluginsDir, folder, "ui", "src", "style.css");
     if (existsSync(styleSrc)) {

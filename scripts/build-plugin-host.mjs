@@ -1,5 +1,6 @@
 import {chmodSync, existsSync, mkdirSync, readdirSync, statSync} from "node:fs";
 import path from "node:path";
+import {pluginBuildAliases, pluginModuleResolvePlugin} from "./plugin-build-aliases.mjs";
 
 const pluginsDir = process.env.GROWCAST_PLUGINS_DIR?.trim()
     ? path.resolve(process.env.GROWCAST_PLUGINS_DIR)
@@ -46,10 +47,8 @@ for (const folder of folders) {
         target: "node20",
         logLevel: "warning",
         packages: "external",
-        alias: {
-            "@": process.cwd(),
-        },
-        plugins: [{
+        alias: pluginBuildAliases(),
+        plugins: [pluginModuleResolvePlugin(folder, pluginsDir), {
             name: "next-esm-ext",
             setup(pluginBuild) {
                 pluginBuild.onResolve({filter: /^next\//}, (args) => ({
